@@ -336,15 +336,7 @@ public class CommandDispatcher {
             return;
         }
         if(previousCommand!=null){
-            if(script2Result.containsKey(previousCommand)){//we finished a script
-                context.getProfiler().stop();
-                context.getProfiler().setLogger(context.getRunLogger());
-                context.getProfiler().log();
-                //context.getProfiler().print();
-
-            }
-           observers.forEach(c->c.onStop(previousCommand));
-
+            checkScriptDone(previousCommand,context);
         }
 
         if(nextCommand!=null){
@@ -361,6 +353,19 @@ public class CommandDispatcher {
             Cmd removed = removeActive(previousCommand);
         }
         checkActiveCount();
+
+    }
+    private void checkScriptDone(Cmd command, CommandContext context){
+        if(script2Result.containsKey(command)){//we finished a script
+            context.getProfiler().stop();
+            context.getProfiler().setLogger(context.getRunLogger());
+            context.getProfiler().log();
+            //context.getProfiler().print();
+
+        }
+        observers.forEach(c->c.onStop(command));
+        script2Result.get(command).getResult().context.getSession().close();
+        script2Result.remove(command);
 
     }
     private void checkActiveCount(){
