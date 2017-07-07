@@ -38,9 +38,12 @@ public class CommandSummary {
         }else if (command instanceof Cmd.WaitFor){
             summary.addWait(((Cmd.WaitFor)command).getName());
         }else if (command instanceof Cmd.ScriptCmd){
-
+            Script namedScript = repo.script(((Cmd.ScriptCmd)command).getName());
+            processCommand(namedScript,isWatching,summary,repo);
+        }else if (command instanceof Cmd.InvokeCmd){
+            Cmd invokedCmd = ((Cmd.InvokeCmd)command).getCommand();
+            processCommand(invokedCmd,isWatching,summary,repo);
         }else if (command instanceof Cmd.Filter){
-
             String pattern = ((Cmd.Filter)command).getPattern();
             Matcher matcher = Cmd.NAMED_CAPTURE.matcher(pattern);
             while(matcher.find()){

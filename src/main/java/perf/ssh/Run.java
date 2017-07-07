@@ -277,7 +277,7 @@ public class Run implements Runnable {
     public void run() {
 
 
-
+        runLogger.info("{} starting state:\n{}",this.getName(),state);
 
 
         boolean validated = preRun();

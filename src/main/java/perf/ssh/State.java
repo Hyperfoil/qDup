@@ -77,4 +77,29 @@ public class State {
     public List<String> getHostKeys(){ return getKeys(host); }
     public List<String> getScriptKeys(){ return getKeys(script); }
 
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("script:\n");
+        for(String key : getScriptKeys()){
+            sb.append(key);
+            sb.append(" = ");
+            sb.append(get(key));
+            sb.append(System.lineSeparator());
+        }
+        sb.append("host:\n");
+        for(String key : getHostKeys()){
+            sb.append(key);
+            sb.append(" = ");
+            sb.append(get(key));
+            sb.append(System.lineSeparator());
+        }
+        sb.append("run:\n");
+        for(String key : getRunKeys()){
+            sb.append(key);
+            sb.append(" = ");
+            sb.append(get(key));
+            sb.append(System.lineSeparator());
+        }
+        return sb.toString();
+    }
 }

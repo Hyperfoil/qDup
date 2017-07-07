@@ -261,13 +261,10 @@ public class CommandDispatcher {
 
 
     public void addScript(Script script,CommandContext context){
-        //TODO BUG: scripts can be used multiple times (copy it)?
-        //hack to fix issue where same script could not be run on multiple hosts
-        //I don't like this hack because it breaks the ability to modify 1 script
-        //and change all the instances
         script = (Script)script.copy();
 
-        //TODO BUG: Cmd.InvokeCmd can change the tail and cause this to close profiler too soon
+        //Cmd.InvokeCmd can change the tail and cause this to close profiler too soon
+        //TODO make this thread safe
         ScriptResult previous = script2Result.put(
                 script.getTail(),
                 new ScriptResult(
@@ -307,7 +304,11 @@ public class CommandDispatcher {
     public void stop(){
         if(!isStopped){
             isStopped=true;
-            activeCommands.values().forEach((w)->{w.stop();});
+            activeCommands.values().forEach((w)->{
+                if(w!=null){
+                    w.stop();
+                }
+            });
             activeThreads.values().forEach(thread->thread.interrupt());
         }
     }
@@ -360,13 +361,16 @@ public class CommandDispatcher {
             context.getProfiler().stop();
             context.getProfiler().setLogger(context.getRunLogger());
             context.getProfiler().log();
-            //context.getProfiler().print();
-
+            if(context.getRunLogger().isInfoEnabled()){
+                context.getRunLogger().info("{}@{} closing state:\n{}",
+                        script2Result.get(command).getScript().getName(),
+                        context.getSession().getHostName(),
+                        context.getState());
+            }
+            observers.forEach(c->c.onStop(command));
+            script2Result.get(command).getResult().context.getSession().close();
+            script2Result.remove(command);
         }
-        observers.forEach(c->c.onStop(command));
-        script2Result.get(command).getResult().context.getSession().close();
-        script2Result.remove(command);
-
     }
     private void checkActiveCount(){
         if(activeCommands.size()==0 && !isStopped){
@@ -387,6 +391,12 @@ public class CommandDispatcher {
         script2Result.values().forEach(scriptResult -> {
             logger.debug("closing connection to {}",scriptResult.getResult().context.getSession().getHostName());
             scriptResult.getResult().context.getSession().close();
+            if(scriptResult.getResult().context.getRunLogger().isInfoEnabled()){
+                scriptResult.getResult().context.getRunLogger().info("{}@{} closing state:\n{}",
+                        scriptResult.getScript().getName(),
+                        scriptResult.getResult().context.getSession().getHostName(),
+                        scriptResult.getResult().context.getState());
+            }
         });
         script2Result.clear();
     }
