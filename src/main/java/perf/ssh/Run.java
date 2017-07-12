@@ -30,6 +30,7 @@ public class Run implements Runnable {
     class HostScripts {
         LinkedHashSet<Script> setup;
         HashSet<Script> run;
+        LinkedHashSet<Script> cleanup;
         public HostScripts(){
             setup = new LinkedHashSet<>();
             run = new HashSet<>();
@@ -46,8 +47,11 @@ public class Run implements Runnable {
         public void removeSetupScript(Script script){
             setup.remove(script);
         }
+        public void addCleanupScript(Script script){cleanup.add(script);}
+        public void removeCleanupScript(Script script){cleanup.remove(script);}
         public List<Script> setupScripts(){return Collections.unmodifiableList(Arrays.asList(setup.toArray(new Script[0])));}
         public List<Script> runScripts(){return Collections.unmodifiableList(Arrays.asList(run.toArray(new Script[0])));}
+        public List<Script> cleanupScripts(){return Collections.unmodifiableList(Arrays.asList(cleanup.toArray(new Script[0])));}
     }
 
     class PendingDownload {
@@ -69,7 +73,7 @@ public class Run implements Runnable {
     private HashMap<Host,HostScripts> hostScripts;
     private Coordinator coordinator;
     private CommandDispatcher dispatcher;
-    private Set<Host> hosts;
+    private Map<Host,State> hostStates;
     private Profiles profiles;
 
     private Map<Host,List<PendingDownload>> pendingDownloads;
@@ -120,7 +124,7 @@ public class Run implements Runnable {
             runLogger.info("{} reached {}",getName(),signal_name);
         });
 
-        this.hosts = new HashSet<>();
+        this.hostStates = new HashMap<>();
 
         this.pendingDownloads = new HashMap<>();
     }
@@ -242,12 +246,12 @@ public class Run implements Runnable {
 
 
 
-        for(Host host : hosts){
+        for(Host host : hostStates.keySet()){
             if(!hostScripts.get(host).setupScripts().isEmpty()){
-                State hostState = getState().newHostState();
+                State hostState = hostStates.get(host);
                 Script hostSetup = new Script(host.getHostName()+"-setup");
                 for(Script script : hostScripts.get(host).setupScripts()){
-                    hostSetup.then(Cmd.invoke(script));
+                    hostSetup.then(script.deepCopy());
                 }
                 long start = System.currentTimeMillis();
                 Profiler profiler = profiles.get(hostSetup.getName()+"@"+host.getHostName());
@@ -263,7 +267,7 @@ public class Run implements Runnable {
                 long stop = System.currentTimeMillis();
 
                 CommandContext commandContext = new CommandContext(scriptSession,hostState.newScriptState(),this,profiler);
-                logger.debug("{} setup script {}\n{}",this,hostSetup,hostSetup.tree());
+                logger.debug("{} setup addScript {}\n{}",this,hostSetup,hostSetup.tree());
                 dispatcher.addScript(hostSetup,commandContext);
             }
         }
@@ -277,8 +281,10 @@ public class Run implements Runnable {
     public void run() {
 
 
-        runLogger.info("{} starting state:\n{}",this.getName(),state);
-
+        runLogger.info("{} starting run state:\n{}",this.getName(),state.getRunState());
+        for(Map.Entry<Host,State> entries : hostStates.entrySet()){
+            runLogger.info("{} host state:\n{}",entries.getKey(),entries.getValue().getHostState());
+        }
 
         boolean validated = preRun();
         if(!validated){
@@ -291,6 +297,7 @@ public class Run implements Runnable {
         coordinator.initialize(uniqueLatch,1);
         coordinator.waitFor(uniqueLatch);
         runPendingDownloads();
+
         //dispatcher.closeSessions(); //was racing the close sessions from checkActiveCount
     }
     private void queueRunScripts(){
@@ -311,9 +318,9 @@ public class Run implements Runnable {
                 postRun();
             }
         };
-        State globalState = this.getState();
-        for(Host host : hosts){
-            State hostState = globalState.newHostState();
+        //TODO parallel connect with ExecutorService.invokeAll(Callable / Runnable)
+        for(Host host : hostStates.keySet()){
+            State hostState = hostStates.get(host);
             for(Script script : hostScripts.get(host).runScripts()){
                 State scriptState = hostState.newScriptState();
                 long start = System.currentTimeMillis();
@@ -340,6 +347,12 @@ public class Run implements Runnable {
     }
     public void postRun(){
         logger.debug("{}.postRun",this);
+        runLogger.info("{} closing state:\n{}",this.getName(),state.getRunState());
+        for(Map.Entry<Host,State> entries : hostStates.entrySet()){
+            runLogger.info("host {}:\n{}",entries.getKey(),entries.getValue().getHostState());
+        }
+
+        //TODO run cleanups before coordinator.signal
         coordinator.signal(uniqueLatch);
 
     }
@@ -367,13 +380,21 @@ public class Run implements Runnable {
     public String getOutputPath(){ return outputPath;}
     public String getName(){return name;}
     public HostList allHosts(){
-        return new HostList(Arrays.asList(hosts.toArray(new Host[0])),this);
+        return new HostList(Arrays.asList(hostStates.keySet().toArray(new Host[0])),this);
     }
     protected void addHost(Host host){
-        hosts.add(host);
+        if(!hostStates.containsKey(host)){
+            State previous = hostStates.put(host,getState().newHostState());
+            if(previous!=null){
+                //TODO more than one thread tried to add a host to a run, that is not supported
+            }
+        }
+
     }
     protected void addAllHosts(List<Host> hosts){
-        hosts.addAll(hosts);
+        for(Host host : hosts){
+            addHost(host);
+        }
     }
 
 }

@@ -6,9 +6,10 @@ import perf.util.AsciiArt;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -33,6 +34,8 @@ public class CommandDispatcher {
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
+    final static long THRESHOLD = 30_000; //30s
+
     public interface Observer {
         public default void onStart(Cmd command){}
         public default void onStop(Cmd command){}
@@ -42,9 +45,6 @@ public class CommandDispatcher {
         public default void onStart(){}
         public default void onStop(){}
     }
-    /**
-     * Stores the CommandContext inside the CommandResult so that the Dispatcher can be used with multiple Host+Script combinations.
-     */
     class WatcherResult implements  CommandResult {
         private CommandContext context;
         public WatcherResult(CommandContext context){ this.context = context; }
@@ -72,6 +72,9 @@ public class CommandDispatcher {
             logger.warn("{} trying to update using a WatcherResult",command);
         }
     }
+    /**
+     * Stores the CommandContext inside the CommandResult so that the Dispatcher can be used with multiple Host+Script combinations.
+     */
     class ContextedResult implements CommandResult {
         private CommandContext context;
 
@@ -79,35 +82,23 @@ public class CommandDispatcher {
             this.context = context;
 
         }
-
         @Override
         public void next(Cmd command,String output) {
-
             observers.forEach(o->o.onNext(command,output));
             dispatch(command,command.getNext(),output,this.context,this);
         }
 
         @Override
         public void skip(Cmd command,String output) {
-
             observers.forEach(o->o.onSkip(command,output));
             dispatch(command,command.getSkip(),"",this.context,this);
-
         }
 
         @Override
         public void update(Cmd command, String output) {
             observers.forEach(o->o.onUpdate(command,output));
-
             try {
-                RunWatchers runWatchers = activeCommands.get(command);
-                if(runWatchers!=null){
-                    logger.debug("update [{}] watchers with [{}]",command,output);
-                    runWatchers.add(output);
-                }else{
-                    logger.debug("no watchers for [{}]",command);
-                }
-
+                activeCommands.get(command).update(output);
             }catch(IllegalStateException e){
                 logger.catching(e);
                 e.printStackTrace();
@@ -126,6 +117,34 @@ public class CommandDispatcher {
         }
         public Script getScript(){return script;}
         public ContextedResult getResult(){return result;}
+    }
+    class ActiveCommandInfo {
+        private String name;
+        private RunWatchers runWatchers;
+        private CommandContext context;
+        private long startTime;
+        private long lastUpdate;
+
+        public ActiveCommandInfo(String name,RunWatchers runWatchers,CommandContext context){
+            this.name =name;
+            this.runWatchers = runWatchers;
+            this.context = context;
+            this.startTime = System.currentTimeMillis();
+            this.lastUpdate = this.startTime;
+        }
+        public CommandContext getContext(){return context;}
+        public RunWatchers getRunWatchers(){return runWatchers;}
+        public void setRunWatchers(RunWatchers runWatchers){
+            this.runWatchers = runWatchers;
+        }
+        public void update(String update){
+            lastUpdate = System.currentTimeMillis();
+            if(runWatchers!=null){
+                runWatchers.add(update);
+            }
+        }
+        public long getLastUpdate(){ return lastUpdate; }
+        public long getStartTime(){ return startTime; }
     }
     class RunWatchers implements Runnable {
         String name;
@@ -158,7 +177,7 @@ public class CommandDispatcher {
         }
         @Override
         public void run() {
-            logger.info("{} watcher count = {}",this.name,watchers.size());
+            logger.debug("{} watcher count = {}",this.name,watchers.size());
 
             String line = null;
             try {
@@ -209,18 +228,19 @@ public class CommandDispatcher {
         }
     }
 
-    private Map<Cmd,RunWatchers> activeCommands;
+    private Map<Cmd,ActiveCommandInfo> activeCommands;
     private Map<Cmd,Thread> activeThreads;
     private HashSet<Integer> pastCommands;
 
-    //bug same script can be mapped to multiple hosts
+    //bug same getScript can be mapped to multiple hosts
 
-    private Map<Cmd,ScriptResult> script2Result;
+    private ConcurrentHashMap<Cmd,ScriptResult> script2Result;
 
     private List<Observer> observers;
 
     private ThreadPoolExecutor executor;
-
+    private ScheduledExecutorService nanny;
+    private ScheduledFuture<?> nannyFuture;
     private boolean isStopped;
 
     @Override public String toString(){return "CD";}
@@ -228,27 +248,29 @@ public class CommandDispatcher {
     public CommandDispatcher(ThreadPoolExecutor executor){
         this.executor = executor;
 
-        this.activeCommands = Collections.synchronizedMap(new HashMap<>());
-        this.activeThreads = Collections.synchronizedMap(new HashMap<>());
+        this.activeCommands = new ConcurrentHashMap<>();
+        this.activeThreads = new ConcurrentHashMap<>();
         this.pastCommands = new HashSet<>();
-        this.script2Result = new LinkedHashMap<>();
+        this.script2Result = new ConcurrentHashMap<>();
 
         this.observers = new LinkedList<>();
 
         this.isStopped = true;
+        AtomicInteger nannyCount = new AtomicInteger();
+        this.nanny = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r,"nanny-"+nannyCount.getAndIncrement()));
     }
 
     private Cmd removeActive(Cmd command){
-        RunWatchers runWatchers = activeCommands.remove(command);
-        if(runWatchers!=null) {
+        ActiveCommandInfo activeCommandInfo = activeCommands.remove(command);
+        if(activeCommandInfo.getRunWatchers()!=null) {
             try {
-                runWatchers.stop();
+                activeCommandInfo.getRunWatchers().stop();
             }catch (NullPointerException e){
                 logger.info("NPE add null after {}",command);
             }
         }
         activeThreads.remove(command);
-        return runWatchers!=null? command : null;
+        return activeCommandInfo.getRunWatchers()!=null? command : null;
     }
 
 
@@ -261,7 +283,8 @@ public class CommandDispatcher {
 
 
     public void addScript(Script script,CommandContext context){
-        script = (Script)script.copy();
+        logger.entry(script.getName(),context.getSession().getHostName());
+        script = (Script)script.deepCopy();
 
         //Cmd.InvokeCmd can change the tail and cause this to close profiler too soon
         //TODO make this thread safe
@@ -273,8 +296,9 @@ public class CommandDispatcher {
                 )
         );
         if(previous!=null){
-            logger.error("already have script.tail={} mapped to {}@{}",script.getTail().getUid(),script.getName(),context.getSession().getHostName());
+            logger.error("already have getScript.tail={} mapped to {}@{}",script.getTail().getUid(),script.getName(),context.getSession().getHostName());
         }
+        logger.exit();
     }
     public void onTailMod(Cmd previousTail,Cmd nextTail){
         //TODO make thread safe
@@ -286,10 +310,39 @@ public class CommandDispatcher {
         }
     }
     public void start(){ //start all the scripts attached to this dispatcher
+        logger.trace("CD.start");
+        if(!isStopped){//don't try to start an already started dispatcher
+            logger.trace("CD don't start, isStopped={}",isStopped);
+            return;
+        }
         isStopped = false;
         observers.forEach(c->c.onStart());
         logger.info("starting {} scripts",script2Result.size());
         if(!script2Result.isEmpty()){
+            BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
+                logger.trace("nanny checking {}",command);
+                if(activeCommands.containsKey(command) && command instanceof Cmd.Sh){
+                    long lastUpdate = activeCommands.get(command).getLastUpdate();
+                    if(timestamp - lastUpdate > THRESHOLD){
+                        logger.warn("{} idle for {}",
+                                command,
+                                String.format("%5.2f",(1.0*timestamp-lastUpdate)/1_000)
+                        );
+                    }
+                }
+            };
+            if(nannyFuture == null) {
+                nannyFuture = nanny.scheduleAtFixedRate(() -> {
+                    long timestamp = System.currentTimeMillis();
+                    try {
+                        for (Cmd c : activeCommands.keySet()) {
+                            checkUpdate.accept(c, timestamp);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }, 15, 15, TimeUnit.SECONDS);
+            }
             for(ScriptResult scriptResult : script2Result.values()){
                 Script script = scriptResult.getScript();
                 ContextedResult result = scriptResult.getResult();
@@ -301,16 +354,28 @@ public class CommandDispatcher {
         }
 
     }
+    public void shutdown(){
+        stop();
+        nanny.shutdownNow();
+    }
     public void stop(){
-        if(!isStopped){
-            isStopped=true;
-            activeCommands.values().forEach((w)->{
-                if(w!=null){
-                    w.stop();
-                }
-            });
-            activeThreads.values().forEach(thread->thread.interrupt());
+        logger.debug("CD.stop");
+        isStopped=true;
+        closeSessions();
+        activeCommands.values().forEach((w)->{
+            if(w.getRunWatchers()!=null){
+                w.getRunWatchers().stop();
+            }
+        });
+        activeThreads.values().forEach(thread->{
+            logger.info("interrupting {}",thread.getName());
+            thread.interrupt();
+        });
+        if(nannyFuture!=null){
+            boolean cancelledFuture= nannyFuture.cancel(true);
+            nannyFuture = null;
         }
+        observers.forEach(c -> c.onStop());
     }
 
 
@@ -324,30 +389,49 @@ public class CommandDispatcher {
             BlockingQueue<String> queue = new LinkedBlockingQueue<>();
 
             RunWatchers watcherRunnable = new RunWatchers("watch:"+command,command.getWatchers(),context,watcherResult,queue);
-            activeCommands.put(command,watcherRunnable);
-            logger.info("queueing {} watchers for {}",command.getWatchers().size(),command);
+            activeCommands.get(command).setRunWatchers(watcherRunnable);
+            logger.trace("queueing {} watchers for {}",command.getWatchers().size(),command);
             executor.execute(watcherRunnable);
         }
+
         executor.execute(new RunCommand(command,input,context,result));
 
     }
     public void dispatch(Cmd previousCommand, Cmd nextCommand,String input, CommandContext context, CommandResult result){
 
+
         if(isStopped){
             return;
         }
         if(previousCommand!=null){
+            previousCommand.setOutput(input);
             checkScriptDone(previousCommand,context);
         }
 
         if(nextCommand!=null){
             observers.forEach(c->c.onStart(nextCommand));
-            activeCommands.put(nextCommand,null);
+
+            ActiveCommandInfo previous = activeCommands.put(nextCommand,new ActiveCommandInfo(nextCommand.getUid()+" "+nextCommand.toString(),null,context));
+
+            if(previous!=null){
+                logger.warn("adding {} {} previous = {}",nextCommand.hashCode(),nextCommand,previous.name);
+                activeCommands.entrySet().forEach((entry)->{
+                    Cmd k =entry.getKey();
+                    ActiveCommandInfo aci =entry.getValue();
+                    if(aci.equals(previous)){
+                        logger.warn("found match @ {} {} {}",k.hashCode(),k.getClass().getName(),k);
+                    }
+                });
+            }
+
             pastCommands.add(nextCommand.getUid());
             context.getProfiler().start("waiting in run queue");
+            if(nextCommand.getPrevious()!=null && nextCommand.getPrevious().getOutput()!=null){
+                input = nextCommand.getPrevious().getOutput();
+            }
             execute(nextCommand,input,context,result);
         }else{
-            logger.info("no next command from {}",previousCommand);
+            logger.trace("no next command from {}",previousCommand);
         }
         //remove after add to ensure activeCommands is only empty when there isn't a nextCommand
         if(previousCommand!=null) {
@@ -357,15 +441,15 @@ public class CommandDispatcher {
 
     }
     private void checkScriptDone(Cmd command, CommandContext context){
-        if(script2Result.containsKey(command)){//we finished a script
+        if(script2Result.containsKey(command)){//we finished a getScript
             context.getProfiler().stop();
             context.getProfiler().setLogger(context.getRunLogger());
             context.getProfiler().log();
             if(context.getRunLogger().isInfoEnabled()){
-                context.getRunLogger().info("{}@{} closing state:\n{}",
+                context.getRunLogger().info("{}@{} closing script state:\n{}",
                         script2Result.get(command).getScript().getName(),
                         context.getSession().getHostName(),
-                        context.getState());
+                        context.getState().getScriptState());
             }
             observers.forEach(c->c.onStop(command));
             script2Result.get(command).getResult().context.getSession().close();
@@ -376,12 +460,8 @@ public class CommandDispatcher {
         if(activeCommands.size()==0 && !isStopped){
             logger.info("activeCommands.size = {}",activeCommands.size());
             executor.execute(() -> {
-                if(!isStopped) {
-                    isStopped = true;
-                    //closeSessions before observers because they may synchronously start loading more scripts :(
-                    closeSessions();
-                    observers.forEach(c -> c.onStop());
-                }
+                closeSessions();
+                observers.forEach(o->o.onStop());
             });
         }
     }
@@ -399,6 +479,7 @@ public class CommandDispatcher {
             }
         });
         script2Result.clear();
+        isStopped=true;
     }
     public boolean isActive(){return activeCommands.size()>0;}
     public int getActiveCount(){return activeCommands.size();}

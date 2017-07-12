@@ -6,26 +6,30 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wreicher
- * A Map of scripts by name that will return a new, empty script if the name was not already used
+ * A Map of scripts by name that will return a new, empty Script if the name was not already used
  */
 public class ScriptRepo {
 
     private Map<String,Script> scripts;
 
     public ScriptRepo(){
-        scripts = new HashMap<>();
+        scripts = new ConcurrentHashMap<>();
     }
 
     protected void addScript(Script script){
         scripts.put(script.getName(),script);
     }
 
-    public Script script(String name){
+    public Script getScript(String name){
         if(!hasScript(name)){
-            scripts.put(name,new Script(name));
+            Script previous = scripts.put(name,new Script(name));
+            if(previous!=null){
+                //TODO this is bad, means multiple threads clashed for the same getScript name
+            }
         }
         return scripts.get(name);
     }

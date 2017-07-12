@@ -4,7 +4,6 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.ssh.Local;
 import perf.ssh.State;
-import perf.util.AsciiArt;
 import perf.util.file.FileUtility;
 import perf.util.xml.Xml;
 import perf.util.xml.XmlLoader;
@@ -17,8 +16,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -37,10 +34,11 @@ public abstract class Cmd {
     public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
 
-    public static Cmd abort(){return new Abort();}
+    public static Cmd abort(){return new Abort("");}
+    public static Cmd abort(String message){return new Abort(message);}
     public static Cmd code(Code code){return new CodeCmd(code);}
-    public static Cmd queueDownload(String path){return new DelayedDownload(path);}
-    public static Cmd queueDownload(String path,String destination){return new DelayedDownload(path,destination);}
+    public static Cmd queueDownload(String path){return new QueueDownload(path);}
+    public static Cmd queueDownload(String path,String destination){return new QueueDownload(path,destination);}
     public static Cmd download(String path){return new Download(path);}
     public static Cmd download(String path,String destination){return new Download(path,destination);}
     public static Cmd echo(){ return new Echo(); }
@@ -51,7 +49,7 @@ public abstract class Cmd {
         return new Sh(command);
     }
     public static Cmd regex(String pattern){
-        return new Filter(pattern);
+        return new Regex(pattern);
     }
     public static Cmd ctrlC(){return new CtrlC();}
     public static Cmd sleep(long amount){return new Sleep(amount);}
@@ -60,14 +58,14 @@ public abstract class Cmd {
     public static Cmd xpath(String path){return new XPath(path);}
     public static Cmd countdown(String name,int amount){return new Countdown(name,amount);}
 
-    static class DelayedDownload extends Cmd {
+    static class QueueDownload extends Cmd {
         private String path;
         private String destination;
-        public DelayedDownload(String path,String destination){
+        public QueueDownload(String path, String destination){
             this.path = path;
             this.destination = destination;
         }
-        public DelayedDownload(String path){
+        public QueueDownload(String path){
             this(path,"");
         }
         public String getPath(){return path;}
@@ -75,7 +73,7 @@ public abstract class Cmd {
 
 
         @Override
-        public String toString(){return "DelayedDownload "+path+" -> "+destination;}
+        public String toString(){return "queueDownload " + path + (destination.isEmpty()?"":(" -> "+destination));}
 
         @Override
         protected void run(String input, CommandContext context, CommandResult result) {
@@ -95,30 +93,35 @@ public abstract class Cmd {
 
         @Override
         protected Cmd clone() {
-            return new DelayedDownload(path,destination);
+            return new QueueDownload(path,destination);
         }
     }
     static class Abort extends Cmd {
-        public Abort(){}
+        private String message;
+        public Abort(String message){
+            this.message = message;
+        }
 
         @Override
         protected void run(String input, CommandContext context, CommandResult result) {
+            String populatedMessage = Cmd.populateStateVariables(message,context.getState());
+            context.getRunLogger().info("abort {}",populatedMessage);
             context.abort();
-            //don't call result.next or skip to force script to pause until stopped by CommandDispatcher
+            //don't call result.next or skip to force getScript to pause until stopped by CommandDispatcher
         }
 
         @Override
         protected Cmd clone() {
-            return new Abort();
+            return new Abort(this.message);
         }
 
         @Override
-        public String toString(){return "abort";}
+        public String toString(){return "abort "+this.message;}
     }
     static class InvokeCmd extends Cmd {
         private Cmd command;
         public InvokeCmd(Cmd command){
-            this.command = command.copy();
+            this.command = command.deepCopy();
             //moved here from run to avoid issue where dispatcher has the wrong tail cmd
 
             injectThen(command,null);//null context so we don't updated tail change
@@ -132,7 +135,7 @@ public abstract class Cmd {
 
         @Override
         protected Cmd clone() {
-            return new InvokeCmd(command.copy());
+            return new InvokeCmd(command.deepCopy());
         }
         @Override
         public String toString(){return "invoke "+command.toString();}
@@ -159,7 +162,7 @@ public abstract class Cmd {
             return new CodeCmd(code);
         }
         @Override
-        public String toString(){return "Code "+code.toString();}
+        public String toString(){return "code "+code.toString();}
     }
     static class Echo extends Cmd {
         public Echo(){}
@@ -190,7 +193,7 @@ public abstract class Cmd {
             return new Log(value);
         }
         @Override
-        public String toString(){return "LOG: "+this.value;}
+        public String toString(){return "log "+this.value;}
     }
     static class Countdown extends Cmd {
         private String name;
@@ -214,9 +217,8 @@ public abstract class Cmd {
         @Override
         protected Cmd clone() { return new Countdown(this.name,this.startCount); }
         @Override
-        public String toString(){return "decrease "+this.name+" ("+this.startCount+")";}
+        public String toString(){return "countdown "+this.name+" "+this.startCount;}
     }
-
     static class Sh extends Cmd {
         private String command;
         public Sh(String command){
@@ -235,7 +237,7 @@ public abstract class Cmd {
             return new Sh(this.command);
         }
 
-        @Override public String toString(){return ""+command;}
+        @Override public String toString(){return "sh "+command;}
     }
     static class CtrlC extends Cmd {
         public CtrlC(){}
@@ -277,7 +279,7 @@ public abstract class Cmd {
 
         @Override
         public String toString(){
-            return path;
+            return "xpath "+path;
         }
 
         @Override
@@ -290,85 +292,48 @@ public abstract class Cmd {
                 try {
                     File tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
                     Local.get().download(filePath,tmpDest.getPath(),context.getSession().getHost());
-                    logger.info("{} tmpFile.length={}",this,tmpDest.length());
                     xml = loader.loadXml(tmpDest.toPath());
                     int opIndex = FileUtility.OPERATIONS.stream().mapToInt(op->{
                         int rtrn = path.indexOf(op);
-                        logger.info("{} => {}",op,rtrn);
                         return rtrn;
                     }).max().getAsInt();
-                    logger.info("opIndex = {}",opIndex);
+
                     String search = opIndex>-1 ? Cmd.populateStateVariables(path.substring(0,opIndex),context.getState()).trim() : path;
                     String operation = opIndex>-1 ? Cmd.populateStateVariables(path.substring(opIndex),context.getState()).trim() : "";
 
-                    logger.info("search=[{}] operation=[{}]",search,operation);
                     xml = loader.loadXml(tmpDest.toPath());
                     List<Xml> found = xml.getAll(search);
                     if(operation.isEmpty()){
-                        logger.info("empty operation");
                         //convert found to a string and send it to next
-                        String rtrn = found.stream().map(Xml::toString).collect(Collectors.joining("\n"));
-                        tmpDest.delete();
-                        result.next(this,rtrn);
-                    }else{
-
-                        found.forEach(x->x.modify(operation));
-                        try(  PrintWriter out = new PrintWriter( tmpDest )  ){
-                            out.print(xml.documentString());
+                        if(found.isEmpty()){
+                            result.skip(this,input);
+                        }else {
+                            String rtrn = found.stream().map(Xml::toString).collect(Collectors.joining("\n"));
+                            tmpDest.delete();
+                            result.next(this, rtrn);
                         }
-                        Local.get().upload(tmpDest.getPath(),filePath,context.getSession().getHost());
-                        tmpDest.delete();
-                        result.next(this,input);//TODO decide a more appropriate output
+                    }else{
+                        if(found.isEmpty()){
+                            result.skip(this,input);
+                        }else{
+                            found.forEach(x->x.modify(operation));
+                            try(  PrintWriter out = new PrintWriter( tmpDest )  ){
+                                out.print(xml.documentString());
+                            }
+                            Local.get().upload(tmpDest.getPath(),filePath,context.getSession().getHost());
+                            tmpDest.delete();
+                            result.next(this,input);//TODO decide a more appropriate output
+                        }
+
                     }
                 } catch (IOException e) {
                     logger.error("{}@{} failed to create local tmp file",this.toString(),context.getSession().getHostName(),e);
-
                 }
-
             }else{
                 //assume the input is the xml to process
                 xml = loader.loadXml(input);
             }
 
-            int idx = -1;
-            if( (idx=path.indexOf(FileUtility.ADD_OPERATION)) > -1){
-                String toAdd = path.substring(idx+FileUtility.ADD_OPERATION.length());
-                path = path.substring(0,idx);
-                switch(toAdd.charAt(0)){
-                    case '@':
-
-                        break;
-                    case '<':
-
-                        break;
-                    default:
-
-                }
-            }else if ( (idx=path.indexOf(FileUtility.DELETE_OPERATION))>-1 ){
-                String toDelete = path.substring(idx+FileUtility.DELETE_OPERATION.length());
-                path = path.substring(0,idx);
-
-            }else if ( (idx=path.indexOf(FileUtility.SET_OPERATION))>-1 ){
-                String toSet = path.substring(idx+FileUtility.SET_OPERATION.length());
-                path = path.substring(0,idx);
-
-            }else{
-                //no operation, just search and pass results to next cmd
-            }
-
-
-            List<Xml> matches = xml.getAll(path);
-            if(!matches.isEmpty()){
-                StringBuffer response = new StringBuffer();
-                for(Xml match : matches){
-                    result.update(this,xml.toString());
-                    response.append(match.toString());
-                    response.append(System.lineSeparator());
-                }
-                result.next(this,response.toString().trim());
-            }else{
-                result.skip(this,input);
-            }
         }
 
         @Override
@@ -429,7 +394,7 @@ public abstract class Cmd {
         @Override
         protected void run(String input, CommandContext context, CommandResult result) {
             Script toCall = context.getScript(this.name);
-            injectThen(toCall.copy(),context);
+            injectThen(toCall.deepCopy(),context);
             result.next(this,input);
         }
 
@@ -472,12 +437,13 @@ public abstract class Cmd {
             return new Download(this.path,this.destination);
         }
         @Override
-        public String toString(){return "download "+path+" -> "+destination;}
+        public String toString(){return "download "+path+" "+destination;}
+
     }
-    static class Filter extends Cmd {
+    static class Regex extends Cmd {
         private Pattern pattern;
         private String patternString;
-        public Filter(String pattern){
+        public Regex(String pattern){
 
             this.patternString = pattern;
             this.pattern = Pattern.compile(pattern,Pattern.DOTALL);
@@ -507,10 +473,10 @@ public abstract class Cmd {
 
         @Override
         protected Cmd clone() {
-            return new Filter(this.patternString);
+            return new Regex(this.patternString);
         }
 
-        @Override public String toString(){return "/"+patternString+"/";}
+        @Override public String toString(){return "regex "+patternString;}
     }
 
     private static final AtomicInteger uidGeneratore = new AtomicInteger(0);
@@ -519,10 +485,13 @@ public abstract class Cmd {
     private LinkedList<Cmd> watchers;
 
 
+    private Cmd prev;
     private Cmd next;
     private Cmd skip;
 
     private int uid;
+
+    private String output;
 
     protected Cmd(){
         this.thens = new LinkedList<>();
@@ -538,7 +507,7 @@ public abstract class Cmd {
         if(next!=null){
             command.getTail().next = next;
         }else{
-            //we are potentially changing the script tail, need to inform context
+            //we are potentially changing the getScript tail, need to inform context
             if(context!=null){
                 context.notifyTailMod(this,command.getTail());
             }
@@ -564,7 +533,7 @@ public abstract class Cmd {
             if(value == null ){//bad times
                 System.err.printf("missing "+name+" value for "+command);
                 //TODO how to propegate missing state
-                return null;
+                value = "";
             }
             rtrn.append(value);
             previous = matcher.end();
@@ -590,10 +559,19 @@ public abstract class Cmd {
     private void tree(StringBuffer rtrn,int indent,String prefix){
         final int correctedIndent = indent == 0 ? 1 : indent;
         rtrn.append( String.format("%"+correctedIndent+"s%s%s %n","",prefix,this) );
-        watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watcher:");});
+        watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watch:");});
         thens.forEach((t)->{t.tree(rtrn,correctedIndent+2,"");});
     }
 
+    public String getOutput(){return output;}
+    public void setOutput(String output){
+        this.output = output;
+    }
+
+    public Cmd getPrevious(){return prev;}
+    public void setPrevious(Cmd previous){
+        prev = previous;
+    }
     public Cmd getNext(){return next;}
     private void setNext(Cmd next){
         if(this.next == null) {
@@ -618,6 +596,10 @@ public abstract class Cmd {
             Cmd previousThen = this.thens.getLast();
             previousThen.setSkip(command);
             previousThen.setNext(command);
+
+            command.setPrevious(previousThen);
+        }else{
+            command.setPrevious(this);
         }
         this.thens.add(command);
         return this;
@@ -633,13 +615,13 @@ public abstract class Cmd {
     protected abstract void run(String input, CommandContext context, CommandResult result);
     protected abstract Cmd clone();
 
-    public Cmd copy(){
+    public Cmd deepCopy(){
         Cmd clone = this.clone();
         for(Cmd watcher : this.getWatchers()){
-            clone.watch(watcher.copy());
+            clone.watch(watcher.deepCopy());
         }
         for(Cmd then : this.getThens()){
-            clone.then(then.copy());
+            clone.then(then.deepCopy());
         }
         return clone;
     }
@@ -650,6 +632,24 @@ public abstract class Cmd {
             rtrn = rtrn.thens.getLast();
         }
         return rtrn;
+    }
+
+    @Override
+    public int hashCode(){
+        return getUid();
+    }
+    @Override
+    public boolean equals(Object object){
+        if(object==null){
+            return false;
+        }
+        if(object instanceof Cmd){
+            return this.getUid() == ((Cmd)object).getUid();
+        }
+        return false;
+    }
+    public boolean isSame(Cmd command){
+        return command!=null && this.toString().equals(command.toString());
     }
 
 }

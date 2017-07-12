@@ -16,17 +16,6 @@ public class Script extends Cmd {
     }
 
     @Override
-    public int hashCode(){return name.hashCode();}
-    @Override
-    public boolean equals(Object o){
-        if(o instanceof Script){
-            return this.getName() == ((Script)o).getName();
-        }else{
-            return false;
-        }
-    }
-
-    @Override
     protected void run(String input, CommandContext context, CommandResult result) {
         result.next(this, input);
     }

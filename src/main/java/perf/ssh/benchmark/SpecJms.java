@@ -18,7 +18,7 @@ public class SpecJms {
 
     private static void populateRepo(ScriptRepo repo){
 
-        repo.script("dstat")
+        repo.getScript("dstat")
             .then(Cmd.sh("rm -f /tmp/dstat.log"))//-f because @#%$^! root and the rm -i alias
             .then(Cmd.sh("dstat -Tcdngy 1 > /tmp/dstat.log 2>/dev/null & export DSTAT_PID=\"$!\""))
             .then(Cmd.queueDownload("/tmp/dstat.log"))
@@ -26,13 +26,13 @@ public class SpecJms {
             .then(Cmd.sh("kill ${DSTAT_PID}"));
 
 
-        repo.script("kill-agents")
+        repo.getScript("kill-agents")
             .then(Cmd.sh(" jps | grep Agent | cut -d \" \" -f 1 | xargs -I {} kill -9 {}"));
 
-        repo.script("sync-time")
+        repo.getScript("sync-time")
             .then(Cmd.sh("sudo ntpdate -u clock.redhat.com"));
 
-        repo.script("satellite")
+        repo.getScript("satellite")
             .then(Cmd.script("kill-agents"))
             .then(Cmd.sh("rm /tmp/specjms.verbose-gc-*"))
             .then(Cmd.waitFor("CONFIG_READY"))
@@ -50,7 +50,7 @@ public class SpecJms {
             )
             .then(Cmd.signal("SATELLITE_STOPPED"));
 
-        repo.script("controller")
+        repo.getScript("controller")
             .then(Cmd.sh("cd ${{SPECJMS_HOME}}"))
             .then(Cmd.sh("sed -i '/org.spec.jms.files.topology/c\\org.spec.jms.files.topology = ${{TOPOLOGY}}' ${{SPECJMS_HOME}}/config/run.properties"))
             //only one of these 2 will match but run both to cover both topologies
@@ -102,7 +102,7 @@ public class SpecJms {
             .then(Cmd.signal("RUN_STOPPED"));
 
 
-        repo.script("docker-oracle")
+        repo.getScript("docker-oracle")
             .then(Cmd.log("starting docker"))
             .then(Cmd.signal("DATABASE_STARTING"))
             .then(Cmd.sh("docker run -d -p 10080:8080 -p 1521:1521 sath89/oracle-12c"))
@@ -127,7 +127,7 @@ public class SpecJms {
             //.then(Cmd.sh("docker ps -a"))
             .then(Cmd.signal("DATABASE_STOPPED"));
 
-        repo.script("amq6")
+        repo.getScript("amq6")
             .then(Cmd.sh("cd ${{AMQ6_HOME}}"))
             .then(Cmd.sh("rm /perf1/amq6/log/*"))
             .then(Cmd.sh("rm /tmp/amq6.console.log"))
@@ -137,7 +137,14 @@ public class SpecJms {
             .then(Cmd.waitFor("DATABASE_STARTED"))
             .then(Cmd.signal("SERVER_STARTING"))
             .then(Cmd.sh("./bin/start"))
-            .then(Cmd.sh("export SERVER_PID=$(jps -v | grep \"Dkaraf.home\" | cut -d \" \" -f1)"))
+            .then(Cmd.sh("export SERVER_PID=$(jps -v | grep \"Dkaraf.home\" | cut -d \" \" -f1)")
+                .then(Cmd.sh("echo ${SERVER_PID}")
+                        .then(Cmd.code((input,state)->{
+                            state.setRun("SERVER_PID",input);
+                            return Result.next(input);
+                        }))
+                )
+            )
             .then(Cmd.sleep(1_000))//because otherwise we try to tail before it exists
             .then(Cmd.sh("tail -f /perf1/amq6/log/amq.log")
                 .watch(Cmd.regex(".*?Broker amq has started.*")
@@ -178,11 +185,12 @@ public class SpecJms {
             .then(Cmd.sleep(1_000))
             .then(Cmd.signal("SERVER_STOPPED"));
 
-        repo.script("eap")
+        repo.getScript("eap")
             .then(Cmd.sh("cd ${{EAP_HOME}}"))
             .then(Cmd.sh("rm /tmp/eap7.standalone.console.log"))
             .then(Cmd.sh("rm ./standalone/log/*"))
-
+            .then(Cmd.sh("sed -i '/enable_jfr=/c\\enable_jfr=${{ENABLE_JFR}}' ${{EAP_HOME}}/bin/standalone.conf"))
+            .then(Cmd.sh("sed -i '/jfr_settings=/c\\jfr_settings=\"${{JFR_SETTINGS}}\"' ${{EAP_HOME}}/bin/standalone.conf"))
             .then(Cmd.queueDownload("/tmp/eap7.standalone.console.log"))
             .then(Cmd.queueDownload("${{EAP_HOME}}/standalone/log/*"))
             .then(Cmd.queueDownload("${{EAP_HOME}}/bin/standalone.sh"))
@@ -194,7 +202,14 @@ public class SpecJms {
             .then(Cmd.sh("./bin/standalone.sh -c ${{STANDALONE_XML}} ${{STANDALONE_SH_ARGS}} > /tmp/eap7.standalone.console.log 2>/dev/null & ")
                     .then(Cmd.echo())
             )
-            .then(Cmd.sh("export SERVER_PID=$(jps | grep \"jboss-modules.jar\" | cut -d \" \" -f1)"))
+            .then(Cmd.sh("export SERVER_PID=$(jps | grep \"jboss-modules.jar\" | cut -d \" \" -f1)")
+                .then(Cmd.sh("echo ${SERVER_PID}")
+                    .then(Cmd.code((input,state)->{
+                        state.setRun("SERVER_PID",input.trim());
+                        return Result.next(input);
+                    }))
+                )
+            )
             .then(Cmd.sleep(1_000))//because otherwise we try to tail standalone/log/server.log before it exists
             .then(Cmd.sh("tail -f ./standalone/log/server.log")
                 .watch(Cmd.regex(".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*")
@@ -204,8 +219,7 @@ public class SpecJms {
                 )
                 .watch(Cmd.regex(".*? WFLYSRV0026: .*")
                     .then(Cmd.ctrlC())
-                    .then(Cmd.log("eap started with errors"))
-                    .then(Cmd.abort())
+                    .then(Cmd.abort("eap failed to start cleanly"))
                 )
                 .watch(Cmd.regex(".*?FATAL.*")
                     .then(Cmd.log(AsciiArt.ANSI_RED+"FATAL"+AsciiArt.ANSI_RESET))
@@ -234,13 +248,14 @@ public class SpecJms {
                     .then(Cmd.log("gcFile=${{gcFile}}"))
                     .then(Cmd.queueDownload("${{gcFile}}"))
                 )
-                .then(Cmd.regex(".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>\\S+).*")
-                    .then(Cmd.queueDownload("${{jfrFile}}"))
+                .then(Cmd.regex(".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*")
+                        .then(Cmd.queueDownload("${{jfrFile}}"))
                 )
+
             )
             .then(Cmd.waitFor("CONTROLLER_STOPPED"))
             .then(Cmd.sh("kill ${SERVER_PID}"))
-            .then(Cmd.sleep(1_000))
+            .then(Cmd.sleep(4_000))
 //            .then(Cmd.sh("tail -f ./standalone/log/server.log")
 //                .watch(Cmd.regex(".*? WFLYSRV0050 .*")//wait for server stopped
 //                    .then(Cmd.ctrlC())
@@ -292,6 +307,10 @@ public class SpecJms {
         Host client4 = new Host("benchuser","benchclient4");
         Host w520 = new Host("wreicher","w520");
 
+
+        List<String> jfrOptions = Arrays.asList("false","true");
+
+
         for(String base : Arrays.asList("30")){
             System.out.println(AsciiArt.ANSI_CYAN+ "BASE "+base+AsciiArt.ANSI_RESET);
             Run run = new Run("specjms2007","/home/wreicher/perfWork/amq/jdbc/run-"+base+"-"+System.currentTimeMillis(),dispatcher);
@@ -300,8 +319,11 @@ public class SpecJms {
             State state = run.getState();
             state.setRun("SPECJMS_HOME","/home/benchuser/code/specjms2007");
 
-            //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc");
-            state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched");
+            state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc");
+            //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched");
+            state.setRun("ENABLE_JFR","true");
+            state.setRun("JFR_SETTINGS","lowOverhead");
+
             state.setRun("STANDALONE_XML","standalone-full-ha-jdbc-store.xml");
             state.setRun("STANDALONE_SH_ARGS","-b 0.0.0.0");
             state.setRun("TOPOLOGY","horizontal.properties");//horizontal.properties or vertical.properties
@@ -312,19 +334,19 @@ public class SpecJms {
             ScriptRepo repo = run.getRepo();
 
             run.getRole("server").add(server4);
-            run.getRole("server").addRunScript(repo.script("eap"));
+            run.getRole("server").addRunScript(repo.getScript("eap"));
 
             run.getRole("database").add(server3);
-            run.getRole("database").addRunScript(repo.script("docker-oracle"));
+            run.getRole("database").addRunScript(repo.getScript("docker-oracle"));
 
             run.getRole("controller").add(client1);
-            run.getRole("controller").addRunScript(repo.script("controller"));
+            run.getRole("controller").addRunScript(repo.getScript("controller"));
 
             run.getRole("satellite").add(client1);
-            run.getRole("satellite").addRunScript(repo.script("satellite"));
+            run.getRole("satellite").addRunScript(repo.getScript("satellite"));
 
-            run.allHosts().addSetupScript(repo.script("sync-time"));
-            run.allHosts().addRunScript(repo.script("dstat"));
+            run.allHosts().addSetupScript(repo.getScript("sync-time"));
+            run.allHosts().addRunScript(repo.getScript("dstat"));
 
             System.out.println("Starting");
             long start = System.currentTimeMillis();
@@ -333,7 +355,7 @@ public class SpecJms {
             System.out.println(AsciiArt.ANSI_GREEN+"Finished in "+ StringUtil.durationToString(stop-start)+AsciiArt.ANSI_RESET);
             System.out.println("ActiveCount = "+dispatcher.getActiveCount());
 
-            dispatcher.closeSessions();
+            dispatcher.shutdown();
 
         }
 

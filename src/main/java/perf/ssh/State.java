@@ -4,36 +4,40 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wreicher
- * Stores 3 sets of tiered properties: run properties, host properties, script properties.
+ * Stores 3 sets of tiered properties: run properties, host properties, getScript properties.
  * run properties are shared across all hosts and scripts
  * host properties are shared between all scripts on the host
- * script properties are unique for each script added to the run
- *   scripts called from within a script will interact with the script properties of the calling script
+ * getScript properties are unique for each getScript added to the run
+ *   scripts called from within a getScript will interact with the getScript properties of the calling getScript
  */
 public class State {
 
 
     public static final String RUN_PREFIX = "RUN";
     public static final String HOST_PREFIX = "HOST";
-    HashMap<String,String> run;
-    HashMap<String,String> host;
-    HashMap<String,String> script;
+    Map<String,String> run;
+    Map<String,String> host;
+    Map<String,String> script;
 
     public State(){
-        this(new HashMap<>(),new HashMap<>(),new HashMap<>());
+        this(new ConcurrentHashMap<>(),new ConcurrentHashMap<>(),new ConcurrentHashMap<>());
     }
 
     public State newScriptState(){
-        return new State(this.run,this.host,new HashMap<>());
+        return new State(this.run,this.host,new ConcurrentHashMap<>());
     }
     public State newHostState(){
-        return new State(this.run,new HashMap<>(),new HashMap<>());
+        return new State(this.run,new ConcurrentHashMap<>(),new ConcurrentHashMap<>());
     }
 
-    private State(HashMap<String,String> global,HashMap<String,String> host,HashMap<String,String> script){
+    /*
+     * Really want to make sure the Run and Host level maps are thread safe
+     */
+    private State(Map<String,String> global,Map<String,String> host,Map<String,String> script){
         this.run = global;
         this.host = host;
         this.script = script;
@@ -77,29 +81,54 @@ public class State {
     public List<String> getHostKeys(){ return getKeys(host); }
     public List<String> getScriptKeys(){ return getKeys(script); }
 
-    public String toString(){
+    public String getScriptState(){
         StringBuilder sb = new StringBuilder();
-        sb.append("script:\n");
+        scriptState(sb);
+        return sb.toString();
+    }
+    private void scriptState(StringBuilder sb){
         for(String key : getScriptKeys()){
             sb.append(key);
             sb.append(" = ");
             sb.append(get(key));
             sb.append(System.lineSeparator());
         }
-        sb.append("host:\n");
+    }
+    public String getHostState(){
+        StringBuilder sb = new StringBuilder();
+        hostState(sb);
+        return sb.toString();
+    }
+    private void hostState(StringBuilder sb){
         for(String key : getHostKeys()){
             sb.append(key);
             sb.append(" = ");
             sb.append(get(key));
             sb.append(System.lineSeparator());
         }
-        sb.append("run:\n");
+    }
+    public String getRunState(){
+        StringBuilder sb = new StringBuilder();
+        runState(sb);
+        return sb.toString();
+    }
+    private void runState(StringBuilder sb){
         for(String key : getRunKeys()){
             sb.append(key);
             sb.append(" = ");
             sb.append(get(key));
             sb.append(System.lineSeparator());
         }
+    }
+
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("run:\n");
+        runState(sb);
+        sb.append("host:\n");
+        hostState(sb);
+        sb.append("script:\n");
+        scriptState(sb);
         return sb.toString();
     }
 }
