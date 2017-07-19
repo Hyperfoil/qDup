@@ -328,7 +328,7 @@ public class Run implements Runnable {
                 logger.info("{} connecting {} to {}@{}",this,script.getName(),host.getUserName(),host.getHostName());
                 profiler.start("connect:"+host.toString());
                 SshSession scriptSession = new SshSession(host); //this can take some time, hopefully it isn't a problem
-                profiler.start("waiting");
+                profiler.start("waiting for start");
                 if(!scriptSession.isOpen()){
                     logger.error("{} failed to connect {} to {}@{}. Aborting",this.getName(),script.getName(),host.getUserName(),host.getHostName());
                     abort();

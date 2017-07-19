@@ -101,6 +101,11 @@ public class SpecJms {
             .then(Cmd.signal("CONTROLLER_STOPPED"))
             .then(Cmd.signal("RUN_STOPPED"));
 
+        repo.getScript("fake-database")
+            .then(Cmd.signal("DATABASE_STARTING"))
+            .then(Cmd.signal("DATABASE_STARTED"))
+            .then(Cmd.waitFor("SERVER_STOPPED"))
+            .then(Cmd.signal("DATABASE_STOPPED"));
 
         repo.getScript("docker-oracle")
             .then(Cmd.log("starting docker"))
@@ -131,16 +136,18 @@ public class SpecJms {
             .then(Cmd.sh("cd ${{AMQ6_HOME}}"))
             .then(Cmd.sh("rm /perf1/amq6/log/*"))
             .then(Cmd.sh("rm /tmp/amq6.console.log"))
+            .then(Cmd.sh("sed -i '/enable_jfr=/c\\enable_jfr=${{ENABLE_JFR}}' ${{AMQ6_HOME}}/bin/karaf"))
+            .then(Cmd.sh("sed -i '/jfr_settings=/c\\jfr_settings=\"${{JFR_SETTINGS}}\"' ${{AMQ6_HOME}}/bin/karaf"))
             .then(Cmd.queueDownload("/perf1/amq6/log/*"))
-            .then(Cmd.queueDownload("${{AMQ6_HOME}/etc/activemq.xml"))
-            .then(Cmd.queueDownload("${{AMQ6_HOME}/bin/karaf"))
+            .then(Cmd.queueDownload("${{AMQ6_HOME}}/etc/activemq.xml"))
+            .then(Cmd.queueDownload("${{AMQ6_HOME}}/bin/karaf"))
             .then(Cmd.waitFor("DATABASE_STARTED"))
             .then(Cmd.signal("SERVER_STARTING"))
             .then(Cmd.sh("./bin/start"))
             .then(Cmd.sh("export SERVER_PID=$(jps -v | grep \"Dkaraf.home\" | cut -d \" \" -f1)")
                 .then(Cmd.sh("echo ${SERVER_PID}")
                         .then(Cmd.code((input,state)->{
-                            state.setRun("SERVER_PID",input);
+                            state.setRun("SERVER_PID",input.trim());
                             return Result.next(input);
                         }))
                 )
@@ -176,7 +183,7 @@ public class SpecJms {
                     .then(Cmd.log("gcFile=${{gcFile}}"))
                     .then(Cmd.queueDownload("${{gcFile}}"))
                 )
-                .then(Cmd.regex(".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>\\S+).*")
+                .then(Cmd.regex(".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*")
                     .then(Cmd.queueDownload("${{jfrFile}}"))
                 )
             )
@@ -309,9 +316,10 @@ public class SpecJms {
 
 
         List<String> jfrOptions = Arrays.asList("false","true");
+        List<String> baseOptions = Arrays.asList("10","20","30","40","50");
+        List<String> eapOptions = Arrays.asList("/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc","/home/benchuser/runtime/jboss-eap-7.x.patched");
 
-
-        for(String base : Arrays.asList("30")){
+        for(String base : Arrays.asList("50")){
             System.out.println(AsciiArt.ANSI_CYAN+ "BASE "+base+AsciiArt.ANSI_RESET);
             Run run = new Run("specjms2007","/home/wreicher/perfWork/amq/jdbc/run-"+base+"-"+System.currentTimeMillis(),dispatcher);
             populateRepo(run.getRepo());
@@ -321,10 +329,14 @@ public class SpecJms {
 
             state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc");
             //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched");
-            state.setRun("ENABLE_JFR","true");
+
+            //state.setRun("AMQ6_HOME","/home/benchuser/runtime/jboss-a-mq-6.3.0.redhat-187");
+
+            state.setRun("ENABLE_JFR","false");
             state.setRun("JFR_SETTINGS","lowOverhead");
 
             state.setRun("STANDALONE_XML","standalone-full-ha-jdbc-store.xml");
+            //state.setRun("STANDALONE_XML","standalone-full-ha-specjms.xml");
             state.setRun("STANDALONE_SH_ARGS","-b 0.0.0.0");
             state.setRun("TOPOLOGY","horizontal.properties");//horizontal.properties or vertical.properties
             state.setRun("BASE",base);
@@ -335,9 +347,11 @@ public class SpecJms {
 
             run.getRole("server").add(server4);
             run.getRole("server").addRunScript(repo.getScript("eap"));
+            //run.getRole("server").addRunScript(repo.getScript("amq6"));
 
             run.getRole("database").add(server3);
             run.getRole("database").addRunScript(repo.getScript("docker-oracle"));
+            //run.getRole("database").addRunScript(repo.getScript("fake-database"));
 
             run.getRole("controller").add(client1);
             run.getRole("controller").addRunScript(repo.getScript("controller"));
@@ -355,11 +369,10 @@ public class SpecJms {
             System.out.println(AsciiArt.ANSI_GREEN+"Finished in "+ StringUtil.durationToString(stop-start)+AsciiArt.ANSI_RESET);
             System.out.println("ActiveCount = "+dispatcher.getActiveCount());
 
-            dispatcher.shutdown();
+
 
         }
-
-
+        dispatcher.shutdown();
         List<Runnable> runnables = executor.shutdownNow();
         System.out.println("Runnables?");
 
