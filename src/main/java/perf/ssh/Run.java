@@ -18,6 +18,7 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -127,7 +128,7 @@ public class Run implements Runnable {
 
         this.hostStates = new HashMap<>();
 
-        this.pendingDownloads = new HashMap<>();
+        this.pendingDownloads = new ConcurrentHashMap<>();
     }
     public Logger getRunLogger(){return runLogger;}
     private List<PendingDownload> ensurePendingDownload(Host host){

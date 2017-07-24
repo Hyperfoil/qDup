@@ -327,13 +327,13 @@ public class SpecJms {
             State state = run.getState();
             state.setRun("SPECJMS_HOME","/home/benchuser/code/specjms2007");
 
-            state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc");
-            //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched");
-
+            //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc");
+            //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched.2017-06-10");
+            state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched.2017-07-19");
             //state.setRun("AMQ6_HOME","/home/benchuser/runtime/jboss-a-mq-6.3.0.redhat-187");
 
             state.setRun("ENABLE_JFR","false");
-            state.setRun("JFR_SETTINGS","lowOverhead");
+            state.setRun("JFR_SETTINGS","profile_2ms");
 
             state.setRun("STANDALONE_XML","standalone-full-ha-jdbc-store.xml");
             //state.setRun("STANDALONE_XML","standalone-full-ha-specjms.xml");
