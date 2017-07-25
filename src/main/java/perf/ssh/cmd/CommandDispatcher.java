@@ -9,7 +9,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -96,14 +95,15 @@ public class CommandDispatcher {
 
         @Override
         public void update(Cmd command, String output) {
+            System.out.println("Update("+command+", "+output+")");
             observers.forEach(o->o.onUpdate(command,output));
             try {
-                activeCommands.get(command).update(output);
-            }catch(IllegalStateException e){
-                logger.catching(e);
-                e.printStackTrace();
+                if(activeCommands.containsKey(command)){ // trying to run a missing command
+                    activeCommands.get(command).update(output);
+                }
+
             }catch(Exception e){
-                e.printStackTrace();
+                logger.error("{} Error: {}",command,e.getMessage(),e);
             }
         }
     }
@@ -239,7 +239,7 @@ public class CommandDispatcher {
     private List<Observer> observers;
 
     private ThreadPoolExecutor executor;
-    private ScheduledExecutorService nanny;
+    private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> nannyFuture;
     private boolean isStopped;
 
@@ -257,10 +257,11 @@ public class CommandDispatcher {
 
         this.isStopped = true;
         AtomicInteger nannyCount = new AtomicInteger();
-        this.nanny = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r,"nanny-"+nannyCount.getAndIncrement()));
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r,"scheduler-"+nannyCount.getAndIncrement()));
     }
 
     private Cmd removeActive(Cmd command){
+        System.out.println("removeActive("+command+")");
         ActiveCommandInfo activeCommandInfo = activeCommands.remove(command);
         if(activeCommandInfo.getRunWatchers()!=null) {
             try {
@@ -320,7 +321,7 @@ public class CommandDispatcher {
         logger.info("starting {} scripts",script2Result.size());
         if(!script2Result.isEmpty()){
             BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
-                logger.trace("nanny checking {}",command);
+                logger.trace("scheduler checking {}",command);
                 if(activeCommands.containsKey(command) && command instanceof Cmd.Sh){
                     long lastUpdate = activeCommands.get(command).getLastUpdate();
                     if(timestamp - lastUpdate > THRESHOLD){
@@ -332,7 +333,7 @@ public class CommandDispatcher {
                 }
             };
             if(nannyFuture == null) {
-                nannyFuture = nanny.scheduleAtFixedRate(() -> {
+                nannyFuture = scheduler.scheduleAtFixedRate(() -> {
                     long timestamp = System.currentTimeMillis();
                     try {
                         for (Cmd c : activeCommands.keySet()) {
@@ -356,7 +357,7 @@ public class CommandDispatcher {
     }
     public void shutdown(){
         stop();
-        nanny.shutdownNow();
+        scheduler.shutdownNow();
     }
     public void stop(){
         logger.debug("CD.stop");
@@ -379,7 +380,7 @@ public class CommandDispatcher {
     }
 
 
-    public void execute(Cmd command,String input,CommandContext context,CommandResult result){
+    private void execute(Cmd command,String input,CommandContext context,CommandResult result){
         logger.trace(" execute {} with input=[{}]",command,input.length()>120?input.substring(0,120)+ AsciiArt.ELLIPSIS:input);
         if(isStopped){
             return;

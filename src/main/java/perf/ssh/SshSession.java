@@ -182,8 +182,7 @@ public class SshSession implements Runnable, Consumer<String>{
     public void ctrlC() {
         if (!channelShell.isConnected()) {
             isOpen = false;
-            System.err.println("Shell is not connected for ctrlC");
-            System.exit(-1);
+            logger.error("Shell is not connected for ctrlC");
         } else {
             try {
                 //channelShell.sendSignal("2");
@@ -208,8 +207,7 @@ public class SshSession implements Runnable, Consumer<String>{
         }
         if(!channelShell.isConnected()){
             isOpen = false;
-            System.err.println("Shell is not connected for "+command);
-            System.exit(-1);
+            logger.error("Shell is not connected for "+command);
         } else {
             if(acquireLock){
                 try {
@@ -230,7 +228,6 @@ public class SshSession implements Runnable, Consumer<String>{
             logger.debug("{}@{} flushed {}",this.command==null?"?":this.command.getUid(),host.getHostName(),command);
             //BUG this includes the prompt and the output of the command, should filter up to the command
             //TODO test shStream reset before and after the command is sent (so sh output does not contain the command)
-
         }
         logger.exit();
     }
@@ -275,7 +272,6 @@ public class SshSession implements Runnable, Consumer<String>{
             Cmd thisCommand = this.command;
             this.command = null;
             this.result.next(thisCommand,shStream.toString());
-
         }
     }
 
@@ -283,14 +279,11 @@ public class SshSession implements Runnable, Consumer<String>{
     @Override
     public void accept(String s) {
         logger.entry(s);
-
-        if(result!=null){
+        if(result!=null && command!=null){
             result.update(command,s);
         }
         logger.exit();
     }
-
-
     public static void main(String[] args) {
         Host local = new Host("benchuser","benchserver4");
         SshSession session = new SshSession(local);

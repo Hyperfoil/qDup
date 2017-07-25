@@ -17,6 +17,7 @@ import perf.util.Counters;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 /**
@@ -78,7 +79,7 @@ public class Run implements Runnable {
 
     private Map<Host,List<PendingDownload>> pendingDownloads;
 
-    private String uniqueLatch = null;
+    private CountDownLatch runLatch = new CountDownLatch(1);
     private Logger runLogger;
 
     public Run(String name,String outputPath,CommandDispatcher dispatcher){
@@ -164,7 +165,8 @@ public class Run implements Runnable {
         //TODO how to interrupt watchers
         logger.trace("abort");
         dispatcher.stop();//interupts working threads and stops dispatching next commands
-        coordinator.signal(uniqueLatch);//ends the run method call
+        runLatch.countDown();
+
     }
 
     protected void addRunScript(Host host,Script script){
@@ -293,9 +295,11 @@ public class Run implements Runnable {
         }
         setup();
 
-        this.uniqueLatch = "run-"+System.currentTimeMillis();
-        coordinator.initialize(uniqueLatch,1);
-        coordinator.waitFor(uniqueLatch);
+        try {
+            runLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         runPendingDownloads();
 
         //dispatcher.closeSessions(); //was racing the close sessions from checkActiveCount
@@ -353,7 +357,8 @@ public class Run implements Runnable {
         }
 
         //TODO run cleanups before coordinator.signal
-        coordinator.signal(uniqueLatch);
+        runLatch.countDown();
+
 
     }
     public CommandDispatcher getDispatcher(){return dispatcher;}
