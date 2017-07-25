@@ -284,12 +284,4 @@ public class SshSession implements Runnable, Consumer<String>{
         }
         logger.exit();
     }
-    public static void main(String[] args) {
-        Host local = new Host("benchuser","benchserver4");
-        SshSession session = new SshSession(local);
-        System.out.println("Connected");
-        session.addConsumer(s->System.out.println(s));
-        session.sh("lsof");
-        session.close();
-    }
 }
