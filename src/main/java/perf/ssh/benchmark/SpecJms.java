@@ -32,6 +32,13 @@ public class SpecJms {
         repo.getScript("sync-time")
             .then(Cmd.sh("sudo ntpdate -u clock.redhat.com"));
 
+        repo.getScript("jstack-SMAgent")
+            .then(Cmd.waitFor("SATELLITE_STARTED"))
+            .then(Cmd.sleep(10_000))
+            .then(Cmd.sh("export SMAGENT_PID=$(jps -v | grep \"SMAgent\" | cut -d \" \" -f1)"))
+            .then(Cmd.sh("jstack ${SMAGENT_PID} > jstack.${SMAGENT_PID}.`date +%Y%m%d_%H%M%S`.txt"))
+            ;
+
         repo.getScript("satellite")
             .then(Cmd.script("kill-agents"))
             .then(Cmd.sh("rm /tmp/specjms.verbose-gc-*"))
@@ -277,10 +284,13 @@ public class SpecJms {
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
 
         final AtomicInteger factoryCounter = new AtomicInteger(0);
+        final AtomicInteger scheduledCounter = new AtomicInteger(0);
+
         ThreadFactory factory = r -> new Thread(r,"PT-"+factoryCounter.getAndIncrement());
         ThreadPoolExecutor executor = new ThreadPoolExecutor(8,24,30, TimeUnit.MINUTES,workQueue,factory);
+        ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(24, runnable -> new Thread(runnable,"scheduled-"+scheduledCounter.getAndIncrement()));
 
-        CommandDispatcher dispatcher = new CommandDispatcher(executor);
+        CommandDispatcher dispatcher = new CommandDispatcher(executor,scheduled);
         dispatcher.addObserver(new CommandDispatcher.Observer() {
             @Override
             public void onStart(Cmd command) {}
@@ -312,7 +322,7 @@ public class SpecJms {
         Host client2 = new Host("benchuser","benchclient2");
         Host client3 = new Host("benchuser","benchclient3");
         Host client4 = new Host("benchuser","benchclient4");
-        Host w520 = new Host("wreicher","w520");
+        Host local = new Host("wreicher","laptop");
 
 
         List<String> jfrOptions = Arrays.asList("false","true");
@@ -328,8 +338,10 @@ public class SpecJms {
             state.setRun("SPECJMS_HOME","/home/benchuser/code/specjms2007");
 
             //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc");
-            //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched.2017-06-10");
+
             state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched.2017-07-19");
+            //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched");
+
             //state.setRun("AMQ6_HOME","/home/benchuser/runtime/jboss-a-mq-6.3.0.redhat-187");
 
             state.setRun("ENABLE_JFR","false");
@@ -379,6 +391,8 @@ public class SpecJms {
         for(Runnable runnable : runnables){
             System.out.println(runnable.getClass());
         }
+
+        scheduled.shutdownNow();
 
         //System.exit(0);
 //
