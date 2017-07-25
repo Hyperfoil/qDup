@@ -380,14 +380,15 @@ public abstract class Cmd {
         public Sleep(long amount){this.amount = amount;}
         @Override
         protected void run(String input, CommandContext context, CommandResult result) {
-            try {
-                Thread.sleep(amount);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                Thread.interrupted();
-            } finally {
-                result.next(this,input);
-            }
+            context.schedule(this,() -> result.next(this,input),amount);
+//            try {
+//                Thread.sleep(amount);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//                Thread.interrupted();
+//            } finally {
+//                result.next(this,input);
+//            }
 
         }
 

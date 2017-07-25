@@ -7,13 +7,14 @@ import perf.ssh.Run;
 import perf.ssh.SshSession;
 import perf.ssh.State;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Created by wreicher
  * The context for executing the command
  * consists of the current session, the coordinator, and the state
  */
 public final class CommandContext {
-
 
     private SshSession session;
     private State state;
@@ -27,7 +28,12 @@ public final class CommandContext {
 
         this.profiler = profiler;
 
-
+    }
+    public void schedule(Cmd command,Runnable runnable, long delay){
+        run.getDispatcher().schedule(command,runnable,delay,TimeUnit.MILLISECONDS);
+    }
+    public void schedule(Cmd command,Runnable runnable, long delay, TimeUnit timeUnit){
+        run.getDispatcher().schedule(command,runnable,delay,timeUnit);
     }
     public Logger getRunLogger(){return run.getRunLogger();}
     public Profiler getProfiler(){return profiler;}
@@ -48,8 +54,5 @@ public final class CommandContext {
     }
     public void abort(){
         run.abort();
-    }
-    public void delayDownload(String path,String destination){
-
     }
 }

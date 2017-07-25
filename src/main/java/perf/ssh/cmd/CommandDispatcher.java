@@ -95,7 +95,7 @@ public class CommandDispatcher {
 
         @Override
         public void update(Cmd command, String output) {
-            System.out.println("Update("+command+", "+output+")");
+
             observers.forEach(o->o.onUpdate(command,output));
             try {
                 if(activeCommands.containsKey(command)){ // trying to run a missing command
@@ -120,6 +120,7 @@ public class CommandDispatcher {
     }
     class ActiveCommandInfo {
         private String name;
+        private ScheduledFuture<?> scheduledFuture;
         private RunWatchers runWatchers;
         private CommandContext context;
         private long startTime;
@@ -133,6 +134,8 @@ public class CommandDispatcher {
             this.lastUpdate = this.startTime;
         }
         public CommandContext getContext(){return context;}
+        public ScheduledFuture<?> getScheduledFuture() {return scheduledFuture;}
+        public void setScheduledFuture(ScheduledFuture<?> scheduledFuture){this.scheduledFuture = scheduledFuture;}
         public RunWatchers getRunWatchers(){return runWatchers;}
         public void setRunWatchers(RunWatchers runWatchers){
             this.runWatchers = runWatchers;
@@ -239,14 +242,15 @@ public class CommandDispatcher {
     private List<Observer> observers;
 
     private ThreadPoolExecutor executor;
-    private ScheduledExecutorService scheduler;
+    private ScheduledThreadPoolExecutor scheduler;
     private ScheduledFuture<?> nannyFuture;
     private boolean isStopped;
 
     @Override public String toString(){return "CD";}
 
-    public CommandDispatcher(ThreadPoolExecutor executor){
+    public CommandDispatcher(ThreadPoolExecutor executor,ScheduledThreadPoolExecutor scheduler){
         this.executor = executor;
+        this.scheduler = scheduler;
 
         this.activeCommands = new ConcurrentHashMap<>();
         this.activeThreads = new ConcurrentHashMap<>();
@@ -257,11 +261,11 @@ public class CommandDispatcher {
 
         this.isStopped = true;
         AtomicInteger nannyCount = new AtomicInteger();
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r,"scheduler-"+nannyCount.getAndIncrement()));
+
+
     }
 
     private Cmd removeActive(Cmd command){
-        System.out.println("removeActive("+command+")");
         ActiveCommandInfo activeCommandInfo = activeCommands.remove(command);
         if(activeCommandInfo.getRunWatchers()!=null) {
             try {
@@ -321,7 +325,7 @@ public class CommandDispatcher {
         logger.info("starting {} scripts",script2Result.size());
         if(!script2Result.isEmpty()){
             BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
-                logger.trace("scheduler checking {}",command);
+                logger.trace("nanny checking {}",command);
                 if(activeCommands.containsKey(command) && command instanceof Cmd.Sh){
                     long lastUpdate = activeCommands.get(command).getLastUpdate();
                     if(timestamp - lastUpdate > THRESHOLD){
@@ -342,7 +346,7 @@ public class CommandDispatcher {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                }, 15, 15, TimeUnit.SECONDS);
+                }, THRESHOLD, THRESHOLD, TimeUnit.SECONDS);
             }
             for(ScriptResult scriptResult : script2Result.values()){
                 Script script = scriptResult.getScript();
@@ -355,9 +359,18 @@ public class CommandDispatcher {
         }
 
     }
+    public void schedule(Cmd command,Runnable runnable,long delay){
+        schedule(command,runnable,delay,TimeUnit.MILLISECONDS);
+    }
+    public void schedule(Cmd command,Runnable runnable,long delay,TimeUnit timeUnit){
+        ScheduledFuture<?> future = scheduler.schedule(runnable,delay,timeUnit);
+        if(activeCommands.containsKey(command)){
+            activeCommands.get(command).setScheduledFuture(future);
+        }
+    }
     public void shutdown(){
         stop();
-        scheduler.shutdownNow();
+        //scheduler.shutdownNow();
     }
     public void stop(){
         logger.debug("CD.stop");
@@ -367,6 +380,10 @@ public class CommandDispatcher {
             if(w.getRunWatchers()!=null){
                 w.getRunWatchers().stop();
             }
+            if(w.getScheduledFuture()!=null){
+                w.getScheduledFuture().cancel(true);
+            }
+
         });
         activeThreads.values().forEach(thread->{
             logger.info("interrupting {}",thread.getName());
