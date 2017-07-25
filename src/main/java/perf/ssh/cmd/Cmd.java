@@ -15,6 +15,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,9 +56,43 @@ public abstract class Cmd {
     public static Cmd sleep(long amount){return new Sleep(amount);}
     public static Cmd waitFor(String name){return new WaitFor(name);}
     public static Cmd signal(String name){return new Signal(name);}
+    public static Cmd repeatUntil(String name){return new RepeatUntilSignal(name);}
     public static Cmd xpath(String path){return new XPath(path);}
     public static Cmd countdown(String name,int amount){return new Countdown(name,amount);}
 
+    static class RepeatUntilSignal extends Cmd {
+        private String name;
+        public RepeatUntilSignal(String name){
+            this.name = name;
+        }
+        public String getName(){return name;}
+
+        @Override
+        protected void run(String input, CommandContext context, CommandResult result) {
+            int amount = context.getCoordinator().getSignalCount(name);
+            if( amount > 0 ){
+                result.next(this,input);
+            }else{
+                result.skip(this,input);
+            }
+        }
+
+        @Override
+        public Cmd then(Cmd command){
+            Cmd currentTail = this.getTail();
+            Cmd rtrn = super.then(command);
+            currentTail.next = command;
+            command.next = this;
+            return rtrn;
+        }
+
+        @Override
+        protected Cmd clone() {
+            return new RepeatUntilSignal(this.name);
+        }
+        @Override
+        public String toString(){return "repeat-until "+name;}
+    }
     static class QueueDownload extends Cmd {
         private String path;
         private String destination;
@@ -259,8 +294,7 @@ public abstract class Cmd {
         public WaitFor(String name){ this.name = name;}
         @Override
         protected void run(String input, CommandContext context, CommandResult result) {
-            context.getCoordinator().waitFor(name);
-            result.next(this,input);
+            context.getCoordinator().waitFor(name,this,result,input);
         }
 
         @Override
