@@ -70,9 +70,12 @@ public abstract class Cmd {
         @Override
         protected void run(String input, CommandContext context, CommandResult result) {
             int amount = context.getCoordinator().getSignalCount(name);
+            System.out.println("repeat until "+name+" count = "+amount);
             if( amount > 0 ){
+                System.out.println("  >> next");
                 result.next(this,input);
             }else{
+                System.out.println("  >> skip");
                 result.skip(this,input);
             }
         }
@@ -520,6 +523,7 @@ public abstract class Cmd {
     private LinkedList<Cmd> watchers;
 
 
+    private Cmd parent;
     private Cmd prev;
     private Cmd next;
     private Cmd skip;
@@ -593,7 +597,7 @@ public abstract class Cmd {
     }
     private void tree(StringBuffer rtrn,int indent,String prefix){
         final int correctedIndent = indent == 0 ? 1 : indent;
-        rtrn.append( String.format("%"+correctedIndent+"s%s%s %n","",prefix,this) );
+        rtrn.append( String.format("%"+correctedIndent+"s%s%s next=%s skp=%s %n","",prefix,this,this.getNext(),this.getSkip()) );
         watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watch:");});
         thens.forEach((t)->{t.tree(rtrn,correctedIndent+2,"");});
     }
@@ -636,10 +640,12 @@ public abstract class Cmd {
         }else{
             command.setPrevious(this);
         }
+        command.parent=this;
         this.thens.add(command);
         return this;
     }
     public Cmd watch(Cmd command){
+        command.parent=this;
         this.watchers.add(command);
         return this;
     }
@@ -665,6 +671,13 @@ public abstract class Cmd {
 
         while(!rtrn.getThens().isEmpty()){
             rtrn = rtrn.thens.getLast();
+        }
+        return rtrn;
+    }
+    protected Cmd getHead(){
+        Cmd rtrn = this;
+        while(rtrn.parent!=null){
+            rtrn = rtrn.parent;
         }
         return rtrn;
     }

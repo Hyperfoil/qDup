@@ -235,8 +235,6 @@ public class CommandDispatcher {
     private Map<Cmd,Thread> activeThreads;
     private HashSet<Integer> pastCommands;
 
-    //bug same getScript can be mapped to multiple hosts
-
     private ConcurrentHashMap<Cmd,ScriptResult> script2Result;
 
     private List<Observer> observers;
@@ -260,9 +258,6 @@ public class CommandDispatcher {
         this.observers = new LinkedList<>();
 
         this.isStopped = true;
-        AtomicInteger nannyCount = new AtomicInteger();
-
-
     }
 
     private Cmd removeActive(Cmd command){
@@ -273,6 +268,9 @@ public class CommandDispatcher {
             }catch (NullPointerException e){
                 logger.info("NPE add null after {}",command);
             }
+        }
+        if(activeCommandInfo.getScheduledFuture()!=null && !activeCommandInfo.getScheduledFuture().isDone()){
+            activeCommandInfo.getScheduledFuture().cancel(true);
         }
         activeThreads.remove(command);
         return activeCommandInfo.getRunWatchers()!=null? command : null;
@@ -294,7 +292,7 @@ public class CommandDispatcher {
         //Cmd.InvokeCmd can change the tail and cause this to close profiler too soon
         //TODO make this thread safe
         ScriptResult previous = script2Result.put(
-                script.getTail(),
+                script.getHead(),
                 new ScriptResult(
                         script,
                         new ContextedResult(context)
@@ -305,6 +303,7 @@ public class CommandDispatcher {
         }
         logger.exit();
     }
+    //TODO this should no longer be needed now that script2Head stores the head cmd not tail
     public void onTailMod(Cmd previousTail,Cmd nextTail){
         //TODO make thread safe
         ScriptResult result = script2Result.get(previousTail);
@@ -416,14 +415,15 @@ public class CommandDispatcher {
 
     }
     public void dispatch(Cmd previousCommand, Cmd nextCommand,String input, CommandContext context, CommandResult result){
-
-
         if(isStopped){
             return;
         }
         if(previousCommand!=null){
             previousCommand.setOutput(input);
-            checkScriptDone(previousCommand,context);
+            //TODO BUG if previousCommand is last command in script but nextCommand references a repeat-until then this pre-maturely ends the script
+            if(nextCommand==null){//nextCommand is only null when end of watcher or end of script
+                checkScriptDone(previousCommand,context);
+            }
         }
 
         if(nextCommand!=null){
@@ -459,7 +459,7 @@ public class CommandDispatcher {
 
     }
     private void checkScriptDone(Cmd command, CommandContext context){
-        if(script2Result.containsKey(command)){//we finished a getScript
+        if(script2Result.containsKey(command.getHead())){//we finished a getScript
             context.getProfiler().stop();
             context.getProfiler().setLogger(context.getRunLogger());
             context.getProfiler().log();
