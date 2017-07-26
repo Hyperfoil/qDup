@@ -6,7 +6,10 @@ import perf.util.AsciiArt;
 import perf.util.StringUtil;
 
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,8 +43,8 @@ public class SpecJms {
                 )
                 .then(Cmd.log("SMAGENT_PID=[${{SMAGENT_PID}}]"))
             )
-            .then(Cmd.queueDownload("/tmp/${{SMAGENT_PID}}.jstack.*"))
-            .then(Cmd.repeatUntil("COOLDOWN_STOPPED")
+            .then(Cmd.queueDownload("/tmp/jstack.${{SMAGENT_PID}}.*"))
+            .then(Cmd.repeatUntil("SATELLITE_STOPPED")
                 .then(Cmd.sh("jstack ${{SMAGENT_PID}} > /tmp/jstack.${{SMAGENT_PID}}.`date +%Y%m%d_%H%M%S`.txt"))
                 .then(Cmd.sleep(60_000))
             )
@@ -337,9 +340,10 @@ public class SpecJms {
         List<String> baseOptions = Arrays.asList("10","20","30","40","50");
         List<String> eapOptions = Arrays.asList("/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc","/home/benchuser/runtime/jboss-eap-7.x.patched");
 
-        for(String base : Arrays.asList("10")){
+        for(String base : Arrays.asList("50")){
             System.out.println(AsciiArt.ANSI_CYAN+ "BASE "+base+AsciiArt.ANSI_RESET);
-            Run run = new Run("specjms2007","/home/wreicher/perfWork/amq/jdbc/run-"+base+"-"+System.currentTimeMillis(),dispatcher);
+            DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+            Run run = new Run("specjms2007","/home/wreicher/perfWork/amq/jdbc/"+dt.format(LocalDateTime.now())+"-run-"+base,dispatcher);
             populateRepo(run.getRepo());
 
             State state = run.getState();
