@@ -1,6 +1,7 @@
 package perf.ssh.cmd;
 
 import perf.ssh.ScriptRepo;
+import perf.ssh.cmd.impl.*;
 import perf.util.StringUtil;
 
 import java.util.HashSet;
@@ -25,7 +26,7 @@ public class CommandSummary {
     private static void processCommand(Cmd command,boolean isWatching,CommandSummary summary,ScriptRepo repo){
         String toString = command.toString();
 
-        if(isWatching && command instanceof Cmd.Sh){
+        if(isWatching && command instanceof Sh){
             summary.addWarning(command+" cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
         }
 
@@ -33,18 +34,18 @@ public class CommandSummary {
             summary.addWarning(command+" does not have the same number of ${{ and }} for state variable referencing");
         }
 
-        if(command instanceof Cmd.Signal){
-            summary.addSignal(((Cmd.Signal)command).getName());
-        }else if (command instanceof Cmd.WaitFor){
-            summary.addWait(((Cmd.WaitFor)command).getName());
-        }else if (command instanceof Cmd.ScriptCmd){
-            Script namedScript = repo.getScript(((Cmd.ScriptCmd)command).getName());
+        if(command instanceof Signal){
+            summary.addSignal(((Signal)command).getName());
+        }else if (command instanceof WaitFor){
+            summary.addWait(((WaitFor)command).getName());
+        }else if (command instanceof ScriptCmd){
+            Script namedScript = repo.getScript(((ScriptCmd)command).getName());
             processCommand(namedScript,isWatching,summary,repo);
-        }else if (command instanceof Cmd.InvokeCmd){
-            Cmd invokedCmd = ((Cmd.InvokeCmd)command).getCommand();
+        }else if (command instanceof InvokeCmd){
+            Cmd invokedCmd = ((InvokeCmd)command).getCommand();
             processCommand(invokedCmd,isWatching,summary,repo);
-        }else if (command instanceof Cmd.Regex){
-            String pattern = ((Cmd.Regex)command).getPattern();
+        }else if (command instanceof Regex){
+            String pattern = ((Regex)command).getPattern();
             Matcher matcher = Cmd.NAMED_CAPTURE.matcher(pattern);
             while(matcher.find()){
                 String name = matcher.group(1);

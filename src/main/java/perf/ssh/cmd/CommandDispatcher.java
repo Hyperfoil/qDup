@@ -2,12 +2,12 @@ package perf.ssh.cmd;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
+import perf.ssh.cmd.impl.Sh;
 import perf.util.AsciiArt;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 /**
@@ -325,7 +325,7 @@ public class CommandDispatcher {
         if(!script2Result.isEmpty()){
             BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
                 logger.trace("nanny checking {}",command);
-                if(activeCommands.containsKey(command) && command instanceof Cmd.Sh){
+                if(activeCommands.containsKey(command) && command instanceof Sh){
                     long lastUpdate = activeCommands.get(command).getLastUpdate();
                     if(timestamp - lastUpdate > THRESHOLD){
                         logger.warn("{} idle for {}",
