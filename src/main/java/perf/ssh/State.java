@@ -8,11 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wreicher
- * Stores 3 sets of tiered properties: run properties, host properties, getScript properties.
+ * Stores 3 sets of tiered properties: run properties, host properties, script properties.
  * run properties are shared across all hosts and scripts
  * host properties are shared between all scripts on the host
- * getScript properties are unique for each getScript added to the run
- *   scripts called from within a getScript will interact with the getScript properties of the calling getScript
+ * script properties are unique for each getScript added to the run
+ * scripts called from within a script will interact with the script properties of the calling script
  */
 public class State {
 

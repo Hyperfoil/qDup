@@ -18,14 +18,13 @@ public class Script extends Cmd {
     @Override
     protected void run(String input, CommandContext context, CommandResult result) {
         result.next(this, input);
-    }
 
+    }
 
     public Script then(Cmd command) {
         super.then(command);
         return this;
     }
-
 
     public Script watch(Cmd command) {
         super.watch(command);
