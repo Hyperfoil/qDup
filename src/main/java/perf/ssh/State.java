@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * host properties are shared between all scripts on the host
  * script properties are unique for each getScript added to the run
  * scripts called from within a script will interact with the script properties of the calling script
+ *
+ *
  */
 public class State {
 

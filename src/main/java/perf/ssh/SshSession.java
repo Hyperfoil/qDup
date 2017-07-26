@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 /**
  * Created by wreicher
  * Provides the remote connection to run shell commands and monitor the output.
- *
+ * Needs to be updated with the current Cmd, CommandResult before sending a command to the remote host
  */
 
 //Todo separate out the prompt, the command, and the output of the command
