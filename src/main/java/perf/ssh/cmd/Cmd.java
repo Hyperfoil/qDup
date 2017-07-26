@@ -42,7 +42,7 @@ public abstract class Cmd {
         return new Regex(pattern);
     }
     public static Cmd repeatUntil(String name){return new RepeatUntilSignal(name);}
-    public static Cmd script(String name){ return new ScriptCmd(name); }
+    public static ScriptCmd script(String name){ return new ScriptCmd(name); }
     public static Cmd sh(String command){
         return new Sh(command);
     }
