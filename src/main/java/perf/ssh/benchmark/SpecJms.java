@@ -33,11 +33,19 @@ public class SpecJms {
             .then(Cmd.sh("sudo ntpdate -u clock.redhat.com"));
 
         repo.getScript("jstack-SMAgent")
-            .then(Cmd.waitFor("SATELLITE_STARTED"))
-            .then(Cmd.sleep(10_000))
-            .then(Cmd.sh("export SMAGENT_PID=$(jps -v | grep \"SMAgent\" | cut -d \" \" -f1)"))
-            .then(Cmd.sh("jstack ${SMAGENT_PID} > jstack.${SMAGENT_PID}.`date +%Y%m%d_%H%M%S`.txt"))
-            ;
+            .then(Cmd.waitFor("WARMUP_STARTED"))
+            .then(Cmd.sh("export SMAGENT_PID=$(jps -v | grep \"SMAgent\" | cut -d \" \" -f1)")
+                .then(Cmd.sh("echo $SMAGENT_PID")
+                    .then(Cmd.code((input,state)->{state.setScript("SMAGENT_PID",input.trim()); return Result.next(input);}))
+                )
+                .then(Cmd.log("SMAGENT_PID=[${{SMAGENT_PID}}]"))
+            )
+            .then(Cmd.queueDownload("/tmp/${{SMAGENT_PID}}.jstack.*"))
+            .then(Cmd.repeatUntil("COOLDOWN_STOPPED")
+                .then(Cmd.sh("jstack ${{SMAGENT_PID}} > /tmp/jstack.${{SMAGENT_PID}}.`date +%Y%m%d_%H%M%S`.txt"))
+                .then(Cmd.sleep(60_000))
+            )
+        ;
 
         repo.getScript("satellite")
             .then(Cmd.script("kill-agents"))
@@ -49,7 +57,7 @@ public class SpecJms {
             .then(Cmd.queueDownload("${{SPECJMS_HOME}}/output/${{RUNId}}/*",""))
             .then(Cmd.queueDownload("/tmp/specjms.verbose-gc-*",""))
             .then(Cmd.sh("ant startSatellite")
-                .watch(Cmd.regex("SatelliteDriver : RunLevel[Starting Agents] has been signalled")
+                .watch(Cmd.regex(".*?SatelliteDriver : RunLevel\\[Starting Agents\\] has been signalled.*")
                     .then(Cmd.signal("SATELLITE_STARTED")))
                 .watch(Cmd.regex("(?<interaction>[^:]+): Cannot maintain pacing distribution.*")
                     .then(Cmd.echo())
@@ -329,7 +337,7 @@ public class SpecJms {
         List<String> baseOptions = Arrays.asList("10","20","30","40","50");
         List<String> eapOptions = Arrays.asList("/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc","/home/benchuser/runtime/jboss-eap-7.x.patched");
 
-        for(String base : Arrays.asList("50")){
+        for(String base : Arrays.asList("10")){
             System.out.println(AsciiArt.ANSI_CYAN+ "BASE "+base+AsciiArt.ANSI_RESET);
             Run run = new Run("specjms2007","/home/wreicher/perfWork/amq/jdbc/run-"+base+"-"+System.currentTimeMillis(),dispatcher);
             populateRepo(run.getRepo());
@@ -370,6 +378,7 @@ public class SpecJms {
 
             run.getRole("satellite").add(client1);
             run.getRole("satellite").addRunScript(repo.getScript("satellite"));
+            run.getRole("satellite").addRunScript(repo.getScript("jstack-SMAgent"));
 
             run.allHosts().addSetupScript(repo.getScript("sync-time"));
             run.allHosts().addRunScript(repo.getScript("dstat"));
