@@ -465,13 +465,13 @@ public class CommandDispatcher {
             context.getProfiler().log();
             if(context.getRunLogger().isInfoEnabled()){
                 context.getRunLogger().info("{}@{} closing script state:\n{}",
-                        script2Result.get(command).getScript().getName(),
+                        script2Result.get(command.getHead()).getScript().getName(),
                         context.getSession().getHostName(),
                         context.getState().getScriptState());
             }
             observers.forEach(c->c.onStop(command));
-            script2Result.get(command).getResult().context.getSession().close();
-            script2Result.remove(command);
+            script2Result.get(command.getHead()).getResult().context.getSession().close();
+            script2Result.remove(command.getHead());
         }
     }
     private void checkActiveCount(){
