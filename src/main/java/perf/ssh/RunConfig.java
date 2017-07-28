@@ -2,13 +2,13 @@ package perf.ssh;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
+import perf.ssh.cmd.CommandSummary;
 import perf.ssh.cmd.Script;
+import perf.util.Counters;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class RunConfig {
 
@@ -91,6 +91,41 @@ public class RunConfig {
     }
     public List<Script> getRunScripts(Host host){
         return ensureHostScripts(host).runScripts();
+    }
+    public boolean validate(){
+        boolean rtrn = true;
+        Counters<String> signalCounters = new Counters<>();
+        HashSet<String> waiters = new HashSet<>();
+        HashSet<String> signals = new HashSet<>();
+        for(Host host : allHosts().toList()){
+            for( Script script : getRunScripts(host) ){
+                CommandSummary summary = CommandSummary.apply(script,getRepo());
+
+                if(!summary.getWarnings().isEmpty()){
+                    rtrn = false;
+                    for(String warning : summary.getWarnings()){
+                        logger.error("{} {}",script.getName(),warning);
+                    }
+                }
+                for(String signalName : summary.getSignals()){
+                    logger.trace("{} {}@{} signals {}",this,script.getName(),host.getHostName(),signalName);
+                    signalCounters.add(signalName);
+                }
+                waiters.addAll(summary.getWaits());
+                signals.addAll(summary.getSignals());
+            }
+
+        }
+        List<String> noSignal = waiters.stream().filter((waitName)->!signals.contains(waitName)).collect(Collectors.toList());
+        List<String> noWaiters = signals.stream().filter((signalName)->!waiters.contains(signalName)).collect(Collectors.toList());
+        if(!noSignal.isEmpty()){
+            logger.error("{} missing signals for {}",this,noSignal);
+            rtrn = false;
+        }
+        if(!noWaiters.isEmpty()){
+            logger.trace("{} nothing waits for {}",this,noWaiters);
+        }
+        return rtrn;
     }
 
     protected void addSetupScript(Host host,Script script){

@@ -71,6 +71,35 @@ public class YamlLoader {
         return runConfig;
     }
 
+    public String dump(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("hosts:\n");
+        for(Host host : runConfig.allHosts().toList()){
+            sb.append("  "+host);
+            sb.append(System.lineSeparator());
+        }
+        sb.append("scripts:\n");
+        for(String scriptName : runConfig.getRepo().getNames()){
+            sb.append("  "+scriptName+"\n");
+            sb.append(runConfig.getScript(scriptName).tree(4,false));
+        }
+        sb.append("roles:\n");
+        for(String roleName : runConfig.getRoleNames()){
+            sb.append("  "+roleName+"\n");
+            HostList role = runConfig.getRole(roleName);
+            for(Host h : role.toList()){
+                sb.append("    "+h+"\n");
+                List<Script> runScripts = runConfig.getRunScripts(h);
+                runScripts.forEach((runScript)->{
+                    sb.append("      "+runScript.getName()+"\n");
+                });
+            }
+        }
+        sb.append("state:\n");
+        runConfig.getState().tree(2,sb);
+        return sb.toString();
+    }
+
     public void load(String yamlPath){
         try {
             for(Object obj : yaml.loadAll(new FileReader(yamlPath))){
@@ -186,13 +215,41 @@ public class YamlLoader {
                                                 }
                                                 break;
                                             case "run-scripts":
-                                                role.addRunScript(runConfig.getScript(roleValue.toString()));
+                                                if(roleValue instanceof List){
+                                                    List scriptList = (List)roleValue;
+                                                    scriptList.forEach((scriptObj)->{
+                                                        role.addRunScript(runConfig.getScript(scriptObj.toString()));
+                                                    });
+                                                }else if (roleValue instanceof String){
+                                                    role.addRunScript(runConfig.getScript(roleValue.toString()));
+                                                }else{
+                                                    errors.add("run-scripts for "+roleNameString+" unexpected value :"+roleValue);
+                                                }
+
                                                 break;
                                             case "setup-scripts":
-                                                role.addSetupScript(runConfig.getScript(roleValue.toString()));
+                                                if(roleValue instanceof List){
+                                                    List scriptList = (List)roleValue;
+                                                    scriptList.forEach((scriptObj)->{
+                                                        role.addSetupScript(runConfig.getScript(scriptObj.toString()));
+                                                    });
+                                                }else if (roleValue instanceof String){
+                                                    role.addSetupScript(runConfig.getScript(roleValue.toString()));
+                                                }else{
+                                                    errors.add("setup-scripts for "+roleNameString+" unexpected value :"+roleValue);
+                                                }
                                                 break;
                                             case "cleanup-scripts":
-                                                role.addCleanupScript(runConfig.getScript(roleValue.toString()));
+                                                if(roleValue instanceof List){
+                                                    List scriptList = (List)roleValue;
+                                                    scriptList.forEach((scriptObj)->{
+                                                        role.addCleanupScript(runConfig.getScript(scriptObj.toString()));
+                                                    });
+                                                }else if (roleValue instanceof String){
+                                                    role.addCleanupScript(runConfig.getScript(roleValue.toString()));
+                                                }else{
+                                                    errors.add("cleanup-scripts for "+roleNameString+" unexpected value :"+roleValue);
+                                                }
                                                 break;
                                             default:
                                                 errors.add(roleNameString+" has unknown property "+roleKey.toString()+" with value: "+roleValue);
@@ -312,7 +369,7 @@ public class YamlLoader {
             Object value = map.get(key);
             switch (keyString){
                 case "abort":
-                    rtrn = new Sh(map.get(key).toString());
+                    rtrn = new Abort(map.get(key).toString());
                     break;
                 case "code":
                     errors.add("cannot load code from config ... yet");
@@ -549,5 +606,22 @@ public class YamlLoader {
             System.out.println("?? "+o.getClass().getName());
             sb.append(o);
         }
+    }
+
+
+    public static void main(String[] args) {
+        String yamlPath = YamlLoader.class.getClassLoader().getResource("specjms.yaml").getFile();
+
+        YamlLoader loader = new YamlLoader();
+        loader.load(yamlPath);
+
+        loader.getErrors().forEach(System.out::println);
+
+
+        System.out.println(loader.dump());
+
+        boolean valid = loader.getRunConfig().validate();
+
+        System.out.println("isValid = "+valid);
     }
 }

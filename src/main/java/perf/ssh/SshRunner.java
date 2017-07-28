@@ -6,7 +6,6 @@ import perf.ssh.config.YamlLoader;
 import perf.util.StringUtil;
 
 import java.io.File;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -137,7 +136,7 @@ public class SshRunner {
 
         DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
-        Run run = new Run("/home/wreicher/perfWork/amq/jdbc/"+dt.format(LocalDateTime.now()),config,dispatcher);
+        Run run = new Run(path+"/"+dt.format(LocalDateTime.now()),config,dispatcher);
 
         System.out.println("Starting with output path = "+run.getOutputPath());
 
