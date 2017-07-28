@@ -29,32 +29,6 @@ public class Run implements Runnable {
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-    class HostScripts {
-        LinkedHashSet<Script> setup;
-        HashSet<Script> run;
-        LinkedHashSet<Script> cleanup;
-        public HostScripts(){
-            setup = new LinkedHashSet<>();
-            run = new HashSet<>();
-        }
-        public void addRunScript(Script script){
-            run.add(script);
-        }
-        public void removeRunScript(Script script){
-            run.remove(script);
-        }
-        public void addSetupScript(Script script){
-            setup.add(script);
-        }
-        public void removeSetupScript(Script script){
-            setup.remove(script);
-        }
-        public void addCleanupScript(Script script){cleanup.add(script);}
-        public void removeCleanupScript(Script script){cleanup.remove(script);}
-        public List<Script> setupScripts(){return Collections.unmodifiableList(Arrays.asList(setup.toArray(new Script[0])));}
-        public List<Script> runScripts(){return Collections.unmodifiableList(Arrays.asList(run.toArray(new Script[0])));}
-        public List<Script> cleanupScripts(){return Collections.unmodifiableList(Arrays.asList(cleanup.toArray(new Script[0])));}
-    }
 
     class PendingDownload {
         private String path;
@@ -67,15 +41,11 @@ public class Run implements Runnable {
         public String getDestination(){return destination;}
     }
 
-    private String name;
+    private RunConfig config;
     private String outputPath;
-    private ScriptRepo repo;
-    private State state;
-    private HashMap<String,Role> roles;
-    private HashMap<Host,HostScripts> hostScripts;
+    private boolean aborted;
     private Coordinator coordinator;
     private CommandDispatcher dispatcher;
-    private Map<Host,State> hostStates;
     private Profiles profiles;
 
     private Map<Host,List<PendingDownload>> pendingDownloads;
@@ -83,14 +53,12 @@ public class Run implements Runnable {
     private CountDownLatch runLatch = new CountDownLatch(1);
     private Logger runLogger;
 
-    public Run(String name,String outputPath,CommandDispatcher dispatcher){
-        this.name = name;
+    public Run(String outputPath,RunConfig config,CommandDispatcher dispatcher){
+        this.config = config;
         this.outputPath = outputPath;
         this.dispatcher = dispatcher;
-        this.roles = new HashMap<>();
-        this.hostScripts = new HashMap<>();
-        this.state = new State();
-        this.repo = new ScriptRepo();
+        this.aborted = false;
+
         this.profiles = new Profiles();
         this.coordinator = new Coordinator();
 
@@ -123,13 +91,13 @@ public class Run implements Runnable {
         runLogger.setAdditive(false); /* set to true if root should log too */
 
         coordinator.addObserver((signal_name)->{
-            runLogger.info("{} reached {}",getName(),signal_name);
+            runLogger.info("{} reached {}",config.getName(),signal_name);
         });
-
-        this.hostStates = new HashMap<>();
 
         this.pendingDownloads = new ConcurrentHashMap<>();
     }
+    public RunConfig getConfig(){return config;}
+    public boolean isAborted(){return aborted;}
     public Logger getRunLogger(){return runLogger;}
     private List<PendingDownload> ensurePendingDownload(Host host){
         //TODO not thread safe
@@ -143,7 +111,7 @@ public class Run implements Runnable {
         list.add(new PendingDownload(path,destination));
     }
     public void runPendingDownloads(){
-        logger.info("{} runPendingDownloads",this.getName());
+        logger.info("{} runPendingDownloads",config.getName());
         if(!pendingDownloads.isEmpty()){
             for(Host host : pendingDownloads.keySet()){
                 System.out.println("  Host:"+host.toString());
@@ -155,44 +123,25 @@ public class Run implements Runnable {
             pendingDownloads.clear();
         }
     }
-    private HostScripts ensureHostScripts(Host host){
-        //TODO not thread safe
-        if(!hostScripts.containsKey(host)){
-            hostScripts.put(host,new HostScripts());
-        }
-        return hostScripts.get(host);
-    }
+
     public void abort(){
         //TODO how to interrupt watchers
+        this.aborted = true;
         logger.trace("abort");
         dispatcher.stop();//interupts working threads and stops dispatching next commands
         runLatch.countDown();
 
     }
 
-    protected void addRunScript(Host host,Script script){
-        logger.trace("{} addRunScript {}@{}",this,script.getName(),host.getHostName());
-        ensureHostScripts(host).addRunScript(script);
-    }
-    protected void removeRunScript(Host host,Script script){
-        ensureHostScripts(host).removeSetupScript(script);
-    }
-    protected void addSetupScript(Host host,Script script){
-        logger.trace("{} addSetupScript {}@{}",this,script.getName(),host.getHostName());
-        ensureHostScripts(host).addSetupScript(script);
-    }
-    protected void removeSetupScript(Host host,Script script){
-        ensureHostScripts(host).removeSetupScript(script);
-    }
 
     public boolean preRun(){
         boolean rtrn = true;
         Counters<String> signalCounters = new Counters<>();
         HashSet<String> waiters = new HashSet<>();
         HashSet<String> signals = new HashSet<>();
-        for(Host host : allHosts().toList()){
-            for( Script script : hostScripts.get(host).runScripts() ){
-                CommandSummary summary = CommandSummary.apply(script,this.getRepo());
+        for(Host host : config.allHosts().toList()){
+            for( Script script : config.getRunScripts(host) ){
+                CommandSummary summary = CommandSummary.apply(script,config.getRepo());
 
                 if(!summary.getWarnings().isEmpty()){
                     rtrn = false;
@@ -246,14 +195,13 @@ public class Run implements Runnable {
             }
         };
         dispatcher.addObserver(setupObserver);
+        for(String hostShortName : config.getHostNames()){
+            Host host = config.getHost(hostShortName);
+            if(!config.getSetupScripts(host).isEmpty()){
+                State hostState = config.getState().addChild(hostShortName,State.HOST_PREFIX);
 
-
-
-        for(Host host : hostStates.keySet()){
-            if(!hostScripts.get(host).setupScripts().isEmpty()){
-                State hostState = hostStates.get(host);
                 Script hostSetup = new Script(host.getHostName()+"-setup");
-                for(Script script : hostScripts.get(host).setupScripts()){
+                for(Script script : config.getSetupScripts(host)){
                     hostSetup.then(script.deepCopy());
                 }
                 long start = System.currentTimeMillis();
@@ -263,13 +211,14 @@ public class Run implements Runnable {
                 SshSession scriptSession = new SshSession(host);
                 profiler.start("waiting for start");
                 if(!scriptSession.isOpen()){
-                    logger.error("{} failed to connect {} to {}@{}. Aborting",this.getName(),hostSetup.getName(),host.getUserName(),host.getHostName());
+                    logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),hostSetup.getName(),host.getUserName(),host.getHostName());
                     abort();
                     return;
                 }
                 long stop = System.currentTimeMillis();
 
-                CommandContext commandContext = new CommandContext(scriptSession,hostState.newScriptState(),this,profiler);
+                State scriptState = hostState.getChild(hostSetup.getName());
+                CommandContext commandContext = new CommandContext(scriptSession,scriptState,this,profiler);
                 logger.debug("{} setup addScript {}\n{}",this,hostSetup,hostSetup.tree());
                 dispatcher.addScript(hostSetup,commandContext);
             }
@@ -278,17 +227,13 @@ public class Run implements Runnable {
     }
 
     @Override
-    public String toString(){return name;}
+    public String toString(){return config.getName()+" -> "+outputPath;}
 
     @Override
     public void run() {
 
 
-        runLogger.info("{} starting run state:\n{}",this.getName(),state.getRunState());
-        for(Map.Entry<Host,State> entries : hostStates.entrySet()){
-            runLogger.info("{} host state:\n{}",entries.getKey(),entries.getValue().getHostState());
-        }
-
+        runLogger.info("{} starting state:\n{}",config.getName(),config.getState().tree());
         boolean validated = preRun();
         if(!validated){
             //TODO raise warnings if not validated
@@ -324,10 +269,11 @@ public class Run implements Runnable {
             }
         };
         //TODO parallel connect with ExecutorService.invokeAll(Callable / Runnable)
-        for(Host host : hostStates.keySet()){
-            State hostState = hostStates.get(host);
-            for(Script script : hostScripts.get(host).runScripts()){
-                State scriptState = hostState.newScriptState();
+        for(String hostShortName : config.getHostNames()){
+            Host host = config.getHost(hostShortName);
+            State hostState = config.getState().addChild(hostShortName,State.HOST_PREFIX);
+            for(Script script : config.getRunScripts(host)){
+                State scriptState = hostState.getChild(script.getName());
                 long start = System.currentTimeMillis();
                 Profiler profiler = profiles.get(script.getName()+"@"+host.getHostName());
                 logger.info("{} connecting {} to {}@{}",this,script.getName(),host.getUserName(),host.getHostName());
@@ -335,7 +281,7 @@ public class Run implements Runnable {
                 SshSession scriptSession = new SshSession(host); //this can take some time, hopefully it isn't a problem
                 profiler.start("waiting for start");
                 if(!scriptSession.isOpen()){
-                    logger.error("{} failed to connect {} to {}@{}. Aborting",this.getName(),script.getName(),host.getUserName(),host.getHostName());
+                    logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),script.getName(),host.getUserName(),host.getHostName());
                     abort();
                     return;
                 }
@@ -352,55 +298,15 @@ public class Run implements Runnable {
     }
     public void postRun(){
         logger.debug("{}.postRun",this);
-        runLogger.info("{} closing state:\n{}",this.getName(),state.getRunState());
-        for(Map.Entry<Host,State> entries : hostStates.entrySet()){
-            runLogger.info("host {}:\n{}",entries.getKey(),entries.getValue().getHostState());
-        }
-
+        runLogger.info("{} closing state:\n{}",config.getName(),config.getState().tree());
         //TODO run cleanups before coordinator.signal
         runLatch.countDown();
 
 
     }
+
     public CommandDispatcher getDispatcher(){return dispatcher;}
     public Coordinator getCoordinator(){return coordinator;}
-    public State getState(){return state;}
-    public void addRole(Role role){
-        roles.put(role.getName(),role);
-    }
-    public List<String> getRoleNames(){return Arrays.asList(roles.keySet().toArray(new String[0]));}
-    public Role getRole(String name){
-        if(!roles.containsKey(name)){
-            roles.put(name,new Role(name,this));
-        }
-        return roles.get(name);
-    }
-
-    public List<Script> getRunScripts(Host host){
-        return Collections.unmodifiableList(ensureHostScripts(host).runScripts());
-    }
-    public List<Script> getSetupScripts(Host host){
-        return Collections.unmodifiableList(ensureHostScripts(host).setupScripts());
-    }
-    public ScriptRepo getRepo(){return repo;}
     public String getOutputPath(){ return outputPath;}
-    public String getName(){return name;}
-    public HostList allHosts(){
-        return new HostList(Arrays.asList(hostStates.keySet().toArray(new Host[0])),this);
-    }
-    protected void addHost(Host host){
-        if(!hostStates.containsKey(host)){
-            State previous = hostStates.put(host,getState().newHostState());
-            if(previous!=null){
-                //TODO more than one thread tried to add a host to a run, that is not supported
-            }
-        }
-
-    }
-    protected void addAllHosts(List<Host> hosts){
-        for(Host host : hosts){
-            addHost(host);
-        }
-    }
 
 }

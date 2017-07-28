@@ -1,6 +1,5 @@
 package perf.ssh;
 
-import com.sun.istack.internal.NotNull;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.ssh.cmd.Cmd;
@@ -12,7 +11,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -32,7 +30,7 @@ public class Coordinator {
         CommandResult result;
         String input;
         Cmd command;
-        public Waiter(@NotNull Cmd command,@NotNull CommandResult result,@NotNull String input){
+        public Waiter( Cmd command, CommandResult result, String input){
             this.command = command;
             this.result = result;
             this.input = input;

@@ -14,12 +14,9 @@ public class RepeatUntilSignal extends Cmd {
     @Override
     protected void run(String input, CommandContext context, CommandResult result) {
         int amount = context.getCoordinator().getSignalCount(name);
-        System.out.println("repeat until "+name+" count = "+amount);
         if( amount > 0 ){
-            System.out.println("  >> next");
             result.next(this,input);
         }else{
-            System.out.println("  >> skip");
             result.skip(this,input);
         }
     }

@@ -2,6 +2,7 @@ package perf.ssh.benchmark;
 
 import perf.ssh.Host;
 import perf.ssh.Run;
+import perf.ssh.RunConfig;
 import perf.ssh.State;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.CommandDispatcher;
@@ -29,35 +30,37 @@ public class Test {
         ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(24, runnable -> new Thread(runnable,"scheduled-"+scheduledCounter.getAndIncrement()));
         CommandDispatcher dispatcher = new CommandDispatcher(executor,scheduled);
 
-        Run run = new Run("test","/tmp/test-delayed-"+System.currentTimeMillis(),dispatcher);
+        RunConfig runConfig = new RunConfig();
 
-        State runState = run.getState();
+        State runState = runConfig.getState();
 
-        runState.setRun("EAP_HOME","/home/wreicher/runtime/jboss-eap-7.1.0.DR17-quickstart");
+        Run run = new Run("/tmp/test-delayed-"+System.currentTimeMillis(),runConfig,dispatcher);
+
+        runState.set("EAP_HOME","/home/wreicher/runtime/jboss-eap-7.1.0.DR17-quickstart");
         //runState.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc");
         //runState.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched");
-        runState.setRun("ENABLE_JFR","false");
-        runState.setRun("JFR_SETTINGS","lowOverhead");
+        runState.set("ENABLE_JFR","false");
+        runState.set("JFR_SETTINGS","lowOverhead");
 
 
 
 
 
         //run.getState().setRun("STANDALONE_SH_ARGS","-c standalone-full-ha-queues.xml -b 0.0.0.0");
-        runState.setRun("STANDALONE_XML","standalone.xml");
+        runState.set("STANDALONE_XML","standalone.xml");
         //runState.setRun("STANDALONE_XML","standalone-full-ha-jdbc-store.xml");
-        runState.setRun("STANDALONE_SH_ARGS","-b 0.0.0.0");
+        runState.set("STANDALONE_SH_ARGS","-b 0.0.0.0");
 
 
 
 
         Host local = new Host("wreicher","laptop");
 
-        run.getRepo().getScript("jstack")
+        runConfig.getRepo().getScript("jstack")
                 .then(Cmd.waitFor("SERVER_STARTED"))
                 .then(Cmd.sh("export JSTACK_PID=$(jps -v | grep \"jboss-modules.jar\" | cut -d \" \" -f1)")
                         .then(Cmd.sh("echo ${JSTACK_PID}")
-                                .then(Cmd.code((input,state)->{state.setScript("JSTACK_PID",input.trim()); return Result.next(input);}))
+                                .then(Cmd.code((input,state)->{state.set("JSTACK_PID",input.trim()); return Result.next(input);}))
                         )
                         .then(Cmd.log("JSTACK_PID=[${{JSTACK_PID}}]"))
                 )
@@ -69,7 +72,7 @@ public class Test {
         ;
 
 
-        run.getRepo().getScript("eap")
+        runConfig.getRepo().getScript("eap")
                 .then(Cmd.sh("cd ${{EAP_HOME}}"))
                 .then(Cmd.sh("rm /tmp/eap7.standalone.console.log"))
                 .then(Cmd.sh("rm ./standalone/log/*"))
@@ -85,7 +88,7 @@ public class Test {
                 .then(Cmd.sh("export SERVER_PID=$(jps | grep \"jboss-modules.jar\" | cut -d \" \" -f1)")
                         .then(Cmd.sh("echo ${SERVER_PID}")
                                 .then(Cmd.code((input,state)->{
-                                    state.setRun("SERVER_PID",input.trim());
+                                    state.set("RUN_SERVER_PID",input.trim());
                                     return Result.next(input);
                                 }))
                         )
@@ -112,7 +115,7 @@ public class Test {
                                 .then(Cmd.code((input,state)->{
                                             String gcFile = state.get("gcFile");
                                             if(gcFile!=null && gcFile.indexOf("%")>-1) {
-                                                state.setScript("gcFile",gcFile.substring(0,gcFile.indexOf("%")));
+                                                state.set("gcFile",gcFile.substring(0,gcFile.indexOf("%")));
                                                 return Result.next(input);
                                             }else{
                                                 return Result.skip(input);
@@ -145,7 +148,7 @@ public class Test {
                 .then(Cmd.signal("SERVER_STOPPED"));
 
 
-        run.getRepo().getScript("vmstat")
+        runConfig.getRepo().getScript("vmstat")
                 .then(Cmd.sh("tail -f /tmp/foo.txt")
                     .watch(Cmd.echo())
                     .watch(Cmd.regex(".*end.*")
@@ -154,22 +157,22 @@ public class Test {
                 .then(Cmd.echo());
 
 
-        run.getRepo().getScript("repeat")
+        runConfig.getRepo().getScript("repeat")
                 .then(Cmd.repeatUntil("DONE")
                     .then(Cmd.sleep(2_000))
                     .then(Cmd.log("repeated"))
                 );
 
-        System.out.println(run.getRepo().getScript("eap").tree(2));
+        System.out.println(runConfig.getRepo().getScript("eap").tree(2,false));
 
 
 
-        run.getRepo().getScript("done")
+        runConfig.getRepo().getScript("done")
             .then(Cmd.sleep(10_000))
             .then(Cmd.signal("DONE"));
 
-        run.getRole("test").add(local).addRunScript(run.getRepo().getScript("jstack"));
-        run.getRole("test").addRunScript(run.getRepo().getScript("eap"));
+        runConfig.getRole("test").add(local).addRunScript(runConfig.getRepo().getScript("jstack"));
+        runConfig.getRole("test").addRunScript(runConfig.getRepo().getScript("eap"));
 
         System.out.println("run.run");
         run.run();

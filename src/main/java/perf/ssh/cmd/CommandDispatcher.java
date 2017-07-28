@@ -467,7 +467,7 @@ public class CommandDispatcher {
                 context.getRunLogger().info("{}@{} closing script state:\n{}",
                         script2Result.get(command.getHead()).getScript().getName(),
                         context.getSession().getHostName(),
-                        context.getState().getScriptState());
+                        context.getState().tree());
             }
             observers.forEach(c->c.onStop(command));
             script2Result.get(command.getHead()).getResult().context.getSession().close();

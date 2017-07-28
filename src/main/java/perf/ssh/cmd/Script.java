@@ -25,7 +25,7 @@ public class Script extends Cmd {
     @Override
     protected void run(String input, CommandContext context, CommandResult result) {
         for(String key : with.keySet()){
-            context.getState().setScript(key,with.get(key));
+            context.getState().set(key,with.get(key));
         }
         result.next(this, input);
 

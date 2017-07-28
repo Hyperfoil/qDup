@@ -1,136 +1,104 @@
 package perf.ssh;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wreicher
- * Stores 3 sets of tiered properties: run properties, host properties, script properties.
- * run properties are shared across all hosts and scripts
- * host properties are shared between all scripts on the host
- * script properties are unique for each getScript added to the run
- * scripts called from within a script will interact with the script properties of the calling script
+ * Conceptually a tree of maps where new [key,value] pairs default to the current map
+ * but will be placed in a parent map if the key starts with the parent's prefix
+ * (checking all the way up the tree before using the current State).
  *
+ * This is used to maintain a global run state (with prefix RUN_PREFIX) with child host states
+ * (with prefix HOST_PREFIX) and child script states (no prefix). Scripts run with a reference
+ * to their unique script state so by default their keys do not conflict unless the
+ * key intentionally uses a parent prefix.
+ *
+ * Considerations
+ *   A State with an empty prefix (prefix.isEmpty()==true) will effectively make the parent States read only from that perspective.
+ *     All key's will match the prefix check so no set(key,value) operations will modify a parent State.
+ *   A State with a null prefix will never match a prefix check so it becomes read only from that perspective but the parents are still mutable.
  *
  */
 public class State {
 
-
     public static final String RUN_PREFIX = "RUN";
     public static final String HOST_PREFIX = "HOST";
-    Map<String,String> run;
-    Map<String,String> host;
-    Map<String,String> script;
 
-    public State(){
-        this(new ConcurrentHashMap<>(),new ConcurrentHashMap<>(),new ConcurrentHashMap<>());
+
+    private State parent;
+    private Map<String,String> state;
+    private Map<String,State> childStates;
+    private String prefix;
+
+    public State(State parent,String prefix){
+        this.parent = parent;
+        this.state = new ConcurrentHashMap<>();
+        this.childStates = new ConcurrentHashMap<>();
+        this.prefix = prefix;
     }
 
-    public State newScriptState(){
-        return new State(this.run,this.host,new ConcurrentHashMap<>());
+    public boolean hasChild(String name){
+        return childStates.containsKey(name);
     }
-    public State newHostState(){
-        return new State(this.run,new ConcurrentHashMap<>(),new ConcurrentHashMap<>());
+    public State getChild(String name){
+        return addChild(name,null);//default to creating a new child
     }
-
-    /*
-     * Really want to make sure the Run and Host level maps are thread safe
-     */
-    private State(Map<String,String> global,Map<String,String> host,Map<String,String> script){
-        this.run = global;
-        this.host = host;
-        this.script = script;
+    public State addChild(String name,String prefix){
+        if(!hasChild(name)){
+            State newChild = new State(this,prefix);
+            childStates.put(name,newChild);
+        }
+        return childStates.get(name);
     }
-
+    public String set(String key,String value){
+        State target = this;
+        do {
+            if(target.prefix!=null && !target.prefix.isEmpty() && key.startsWith(target.prefix)){
+                return target.state.put(key,value);
+            }
+        }while( (target=target.parent)!=null);
+        //at this point there wasn't a prefix match
+        return this.state.put(key,value);
+    }
     public String get(String key){
-        if(script.containsKey(key)) {
-            return script.get(key);
-        } else if (host.containsKey(key)) {
-            return host.get(key);
-        } else {
-            return run.get(key);
-        }
+        State target = this;
+        String rtrn = null;
+        do {
+            rtrn = target.state.get(key);
+        } while (rtrn == null && (target=target.parent)!=null);
+        return rtrn;
     }
-    private void set(Map<String,String> map, String key, String value){
-        map.put(key,value);
-    }
-    public void setRun(String key, String value){
-        set(run,key,value);
-    }
-    public void setHost(String key,String value){
-        set(host,key,value);
-    }
-    public void setScript(String key,String value){
-        set(script,key,value);
-    }
-    public void set(String key, String value){
-        if(key.startsWith(RUN_PREFIX)){
-            setRun(key,value);
-        }else if (key.startsWith(HOST_PREFIX)){
-            setHost(key,value);
-        }else {
-            setScript(key,value);
-        }
 
+    public List<String> getKeys(){
+        return Collections.unmodifiableList(
+            Arrays.asList(
+                state.keySet().toArray(new String[0])
+            )
+        );
     }
-    private List<String> getKeys(Map<String,String> map){
-        return Arrays.asList(map.keySet().toArray(new String[0]));
+    public List<String> getChildNames(){
+        return Collections.unmodifiableList(
+            Arrays.asList(
+                childStates.keySet().toArray(new String[0])
+            )
+        );
     }
-    public List<String> getRunKeys(){ return getKeys(run); }
-    public List<String> getHostKeys(){ return getKeys(host); }
-    public List<String> getScriptKeys(){ return getKeys(script); }
 
-    public String getScriptState(){
-        StringBuilder sb = new StringBuilder();
-        scriptState(sb);
-        return sb.toString();
+    public String tree(){
+        StringBuilder buffer = new StringBuilder();
+        tree(1,buffer);
+        return buffer.toString();
     }
-    private void scriptState(StringBuilder sb){
-        for(String key : getScriptKeys()){
-            sb.append(key);
-            sb.append(" = ");
-            sb.append(get(key));
-            sb.append(System.lineSeparator());
+    public void tree(int indent,StringBuilder sb){
+        int space = indent>0? indent:1;
+        for(String key : getKeys()){
+            sb.append(String.format("%"+space+"s%s = %s%n","",key,state.get(key)));
         }
-    }
-    public String getHostState(){
-        StringBuilder sb = new StringBuilder();
-        hostState(sb);
-        return sb.toString();
-    }
-    private void hostState(StringBuilder sb){
-        for(String key : getHostKeys()){
-            sb.append(key);
-            sb.append(" = ");
-            sb.append(get(key));
-            sb.append(System.lineSeparator());
-        }
-    }
-    public String getRunState(){
-        StringBuilder sb = new StringBuilder();
-        runState(sb);
-        return sb.toString();
-    }
-    private void runState(StringBuilder sb){
-        for(String key : getRunKeys()){
-            sb.append(key);
-            sb.append(" = ");
-            sb.append(get(key));
-            sb.append(System.lineSeparator());
+        for(String childName : getChildNames()){
+            sb.append(String.format("%"+space+"s%s : %n","",childName));
+            getChild(childName).tree(indent+2,sb);
         }
     }
 
-    public String toString(){
-        StringBuilder sb = new StringBuilder();
-        sb.append("run:\n");
-        runState(sb);
-        sb.append("host:\n");
-        hostState(sb);
-        sb.append("script:\n");
-        scriptState(sb);
-        return sb.toString();
-    }
 }

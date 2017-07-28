@@ -54,15 +54,9 @@ public class SshSession implements Runnable, Consumer<String>{
     private Cmd command;
     private CommandResult result;
 
-
     private Host host;
 
-    public SshSession(String userName,String hostName){ this(new Host(userName,hostName,22),new Semaphore(1)); }
-    public SshSession(String userName,String hostName,int port){
-        this(new Host(userName,hostName,port),new Semaphore(1));
-    }
     public SshSession(Host host){ this(host,new Semaphore(1)); }
-    public SshSession(String userName,String hostName,int port,Semaphore semaphore){this(new Host(userName,hostName,port),semaphore);}
     public SshSession(Host host,Semaphore semaphore){
 
         this.host = host;

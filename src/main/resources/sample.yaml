@@ -1,0 +1,253 @@
+name: yamlName
+scripts:
+  sync-time:
+    - sh: sudo ntpdate -u clock.redhat.com
+  jstack:
+    - sh: rm /tmp/jstack.*
+    - wait-for: WARMUP_STARTED
+    - sh: export SMAGENT_PID=$(jps -v | grep "SMAgent" | cut -d " " -f1)
+    - - sh: echo ${SMAGENT_PID}
+    - - - set-state: SMAGENT_PID
+    - queue-download: /tmp/jstack.${{SMAGENT_PID}}.*
+    - repeat-until: SATELLITE_STOPPED
+    - - sh: jstack ${{SMAGENT_PID}} > /tmp/jstack.${{SMAGENT_PID}}.`date +%Y%m%d_%H%M%S`.txt
+    - - sleep: 60_000
+
+
+  dstat:
+    - sh: rm -f /tmp/dstat.log #-f because @#%$^! root and the rm -i alias
+    - sh: dstat -Tcdngy 1 > /tmp/dstat.log 2>/dev/null & export DSTAT_PID="$!"
+    - queue-download: /tmp/dstat.log
+    - wait-for: RUN_STOPPED
+    - sh: kill ${DSTAT_PID}
+
+  kill-agents:
+    - sh: jps | grep Agent | cut -d " " -f 1 | xargs -I {} kill -9 {}
+
+  satellite:
+    - script: kill-agents
+    - sh: rm /tmp/specjms.verbose-gc-*
+    - wait-for: CONFIG_READY
+    - sh: rsync -avz --exclude '.git' --exclude 'output' ${{CONTROLLER_HOST}}:/${{SPECJMS_HOME}}/ ${{SPECJMS_HOME}}
+    - sh: cd ${{SPECJMS_HOME}}
+    - wait-for: CONTROLLER_STARTED
+    - queue-download: ${{SPECJMS_HOME}}/output/${{RUNId}}/*
+    - queue-download: /tmp/specjms.verbose-gc-*
+    - sh: ant startSatellite
+    - - watch:
+        - regex: ".*?SatelliteDriver : RunLevel\\[Starting Agents\\] has been signalled.*"
+        - - signal: SATELLITE_STARTED
+        - regex: "(?<interaction>[^:]+): Cannot maintain pacing distribution.*"
+        - - echo:
+    - signal: SATELLITE_STOPPED
+
+  controller:
+    - sh: cd ${{SPECJMS_HOME}}
+    - sh: sed -i '/org.spec.jms.files.topology/c\org.spec.jms.files.topology = ${{TOPOLOGY}}' ${{SPECJMS_HOME}}/config/run.properties
+    - sh: sed -i '/org.spec.jms.horizontal.BASE/c\org.spec.jms.horizontal.BASE = ${{BASE}}' ${{SPECJMS_HOME}}/config/${{TOPOLOGY}}
+    - sh: sed -i '/org.spec.jms.vertical.BASE/c\org.spec.jms.vertical.BASE = ${{BASE}}' ${{SPECJMS_HOME}}/config/${{TOPOLOGY}}
+    - sh: sed -i '/org.spec.jms.dc.nodes/c\org.spec.jms.dc.nodes = ${{SATELLITES}}' ${{SPECJMS_HOME}}/config/${{TOPOLOGY}}
+    - sh: sed -i '/org.spec.jms.sm.nodes/c\org.spec.jms.sm.nodes = ${{SATELLITES}}' ${{SPECJMS_HOME}}/config/${{TOPOLOGY}}
+    - sh: sed -i '/org.spec.jms.sp.nodes/c\org.spec.jms.sp.nodes = ${{SATELLITES}}' ${{SPECJMS_HOME}}/config/${{TOPOLOGY}}
+    - sh: sed -i '/org.spec.jms.hq.nodes/c\org.spec.jms.hq.nodes = ${{SATELLITES}}' ${{SPECJMS_HOME}}/config/${{TOPOLOGY}}
+    - signal: CONFIG_READY
+    - wait-for: SERVER_STARTED
+    - sh: ant startController
+    - - watch:
+        - echo:
+        - regex: .*?BUILD FAILED.*
+        - - abort: failed to start controller
+        - regex: .*?Heartbeat failed for an agent.*
+        - - echo:
+        - regex: ".*?Opened log output file: .*?/(?<RUNId>\\d+)/controller.txt"
+        - - log: runId ${{RUNId}}
+          - queue-download: ${{SPECJMS_HOME}}/output/${{RUNId}}/*
+        - regex: .*?Waiting for the SPECjmsSatelliteDrivers.*
+        - - signal: CONTROLLER_STARTED
+        - regex: .*?RunLevel\[Warmup period\] started.*
+        - - signal: WARMUP_STARTED
+        - regex: .*?RunLevel\[Warmup period\] stopped.*
+        - - signal: WARMUP_STOPPED
+        - regex: .*?RunLevel\[Measurement period\] started.*
+        - - signal: STEADYSTATE_STARTED
+        - regex: .*?RunLevel\[Measurement period\] stopped.*
+        - - signal: STEADYSTATE_STOPPED
+        - regex: .*?RunLevel\[Drain period\] started.*
+        - - signal: COOLDOWN_STARTED
+        - regex: .*?RunLevel\[Drain period\] stopped.*
+        - - signal: COOLDOWN_STOPPED
+    - signal: CONTROLLER_STOPPED
+    - signal: RUN_STOPPED
+
+  docker-oracle:
+    - log: starting docker
+    - signal: DATABASE_STARTING
+    - sh: docker run -d -p 10080:8080 -p 1521:1521 sath89/oracle-12c
+    - - regex: ".*?(?<warning>Warning.*?)[\n\r].*"
+      - - abort: docker warning ${{warning}}
+    - - regex: "\\s*(?<OracleContainerId>\\S+)\\s*"
+    - log: conatiner id = ${{OracleContainerId}}
+    - sh: docker logs -f ${{OracleContainerId}}
+    - - echo:
+      - - regex: .*?Database ready to use\. Enjoy! ;\).*
+        - - ctrlC:
+          - signal: DATABASE_STARTED
+    - wait-for: SERVER_STOPPED
+    - log: server stopped, stopping database
+    - sh: docker stop ${{OracleContainerId}}
+    - sh: docker rm ${{OracleContainerId}}
+    - signal: DATABASE_STOPPED
+
+  amq6:
+    - sh: cd ${{AMQ6_HOME}}
+    - sh: rm /perf1/amq6/log/*
+    - sh: rm /tmp/amq6.console.log
+    - sh: sed -i '/enable_jfr=/c\enable_jfr=${{ENABLE_JFR}}' ${{AMQ6_HOME}}/bin/karaf
+    - sh: sed -i '/jfr_settings=/c\jfr_settings="${{JFR_SETTINGS}}"' ${{AMQ6_HOME}}/bin/karaf
+    - queue-download: /perf1/amq6/log/*
+    - queue-download: ${{AMQ6_HOME}}/etc/activemq.xml
+    - queue-download: ${{AMQ6_HOME}}/bin/karaf
+    - wait-for: DATABASE_STARTED
+    - signal: SERVER_STARTING
+    - sh: ./bin/start
+    - sh: export SERVER_PID=$(jps -v | grep "Dkaraf.home" | cut -d " " -f1)
+    - sh: echo ${SERVER_PID}
+    - - regex: "\\s*(?<serverPid>\\S+)\\s*"
+    - sleep: 1_000
+    - sh: tail -f /perf1/amq6/log/amq.log
+    - - watch:
+        - regex: .*?Broker amq has started.*
+        - - ctrlC:
+          - signal: SERVER_STARTED
+        - regex: .*?ERROR.*
+        - - echo:
+    - sh: jps -lvm | grep "Dkaraf.home" | cut -d " " -f2
+    - - regex: ".*? -Xloggc:(?<gcFile>\\S+).*"
+      - - read-state: gcFile
+        - - regex: "(?<gcFile>[^%]+)%.*"
+          - - sh: lsof -p ${SERVER_PID} | grep --color=none "${{gcFile}}"
+            - - regex: ".*? (?<gcFile>/.+?)[\r\n]+"
+              - - log: updated gcFile=${{gcFile}}
+      - - log: gcFile=${{gcFile}}
+      - - queue-download: ${{gcFile}}
+    - - regex: ".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*"
+      - - queue-download: ${{jfrFile}}
+    - wait-for: CONTROLLER_STOPPED
+    - sh: ./bin/stop
+    - sleep: 1_000
+    - signal: SERVER_STOPPED
+
+  eap:
+    - sh: cd ${{EAP_HOME}}
+    - sh: rm /tmp/eap7.standalone.console.log
+    - sh: rm ./standalone/log/*
+    - sh: sed -i '/enable_jfr=/c\enable_jfr=${{ENABLE_JFR}}' ${{EAP_HOME}}/bin/standalone.conf
+    - sh: sed -i '/jfr_settings=/c\jfr_settings="${{JFR_SETTINGS}}"' ${{EAP_HOME}}/bin/standalone.conf
+    - queue-download: /tmp/eap7.standalone.console.log
+    - queue-download: ${{EAP_HOME}}/standalone/log/*
+    - queue-download: ${{EAP_HOME}}/bin/standalone.sh
+    - queue-download: ${{EAP_HOME}}/bin/standalone.conf
+    - queue-download: ${{EAP_HOME}}/standalone/configuration/${{STANDALONE_XML}}
+    - wait-for: DATABASE_STARTED
+    - signal: SERVER_STARTING
+    - sh: ./bin/standalone.sh -c ${{STANDALONE_XML}} ${{STANDALONE_SH_ARGS}} > /tmp/eap7.standalone.console.log 2>/dev/null &
+    - - echo:
+    - sh: export SERVER_PID=$(jps | grep "jboss-modules.jar" | cut -d " " -f1)
+    - - sh: echo ${SERVER_PID}
+      - - regex: "\\s*(?<serverPid>\\S+)\\s*"
+    - sleep: 1_000
+    - sh: tail -f ./standalone/log/server.log
+    - - watch:
+        - regex: ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
+        - - ctrlC:
+          - log : eap ${{eapVersion}} started in ${{eapStartTime}}
+          - signal: SERVER_STARTED
+        - regex: ".*? WFLYSRV0026: .*"
+        - - ctrlC:
+          - abort: eap failed to start cleanly
+        - regex: .*?FATAL.*
+        - - echo:
+          - ctrlC:
+          - abort: FATAL starting eap
+    - sh: grep --color=none "javaOpts\|JAVA_OPTS" /tmp/eap7.standalone.console.log
+    - - regex: ".*? -Xloggc:(?<gcFile>\\S+).*"
+      - - read-state: gcFile
+        - - regex: "(?<gcFile>[^%]+)%.*"
+          - - sh: lsof -p ${SERVER_PID} | grep --color=none "${{gcFile}}"
+            - - regex: ".*? (?<gcFile>/.+?)[\r\n]+"
+              - - log: updated gcFile=${{gcFile}}
+      - - log: gcFile=${{gcFile}}
+      - - queue-download: ${{gcFile}}
+    - - regex: ".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*"
+      - - queue-download: ${{jfrFile}}
+    - wait-for: CONTROLLER_STOPPED
+    - sh: kill ${SERVER_PID}
+    - sleep: 4_000
+    - signal: SERVER_STOPPED
+---
+hosts:
+  local: wreicher@laptop:22
+  client1: benchuser@benchclient1
+  client2: benchuser@benchclient2
+  client3: benchuser@benchclient3
+  client4: benchuser@benchclient4
+
+  server3:
+    username: root
+    hostname: benchserver3
+  server4:
+    username: benchuser
+    hostname: benchserver4
+    port: 22
+
+---
+roles:
+  database:
+    hosts: server3
+    run-scripts: docker-oracle
+  satellite:
+    hosts: client1
+    run-scripts:
+      - satellite
+      - jstack
+      - - with:
+          - uniqueKey: SMAgentPid
+          - pattern: $(jps -v | grep "SMAgent" | cut -d " " -f1)
+  controller:
+    hosts: client1
+    run-scripts:
+      - controller
+  server:
+    hosts: server4
+    run-scripts:
+      - eap
+---
+setup-scripts:
+  - sync-time
+  - select:
+    - role : satellite
+    - - and :
+        - not :
+          - role : controller
+    script: fake-script
+run-scripts:
+  - dstat
+---
+states:
+  run:
+    BASE: 50
+    SPECJMS_HOME: /home/benchuser/code/specjms2007
+    EAP_HOME: /home/benchuser/runtime/jboss-eap-7.x.patched.2017-07-19
+    AMQ6_HOME: /home/benchuser/runtime/jboss-a-mq-6.3.0.redhat-187
+    ENABLE_JFR: false
+    JFR_SETTINGS: profile_2ms
+    STANDALONE_XML: standalone-full-ha-jdbc-store.xml
+    STANDALONE_SH_ARGS: -b 0.0.0.0
+    TOPOLOGY: horizontal.properties
+    CONTROLLER_HOST: benchclient1
+    SATELLITES: benchclient1
+  host:
+    client1:
+      script:
+
+

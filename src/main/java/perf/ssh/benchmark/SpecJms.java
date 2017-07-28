@@ -30,16 +30,17 @@ public class SpecJms {
 
 
         repo.getScript("kill-agents")
-            .then(Cmd.sh(" jps | grep Agent | cut -d \" \" -f 1 | xargs -I {} kill -9 {}"));
+            .then(Cmd.sh("jps | grep Agent | cut -d \" \" -f 1 | xargs -I {} kill -9 {}"));
 
         repo.getScript("sync-time")
             .then(Cmd.sh("sudo ntpdate -u clock.redhat.com"));
 
         repo.getScript("jstack-SMAgent")
+            .then(Cmd.sh("rm /tmp/jstack.*"))
             .then(Cmd.waitFor("WARMUP_STARTED"))
             .then(Cmd.sh("export SMAGENT_PID=$(jps -v | grep \"SMAgent\" | cut -d \" \" -f1)")
                 .then(Cmd.sh("echo $SMAGENT_PID")
-                    .then(Cmd.code((input,state)->{state.setScript("SMAGENT_PID",input.trim()); return Result.next(input);}))
+                    .then(Cmd.code((input,state)->{state.set("SMAGENT_PID",input.trim()); return Result.next(input);}))
                 )
                 .then(Cmd.log("SMAGENT_PID=[${{SMAGENT_PID}}]"))
             )
@@ -85,7 +86,7 @@ public class SpecJms {
                 .watch(Cmd.echo())
                 .watch(Cmd.regex(".*?BUILD FAILED.*")
                     .then(Cmd.log("failed to start controller"))
-                    .then(Cmd.abort())
+                    .then(Cmd.abort("controller build failed"))
                 )
                 .watch(Cmd.regex(".*?Heartbeat failed for an agent.*")
                     .then(Cmd.echo())
@@ -130,7 +131,13 @@ public class SpecJms {
             .then(Cmd.signal("DATABASE_STARTING"))
             .then(Cmd.sh("docker run -d -p 10080:8080 -p 1521:1521 sath89/oracle-12c"))
             .then(Cmd.code((input,state)->{
-                state.set("ORACLE_CONTAINER_ID",input.trim());
+                if(input.indexOf("Warning")>0){
+
+                    String split[] = input.split(System.lineSeparator());
+                    state.set("ORACLE_CONTAINER_ID",split[split.length-1].trim());
+                } else {
+                    state.set("ORACLE_CONTAINER_ID", input.trim());
+                }
                 return Result.next(input.trim());
             }))
             .then(Cmd.log("container id = ${{ORACLE_CONTAINER_ID}}"))
@@ -145,9 +152,7 @@ public class SpecJms {
             .then(Cmd.waitFor("SERVER_STOPPED"))
             .then(Cmd.log("server stopped, stopping database"))
             .then(Cmd.sh("docker stop ${{ORACLE_CONTAINER_ID}}"))
-            //.then(Cmd.sh("docker logs ${{ORACLE_CONTAINER_ID}}"))
             .then(Cmd.sh("docker rm ${{ORACLE_CONTAINER_ID}}"))
-            //.then(Cmd.sh("docker ps -a"))
             .then(Cmd.signal("DATABASE_STOPPED"));
 
         repo.getScript("amq6")
@@ -165,7 +170,7 @@ public class SpecJms {
             .then(Cmd.sh("export SERVER_PID=$(jps -v | grep \"Dkaraf.home\" | cut -d \" \" -f1)")
                 .then(Cmd.sh("echo ${SERVER_PID}")
                         .then(Cmd.code((input,state)->{
-                            state.setRun("SERVER_PID",input.trim());
+                            state.set("SERVER_PID",input.trim());
                             return Result.next(input);
                         }))
                 )
@@ -185,7 +190,7 @@ public class SpecJms {
                     .then(Cmd.code((input,state)->{
                             String gcFile = state.get("gcFile");
                             if(gcFile!=null && gcFile.indexOf("%")>-1) {
-                                state.setScript("gcFile",gcFile.substring(0,gcFile.indexOf("%")));
+                                state.set("gcFile",gcFile.substring(0,gcFile.indexOf("%")));
                                 return Result.next(input);
                             }else{
                                 return Result.skip(input);
@@ -230,7 +235,7 @@ public class SpecJms {
             .then(Cmd.sh("export SERVER_PID=$(jps | grep \"jboss-modules.jar\" | cut -d \" \" -f1)")
                 .then(Cmd.sh("echo ${SERVER_PID}")
                     .then(Cmd.code((input,state)->{
-                        state.setRun("SERVER_PID",input.trim());
+                        state.set("SERVER_PID",input.trim());
                         return Result.next(input);
                     }))
                 )
@@ -257,7 +262,7 @@ public class SpecJms {
                     .then(Cmd.code((input,state)->{
                         String gcFile = state.get("gcFile");
                         if(gcFile!=null && gcFile.indexOf("%")>-1) {
-                            state.setScript("gcFile",gcFile.substring(0,gcFile.indexOf("%")));
+                            state.set("gcFile",gcFile.substring(0,gcFile.indexOf("%")));
                             return Result.next(input);
                         }else{
                             return Result.skip(input);
@@ -281,11 +286,6 @@ public class SpecJms {
             .then(Cmd.waitFor("CONTROLLER_STOPPED"))
             .then(Cmd.sh("kill ${SERVER_PID}"))
             .then(Cmd.sleep(4_000))
-//            .then(Cmd.sh("tail -f ./standalone/log/server.log")
-//                .watch(Cmd.regex(".*? WFLYSRV0050 .*")//wait for server stopped
-//                    .then(Cmd.ctrlC())
-//                )
-//            )
             .then(Cmd.signal("SERVER_STOPPED"));
     }
 
@@ -343,49 +343,50 @@ public class SpecJms {
         for(String base : Arrays.asList("50")){
             System.out.println(AsciiArt.ANSI_CYAN+ "BASE "+base+AsciiArt.ANSI_RESET);
             DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-            Run run = new Run("specjms2007","/home/wreicher/perfWork/amq/jdbc/"+dt.format(LocalDateTime.now())+"-run-"+base,dispatcher);
-            populateRepo(run.getRepo());
+            RunConfig runConfig = new RunConfig();
+            Run run = new Run("/home/wreicher/perfWork/amq/jdbc/"+dt.format(LocalDateTime.now())+"-run-"+base,runConfig,dispatcher);
+            populateRepo(runConfig.getRepo());
 
-            State state = run.getState();
-            state.setRun("SPECJMS_HOME","/home/benchuser/code/specjms2007");
+            State state = runConfig.getState();
+            state.set("SPECJMS_HOME","/home/benchuser/code/specjms2007");
 
             //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.1.0.ER1-jdbc");
 
-            state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched.2017-07-19");
+            state.set("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched.2017-07-19");
             //state.setRun("EAP_HOME","/home/benchuser/runtime/jboss-eap-7.x.patched");
 
             //state.setRun("AMQ6_HOME","/home/benchuser/runtime/jboss-a-mq-6.3.0.redhat-187");
 
-            state.setRun("ENABLE_JFR","false");
-            state.setRun("JFR_SETTINGS","profile_2ms");
+            state.set("ENABLE_JFR","false");
+            state.set("JFR_SETTINGS","profile_2ms");
 
-            state.setRun("STANDALONE_XML","standalone-full-ha-jdbc-store.xml");
+            state.set("STANDALONE_XML","standalone-full-ha-jdbc-store.xml");
             //state.setRun("STANDALONE_XML","standalone-full-ha-specjms.xml");
-            state.setRun("STANDALONE_SH_ARGS","-b 0.0.0.0");
-            state.setRun("TOPOLOGY","horizontal.properties");//horizontal.properties or vertical.properties
-            state.setRun("BASE",base);
-            state.setRun("CONTROLLER_HOST","benchclient1");
-            state.setRun("SATELLITES","benchclient1");
+            state.set("STANDALONE_SH_ARGS","-b 0.0.0.0");
+            state.set("TOPOLOGY","horizontal.properties");//horizontal.properties or vertical.properties
+            state.set("BASE",base);
+            state.set("CONTROLLER_HOST","benchclient1");
+            state.set("SATELLITES","benchclient1");
 
-            ScriptRepo repo = run.getRepo();
+            ScriptRepo repo = runConfig.getRepo();
 
-            run.getRole("server").add(server4);
-            run.getRole("server").addRunScript(repo.getScript("eap"));
+            runConfig.getRole("server").add(server4);
+            runConfig.getRole("server").addRunScript(repo.getScript("eap"));
             //run.getRole("server").addRunScript(repo.getScript("amq6"));
 
-            run.getRole("database").add(server3);
-            run.getRole("database").addRunScript(repo.getScript("docker-oracle"));
+            runConfig.getRole("database").add(server3);
+            runConfig.getRole("database").addRunScript(repo.getScript("docker-oracle"));
             //run.getRole("database").addRunScript(repo.getScript("fake-database"));
 
-            run.getRole("controller").add(client1);
-            run.getRole("controller").addRunScript(repo.getScript("controller"));
+            runConfig.getRole("controller").add(client1);
+            runConfig.getRole("controller").addRunScript(repo.getScript("controller"));
 
-            run.getRole("satellite").add(client1);
-            run.getRole("satellite").addRunScript(repo.getScript("satellite"));
-            run.getRole("satellite").addRunScript(repo.getScript("jstack-SMAgent"));
+            runConfig.getRole("satellite").add(client1);
+            runConfig.getRole("satellite").addRunScript(repo.getScript("satellite"));
+            runConfig.getRole("satellite").addRunScript(repo.getScript("jstack-SMAgent"));
 
-            run.allHosts().addSetupScript(repo.getScript("sync-time"));
-            run.allHosts().addRunScript(repo.getScript("dstat"));
+            runConfig.allHosts().addSetupScript(repo.getScript("sync-time"));
+            runConfig.allHosts().addRunScript(repo.getScript("dstat"));
 
             System.out.println("Starting");
             long start = System.currentTimeMillis();
@@ -394,41 +395,11 @@ public class SpecJms {
             System.out.println(AsciiArt.ANSI_GREEN+"Finished in "+ StringUtil.durationToString(stop-start)+AsciiArt.ANSI_RESET);
             System.out.println("ActiveCount = "+dispatcher.getActiveCount());
 
-
-
         }
         dispatcher.shutdown();
-        List<Runnable> runnables = executor.shutdownNow();
-        System.out.println("Runnables?");
 
-        for(Runnable runnable : runnables){
-            System.out.println(runnable.getClass());
-        }
-
+        executor.shutdownNow();
         scheduled.shutdownNow();
 
-        //System.exit(0);
-//
-//        Cmd startAmq7 = (input, api)->{
-//            api.sh("cd "+api.get("ARTEMIS_HOME"));
-//            api.sh("rm -r ./data/*");
-//            api.sh("./bin/artemis run 2>&1 > /tmp/amq7.console.log &")
-//                .onWorked((pid,a)->{
-//                    Matcher integerMatcher = Pattern.compile("\\d+").matcher("");
-//                    String split = pid.substring(pid.indexOf(" "));
-//                    if(split == null || !integerMatcher.reset(split).matches()){
-//                        a.abort("startAmq7 Cmd expected [1] {pid} as output but got: "+pid);
-//                    }
-//                    a.set(a.getHostname()+"_amq7",pid.split("]")[1].trimEmptyText());
-//                });
-//        };
-//        Cmd stopAmq7 = (input, api)->{
-//            String pid = api.get(api.getHostname()+"_dstatPid");
-//            if(pid==null || pid.isEmpty()){
-//                api.abort("killDstat Cmd expected env "+ api.getHostname()+"_dstatPid but got: "+pid);
-//            }else{
-//                api.sh("kill "+pid);
-//            }
-//        };
     }
 }

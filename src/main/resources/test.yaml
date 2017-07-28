@@ -1,0 +1,77 @@
+name: test
+scripts:
+  jstack:
+    - sh: rm /tmp/jstack.*
+    - wait-for: WARMUP_STARTED
+    - sh: export SMAGENT_PID=$(jps -v | grep "SMAgent" | cut -d " " -f1)
+    - - sh: echo ${SMAGENT_PID}
+    - - - set-state: SMAGENT_PID
+    - queue-download: /tmp/jstack.${{SMAGENT_PID}}.*
+    - repeat-until: SATELLITE_STOPPED
+    - - sh: jstack ${{SMAGENT_PID}} > /tmp/jstack.${{SMAGENT_PID}}.`date +%Y%m%d_%H%M%S`.txt
+    - - sleep: 60_000
+  eap:
+    - sh: cd ${{EAP_HOME}}
+    - sh: rm /tmp/eap7.standalone.console.log
+    - sh: rm ./standalone/log/*
+    - sh: sed -i '/enable_jfr=/c\enable_jfr=${{ENABLE_JFR}}' ${{EAP_HOME}}/bin/standalone.conf
+    - sh: sed -i '/jfr_settings=/c\jfr_settings="${{JFR_SETTINGS}}"' ${{EAP_HOME}}/bin/standalone.conf
+    - queue-download: /tmp/eap7.standalone.console.log
+    - queue-download: ${{EAP_HOME}}/standalone/log/*
+    - queue-download: ${{EAP_HOME}}/bin/standalone.sh
+    - queue-download: ${{EAP_HOME}}/bin/standalone.conf
+    - queue-download: ${{EAP_HOME}}/standalone/configuration/${{STANDALONE_XML}}
+    - signal: SERVER_STARTING
+    - sh: ./bin/standalone.sh -c ${{STANDALONE_XML}} ${{STANDALONE_SH_ARGS}} > /tmp/eap7.standalone.console.log 2>/dev/null &
+    - - echo:
+    - sh: export SERVER_PID=$(jps | grep "jboss-modules.jar" | cut -d " " -f1)
+    - - sh: echo ${SERVER_PID}
+      - - regex: "\\s*(?<serverPid>\\S+)\\s*"
+    - sleep: 1_000
+    - sh: tail -f ./standalone/log/server.log
+    - - watch:
+        - regex: ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
+        - - ctrlC:
+          - log : eap ${{eapVersion}} started in ${{eapStartTime}}
+          - signal: SERVER_STARTED
+        - regex: ".*? WFLYSRV0026: .*"
+        - - ctrlC:
+          - abort: eap failed to start cleanly
+        - regex: .*?FATAL.*
+        - - echo:
+          - ctrlC:
+          - abort: FATAL starting eap
+    - sh: grep --color=none "javaOpts\|JAVA_OPTS" /tmp/eap7.standalone.console.log
+    - - regex: ".*? -Xloggc:(?<gcFile>\\S+).*"
+      - - read-state: gcFile
+        - - regex: "(?<gcFile>[^%]+)%.*"
+          - - sh: lsof -p ${SERVER_PID} | grep --color=none "${{gcFile}}"
+            - - regex: ".*? (?<gcFile>/.+?)[\r\n]+"
+              - - log: updated gcFile=${{gcFile}}
+      - - log: gcFile=${{gcFile}}
+      - - queue-download: ${{gcFile}}
+    - - regex: ".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*"
+      - - queue-download: ${{jfrFile}}
+    - wait-for: CONTROLLER_STOPPED
+    - sh: kill ${SERVER_PID}
+    - sleep: 4_000
+    - signal: SERVER_STOPPED
+---
+hosts:
+  local: wreicher@laptop:22
+---
+roles:
+  server:
+    hosts: local
+    run-scripts:
+      - eap
+---
+states:
+  run:
+    EAP_HOME: /home/wreicher/runtime/jboss-eap-7.1.0.DR17-quickstart
+    ENABLE_JFR: false
+    JFR_SETTINGS: profile_2ms
+    STANDALONE_XML: standalone.xml
+    STANDALONE_SH_ARGS: -b 0.0.0.0
+
+

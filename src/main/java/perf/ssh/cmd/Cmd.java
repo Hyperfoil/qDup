@@ -19,6 +19,9 @@ import java.util.regex.Pattern;
  */
 public abstract class Cmd {
 
+
+    private static final Code NOOP = (i,s)->Result.next(i);
+
     protected final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     public static final String ENV_PREFIX = "${{";
@@ -27,9 +30,10 @@ public abstract class Cmd {
     public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
 
+    public static Cmd NOOP(){return new CodeCmd(NOOP);}
     public static Cmd abort(String message){return new Abort(message);}
     public static Cmd code(Code code){return new CodeCmd(code);}
-    public static Cmd countdown(String name,int amount){return new Countdown(name,amount);}
+    public static Cmd countdown(String name,int initial){return new Countdown(name,initial);}
     public static Cmd ctrlC(){return new CtrlC();}
     public static Cmd download(String path){return new Download(path);}
     public static Cmd download(String path,String destination){return new Download(path,destination);}
@@ -38,11 +42,14 @@ public abstract class Cmd {
     public static Cmd log(String value){ return new Log(value); }
     public static Cmd queueDownload(String path){return new QueueDownload(path);}
     public static Cmd queueDownload(String path,String destination){return new QueueDownload(path,destination);}
+    public static Cmd readState(String key){return new ReadState(key);}
     public static Cmd regex(String pattern){
         return new Regex(pattern);
     }
     public static Cmd repeatUntil(String name){return new RepeatUntilSignal(name);}
     public static ScriptCmd script(String name){ return new ScriptCmd(name); }
+    public static Cmd setState(String key){return new SetState(key);}
+    public static Cmd setState(String key,String value){return new SetState(key,value);}
     public static Cmd sh(String command){
         return new Sh(command);
     }
@@ -215,7 +222,18 @@ public abstract class Cmd {
         }
         return clone;
     }
-    protected Cmd getTail(){
+    public Cmd getLastWatcher(){
+        return watchers.getLast();
+    }
+    public Cmd getWatcherTail(){
+        Cmd rtrn = watchers.getLast();
+        while(!rtrn.getThens().isEmpty()){
+            rtrn = rtrn.thens.getLast();
+        }
+        return rtrn;
+    }
+    public Cmd getLastThen(){return thens.getLast();}
+    public Cmd getTail(){
         Cmd rtrn = this;
 
         while(!rtrn.getThens().isEmpty()){
@@ -223,7 +241,7 @@ public abstract class Cmd {
         }
         return rtrn;
     }
-    Cmd getHead(){
+    public Cmd getHead(){
         Cmd rtrn = this;
         while(rtrn.parent!=null){
             rtrn = rtrn.parent;

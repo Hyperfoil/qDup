@@ -41,7 +41,7 @@ public final class CommandContext {
         return run.getOutputPath();
     }
     public Script getScript(String name){
-        return run.getRepo().getScript(name);
+        return run.getConfig().getRepo().getScript(name);
     }
     public SshSession getSession(){return  session;}
     public Coordinator getCoordinator(){return run.getCoordinator();}

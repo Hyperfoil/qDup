@@ -35,7 +35,7 @@ public class ScriptCmd extends Cmd {
         Script toCall = context.getScript(this.name);
         injectThen(toCall.deepCopy(),context);
         for(String key : with.keySet()){
-            context.getState().setScript(key,with.get(key));
+            context.getState().set(key,with.get(key));
         }
         result.next(this,input);
     }
