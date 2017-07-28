@@ -5,6 +5,8 @@ import perf.ssh.cmd.CommandDispatcher;
 import perf.ssh.config.YamlLoader;
 import perf.util.StringUtil;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -60,12 +62,24 @@ public class SshRunner {
         CommandLine cmd;
 
         URL url = ClassLoader.getSystemResource("specjms.yaml");
+        String cmdLineSyntax = "[options] [yamlFiles]";
+
+            cmdLineSyntax =
+                    "java -jar " +
+                            (new File(SshRunner.class
+                                    .getProtectionDomain()
+                                    .getCodeSource()
+                                    .getLocation()
+                                    .getPath()
+                            )).getName() +
+                            " "+
+                            cmdLineSyntax;
 
         try{
             cmd = parser.parse(options,args);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
-            formatter.printHelp("[options] [yaml files]",options);
+            formatter.printHelp(cmdLineSyntax,options);
             System.exit(1);
             return;
         }
@@ -78,7 +92,7 @@ public class SshRunner {
 
         if(yamlPaths.isEmpty()){
             System.out.println("Missing required yaml file(s)");
-            formatter.printHelp("[options] [yaml files]",options);
+            formatter.printHelp(cmdLineSyntax,options);
             System.exit(1);
             return;
         }
