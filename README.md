@@ -11,7 +11,7 @@ in a `Script`. All `Scripts` start at the same time but `waitFor`,
 `signal`, and `repeat-until` commands help coordinate between `Scripts`
 
 ## Scripts
-A `Script` is tree of commands that run one at a time. Each command accepts
+A `Script` a is tree of commands that run one at a time. Each command accepts
 a `String` input from the previous sibling (or parent if no sibling
 is available) as well as the current `Context`. Commands pass execution
 to their children commands by default (depth first execution) but they can
@@ -34,58 +34,57 @@ Arguments are explicitly mapped to the command's declared argument names.
 This is the least ambiguous but most verbose and is rarely necessary
 
 ### Available commands
-* __abort: <message>__
+* `abort: <message>`
 Abort the current run and log the message
-* __code: <className>__
+* `code: <className>`
 create an instance of `className` which implements `Code` using the
 default constructor and execute the `run(...)` method.
 Note: This command is best suited for the Java API. Please share your
 use case if you find you need this command for the YAML API and we can
 see if a new command is warranted
-* __countdown: <name> <initial>__
+* `countdown: <name> <initial>`
 decrease a `name` counter which starts with `initial`.
 Child commands will be invoked each time after `name` counter reaches 0.
-* __ctrlC:__
+* `ctrlC:`
 send ctrl+C interrupt to the remote shell. This will kill
-any currently running command (e.g. `sh tail -f /tmp/server.log`)
-* __download: <path> ?<destination>__
-download `path` from the connected
-host and save the output to the  run output path + `destination`
-* __echo:__
+any currently running command (e.g. `sh: tail -f /tmp/server.log`)
+* `download: <path> ?<destination>`
+download `path` from the connected host and save the output to the
+run output path + `destination`
+* `echo:`
 log the input to console
-* __log: <message>__
+* `log: <message>`
 log `message` to the run log
-* __read-state: <name>__
+* `read-state: <name>`
 read the current value of the named state variable
 and pass it as input to the next command
-* __regex: <pattern>__
-try to match the previous output to a regular
-expression and add any named capture groups to the current state at
-the named scope.
-* __repeat-until: <name>__
+* `regex: <pattern>`
+try to match the input to a regular expression and add any named
+capture groups to the current state at the named scope.
+* `repeat-until: <name>`
 repeat the child commands until `name` is signalled.
 Be sure to add a `sleep` to prevent a tight loop and pick a `name` that
 is signalled in all runs (e.g. be careful of error conditions)
-* __set-state <name> ?<value>__
+* `set-state <name> ?<value>`
 set the named state attribute to `value`
 if present or to the input if no value is provided
-* __script: <name>__
+* `script: <name>`
 Invoke the `name` script as part of the current script
-* __sh: <command>__
+* `sh: <command>`
 Execute a remote shell command
-* __signal: <name>__
+* `signal: <name>`
 send one signal for "name." Runs parse all script :
 host associations to calculate the expected number of `signal`s for each
 `name`. All `waitFor` will wait for the expected number of `signal`
-* __sleep: <ms>__
+* `sleep: <ms>`
 pause the current script for the given number of milliseconds
-* __queue-download: <path> ?<destination>__
+* `queue-download: <path> ?<destination>`
 queue the download action for
 after the run finishes. The download will occur if the run completes
 or aborts
-* __waitFor: <name>__
+* `waitFor: <name>`
 pause the current script until "name" is fully signaled
-* __xpath: <path>__
+* `xpath: <path>`
 This is an overloaded command that can perform an xpath
   based search or modification. Path takes the following forms
    - `file>xpath` - finds all xpath matches in file and passes them as
@@ -140,9 +139,7 @@ hosts:
  - local : me@localhost
 ```
 __roles___ a map of roleName : a hosts list and at least one of: setup-scripts, run-scripts,
-cleanup-scripts. If a host list is not specified then the role applies
-to all hosts in the configuration. In this case it might be best to name
-the role ALL or some other clear indication that it applies to all hosts
+cleanup-scripts. Hosts must be specified before the scripts section.
 ```YAML
 roles:
   test:
@@ -150,13 +147,11 @@ roles:
      - local
     run-scripts:
      - test-script
-  ALL:
-    setup-scripts:
-     - other-script
 ```
 You can also use `setup-scripts`, `run-scripts`, `cleanup-scripts` as
-top level configuration entries to apply scripts to all hosts but using
-an `ALL` role helps keep all the host to script mappings under one location
+top level configuration entries to apply scripts to all hosts.
+Eventually we plan to support roles without hosts which will apply to
+all hosts but at the moment that is not available
 
 __states__ a nested map of name : value pairs used to inject variables
 into the run configuration. The top level entry must be `run` then the
