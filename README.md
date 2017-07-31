@@ -27,11 +27,12 @@ Commands can be used in one of 3 ways:
 Commands that support multiple arguments will try and parse the
 argumentString to identify the appropriate arguments.
 2. `- command : [<argument>, <argument>, ...]`
-Arguments are passed as a list of objects (using either bracket or dash notation). Arguments
+Arguments are passed as a list (using either bracket or dash notation). Arguments
 are matched based on their position in the list and the declared order for the command.
+Missing arguments will be passed a null
 3. `- command : { argumentName: argumentValue, ...}`
 Arguments are explicitly mapped to the command's declared argument names.
-This is the least ambiguous but most verbose and is rarely necessary
+This is the least ambiguous but most verbose and is rarely necessary.
 
 ### Available commands
 * `abort: <message>`
@@ -73,17 +74,16 @@ Invoke the `name` script as part of the current script
 * `sh: <command>`
 Execute a remote shell command
 * `signal: <name>`
-send one signal for "name." Runs parse all script :
-host associations to calculate the expected number of `signal`s for each
-`name`. All `waitFor` will wait for the expected number of `signal`
+send one signal for `name` Runs parse all script and
+host associations to calculate the expected number of `signals` for each
+`name` and `waitFor` will wait for the expected number of `signal`
 * `sleep: <ms>`
 pause the current script for the given number of milliseconds
 * `queue-download: <path> ?<destination>`
-queue the download action for
-after the run finishes. The download will occur if the run completes
-or aborts
+queue the download action for after the run finishes. The download will
+occur if the run completes or aborts
 * `waitFor: <name>`
-pause the current script until "name" is fully signaled
+pause the current script until `name` is fully signaled
 * `xpath: <path>`
 This is an overloaded command that can perform an xpath
   based search or modification. Path takes the following forms
@@ -117,7 +117,13 @@ a command because they can block the exection of other watchers.
 State is the main way to introduce variability into a run. Commands can
 reference state variables by name with `${{name}}` and `regex` can define
 new entries with standard java regex capture groups `(?<name>.*)`
-
+```YAML
+ - sh: tail -f /tmp/server.log
+ - - watch:
+     - regex : ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
+     - - log : eap ${{eapVersion}} started in ${{eapStartTime}}
+       - ctrlC:
+```
 ## YAML
 The best way to use the tool is to build with `gradle jar` and use the executable
 jar to run tests based on yaml configuration. The yaml format supports
@@ -190,35 +196,6 @@ or watchers. We get around this by using double dash on the child command
      - command: argument
 ```
 
-## YAML support
- - [x] name
- - [x] scripts
-   - [x] commands
-   - [x] watchers
-   - [x] with
- - [x] hosts
-   - [x] shortname : user@host:port
-   - [x] shortname : {user,host,port}
-   - [ ] user@host:post ?
-   - [ ] {user,host,port} ?
- - [ ] roles
-   - [x] role names
-   - [x] hosts by shortname
-   - [ ] host declaration (e.g. `user@host:port`) in role:hosts
-         ? use Provider<Host>
- - [ ] setup-scripts
-   - [x] script name (applies to all
-   - [ ] {select,script} to filer hosts
- - [ ] run-scripts
-   - [ ] script name (applies to all
-   - [ ] {select,script} to filer hosts
- - [ ] cleanup-scripts
-   - [ ] script name (applies to all
-   - [ ] {select,script} to filer hosts
- - [ ] state
-   - [ ] run
-   - [ ] host
-   - [ ] script
- - [ ] coordinator
-   - [ ] latches
-   - [ ] counters
+## Building
+> gradle jar
+
