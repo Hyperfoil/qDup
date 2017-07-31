@@ -23,7 +23,7 @@ public class Script extends Cmd {
     }
 
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         for(String key : with.keySet()){
             context.getState().set(key,with.get(key));
         }

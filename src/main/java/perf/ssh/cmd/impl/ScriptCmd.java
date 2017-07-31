@@ -1,7 +1,7 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 import perf.ssh.cmd.Script;
 
@@ -31,7 +31,7 @@ public class ScriptCmd extends Cmd {
     public String toString(){return "invoke "+name;}
 
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         Script toCall = context.getScript(this.name);
         injectThen(toCall.deepCopy(),context);
         for(String key : with.keySet()){

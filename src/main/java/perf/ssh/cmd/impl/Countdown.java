@@ -1,7 +1,7 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 public class Countdown extends Cmd {
@@ -14,7 +14,7 @@ public class Countdown extends Cmd {
 
     }
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         int newCount = context.getCoordinator().decrease(this.name,this.startCount);
         if(newCount <= 0){
             result.next(this,input);

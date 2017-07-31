@@ -1,7 +1,7 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 public class InvokeCmd extends Cmd {
@@ -15,7 +15,7 @@ public class InvokeCmd extends Cmd {
     public Cmd getCommand(){return command;}
 
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         result.next(this,input);
     }
 

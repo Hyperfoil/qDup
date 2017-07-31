@@ -2,7 +2,7 @@ package perf.ssh.cmd.impl;
 
 import perf.ssh.Local;
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 import java.io.File;
@@ -20,7 +20,7 @@ public class Download extends Cmd {
     public String getPath(){return path;}
     public String getDestination(){return destination;}
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
 
         String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHostName();
         String userName = context.getSession().getUserName();

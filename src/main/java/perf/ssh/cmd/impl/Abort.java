@@ -1,7 +1,7 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 public class Abort extends Cmd {
@@ -11,7 +11,7 @@ public class Abort extends Cmd {
     }
 
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         String populatedMessage = Cmd.populateStateVariables(message,context.getState());
         context.getRunLogger().info("abort {}",populatedMessage);
         context.abort();

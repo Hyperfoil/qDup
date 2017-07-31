@@ -1,15 +1,5 @@
 name: test
 scripts:
-  jstack:
-    - sh: rm /tmp/jstack.*
-    - wait-for: WARMUP_STARTED
-    - sh: export SMAGENT_PID=$(jps -v | grep "SMAgent" | cut -d " " -f1)
-    - - sh: echo ${SMAGENT_PID}
-    - - - set-state: SMAGENT_PID
-    - queue-download: /tmp/jstack.${{SMAGENT_PID}}.*
-    - repeat-until: SATELLITE_STOPPED
-    - - sh: jstack ${{SMAGENT_PID}} > /tmp/jstack.${{SMAGENT_PID}}.`date +%Y%m%d_%H%M%S`.txt
-    - - sleep: 60_000
   eap:
     - sh: cd ${{EAP_HOME}}
     - sh: rm /tmp/eap7.standalone.console.log
@@ -22,6 +12,7 @@ scripts:
     - queue-download: ${{EAP_HOME}}/bin/standalone.conf
     - queue-download: ${{EAP_HOME}}/standalone/configuration/${{STANDALONE_XML}}
     - signal: SERVER_STARTING
+    - sh: echo "test" >> /tmp/test.log
     - sh: ./bin/standalone.sh -c ${{STANDALONE_XML}} ${{STANDALONE_SH_ARGS}} > /tmp/eap7.standalone.console.log 2>/dev/null &
     - - echo:
     - sh: export SERVER_PID=$(jps | grep "jboss-modules.jar" | cut -d " " -f1)
@@ -52,7 +43,7 @@ scripts:
       - - queue-download: ${{gcFile}}
     - - regex: ".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*"
       - - queue-download: ${{jfrFile}}
-    - wait-for: CONTROLLER_STOPPED
+    - sleep: 10_000
     - sh: kill ${SERVER_PID}
     - sleep: 4_000
     - signal: SERVER_STOPPED

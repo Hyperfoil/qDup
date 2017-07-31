@@ -14,14 +14,14 @@ import java.util.concurrent.TimeUnit;
  * The context for executing the command
  * consists of the current session, the coordinator, and the state
  */
-public final class CommandContext {
+public final class Context {
 
     private SshSession session;
     private State state;
     private Run run;
     private Profiler profiler;
 
-    public CommandContext(SshSession session, State state,Run run,Profiler profiler){
+    public Context(SshSession session, State state, Run run, Profiler profiler){
         this.session = session;
         this.state = state;
         this.run = run;

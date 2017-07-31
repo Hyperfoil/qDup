@@ -146,7 +146,7 @@ public class SshRunner {
 
         long stop = System.currentTimeMillis();
 
-        System.out.println("Finished in "+ StringUtil.durationToString(stop-start));
+        System.out.println("Finished in "+ StringUtil.durationToString(stop-start)+" at "+run.getOutputPath());
 
         dispatcher.shutdown();
         executor.shutdownNow();

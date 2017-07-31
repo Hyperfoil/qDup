@@ -195,7 +195,8 @@ public class SshSession implements Runnable, Consumer<String>{
         sh(command,true);
     }
     public void sh(String command,boolean acquireLock){
-        logger.entry(command,acquireLock);
+        logger.trace("sh: {}, lock: {}",command,acquireLock);
+
         if(command==null){
             return;
         }
@@ -223,7 +224,6 @@ public class SshSession implements Runnable, Consumer<String>{
             //BUG this includes the prompt and the output of the command, should filter up to the command
             //TODO test shStream reset before and after the command is sent (so sh output does not contain the command)
         }
-        logger.exit();
     }
     public void close(){
         close(true);
@@ -272,10 +272,8 @@ public class SshSession implements Runnable, Consumer<String>{
     //Called when there is a new line of output
     @Override
     public void accept(String s) {
-        logger.entry(s);
         if(result!=null && command!=null){
             result.update(command,s);
         }
-        logger.exit();
     }
 }

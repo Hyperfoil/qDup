@@ -1,7 +1,7 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 import java.util.LinkedList;
@@ -20,10 +20,11 @@ public class Regex extends Cmd {
     }
     public String getPattern(){return patternString;}
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
 
         Matcher matcher = pattern.matcher(input);
         if(matcher.matches()){
+            logger.trace("{} match {} ",this,input);
             Matcher fieldMatcher = NAMED_CAPTURE.matcher(patternString);
             List<String> names = new LinkedList<>();
             while(fieldMatcher.find()){
@@ -36,6 +37,8 @@ public class Regex extends Cmd {
             }
             result.next(this,input);
         }else{
+            logger.trace("{} NOT match {} ",this,input);
+
             result.skip(this,input);
         }
     }

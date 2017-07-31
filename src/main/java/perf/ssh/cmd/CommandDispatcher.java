@@ -45,8 +45,8 @@ public class CommandDispatcher {
         public default void onStop(){}
     }
     class WatcherResult implements  CommandResult {
-        private CommandContext context;
-        public WatcherResult(CommandContext context){ this.context = context; }
+        private Context context;
+        public WatcherResult(Context context){ this.context = context; }
 
         @Override
         public void next(Cmd command, String output) {
@@ -72,12 +72,12 @@ public class CommandDispatcher {
         }
     }
     /**
-     * Stores the CommandContext inside the CommandResult so that the Dispatcher can be used with multiple Host+Script combinations.
+     * Stores the Context inside the CommandResult so that the Dispatcher can be used with multiple Host+Script combinations.
      */
     class ContextedResult implements CommandResult {
-        private CommandContext context;
+        private Context context;
 
-        public ContextedResult(CommandContext context){
+        public ContextedResult(Context context){
             this.context = context;
 
         }
@@ -122,18 +122,18 @@ public class CommandDispatcher {
         private String name;
         private ScheduledFuture<?> scheduledFuture;
         private RunWatchers runWatchers;
-        private CommandContext context;
+        private Context context;
         private long startTime;
         private long lastUpdate;
 
-        public ActiveCommandInfo(String name,RunWatchers runWatchers,CommandContext context){
+        public ActiveCommandInfo(String name,RunWatchers runWatchers,Context context){
             this.name =name;
             this.runWatchers = runWatchers;
             this.context = context;
             this.startTime = System.currentTimeMillis();
             this.lastUpdate = this.startTime;
         }
-        public CommandContext getContext(){return context;}
+        public Context getContext(){return context;}
         public ScheduledFuture<?> getScheduledFuture() {return scheduledFuture;}
         public void setScheduledFuture(ScheduledFuture<?> scheduledFuture){this.scheduledFuture = scheduledFuture;}
         public RunWatchers getRunWatchers(){return runWatchers;}
@@ -153,11 +153,11 @@ public class CommandDispatcher {
         String name;
         BlockingQueue<String> queue;
         List<Cmd> watchers;
-        CommandContext context;
+        Context context;
         CommandResult result;
         boolean stop = false;
         String stopUid = "stop-"+System.currentTimeMillis();
-        public RunWatchers(String name,List<Cmd> watchers,CommandContext context,CommandResult result,BlockingQueue<String> queue){
+        public RunWatchers(String name, List<Cmd> watchers, Context context, CommandResult result, BlockingQueue<String> queue){
             this.name = name;
             this.watchers = watchers;
             this.context = context;
@@ -206,9 +206,9 @@ public class CommandDispatcher {
     class RunCommand implements Runnable {
         Cmd command;
         String input;
-        CommandContext context;
+        Context context;
         CommandResult result;
-        public RunCommand(Cmd command, String input, CommandContext context, CommandResult result){
+        public RunCommand(Cmd command, String input, Context context, CommandResult result){
             this.command = command;
             this.input = input;
             this.context = context;
@@ -284,9 +284,11 @@ public class CommandDispatcher {
         observers.remove(observer);
     }
 
+    public ExecutorService getExecutor(){return executor;}
 
-    public void addScript(Script script,CommandContext context){
-        logger.entry(script.getName(),context.getSession().getHostName());
+    public void addScript(Script script,Context context){
+        logger.info("add script {} to {}",script.getName(),context.getSession().getHostName());
+
         script = (Script)script.deepCopy();
 
         //Cmd.InvokeCmd can change the tail and cause this to close profiler too soon
@@ -301,7 +303,6 @@ public class CommandDispatcher {
         if(previous!=null){
             logger.error("already have getScript.tail={} mapped to {}@{}",script.getTail().getUid(),script.getName(),context.getSession().getHostName());
         }
-        logger.exit();
     }
     //TODO this should no longer be needed now that script2Head stores the head cmd not tail
     public void onTailMod(Cmd previousTail,Cmd nextTail){
@@ -396,7 +397,7 @@ public class CommandDispatcher {
     }
 
 
-    private void execute(Cmd command,String input,CommandContext context,CommandResult result){
+    private void execute(Cmd command, String input, Context context, CommandResult result){
         logger.trace(" execute {} with input=[{}]",command,input.length()>120?input.substring(0,120)+ AsciiArt.ELLIPSIS:input);
         if(isStopped){
             return;
@@ -414,7 +415,7 @@ public class CommandDispatcher {
         executor.execute(new RunCommand(command,input,context,result));
 
     }
-    public void dispatch(Cmd previousCommand, Cmd nextCommand,String input, CommandContext context, CommandResult result){
+    public void dispatch(Cmd previousCommand, Cmd nextCommand, String input, Context context, CommandResult result){
         if(isStopped){
             return;
         }
@@ -458,7 +459,7 @@ public class CommandDispatcher {
         checkActiveCount();
 
     }
-    private void checkScriptDone(Cmd command, CommandContext context){
+    private void checkScriptDone(Cmd command, Context context){
         if(script2Result.containsKey(command.getHead())){//we finished a getScript
             context.getProfiler().stop();
             context.getProfiler().setLogger(context.getRunLogger());

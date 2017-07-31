@@ -1,14 +1,14 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 public class Sleep extends Cmd {
     long amount;
     public Sleep(long amount){this.amount = amount;}
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         context.schedule(this,() -> result.next(this,input),amount);
 //            try {
 //                Thread.sleep(amount);

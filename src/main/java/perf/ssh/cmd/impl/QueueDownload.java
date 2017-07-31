@@ -1,7 +1,7 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 import java.io.File;
@@ -12,6 +12,9 @@ public class QueueDownload extends Cmd {
     public QueueDownload(String path, String destination){
         this.path = path;
         this.destination = destination;
+        if(this.destination==null){
+            this.destination="";
+        }
     }
     public QueueDownload(String path){
         this(path,"");
@@ -24,7 +27,7 @@ public class QueueDownload extends Cmd {
     public String toString(){return "queueDownload " + path + (destination.isEmpty()?"":(" -> "+destination));}
 
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHostName();
         String resolvedPath = Cmd.populateStateVariables(getPath(),context.getState());
         String resolvedDestination = Cmd.populateStateVariables(basePath + File.separator + getDestination(),context.getState());

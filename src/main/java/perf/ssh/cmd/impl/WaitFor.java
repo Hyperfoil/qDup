@@ -1,14 +1,14 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 public class WaitFor extends Cmd {
     private String name;
     public WaitFor(String name){ this.name = name;}
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         context.getCoordinator().waitFor(name,this,result,input);
     }
 

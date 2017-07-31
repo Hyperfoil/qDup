@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 public abstract class Cmd {
 
 
-    private static final Code NOOP = (i,s)->Result.next(i);
+    private static final Code NO_OP = (i, s)->Result.next(i);
 
     protected final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
@@ -30,9 +30,10 @@ public abstract class Cmd {
     public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
 
-    public static Cmd NOOP(){return new CodeCmd(NOOP);}
+    public static Cmd NO_OP(){return new CodeCmd(NO_OP);}
     public static Cmd abort(String message){return new Abort(message);}
     public static Cmd code(Code code){return new CodeCmd(code);}
+    public static Cmd code(String className){return new CodeCmd(className);}
     public static Cmd countdown(String name,int initial){return new Countdown(name,initial);}
     public static Cmd ctrlC(){return new CtrlC();}
     public static Cmd download(String path){return new Download(path);}
@@ -42,14 +43,14 @@ public abstract class Cmd {
     public static Cmd log(String value){ return new Log(value); }
     public static Cmd queueDownload(String path){return new QueueDownload(path);}
     public static Cmd queueDownload(String path,String destination){return new QueueDownload(path,destination);}
-    public static Cmd readState(String key){return new ReadState(key);}
+    public static Cmd readState(String name){return new ReadState(name);}
     public static Cmd regex(String pattern){
         return new Regex(pattern);
     }
     public static Cmd repeatUntil(String name){return new RepeatUntilSignal(name);}
     public static ScriptCmd script(String name){ return new ScriptCmd(name); }
-    public static Cmd setState(String key){return new SetState(key);}
-    public static Cmd setState(String key,String value){return new SetState(key,value);}
+    public static Cmd setState(String name){return new SetState(name);}
+    public static Cmd setState(String name,String value){return new SetState(name,value);}
     public static Cmd sh(String command){
         return new Sh(command);
     }
@@ -73,7 +74,7 @@ public abstract class Cmd {
             String name = matcher.group("name");
             String value = state.get(name);
             if(value == null ){//bad times
-                System.err.printf("missing "+name+" value for "+command);
+                logger.error("missing {} value for {}",name,command);
                 //TODO how to propegate missing state
                 value = "";
             }
@@ -110,7 +111,7 @@ public abstract class Cmd {
         this.parent = null;
         this.uid = uidGenerator.incrementAndGet();
     }
-    protected void injectThen(Cmd command,CommandContext context){
+    protected void injectThen(Cmd command,Context context){
         thens.addFirst(command);
         Cmd next = this.next;
         Cmd skip = this.skip;
@@ -209,7 +210,7 @@ public abstract class Cmd {
     protected List<Cmd> getThens(){return Collections.unmodifiableList(this.thens);}
     protected List<Cmd> getWatchers(){return Collections.unmodifiableList(this.watchers);}
 
-    protected abstract void run(String input, CommandContext context, CommandResult result);
+    protected abstract void run(String input, Context context, CommandResult result);
     protected abstract Cmd clone();
 
     public Cmd deepCopy(){

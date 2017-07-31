@@ -1,7 +1,7 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 public class RepeatUntilSignal extends Cmd {
@@ -12,7 +12,7 @@ public class RepeatUntilSignal extends Cmd {
     public String getName(){return name;}
 
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         int amount = context.getCoordinator().getSignalCount(name);
         if( amount > 0 ){
             result.next(this,input);

@@ -2,7 +2,7 @@ package perf.ssh.cmd.impl;
 
 import perf.ssh.Local;
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 import perf.util.file.FileUtility;
 import perf.util.xml.Xml;
@@ -26,7 +26,7 @@ public class XPath extends Cmd {
     }
 
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
         XmlLoader loader = new XmlLoader();
         Xml xml = null;
         if(path.indexOf(FileUtility.SEARCH_KEY)>0){ //file>xpath ...

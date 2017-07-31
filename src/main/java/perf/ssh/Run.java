@@ -17,8 +17,7 @@ import perf.util.Counters;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -195,10 +194,9 @@ public class Run implements Runnable {
             }
         };
         dispatcher.addObserver(setupObserver);
-        for(String hostShortName : config.getHostNames()){
-            Host host = config.getHost(hostShortName);
+        for(Host host : config.allHosts().toList()){
             if(!config.getSetupScripts(host).isEmpty()){
-                State hostState = config.getState().addChild(hostShortName,State.HOST_PREFIX);
+                State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
 
                 Script hostSetup = new Script(host.getHostName()+"-setup");
                 for(Script script : config.getSetupScripts(host)){
@@ -218,9 +216,9 @@ public class Run implements Runnable {
                 long stop = System.currentTimeMillis();
 
                 State scriptState = hostState.getChild(hostSetup.getName());
-                CommandContext commandContext = new CommandContext(scriptSession,scriptState,this,profiler);
+                Context context = new Context(scriptSession,scriptState,this,profiler);
                 logger.debug("{} setup addScript {}\n{}",this,hostSetup,hostSetup.tree());
-                dispatcher.addScript(hostSetup,commandContext);
+                dispatcher.addScript(hostSetup, context);
             }
         }
         dispatcher.start();
@@ -269,30 +267,52 @@ public class Run implements Runnable {
             }
         };
         //TODO parallel connect with ExecutorService.invokeAll(Callable / Runnable)
-        for(String hostShortName : config.getHostNames()){
-            Host host = config.getHost(hostShortName);
-            State hostState = config.getState().addChild(hostShortName,State.HOST_PREFIX);
+        List<Callable<Boolean>> connectSessions = new LinkedList<>();
+
+        for(Host host : config.allHosts().toList()){
             for(Script script : config.getRunScripts(host)){
-                State scriptState = hostState.getChild(script.getName());
-                long start = System.currentTimeMillis();
-                Profiler profiler = profiles.get(script.getName()+"@"+host.getHostName());
-                logger.info("{} connecting {} to {}@{}",this,script.getName(),host.getUserName(),host.getHostName());
-                profiler.start("connect:"+host.toString());
-                SshSession scriptSession = new SshSession(host); //this can take some time, hopefully it isn't a problem
-                profiler.start("waiting for start");
-                if(!scriptSession.isOpen()){
-                    logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),script.getName(),host.getUserName(),host.getHostName());
-                    abort();
-                    return;
-                }
+                connectSessions.add(()->{
+                    State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
+                    State scriptState = hostState.getChild(script.getName());
+                    long start = System.currentTimeMillis();
+                    Profiler profiler = profiles.get(script.getName()+"@"+host.getHostName());
+                    logger.info("{} connecting {} to {}@{}",this,script.getName(),host.getUserName(),host.getHostName());
+                    profiler.start("connect:"+host.toString());
+                    SshSession scriptSession = new SshSession(host); //this can take some time, hopefully it isn't a problem
+                    profiler.start("waiting for start");
+                    if(!scriptSession.isOpen()){
+                        logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),script.getName(),host.getUserName(),host.getHostName());
+                        abort();
+                        return false;
+                    }
 
-                long stop = System.currentTimeMillis();
+                    long stop = System.currentTimeMillis();
 
-                CommandContext commandContext = new CommandContext(scriptSession,scriptState,this,profiler);
-                logger.debug("{} connected {}@{} in {}s",this,script.getName(),host.getHostName(),((stop-start)/1000));
-                dispatcher.addScript(script,commandContext);
+                    Context context = new Context(scriptSession,scriptState,this,profiler);
+                    logger.debug("{} connected {}@{} in {}s",this,script.getName(),host.getHostName(),((stop-start)/1000));
+                    dispatcher.addScript(script, context);
+                    return true;
+                });
             }
         }
+        try {
+            boolean ok = dispatcher.getExecutor().invokeAll(connectSessions).stream().map((f) -> {
+                boolean rtrn = false;
+                try {
+                    rtrn = f.get();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+                return rtrn;
+            })
+            .collect(Collectors.reducing(Boolean::logicalAnd)).get();
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         dispatcher.addObserver(runObserver);
         dispatcher.start();
     }

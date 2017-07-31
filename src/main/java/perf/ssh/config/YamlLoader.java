@@ -9,21 +9,19 @@ import perf.ssh.cmd.impl.*;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.net.URL;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
 import java.util.*;
-import java.util.function.BinaryOperator;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
+import java.util.stream.Collectors;
 
 
 public class YamlLoader {
 
-
     private RunConfig runConfig;
     private List<String> errors;
     private Yaml yaml;
-
 
     private Function<Object,Host> hostRef = (Object value) ->{
         Host rtrn = null;
@@ -362,132 +360,162 @@ public class YamlLoader {
             }
         }
     }
+    private static Cmd parseCmd(Object input,Class<? extends Cmd> cmdClass,String...args) {
+        System.out.println(cmdClass.getSimpleName()+" "+input);
+        final List supported = Arrays.asList("long","int","java.lang.String");
+        Cmd rtrn = Cmd.NO_OP();
+        try {
+            Constructor constructor = null;
+            Constructor constructors[] = cmdClass.getConstructors();
+            for (int i = 0; i < constructors.length; i++) {
+                Constructor c = constructors[i];
+
+                if (c.getParameterCount() >= args.length) {
+                    Type types[] = c.getParameterTypes();
+                    boolean simple = types.length > 0 ? Arrays.asList(types).stream()
+                            .map((t) -> t.getTypeName())
+                            .map((s)->supported.contains(s))
+                            .collect(Collectors.reducing(Boolean::logicalAnd))
+                            .get() : true;
+                    if(simple) {
+                        constructor = c;
+                    }
+                }
+            }
+
+            final List<Object> varArgs = new LinkedList<>();
+            if (input instanceof String) {
+                if (args.length > 1) {
+                    varArgs.addAll(Arrays.asList(((String) input).split(" ")));
+                } else {
+                    varArgs.add(input);
+                }
+            } else if (input instanceof List) {
+                varArgs.addAll((List) input);
+            } else if (input instanceof Map) {
+                Map map = (Map) input;
+                Arrays.asList(args).forEach((expected) -> {
+                    Object inmap = map.get(expected);
+                    if (inmap != null) {
+                        varArgs.add(inmap);
+                    }
+                });
+            } else if (input instanceof Number){
+                varArgs.add(input);
+            }
+
+            Type types[] = constructor.getParameterTypes();
+            for(int i=0; i<varArgs.size();i++){
+                Type t = types[i];
+                Object existing = varArgs.get(i);
+                switch (t.getTypeName()){
+                    case "long":
+                        try {
+                            if(! (existing instanceof Long) ){
+                                varArgs.remove(i);
+                                varArgs.add(i, Long.parseLong(existing.toString().replace("_", "")));
+                            }
+                        }catch(NumberFormatException nfe){
+                            nfe.printStackTrace();
+                        }
+                        break;
+                    case "int":
+                        if(! (existing instanceof Integer) ) {
+                            varArgs.remove(i);
+                            varArgs.add(i,Integer.parseInt(existing.toString().replace("_","")));
+                        }
+
+                        break;
+                    case "java.lang.String":
+                        if(! (existing instanceof String) ) {
+                            varArgs.remove(i);
+                            varArgs.add(i,existing.toString());
+                        }
+                        break;
+                    default:
+                        varArgs.add(i,existing);
+                }
+            }
+            for(int i = 0; i<types.length-varArgs.size(); i++){
+                varArgs.add(null);
+            }
+            System.out.println(cmdClass.getName()+" "+varArgs);
+            rtrn = (Cmd) constructor.newInstance(varArgs.toArray());
+            return rtrn;
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return rtrn;
+    }
     private Cmd getCmd(Map map){
-        Cmd rtrn = Cmd.NOOP();
+        Cmd rtrn = Cmd.NO_OP();
         for(Object key : map.keySet()){
             String keyString = key.toString();
             Object value = map.get(key);
             switch (keyString){
                 case "abort":
-                    rtrn = new Abort(map.get(key).toString());
+                    rtrn = parseCmd(value,Abort.class,"message");
+
                     break;
                 case "code":
-                    errors.add("cannot load code from config ... yet");
-                    rtrn = new CodeCmd((input,state)-> Result.next(input));
+                    rtrn = parseCmd(value,CodeCmd.class,"className");
+
                     break;
                 case "countdown":
-                    if(value instanceof String){
-                        String split[] = ((String)value).split(" ");
-                        rtrn = new Countdown(split[0],Integer.parseInt(split[1]));
-                    }else if (value instanceof Map){//name,initial
-                        Object name = ((Map)value).get("name");
-                        Object initial = ((Map)value).get("initial");
-                        if(name == null || initial == null){
-                            errors.add("countdown map syntax expects name and initial value but had "+((Map)value).keySet());
-                        }else{
-                            rtrn = new Countdown(name.toString(),Integer.parseInt(initial.toString()));
-                        }
-                    }else{
-                        errors.add("unknown countdown value:"+value);
-                    }
+                    rtrn = parseCmd(value,Countdown.class,"name","initial");
                     break;
                 case "ctrlC":
-                    rtrn = new CtrlC();
+                    rtrn = parseCmd(value,CtrlC.class);
+
                     break;
                 case "download":
-                    if(value instanceof String) {
-                        String split[] = ((String) value).trim().split(" ");
-                        if(split.length==2){
-                            rtrn = new Download(split[0],split[1]);
-                        }else{
-                            rtrn = new Download((String) value);
-                        }
-                    }else if (value instanceof Map){//path,destination
-                        Object path = ((Map)value).get("path");
-                        Object destination = ((Map)value).get("destination");
-                        if(path == null || destination == null){
-                            errors.add("download map syntax expects path and destination value but had "+((Map)value).keySet());
-                        }else{
-                            rtrn = new Download(path.toString(),destination.toString());
-                        }
-                    }else{
-                        errors.add("unknown download value:"+value);
-                    }
+                    rtrn = parseCmd(value,Download.class,"path","destination");
                     break;
                 case "echo":
-                    rtrn = new Echo();
+                    rtrn = parseCmd(value,Echo.class);
                     break;
                 case "invoke"://technically treating it the same as script: but not correct
                 case "script":
-                    rtrn = new ScriptCmd(value.toString());
+                    rtrn = parseCmd(value,ScriptCmd.class,"className");
                     break;
                 case "log":
-                    rtrn = new Log(value.toString());
+                    rtrn = parseCmd(value,Log.class,"message");
                     break;
                 case "queue-download":
-                    if(value instanceof String) {
-                        String split[] = ((String) value).trim().split(" ");
-                        if(split.length==2){
-                            rtrn = new QueueDownload(split[0],split[1]);
-                        }else{
-                            rtrn = new QueueDownload((String) value);
-                        }
-                    }else if (value instanceof Map){//path,destination
-                        Object path = ((Map)value).get("path");
-                        Object destination = ((Map)value).get("destination");
-                        if(path == null || destination == null){
-                            errors.add("queue-download map syntax expects path and destination value but had "+((Map)value).keySet());
-                        }else{
-                            rtrn = new QueueDownload(path.toString(),destination.toString());
-                        }
-                    }else{
-                        errors.add("unknown queue-download value:"+value);
-                    }
+                    rtrn = parseCmd(value,QueueDownload.class,"path","destination");
                     break;
                 case "read-state":
-                    rtrn = new ReadState(value.toString());
+                    rtrn = parseCmd(value,ReadState.class,"name");
                     break;
                 case "regex":
-                    rtrn = new Regex(value.toString());
+                    rtrn = parseCmd(value,Regex.class,"pattern");
                     break;
                 case "repeat-until":
-                    //TODO multiple signal support for repeat-until?
-                    rtrn = new RepeatUntilSignal(value.toString());
+                    rtrn = parseCmd(value,RepeatUntilSignal.class,"name");
                     break;
                 case "set-state":
-                    if(value instanceof String) {
-                        String split[] = ((String) value).trim().split(" ");
-                        if(split.length==2){
-                            rtrn = new SetState(split[0],split[1]);
-                        }else{
-                            rtrn = new SetState((String) value);
-                        }
-                    }else if (value instanceof Map){//key,value
-                        Object stateKey = ((Map)value).get("key");
-                        Object stateValue = ((Map)value).get("value");
-                        if(stateKey == null || stateValue == null){
-                            errors.add("set-state map syntax expects key and value but had "+((Map)value).keySet());
-                        }else{
-                            rtrn = new SetState(stateKey.toString(),stateValue.toString());
-                        }
-                    }else{
-                        errors.add("unknown queue-download value:"+value);
-                    }
+                    rtrn = parseCmd(value,SetState.class,"name","value");
                     break;
                 case "sh":
-                    rtrn = new Sh(value.toString());
+                    rtrn = parseCmd(value,Sh.class,"command");
+
                     break;
                 case "signal":
-                    rtrn = new Signal(value.toString());
+                    rtrn = parseCmd(value,Signal.class,"name");
                     break;
                 case "sleep":
-                    rtrn = new Sleep(Long.parseLong(value.toString()));
+                    rtrn = parseCmd(value,Sleep.class,"ms");
+
                     break;
                 case "wait-for":
-                    rtrn = new WaitFor(value.toString());
+                    rtrn = parseCmd(value,WaitFor.class,"name");
                     break;
                 case "xpath":
-                    rtrn = new XPath(value.toString());
+                    rtrn = parseCmd(value,XPath.class,"path");
                     break;
                 default:
                     errors.add("unknown command="+keyString+" with value="+value);
@@ -606,22 +634,5 @@ public class YamlLoader {
             System.out.println("?? "+o.getClass().getName());
             sb.append(o);
         }
-    }
-
-
-    public static void main(String[] args) {
-        String yamlPath = YamlLoader.class.getClassLoader().getResource("specjms.yaml").getFile();
-
-        YamlLoader loader = new YamlLoader();
-        loader.load(yamlPath);
-
-        loader.getErrors().forEach(System.out::println);
-
-
-        System.out.println(loader.dump());
-
-        boolean valid = loader.getRunConfig().validate();
-
-        System.out.println("isValid = "+valid);
     }
 }

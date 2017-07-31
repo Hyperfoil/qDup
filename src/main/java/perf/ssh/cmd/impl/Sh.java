@@ -1,7 +1,7 @@
 package perf.ssh.cmd.impl;
 
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.CommandContext;
+import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
 
 public class Sh extends Cmd {
@@ -10,7 +10,7 @@ public class Sh extends Cmd {
         this.command = command;
     }
     @Override
-    protected void run(String input, CommandContext context, CommandResult result) {
+    protected void run(String input, Context context, CommandResult result) {
 
         context.getSession().setCommand(this,result);
         context.getSession().sh(populateStateVariables(command,context.getState()));
