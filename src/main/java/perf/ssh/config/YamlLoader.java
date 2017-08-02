@@ -3,7 +3,6 @@ package perf.ssh.config;
 import org.yaml.snakeyaml.Yaml;
 import perf.ssh.*;
 import perf.ssh.cmd.Cmd;
-import perf.ssh.cmd.Result;
 import perf.ssh.cmd.Script;
 import perf.ssh.cmd.impl.*;
 
@@ -72,8 +71,8 @@ public class YamlLoader {
     public String dump(){
         StringBuilder sb = new StringBuilder();
         sb.append("hosts:\n");
-        for(Host host : runConfig.allHosts().toList()){
-            sb.append("  "+host);
+        for(String host : runConfig.getHostsInRole().toList()){
+            sb.append("  "+runConfig.getHost(host));
             sb.append(System.lineSeparator());
         }
         sb.append("scripts:\n");
@@ -85,7 +84,7 @@ public class YamlLoader {
         for(String roleName : runConfig.getRoleNames()){
             sb.append("  "+roleName+"\n");
             HostList role = runConfig.getRole(roleName);
-            for(Host h : role.toList()){
+            for(String h : role.toList()){
                 sb.append("    "+h+"\n");
                 List<Script> runScripts = runConfig.getRunScripts(h);
                 runScripts.forEach((runScript)->{
@@ -114,7 +113,7 @@ public class YamlLoader {
             for(Object scriptEntry : scriptList){
                 if(scriptEntry instanceof String){
                     addScript.accept(scriptEntry.toString());
-                    //runConfig.allHosts().addSetupScript( runConfig.getScript(setupEntry.toString()) );
+                    //runConfig.getHostsInRole().addSetupScript( runConfig.getScript(setupEntry.toString()) );
                 }else if (scriptEntry instanceof Map){
                     //TODO implement setup-scripts selection
                     Map entryMap = (Map)scriptEntry;
@@ -187,20 +186,26 @@ public class YamlLoader {
                                         Object roleValue = roleMap.get(roleKey);
                                         switch (roleKey.toString()){
                                             case "hosts":
-                                                if(roleValue instanceof String || roleValue instanceof Map){
+                                                if(roleValue instanceof String){
+                                                    role.add(roleValue.toString());
+                                                } else if (roleValue instanceof Map){
                                                     Host h = hostRef.apply(roleValue);
                                                     if(h!=null){
-                                                        role.add(h);
+                                                        //TODO runConfig addHost (make sure it already exists)
+                                                        role.add(h.toString());
                                                     }else{
                                                         errors.add(roleNameString+" could not parse host : "+roleValue);
                                                     }
                                                 }else if (roleValue instanceof List){
                                                     List roleHostList = (List)roleValue;
                                                     for(Object roleHostEntry : roleHostList){
-                                                        if(roleHostEntry instanceof String || roleHostEntry instanceof Map){
+                                                        if(roleHostEntry instanceof String ){
+                                                            role.add(roleHostEntry.toString());
+                                                        } else if (roleHostEntry instanceof Map){
                                                             Host h = hostRef.apply(roleValue);
                                                             if(h!=null){
-                                                                role.add(h);
+                                                                //TODO runConfig addHost (make sure it already exists)
+                                                                role.add(h.toString());
                                                             }else{
                                                                 errors.add(roleNameString+" could not parse host : "+roleHostEntry);
                                                             }
@@ -216,10 +221,10 @@ public class YamlLoader {
                                                 if(roleValue instanceof List){
                                                     List scriptList = (List)roleValue;
                                                     scriptList.forEach((scriptObj)->{
-                                                        role.addRunScript(runConfig.getScript(scriptObj.toString()));
+                                                        role.addRunScript(scriptObj.toString());
                                                     });
                                                 }else if (roleValue instanceof String){
-                                                    role.addRunScript(runConfig.getScript(roleValue.toString()));
+                                                    role.addRunScript(roleValue.toString());
                                                 }else{
                                                     errors.add("run-scripts for "+roleNameString+" unexpected value :"+roleValue);
                                                 }
@@ -229,10 +234,10 @@ public class YamlLoader {
                                                 if(roleValue instanceof List){
                                                     List scriptList = (List)roleValue;
                                                     scriptList.forEach((scriptObj)->{
-                                                        role.addSetupScript(runConfig.getScript(scriptObj.toString()));
+                                                        role.addSetupScript(scriptObj.toString());
                                                     });
                                                 }else if (roleValue instanceof String){
-                                                    role.addSetupScript(runConfig.getScript(roleValue.toString()));
+                                                    role.addSetupScript(roleValue.toString());
                                                 }else{
                                                     errors.add("setup-scripts for "+roleNameString+" unexpected value :"+roleValue);
                                                 }
@@ -241,10 +246,10 @@ public class YamlLoader {
                                                 if(roleValue instanceof List){
                                                     List scriptList = (List)roleValue;
                                                     scriptList.forEach((scriptObj)->{
-                                                        role.addCleanupScript(runConfig.getScript(scriptObj.toString()));
+                                                        role.addCleanupScript(scriptObj.toString());
                                                     });
                                                 }else if (roleValue instanceof String){
-                                                    role.addCleanupScript(runConfig.getScript(roleValue.toString()));
+                                                    role.addCleanupScript(roleValue.toString());
                                                 }else{
                                                     errors.add("cleanup-scripts for "+roleNameString+" unexpected value :"+roleValue);
                                                 }
@@ -261,16 +266,6 @@ public class YamlLoader {
                         }else{
                             errors.add("roles expect a map with rolename : {role options} but saw "+roles);
                         }
-                        break;
-                    case "setup-scripts":
-                        loadScriptCategory(keyString,map.get(key),(scriptName)->{runConfig.allHosts().addSetupScript(runConfig.getScript(scriptName));});
-                        break;
-                    case "run-scripts":
-                        loadScriptCategory(keyString,map.get(key),(scriptName)->{runConfig.allHosts().addRunScript(runConfig.getScript(scriptName));});
-
-                        break;
-                    case "cleanup-scripts":
-                        loadScriptCategory(keyString,map.get(key),(scriptName)->{runConfig.allHosts().addCleanupScript(runConfig.getScript(scriptName));});
                         break;
                     case "states":
                         Object statesObj = map.get(key);
@@ -361,7 +356,6 @@ public class YamlLoader {
         }
     }
     private static Cmd parseCmd(Object input,Class<? extends Cmd> cmdClass,String...args) {
-        System.out.println(cmdClass.getSimpleName()+" "+input);
         final List supported = Arrays.asList("long","int","java.lang.String");
         Cmd rtrn = Cmd.NO_OP();
         try {
@@ -439,7 +433,7 @@ public class YamlLoader {
             for(int i = 0; i<types.length-varArgs.size(); i++){
                 varArgs.add(null);
             }
-            System.out.println(cmdClass.getName()+" "+varArgs);
+
             rtrn = (Cmd) constructor.newInstance(varArgs.toArray());
             return rtrn;
         } catch (IllegalAccessException e) {
@@ -631,7 +625,6 @@ public class YamlLoader {
         }else if (o == null) {
             sb.append("null");
         }else{
-            System.out.println("?? "+o.getClass().getName());
             sb.append(o);
         }
     }

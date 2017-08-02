@@ -7,66 +7,72 @@ import perf.util.HashedList;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
- * A list of hosts that simplify adding scripts to multiple hosts.
- * The HostList has an associated Run and will update the run whenever a script is associated with the list.
+ * A list of host names and script names
  */
 public class HostList {
 
+
     final static Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private HashedList<Host> hosts;
-    private RunConfig runConfig;
-    public HostList(RunConfig runConfig){
-        this(Collections.emptyList(),runConfig);
+    private HashedList<String> hosts;
+
+    private List<String> setupScripts;
+    private List<String> runScripts;
+    private List<String> cleanupScripts;
+
+    public HostList(){
+        this(Collections.emptyList());
     }
-    public HostList(List<Host> hosts,RunConfig runConfig){
+    public HostList(List<String> hosts){
         this.hosts = new HashedList<>(hosts);
-        this.runConfig = runConfig;
+
+        this.setupScripts = new LinkedList<>();
+        this.runScripts = new LinkedList<>();
+        this.cleanupScripts = new LinkedList<>();
+
     }
-    private HostList(HashedList<Host> hosts,RunConfig runConfig){
+    private HostList(HashedList<String> hosts){
         this.hosts = hosts;
-        this.runConfig = runConfig;
     }
-    public HostList add(Host...hosts){
-        for(Host host : hosts){
+    public HostList add(String...hosts){
+        for(String host : hosts){
             this.hosts.add(host);
-            this.runConfig.addHost(host);
         }
         return this;
     }
     public HostList addAll(HostList...otherLists){
         for(HostList hl : otherLists){
             hosts.addAll(hl.toList());
-            runConfig.addAllHosts(hl.toList());
         }
         return this;
     }
-    public HostList filter(Predicate<Host> predicate){
-        HashedList<Host> newList = new HashedList<>();
-        for(Host h : hosts.toList()){
+    public HostList filter(Predicate<String> predicate){
+        HashedList<String> newList = new HashedList<>();
+        for(String h : hosts.toList()){
             if(predicate.test(h)){
                 newList.add(h);
             }
         }
-        return new HostList(newList,runConfig);
+        return new HostList(newList);
     }
-    public HostList reverseFilter(HostList otherList){
-        HashedList<Host> uniqueList = new HashedList<>(this.hosts.toList());
-        HashedList<Host> newList = new HashedList<>(this.hosts.toList());
+    public HostList common(HostList otherList){
+        HashedList<String> uniqueList = new HashedList<>(this.hosts.toList());
+        HashedList<String> newList = new HashedList<>(this.hosts.toList());
         uniqueList.removeAll(otherList.toList());
         newList.removeAll(uniqueList.toList());
-        return new HostList(newList,runConfig);
+        return new HostList(newList);
     }
     public HostList filter(HostList otherList){
-
-        HashedList<Host> newList = new HashedList<>(this.hosts.toList());
+        HashedList<String> newList = new HashedList<>(this.hosts.toList());
         newList.removeAll(otherList.toList());
-        return new HostList(newList,this.runConfig);
+        return new HostList(newList);
     }
     public HostList removeAll(HostList...otherLists){
         for(HostList hl : otherLists){
@@ -74,29 +80,34 @@ public class HostList {
         }
         return this;
     }
-    public List<Host> toList(){
+    public List<String> toList(){
         return hosts.toList();
     }
 
-    public void addRunScript(Script script){
-        for(Host host : hosts.toList()){
-            runConfig.addRunScript(host,script);
-        }
+    public List<String> getRunScripts(){
+        return Collections.unmodifiableList(runScripts);
     }
-    public void addSetupScript(Script script){
-        for(Host host : hosts.toList()){
-            runConfig.addSetupScript(host,script);
-        }
+    public void addRunScript(String script){
+        runScripts.add(script);
     }
-    public void addCleanupScript(Script script){
-        for(Host host : hosts.toList()){
-            runConfig.addCleanupScript(host,script);
-        }
+    public List<String> getSetupScripts(){
+        return Collections.unmodifiableList(setupScripts);
     }
-    public boolean hasHost(Host host){
-        return hosts.contains(host);
+    public void addSetupScript(String script){
+        setupScripts.add(script);
+    }
+    public List<String> getCleanupScripts(){
+        return Collections.unmodifiableList(cleanupScripts);
+    }
+    public void addCleanupScript(String script){
+        cleanupScripts.add(script);
+    }
+
+    public boolean matches(String host){
+        return isEmpty() || hosts.contains(host);
     }
     public int size(){return hosts.size();}
+    public boolean isEmpty(){return size()==0;}
 
     @Override
     public String toString(){

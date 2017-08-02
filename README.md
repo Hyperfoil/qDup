@@ -102,7 +102,6 @@ the parent completes). This is mostly used to monitor output with `regex`
 and to subsequently call `signal STATE` or `ctrlC` the command when a
 condition is met.
 ```YAML
- ...
  - sh: tail -f /tmp/server.log
  - - watch:
      - regex: .*?FATAL.*
@@ -139,13 +138,19 @@ scripts:
   test-script :
     - log: "${{greeting}}, world"
 ```
-__hosts__ a map of hostShortName : host
+__hosts__ a map of name : host
 ```YAML
 hosts:
- - local : me@localhost
+ - local : me@localhost:22
+ - server :
+   - username: user
+   - hostname: server
+   - port: 22 # port is optional and will default to 22
 ```
-__roles___ a map of roleName : a hosts list and at least one of: setup-scripts, run-scripts,
-cleanup-scripts. Hosts must be specified before the scripts section.
+__roles___ a map of roleName : a hosts list and at least one of:
+setup-scripts, run-scripts, cleanup-scripts. If the hosts list is missing
+then the role is applied to all hosts in the run. It is a best practice
+to use a role name that makes it clear it will apply ALL hosts
 ```YAML
 roles:
   test:
@@ -153,11 +158,11 @@ roles:
      - local
     run-scripts:
      - test-script
+  ALL:
+    setup-scripts:
+     - some-script
 ```
-You can also use `setup-scripts`, `run-scripts`, `cleanup-scripts` as
-top level configuration entries to apply scripts to all hosts.
-Eventually we plan to support roles without hosts which will apply to
-all hosts but at the moment that is not available
+
 
 __states__ a nested map of name : value pairs used to inject variables
 into the run configuration. The top level entry must be `run` then the
@@ -178,16 +183,19 @@ states:
 ```
 script commands can reference state variables by surrouning the variable
 names with `${{` `}}` (e.g. `${{greeting}}`)
+
 ### YAML syntax support
 We use snakeyaml to parse the yaml configuration according to the yaml
 spec but this leads to some unique corner cases with how the scripts
 can be structured.
 1. YAML uses `:` to separate a key and value pair so any arguments with
 `:` in the value need to be wrapped in quotes.
-2. YAML does not allow a `key :` to have both a value and child mappings.
-This is a problem when a command has arguemnts but also child commands
+2. YAML does not allow a `key : value` to have a child mappings (e.g. `watch`).
+This is a problem when a command has arguments and child commands
 or watchers. We get around this by using double dash on the child command
-/ watcher.
+or watcher. In YAML this is technically a sibling with a nested list but
+the parser will associate the nested list as a child of the previous
+command.
 ```YAML
  - command: argument
  - - child-command: child-arguments

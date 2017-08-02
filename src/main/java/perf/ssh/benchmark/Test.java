@@ -171,8 +171,8 @@ public class Test {
             .then(Cmd.sleep(10_000))
             .then(Cmd.signal("DONE"));
 
-        runConfig.getRole("test").add(local).addRunScript(runConfig.getRepo().getScript("jstack"));
-        runConfig.getRole("test").addRunScript(runConfig.getRepo().getScript("eap"));
+        runConfig.getRole("test").add(local.toString()).addRunScript("jstack");
+        runConfig.getRole("test").addRunScript("eap");
 
         System.out.println("run.run");
         run.run();

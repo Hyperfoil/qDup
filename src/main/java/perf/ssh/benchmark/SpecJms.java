@@ -9,7 +9,6 @@ import perf.util.StringUtil;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -370,23 +369,23 @@ public class SpecJms {
 
             ScriptRepo repo = runConfig.getRepo();
 
-            runConfig.getRole("server").add(server4);
-            runConfig.getRole("server").addRunScript(repo.getScript("eap"));
+            runConfig.getRole("server").add(server4.toString());
+            runConfig.getRole("server").addRunScript("eap");
             //run.getRole("server").addRunScript(repo.getScript("amq6"));
 
-            runConfig.getRole("database").add(server3);
-            runConfig.getRole("database").addRunScript(repo.getScript("docker-oracle"));
+            runConfig.getRole("database").add(server3.toString());
+            runConfig.getRole("database").addRunScript("docker-oracle");
             //run.getRole("database").addRunScript(repo.getScript("fake-database"));
 
-            runConfig.getRole("controller").add(client1);
-            runConfig.getRole("controller").addRunScript(repo.getScript("controller"));
+            runConfig.getRole("controller").add(client1.toString());
+            runConfig.getRole("controller").addRunScript("controller");
 
-            runConfig.getRole("satellite").add(client1);
-            runConfig.getRole("satellite").addRunScript(repo.getScript("satellite"));
-            runConfig.getRole("satellite").addRunScript(repo.getScript("jstack-SMAgent"));
+            runConfig.getRole("satellite").add(client1.toString());
+            runConfig.getRole("satellite").addRunScript("satellite");
+            runConfig.getRole("satellite").addRunScript("jstack-SMAgent");
 
-            runConfig.allHosts().addSetupScript(repo.getScript("sync-time"));
-            runConfig.allHosts().addRunScript(repo.getScript("dstat"));
+            runConfig.getHostsInRole().addSetupScript("sync-time");
+            runConfig.getHostsInRole().addRunScript("dstat");
 
             System.out.println("Starting");
             long start = System.currentTimeMillis();

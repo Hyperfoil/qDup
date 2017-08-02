@@ -7,12 +7,9 @@ package perf.ssh;
 public class Role extends HostList{
 
     private String name;
-    private RunConfig runConfig;
-
-    protected Role(String name,RunConfig runConfig){
-        super(runConfig);
+    protected Role(String name){
+        super();
         this.name = name;
-        this.runConfig = runConfig;
     }
 
     public String getName(){return name;}

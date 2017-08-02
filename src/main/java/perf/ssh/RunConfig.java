@@ -4,29 +4,58 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.ssh.cmd.CommandSummary;
 import perf.ssh.cmd.Script;
-import perf.util.Counters;
+import perf.util.HashedList;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class RunConfig {
 
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+
+    class HostMap {
+        private HashMap<String,Host> aliases;
+        private HashMap<String,Host> fullyQualified;
+
+        public HostMap(){
+            aliases = new HashMap<>();
+            fullyQualified = new HashMap<>();
+        }
+        public void put(String name,Host host){
+            if(fullyQualified.containsKey(host.toString())){
+                host = fullyQualified.get(host.toString());
+            }
+            aliases.put(name,host);
+        }
+        public boolean contains(String name){
+            return aliases.containsKey(name);
+        }
+        public boolean contains(Host host){
+            return fullyQualified.containsKey(host.toString());
+        }
+        public List<String> getFullyQualifiedNames(){
+            return Collections.unmodifiableList(Arrays.asList(fullyQualified.keySet().toArray(new String[0])));
+        }
+        public Host get(String name){
+            return aliases.get(name);
+        }
+
+    }
 
     private String name;
     private ScriptRepo repo;
     private State state;
+
     private HashMap<String,Role> roles;
-    private HashMap<String,Host> hosts;
-    private HashMap<Host,HostScripts> hostScripts;
+    private HostMap hosts;
 
     public RunConfig(){
         repo = new ScriptRepo();
         state = new State(null,State.RUN_PREFIX);
         roles = new HashMap<>();
-        hosts = new HashMap<>();
-        hostScripts = new HashMap<>();
+        hosts = new HostMap();
     }
 
     public void addRole(Role role){
@@ -34,7 +63,7 @@ public class RunConfig {
     }
     public Role getRole(String name){
         if(!roles.containsKey(name)){
-            roles.put(name,new Role(name,this));
+            roles.put(name,new Role(name));
         }
         return roles.get(name);
     }
@@ -54,92 +83,78 @@ public class RunConfig {
 
     public ScriptRepo getRepo(){return repo;}
 
-    public HostList allHosts(){
-        return new HostList(Arrays.asList(hostScripts.keySet().toArray(new Host[0])),this);
+    public HostList getHostsInRole(){
+        HostList rtrn = new HostList();
+        roles.forEach((roleName,role)->{ rtrn.addAll(role);});
+        return rtrn;
     }
 
     public void addHost(Host host){
         addHost(host.toString(),host);
     }
     public void addHost(String shortname,Host host){
-       ensureHostScripts(host);
        hosts.put(shortname,host);
     }
     public Host getHost(String shortname){
         return hosts.get(shortname);
     }
     public List<String> getHostNames(){
-        return Collections.unmodifiableList(Arrays.asList(hosts.keySet().toArray(new String[0])));
+        return hosts.getFullyQualifiedNames();
     }
     protected void addAllHosts(List<Host> hosts){
         for(Host host : hosts){
             addHost(host);
         }
     }
-    private HostScripts ensureHostScripts(Host host){
-        if(!hostScripts.containsKey(host)){
-            hostScripts.put(host,new HostScripts());
-        }
-        return hostScripts.get(host);
+
+    public List<Script> getCleanupScripts(String host){
+        return getScripts(host,(role)-> role.getCleanupScripts());
     }
-    protected void addRunScript(Host host,Script script){
-        logger.trace("{} addRunScript {}@{}",this,script.getName(),host.getHostName());
-        ensureHostScripts(host).addRunScript(script);
+    public List<Script> getRunScripts(String host){
+        return getScripts(host,(role)-> role.getRunScripts());
     }
-    protected void removeRunScript(Host host,Script script){
-        ensureHostScripts(host).removeRunScript(script);
+    public List<Script> getSetupScripts(String host){
+        return getScripts(host,(role)-> role.getSetupScripts());
     }
-    public List<Script> getRunScripts(Host host){
-        return ensureHostScripts(host).runScripts();
+    private List<Script> getScripts(String host,Function<Role,List<String>> getScriptNames){
+        HashedList<Script> rtrn = new HashedList<>();
+        roles.forEach((roleName,role)->{
+            if(role.matches(host)){
+                getScriptNames.apply(role).forEach((scriptName)->{
+                    Script script = getScript(scriptName);
+                    rtrn.add(script);
+                });
+            }
+        });
+        return rtrn.toList();
     }
-    public boolean validate(){
-        boolean rtrn = true;
-        Counters<String> signalCounters = new Counters<>();
-        HashSet<String> waiters = new HashSet<>();
-        HashSet<String> signals = new HashSet<>();
-        for(Host host : allHosts().toList()){
-            for( Script script : getRunScripts(host) ){
+    public RunValidation validate(){
+        return new RunValidation(
+            validate(this::getSetupScripts),
+            validate(this::getRunScripts),
+            validate(this::getCleanupScripts));
+    }
+    private ConfigValidation validate(Function<String,List<Script>> getScripts){
+        final ConfigValidation rtrn = new ConfigValidation();
+        for(String host : getHostsInRole().toList()){
+            for( Script script : getScripts.apply(host) ){
                 CommandSummary summary = CommandSummary.apply(script,getRepo());
 
                 if(!summary.getWarnings().isEmpty()){
-                    rtrn = false;
                     for(String warning : summary.getWarnings()){
-                        logger.error("{} {}",script.getName(),warning);
+                        rtrn.addError(warning);
                     }
                 }
-                for(String signalName : summary.getSignals()){
-                    logger.trace("{} {}@{} signals {}",this,script.getName(),host.getHostName(),signalName);
-                    signalCounters.add(signalName);
-                }
-                waiters.addAll(summary.getWaits());
-                signals.addAll(summary.getSignals());
+                summary.getWaits().forEach(rtrn::addWait);
+                summary.getSignals().forEach(rtrn::addSignal);
             }
 
         }
-        List<String> noSignal = waiters.stream().filter((waitName)->!signals.contains(waitName)).collect(Collectors.toList());
-        List<String> noWaiters = signals.stream().filter((signalName)->!waiters.contains(signalName)).collect(Collectors.toList());
+        List<String> noSignal = rtrn.getWaiters().stream().filter((waitName)->!rtrn.getSignals().contains(waitName)).collect(Collectors.toList());
+        List<String> noWaiters = rtrn.getSignals().stream().filter((signalName)->!rtrn.getWaiters().contains(signalName)).collect(Collectors.toList());
         if(!noSignal.isEmpty()){
-            logger.error("{} missing signals for {}",this,noSignal);
-            rtrn = false;
-        }
-        if(!noWaiters.isEmpty()){
-            logger.trace("{} nothing waits for {}",this,noWaiters);
+            rtrn.addError("missing signals for "+noSignal);
         }
         return rtrn;
-    }
-
-    protected void addSetupScript(Host host,Script script){
-        logger.trace("{} addSetupScript {}@{}",this,script.getName(),host.getHostName());
-        ensureHostScripts(host).addSetupScript(script);
-    }
-    protected void removeSetupScript(Host host,Script script){
-        ensureHostScripts(host).removeSetupScript(script);
-    }
-    protected List<Script> getSetupScripts(Host host){
-        return ensureHostScripts(host).setupScripts();
-    }
-
-    protected void addCleanupScript(Host host,Script script){
-        ensureHostScripts(host).addCleanupScript(script);
     }
 }
