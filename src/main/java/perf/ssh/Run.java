@@ -18,6 +18,7 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -136,7 +137,7 @@ public class Run implements Runnable {
     }
 
 
-    public boolean preRun(){
+    private boolean preRun(){
         boolean rtrn = true;
 
         Counters<String> signalCounters = new Counters<>();
@@ -250,6 +251,39 @@ public class Run implements Runnable {
             }
             return;
         }
+        List<String> noSignal = new ArrayList<>();
+        Consumer<ConfigValidation> setupCoordinator = (validation)->{
+            validation.getSignals().forEach((signalName)->{
+                int count = validation.getSignalCount(signalName);
+                coordinator.initialize(signalName,count);
+            });
+            validation.getWaiters().stream().filter((waitName)->
+                !validation.getSignals().contains(waitName)
+            ).forEach((notSignaled)->noSignal.add(notSignaled));
+        } ;
+
+        setupCoordinator.accept(runValidation.getSetupValidation());
+        if(!noSignal.isEmpty()){
+            noSignal.forEach((notSignaled)->{
+                runLogger.error("{} setup scripts missing signal for {}",this,notSignaled);
+            });
+            return;
+        }
+        setupCoordinator.accept(runValidation.getRunValidation());
+        if(!noSignal.isEmpty()){
+            noSignal.forEach((notSignaled)->{
+                runLogger.error("{} run scripts missing signal for {}",this,notSignaled);
+            });
+            return;
+        }
+        setupCoordinator.accept(runValidation.getCleanupValidation());
+        if(!noSignal.isEmpty()){
+            noSignal.forEach((notSignaled)->{
+                runLogger.error("{} cleanup scripts missing signal for {}",this,notSignaled);
+            });
+            return;
+        }
+
         runLogger.info("{} starting state:\n{}",config.getName(),config.getState().tree());
         queueSetupScripts();
         try {
