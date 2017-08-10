@@ -10,6 +10,9 @@ Each connection starts by executing a sequence of commands
 in a `Script`. All `Scripts` start at the same time but `waitFor`,
 `signal`, and `repeat-until` commands help coordinate between `Scripts`
 
+## TODO
+ - waitFor when already at 0 does not dispatch?
+
 ## Scripts
 A `Script` a is tree of commands that run one at a time. Each command accepts
 a `String` input from the previous sibling (or parent if no sibling

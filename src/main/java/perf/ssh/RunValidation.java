@@ -24,4 +24,8 @@ public class RunValidation {
     public ConfigValidation getCleanupValidation() {
         return cleanupValidation;
     }
+
+    public boolean isValid(){
+        return !(setupValidation.hasErrors() || runValidation.hasErrors() || cleanupValidation.hasErrors());
+    }
 }

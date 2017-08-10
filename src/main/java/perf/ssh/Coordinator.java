@@ -151,7 +151,12 @@ public class Coordinator {
             logger.error("waitFor {} missing latch, using default latch with count=0",name);
             waiter.next();
         }else {
-            ensureWaitFor(name).add(waiter);
+            //TODO this is a race condition, need a check after adding to the list as well. Refactor out of signal to use same check code
+            if(latches.get(name).get() <=0){
+                waiter.next();
+            }else {
+                ensureWaitFor(name).add(waiter);
+            }
         }
     }
     public void waitFor(String name,Cmd command,CommandResult result,String input, long timeout, TimeUnit unit){

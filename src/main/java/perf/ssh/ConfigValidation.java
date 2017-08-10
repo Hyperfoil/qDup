@@ -44,5 +44,6 @@ public class ConfigValidation {
     public Set<String> getWaiters(){
         return Collections.unmodifiableSet(waiters);
     }
+    public boolean hasErrors(){return !errors.isEmpty();}
 
 }

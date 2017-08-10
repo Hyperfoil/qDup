@@ -51,6 +51,8 @@ public class Run implements Runnable {
 
     private CountDownLatch runLatch = new CountDownLatch(1);
     private Logger runLogger;
+    private ConsoleAppender<ILoggingEvent> consoleAppender;
+    private FileAppender<ILoggingEvent> fileAppender;
 
     public Run(String outputPath,RunConfig config,CommandDispatcher dispatcher){
         this.config = config;
@@ -66,18 +68,19 @@ public class Run implements Runnable {
         consoleLayout.setPattern("%red(%date) %highlight(%msg) %n");
         consoleLayout.setContext(lc);
         consoleLayout.start();
-        ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
+        consoleAppender = new ConsoleAppender<>();
         consoleAppender.setEncoder(consoleLayout);
         consoleAppender.setContext(lc);
         consoleAppender.start();
+
 
         PatternLayoutEncoder fileLayout = new PatternLayoutEncoder();
         fileLayout.setPattern("%date %msg%n");
         fileLayout.setContext(lc);
         fileLayout.start();
         fileLayout.setOutputPatternAsHeader(true);
-        FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
 
+        fileAppender = new FileAppender<>();
         fileAppender.setFile(this.outputPath+ File.separator+"run.log");
         fileAppender.setEncoder(fileLayout);
         fileAppender.setContext(lc);
@@ -174,7 +177,7 @@ public class Run implements Runnable {
         }
         return rtrn;
     }
-    public void setup(){
+    private void queueSetupScripts(){
 
         logger.debug("{}.setup",this);
         CommandDispatcher.Observer setupObserver = new CommandDispatcher.Observer() {
@@ -233,20 +236,27 @@ public class Run implements Runnable {
     public void run() {
 
 
-        runLogger.info("{} starting state:\n{}",config.getName(),config.getState().tree());
-        boolean validated = preRun();
-        if(!validated){
+        RunValidation runValidation = config.validate();
+        if(!runValidation.isValid()){
             //TODO raise warnings if not validated
+            if(runValidation.getSetupValidation().hasErrors()){
+                runValidation.getSetupValidation().getErrors().forEach((error->runLogger.error(error)));
+            }
+            if(runValidation.getRunValidation().hasErrors()){
+                runValidation.getRunValidation().getErrors().forEach((error->runLogger.error(error)));
+            }
+            if(runValidation.getCleanupValidation().hasErrors()){
+                runValidation.getCleanupValidation().getErrors().forEach((error->runLogger.error(error)));
+            }
             return;
         }
-        setup();
-
+        runLogger.info("{} starting state:\n{}",config.getName(),config.getState().tree());
+        queueSetupScripts();
         try {
             runLatch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        runPendingDownloads();
 
         //dispatcher.closeSessions(); //was racing the close sessions from checkActiveCount
     }
@@ -265,7 +275,7 @@ public class Run implements Runnable {
             @Override
             public void onStop() {
                 dispatcher.removeObserver(this);
-                postRun();
+                queueCleanupScripts();
             }
         };
         //TODO parallel connect with ExecutorService.invokeAll(Callable / Runnable)
@@ -319,10 +329,87 @@ public class Run implements Runnable {
         dispatcher.addObserver(runObserver);
         dispatcher.start();
     }
-    public void postRun(){
+    private void queueCleanupScripts(){
+        logger.debug("{}.queueCleanupScripts",this);
+        CommandDispatcher.Observer cleanupObserver = new CommandDispatcher.Observer() {
+            @Override
+            public void onStart(Cmd command) {}
+
+            @Override
+            public void onStop(Cmd command) {}
+
+            @Override
+            public void onStart() {}
+
+            @Override
+            public void onStop() {
+                dispatcher.removeObserver(this);
+                postRun();
+            }
+        };
+
+        //run before cleanup
+        runPendingDownloads();
+
+
+        //TODO parallel connect with ExecutorService.invokeAll(Callable / Runnable)
+        List<Callable<Boolean>> connectSessions = new LinkedList<>();
+
+        for(String host : config.getHostsInRole().toList()){
+            for(Script script : config.getCleanupScripts(host)){
+                connectSessions.add(()->{
+                    State hostState = config.getState().addChild(host,State.HOST_PREFIX);
+                    State scriptState = hostState.getChild(script.getName());
+                    long start = System.currentTimeMillis();
+                    Profiler profiler = profiles.get(script.getName()+"@"+host);
+                    Host h = config.getHost(host);
+                    logger.info("{} connecting {} to {}@{}",this,script.getName(),h.getUserName(),h.getHostName());
+                    profiler.start("connect:"+host.toString());
+                    SshSession scriptSession = new SshSession(h); //this can take some time, hopefully it isn't a problem
+                    profiler.start("waiting for start");
+                    if(!scriptSession.isOpen()){
+                        logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),script.getName(),h.getUserName(),h.getHostName());
+                        abort();
+                        return false;
+                    }
+
+                    long stop = System.currentTimeMillis();
+
+                    Context context = new Context(scriptSession,scriptState,this,profiler);
+                    logger.debug("{} connected {}@{} in {}s",this,script.getName(),host,((stop-start)/1000));
+                    dispatcher.addScript(script, context);
+                    return true;
+                });
+            }
+        }
+        try {
+            boolean ok = dispatcher.getExecutor().invokeAll(connectSessions).stream().map((f) -> {
+                boolean rtrn = false;
+                try {
+                    rtrn = f.get();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+                return rtrn;
+            })
+                    .collect(Collectors.reducing(Boolean::logicalAnd)).get();
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        dispatcher.addObserver(cleanupObserver);
+        dispatcher.start();
+    }
+    private void postRun(){
         logger.debug("{}.postRun",this);
         runLogger.info("{} closing state:\n{}",config.getName(),config.getState().tree());
-        //TODO run cleanups before coordinator.signal
+
+        consoleAppender.stop();
+        fileAppender.stop();
+
         runLatch.countDown();
 
 

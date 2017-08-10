@@ -52,10 +52,14 @@ public class RunConfig {
     private HostMap hosts;
 
     public RunConfig(){
+        this("run-"+System.currentTimeMillis());
+    }
+    public RunConfig(String name){
         repo = new ScriptRepo();
         state = new State(null,State.RUN_PREFIX);
         roles = new HashMap<>();
         hosts = new HostMap();
+        this.name = name;
     }
 
     public void addRole(Role role){
