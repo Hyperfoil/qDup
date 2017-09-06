@@ -44,7 +44,7 @@ public class CommandDispatcher {
         public default void onStart(){}
         public default void onStop(){}
     }
-    class WatcherResult implements  CommandResult {
+    class WatcherResult implements CommandResult {
         private Context context;
         public WatcherResult(Context context){ this.context = context; }
 
@@ -84,12 +84,19 @@ public class CommandDispatcher {
         @Override
         public void next(Cmd command,String output) {
             observers.forEach(o->o.onNext(command,output));
+            if(command!=null){
+                context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
+            }
+
             dispatch(command,command.getNext(),output,this.context,this);
         }
 
         @Override
         public void skip(Cmd command,String output) {
             observers.forEach(o->o.onSkip(command,output));
+            if(command!=null){
+                context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
+            }
             dispatch(command,command.getSkip(),"",this.context,this);
         }
 
@@ -103,7 +110,7 @@ public class CommandDispatcher {
                 }
 
             }catch(Exception e){
-                logger.error("{} Error: {}",command,e.getMessage(),e);
+                logger.error("{}@{}:{} Error: {}",command.getHead(),context.getSession().getHost().toString(),command,e.getMessage(),e);
             }
         }
     }
@@ -257,6 +264,7 @@ public class CommandDispatcher {
 
         this.observers = new LinkedList<>();
 
+        this.nannyFuture = null;
         this.isStopped = true;
     }
 
@@ -287,7 +295,7 @@ public class CommandDispatcher {
     public ExecutorService getExecutor(){return executor;}
 
     public void addScript(Script script,Context context){
-        logger.info("add script {} to {}",script.getName(),context.getSession().getHostName());
+        logger.trace("add script {} to {}",script.getName(),context.getSession().getHostName());
 
         script = (Script)script.deepCopy();
 
@@ -325,8 +333,8 @@ public class CommandDispatcher {
         logger.info("starting {} scripts",script2Result.size());
         if(!script2Result.isEmpty()){
             BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
-                logger.trace("nanny checking {}",command);
-                if(activeCommands.containsKey(command) && command instanceof Sh){
+                logger.info("nanny checking {}",command);
+                if(activeCommands.containsKey(command) /*&& command instanceof Sh*/){
                     long lastUpdate = activeCommands.get(command).getLastUpdate();
                     if(timestamp - lastUpdate > THRESHOLD){
                         logger.warn("{} idle for {}",
@@ -337,6 +345,7 @@ public class CommandDispatcher {
                 }
             };
             if(nannyFuture == null) {
+                logger.info("starting nanny");
                 nannyFuture = scheduler.scheduleAtFixedRate(() -> {
                     long timestamp = System.currentTimeMillis();
                     try {
@@ -351,7 +360,7 @@ public class CommandDispatcher {
             for(ScriptResult scriptResult : script2Result.values()){
                 Script script = scriptResult.getScript();
                 ContextedResult result = scriptResult.getResult();
-                logger.info("starting {}@{}",script.getName(),result.context.getSession().getHostName());
+                logger.info("starting {}:{}",script.getName(),result.context.getSession().getHostName());
                 dispatch(null,script,"",result.context,result);
             }
         }else{
@@ -465,7 +474,7 @@ public class CommandDispatcher {
             context.getProfiler().setLogger(context.getRunLogger());
             context.getProfiler().log();
             if(context.getRunLogger().isInfoEnabled()){
-                context.getRunLogger().info("{}@{} closing script state:\n{}",
+                context.getRunLogger().info("{}:{} closing script state:\n{}",
                         script2Result.get(command.getHead()).getScript().getName(),
                         context.getSession().getHostName(),
                         context.getState().tree());
@@ -489,13 +498,8 @@ public class CommandDispatcher {
         logger.debug("{}.closeSessions",this);
         script2Result.values().forEach(scriptResult -> {
             logger.debug("closing connection to {}",scriptResult.getResult().context.getSession().getHostName());
-            scriptResult.getResult().context.getSession().close();
-            if(scriptResult.getResult().context.getRunLogger().isInfoEnabled()){
-                scriptResult.getResult().context.getRunLogger().info("{}@{} closing state:\n{}",
-                        scriptResult.getScript().getName(),
-                        scriptResult.getResult().context.getSession().getHostName(),
-                        scriptResult.getResult().context.getState());
-            }
+            //don't wait will force running commands (holding shell lock) to be closed
+            scriptResult.getResult().context.getSession().close(false);
         });
         script2Result.clear();
         isStopped=true;

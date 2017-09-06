@@ -6,7 +6,12 @@ import perf.ssh.cmd.CommandResult;
 
 public class Log extends Cmd {
     String value;
-    public Log(String value){ this.value = value; }
+    public Log(String value){
+        this.value = value;
+        if(this.value==null){
+            this.value="";
+        }
+    }
     @Override
     protected void run(String input, Context context, CommandResult result) {
         context.getRunLogger().info(Cmd.populateStateVariables(value,context.getState()));

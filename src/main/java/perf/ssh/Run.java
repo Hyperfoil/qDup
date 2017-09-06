@@ -54,9 +54,11 @@ public class Run implements Runnable {
     private Logger runLogger;
     private ConsoleAppender<ILoggingEvent> consoleAppender;
     private FileAppender<ILoggingEvent> fileAppender;
+    private RunValidation validation;
 
     public Run(String outputPath,RunConfig config,CommandDispatcher dispatcher){
         this.config = config;
+        this.validation = config.validate();
         this.outputPath = outputPath;
         this.dispatcher = dispatcher;
         this.aborted = false;
@@ -117,7 +119,6 @@ public class Run implements Runnable {
         logger.info("{} runPendingDownloads",config.getName());
         if(!pendingDownloads.isEmpty()){
             for(Host host : pendingDownloads.keySet()){
-                System.out.println("  Host:"+host.toString());
                 List<PendingDownload> downloadList = pendingDownloads.get(host);
                 for(PendingDownload pendingDownload : downloadList){
                     Local.get().download(pendingDownload.getPath(),pendingDownload.getDestination(),host);
@@ -126,57 +127,13 @@ public class Run implements Runnable {
             pendingDownloads.clear();
         }
     }
-
     public void abort(){
         //TODO how to interrupt watchers
         this.aborted = true;
         logger.trace("abort");
-        dispatcher.stop();//interupts working threads and stops dispatching next commands
+        dispatcher.stop();//interrupts working threads and stops dispatching next commands
         runLatch.countDown();
 
-    }
-
-
-    private boolean preRun(){
-        boolean rtrn = true;
-
-        Counters<String> signalCounters = new Counters<>();
-        HashSet<String> waiters = new HashSet<>();
-        HashSet<String> signals = new HashSet<>();
-        for(String host : config.getHostsInRole().toList()){
-            for( Script script : config.getRunScripts(host) ){
-                CommandSummary summary = CommandSummary.apply(script,config.getRepo());
-
-                if(!summary.getWarnings().isEmpty()){
-                    rtrn = false;
-                    for(String warning : summary.getWarnings()){
-                        logger.error("{} {}",script.getName(),warning);
-                    }
-                }
-                for(String signalName : summary.getSignals()){
-                    logger.trace("{} {}@{} signals {}",this,script.getName(),host,signalName);
-                    signalCounters.add(signalName);
-                }
-                waiters.addAll(summary.getWaits());
-                signals.addAll(summary.getSignals());
-            }
-
-        }
-        signalCounters.entries().forEach((signalName)->{
-            int count = signalCounters.count(signalName);
-            logger.trace("{} coordinator {}={}",this,signalName,count);
-            this.getCoordinator().initialize(signalName,count);
-        });
-        List<String> noSignal = waiters.stream().filter((waitName)->!signals.contains(waitName)).collect(Collectors.toList());
-        List<String> noWaiters = signals.stream().filter((signalName)->!waiters.contains(signalName)).collect(Collectors.toList());
-        if(!noSignal.isEmpty()){
-            logger.error("{} missing signals for {}",this,noSignal);
-            rtrn = false;
-        }
-        if(!noWaiters.isEmpty()){
-            logger.trace("{} nothing waits for {}",this,noWaiters);
-        }
-        return rtrn;
     }
     private void queueSetupScripts(){
 
@@ -291,6 +248,9 @@ public class Run implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        //moved to here because abort would avoid the cleanup in postRun()
+        fileAppender.stop();
+        consoleAppender.stop();
 
         //dispatcher.closeSessions(); //was racing the close sessions from checkActiveCount
     }
@@ -364,7 +324,7 @@ public class Run implements Runnable {
         dispatcher.start();
     }
     private void queueCleanupScripts(){
-        logger.debug("{}.queueCleanupScripts",this);
+        logger.info("{}.queueCleanupScripts",this);
         CommandDispatcher.Observer cleanupObserver = new CommandDispatcher.Observer() {
             @Override
             public void onStart(Cmd command) {}
@@ -416,33 +376,32 @@ public class Run implements Runnable {
                 });
             }
         }
-        try {
-            boolean ok = dispatcher.getExecutor().invokeAll(connectSessions).stream().map((f) -> {
-                boolean rtrn = false;
-                try {
-                    rtrn = f.get();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                }
-                return rtrn;
-            })
-                    .collect(Collectors.reducing(Boolean::logicalAnd)).get();
+        if(!connectSessions.isEmpty()) {
+            try {
+                boolean ok = dispatcher.getExecutor().invokeAll(connectSessions).stream().map((f) -> {
+                    boolean rtrn = false;
+                    try {
+                        rtrn = f.get();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                    return rtrn;
+                })
+                        .collect(Collectors.reducing(Boolean::logicalAnd)).get();
 
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         dispatcher.addObserver(cleanupObserver);
         dispatcher.start();
     }
     private void postRun(){
-        logger.debug("{}.postRun",this);
+        logger.info("{}.postRun",this);
         runLogger.info("{} closing state:\n{}",config.getName(),config.getState().tree());
-
-        consoleAppender.stop();
-        fileAppender.stop();
 
         runLatch.countDown();
 

@@ -12,6 +12,7 @@ in a `Script`. All `Scripts` start at the same time but `waitFor`,
 
 ## TODO
  - waitFor when already at 0 does not dispatch?
+ - abort doesn't stop waitFor
 
 ## Scripts
 A `Script` a is tree of commands that run one at a time. Each command accepts

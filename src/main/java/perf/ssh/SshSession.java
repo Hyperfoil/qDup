@@ -233,6 +233,9 @@ public class SshSession implements Runnable, Consumer<String>{
             try {
                 if (wait) {
                     try {
+                        if(shellLock.availablePermits()<=0){
+                            logger.info("{} still locked by {}",this.getHost(),this.command);
+                        }
                         shellLock.acquire();
                     } catch (InterruptedException e) {
                         e.printStackTrace();

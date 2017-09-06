@@ -60,7 +60,6 @@ public class SshRunner {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 
-        URL url = ClassLoader.getSystemResource("specjms.yaml");
         String cmdLineSyntax = "[options] [yamlFiles]";
 
             cmdLineSyntax =
@@ -111,6 +110,7 @@ public class SshRunner {
 
         RunConfig config = loader.getRunConfig();
 
+        System.out.println("Hosts: "+config.getHostsInRole().toList());
         Properties stateProps = cmd.getOptionProperties("S");
         if(!stateProps.isEmpty()){
             System.out.println("Setting custom state:");

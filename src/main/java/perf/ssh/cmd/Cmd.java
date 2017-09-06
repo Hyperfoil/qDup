@@ -60,6 +60,7 @@ public abstract class Cmd {
     public static Cmd xpath(String path){return new XPath(path);}
 
     public static String populateStateVariables(String command,State state){
+
         if(command.indexOf(ENV_PREFIX)<0)
             return command;
 

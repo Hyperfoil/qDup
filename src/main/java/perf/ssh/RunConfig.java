@@ -89,7 +89,11 @@ public class RunConfig {
 
     public HostList getHostsInRole(){
         HostList rtrn = new HostList();
-        roles.forEach((roleName,role)->{ rtrn.addAll(role);});
+        roles.forEach(
+            (roleName,role)->{
+                rtrn.addAll(role);
+            }
+        );
         return rtrn;
     }
 

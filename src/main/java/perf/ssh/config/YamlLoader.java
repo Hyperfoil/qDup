@@ -197,6 +197,7 @@ public class YamlLoader {
                                                         errors.add(roleNameString+" could not parse host : "+roleValue);
                                                     }
                                                 }else if (roleValue instanceof List){
+
                                                     List roleHostList = (List)roleValue;
                                                     for(Object roleHostEntry : roleHostList){
                                                         if(roleHostEntry instanceof String ){
@@ -218,7 +219,9 @@ public class YamlLoader {
                                                 }
                                                 break;
                                             case "run-scripts":
-                                                if(roleValue instanceof List){
+                                                if(roleValue == null){
+
+                                                }else if(roleValue instanceof List){
                                                     List scriptList = (List)roleValue;
                                                     scriptList.forEach((scriptObj)->{
                                                         role.addRunScript(scriptObj.toString());
@@ -231,7 +234,9 @@ public class YamlLoader {
 
                                                 break;
                                             case "setup-scripts":
-                                                if(roleValue instanceof List){
+                                                if(roleValue == null) {
+
+                                                }else if(roleValue instanceof List){
                                                     List scriptList = (List)roleValue;
                                                     scriptList.forEach((scriptObj)->{
                                                         role.addSetupScript(scriptObj.toString());
@@ -243,7 +248,9 @@ public class YamlLoader {
                                                 }
                                                 break;
                                             case "cleanup-scripts":
-                                                if(roleValue instanceof List){
+                                                if(roleValue == null){
+
+                                                }else if(roleValue instanceof List){
                                                     List scriptList = (List)roleValue;
                                                     scriptList.forEach((scriptObj)->{
                                                         role.addCleanupScript(scriptObj.toString());
@@ -280,7 +287,15 @@ public class YamlLoader {
                                             Map runMap = (Map)statesValue;
                                             for(Object runKey : runMap.keySet()){
                                                 Object runValue = runMap.get(runKey);
-                                                runConfig.getState().set(runKey.toString(),runValue.toString());
+                                                if(runValue==null){
+                                                    runValue="";
+                                                }
+                                                try {
+                                                    runConfig.getState().set(runKey.toString(), runValue.toString());
+                                                }catch (RuntimeException e){
+                                                    System.out.println(e.getMessage()+" runKey="+runKey+" runValue+"+runValue);
+                                                    throw e;
+                                                }
                                             }
                                         }else{
                                             errors.add("states: run: expects a map of {key : value} but saw "+statesValue);
