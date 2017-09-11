@@ -34,6 +34,7 @@ public class SshSession implements Runnable, Consumer<String>{
 
     private static String knownHosts = DEFAULT_KNOWN_HOSTS;
     private static String identity = DEFAULT_IDENTITY;
+    private static String passphrase = null;
 
     private Session session;
     private ChannelShell channelShell;
@@ -66,7 +67,12 @@ public class SshSession implements Runnable, Consumer<String>{
         JSch jsch = new JSch();
         try {
             jsch.setKnownHosts(knownHosts);
-            jsch.addIdentity(identity);
+            String passphrase = System.getProperty( "passphrase" );
+            if ( passphrase == null ) {
+                jsch.addIdentity( identity );
+            } else {
+                jsch.addIdentity( identity, passphrase );
+            }
             session = jsch.getSession(host.getUserName(),host.getHostName(),host.getPort());
             session.setConfig(sshConfig);
             session.connect(5*60_000);
