@@ -283,6 +283,11 @@ public class Run implements Runnable {
                     long start = System.currentTimeMillis();
                     Profiler profiler = profiles.get(script.getName()+"@"+host);
                     Host h = config.getHost(host);
+                    if ( h == null ){
+                        logger.error("host '{}' is not defined. Aborting", host);
+                        abort();
+                        return false;
+                    }
                     logger.info("{} connecting {} to {}@{}",this,script.getName(),h.getUserName(),h.getHostName());
                     profiler.start("connect:"+host.toString());
                     SshSession scriptSession = new SshSession(h); //this can take some time, hopefully it isn't a problem
