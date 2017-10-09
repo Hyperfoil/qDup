@@ -66,12 +66,15 @@ public class SshSession implements Runnable, Consumer<String>{
         sshConfig.put("StrictHostKeyChecking", "no");
         JSch jsch = new JSch();
         try {
-            jsch.setKnownHosts(knownHosts);
+            String knownHostsFile = System.getProperty( "knownHosts" ) == null ? DEFAULT_KNOWN_HOSTS : System.getProperty( "knownHosts" );
             String passphrase = System.getProperty( "passphrase" );
+            String identifyFile = System.getProperty( "identity" ) == null ? DEFAULT_IDENTITY : System.getProperty( "identity" );
+
+            jsch.setKnownHosts(knownHostsFile);
             if ( passphrase == null ) {
-                jsch.addIdentity( identity );
+                jsch.addIdentity( identifyFile );
             } else {
-                jsch.addIdentity( identity, passphrase );
+                jsch.addIdentity( identifyFile, passphrase );
             }
             session = jsch.getSession(host.getUserName(),host.getHostName(),host.getPort());
             session.setConfig(sshConfig);
