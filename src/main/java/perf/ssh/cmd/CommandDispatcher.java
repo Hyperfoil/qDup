@@ -355,7 +355,7 @@ public class CommandDispatcher {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                }, THRESHOLD, THRESHOLD, TimeUnit.SECONDS);
+                }, THRESHOLD, THRESHOLD, TimeUnit.MILLISECONDS);
             }
             for(ScriptResult scriptResult : script2Result.values()){
                 Script script = scriptResult.getScript();
