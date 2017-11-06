@@ -56,6 +56,8 @@ any currently running command (e.g. `sh: tail -f /tmp/server.log`)
 * `download: <path> ?<destination>`
 download `path` from the connected host and save the output to the
 run output path + `destination`
+* `upload: <path> <destination>`
+upload a file from the local `path` to `destination` on the remote host
 * `echo:`
 log the input to console
 * `log: <message>`
@@ -109,12 +111,12 @@ condition is met.
  - sh: tail -f /tmp/server.log
  - - watch:
      - regex: .*?FATAL.*
-       - ctrlC:
+     - - ctrlC:
        - abort: FATAL error
 ```
 
 Note: `sh`, `waitFor`, and `repeat-until` cannot be used when watching
-a command because they can block the exection of other watchers.
+a command because they can block the execution of other watchers.
 
 ## State
 State is the main way to introduce variability into a run. Commands can
@@ -184,6 +186,12 @@ states:
         greeting: hello
       other-script:
         greeting: hola
+  host:
+    hostName:
+      key: value
+      script:
+        scriptName:
+          key2: value2
 ```
 script commands can reference state variables by surrouning the variable
 names with `${{` `}}` (e.g. `${{greeting}}`)
