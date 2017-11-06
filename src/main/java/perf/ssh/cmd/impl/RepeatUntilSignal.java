@@ -13,7 +13,9 @@ public class RepeatUntilSignal extends Cmd {
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
-        int amount = context.getCoordinator().getSignalCount(name);
+        String populatedName = Cmd.populateStateVariables(name,context.getState());
+
+        int amount = context.getCoordinator().getSignalCount(populatedName);
         if( amount > 0 ){
             result.next(this,input);
         }else{
