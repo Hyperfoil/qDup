@@ -484,6 +484,9 @@ public class YamlLoader {
                 case "download":
                     rtrn = parseCmd(value,Download.class,"path","destination");
                     break;
+                case "upload":
+                    rtrn = parseCmd(value,Upload.class,"path","destination");
+                    break;
                 case "echo":
                     rtrn = parseCmd(value,Echo.class);
                     break;
