@@ -34,7 +34,7 @@ public class XPath extends Cmd {
             path = path.substring(path.indexOf(FileUtility.SEARCH_KEY)+FileUtility.SEARCH_KEY.length());
             try {
                 File tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
-                Local.get().download(filePath,tmpDest.getPath(),context.getSession().getHost());
+                context.getLocal().download(filePath,tmpDest.getPath(),context.getSession().getHost());
                 xml = loader.loadXml(tmpDest.toPath());
                 int opIndex = FileUtility.OPERATIONS.stream().mapToInt(op->{
                     int rtrn = path.indexOf(op);
@@ -63,7 +63,7 @@ public class XPath extends Cmd {
                         try(  PrintWriter out = new PrintWriter( tmpDest )  ){
                             out.print(xml.documentString());
                         }
-                        Local.get().upload(tmpDest.getPath(),filePath,context.getSession().getHost());
+                        context.getLocal().upload(tmpDest.getPath(),filePath,context.getSession().getHost());
                         tmpDest.delete();
                         result.next(this,input);//TODO decide a more appropriate output
                     }

@@ -2,10 +2,7 @@ package perf.ssh.cmd;
 
 import org.slf4j.Logger;
 import org.slf4j.profiler.Profiler;
-import perf.ssh.Coordinator;
-import perf.ssh.Run;
-import perf.ssh.SshSession;
-import perf.ssh.State;
+import perf.ssh.*;
 
 import java.util.concurrent.TimeUnit;
 
@@ -55,4 +52,5 @@ public final class Context {
     public void abort(){
         run.abort();
     }
+    public Local getLocal(){return run.getLocal();}
 }

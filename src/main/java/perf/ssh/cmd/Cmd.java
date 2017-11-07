@@ -38,6 +38,7 @@ public abstract class Cmd {
     public static Cmd ctrlC(){return new CtrlC();}
     public static Cmd download(String path){return new Download(path);}
     public static Cmd download(String path,String destination){return new Download(path,destination);}
+    public static Cmd upload(String path,String destination){return new Upload(path,destination);}
     public static Cmd echo(){ return new Echo(); }
     public static Cmd invoke(Cmd command){ return new InvokeCmd(command);}
     public static Cmd log(String value){ return new Log(value); }

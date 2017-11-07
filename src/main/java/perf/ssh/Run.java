@@ -47,6 +47,7 @@ public class Run implements Runnable {
     private Coordinator coordinator;
     private CommandDispatcher dispatcher;
     private Profiles profiles;
+    private Local local;
 
     private Map<Host,List<PendingDownload>> pendingDownloads;
 
@@ -65,6 +66,7 @@ public class Run implements Runnable {
 
         this.profiles = new Profiles();
         this.coordinator = new Coordinator();
+        this.local = new Local(config);
 
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         PatternLayoutEncoder consoleLayout = new PatternLayoutEncoder();
@@ -101,6 +103,8 @@ public class Run implements Runnable {
 
         this.pendingDownloads = new ConcurrentHashMap<>();
     }
+    public Local getLocal(){return local;}
+
     public RunConfig getConfig(){return config;}
     public boolean isAborted(){return aborted;}
     public Logger getRunLogger(){return runLogger;}
@@ -121,7 +125,7 @@ public class Run implements Runnable {
             for(Host host : pendingDownloads.keySet()){
                 List<PendingDownload> downloadList = pendingDownloads.get(host);
                 for(PendingDownload pendingDownload : downloadList){
-                    Local.get().download(pendingDownload.getPath(),pendingDownload.getDestination(),host);
+                    local.download(pendingDownload.getPath(),pendingDownload.getDestination(),host);
                 }
             }
             pendingDownloads.clear();
@@ -169,7 +173,7 @@ public class Run implements Runnable {
                 Host h = config.getHost(host);
                 logger.info("{} connecting {} to {}@{}",this,hostSetup.getName(),h.getUserName(),h.getHostName());
                 profiler.start("connect:"+host.toString());
-                SshSession scriptSession = new SshSession(h);
+                SshSession scriptSession = new SshSession(h,config.getKnownHosts(),config.getIdentity(),config.getPassphrase());
                 profiler.start("waiting for start");
                 if(!scriptSession.isOpen()){
                     logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),hostSetup.getName(),h.getUserName(),h.getHostName());
@@ -290,7 +294,7 @@ public class Run implements Runnable {
                     }
                     logger.info("{} connecting {} to {}@{}",this,script.getName(),h.getUserName(),h.getHostName());
                     profiler.start("connect:"+host.toString());
-                    SshSession scriptSession = new SshSession(h); //this can take some time, hopefully it isn't a problem
+                    SshSession scriptSession = new SshSession(h,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
                     profiler.start("waiting for start");
                     if(!scriptSession.isOpen()){
                         logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),script.getName(),h.getUserName(),h.getHostName());
@@ -364,7 +368,7 @@ public class Run implements Runnable {
                     Host h = config.getHost(host);
                     logger.info("{} connecting {} to {}@{}",this,script.getName(),h.getUserName(),h.getHostName());
                     profiler.start("connect:"+host.toString());
-                    SshSession scriptSession = new SshSession(h); //this can take some time, hopefully it isn't a problem
+                    SshSession scriptSession = new SshSession(h,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
                     profiler.start("waiting for start");
                     if(!scriptSession.isOpen()){
                         logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),script.getName(),h.getUserName(),h.getHostName());
@@ -409,7 +413,6 @@ public class Run implements Runnable {
         runLogger.info("{} closing state:\n{}",config.getName(),config.getState().tree());
 
         runLatch.countDown();
-
 
     }
 

@@ -32,7 +32,7 @@ public class Download extends Cmd {
             destinationFile.mkdirs();
         }
 
-        Local.get().download(remotePath,destinationPath,context.getSession().getHost());
+        context.getLocal().download(remotePath,destinationPath,context.getSession().getHost());
         result.next(this,path);
     }
 

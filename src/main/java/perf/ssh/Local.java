@@ -26,11 +26,6 @@ public class Local {
 
     final static Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private static final Local INSTANCE = new Local();
-    public static final Local get(){
-        return INSTANCE;
-    }
-
     static class DownloadInfo {
         private long targetSize;
         private long startTime;
@@ -125,19 +120,33 @@ public class Local {
         public Cmd getCommand(){return command;}
     }
 
-
     private ThreadPoolExecutor executor;
     private Map<String,Queue<DownloadAction>> downloadQueue;
     private Set<String> activeHosts;
-
 
     private Map<File,Long> startTimes;
     private Map<File,Long> previousSize;
     private Map<File,Long> previousTimes;
     private Map<File,Long> targetSize;
 
-    private Local(){
+    private String ssh;
 
+
+    public Local(RunConfig config){
+        if(config!=null && (config.hasCustomIdentity() || config.hasCustomKnownHosts() || config.hasCustomPassphrase())){
+            this.ssh="/usr/bin/ssh ";
+            if(config.hasCustomKnownHosts()){
+                this.ssh+="-o UserKnownHostsFile="+config.getKnownHosts()+" ";
+            }
+            if(config.hasCustomIdentity()){
+                this.ssh+="-i "+config.getIdentity()+" ";
+            }
+            if(config.hasCustomPassphrase()){
+                storePassphrase(config.getIdentity(),config.getPassphrase());
+            }
+        }else{
+            this.ssh = null;
+        }
     }
 
     public void upload(String path,String destination,Host host){
@@ -148,6 +157,39 @@ public class Local {
             String userName = host.getUserName();
             logger.info("Local.upload({},{}@{}:{})",path,userName,hostName,destination);
             rsyncSend(userName, hostName, path, destination);
+
+        }
+    }
+    private void storePassphrase(String identity, String passphrase){
+        if(passphrase!=RunConfig.DEFAULT_PASSPHRASE){
+            ProcessBuilder builder = new ProcessBuilder();
+            builder.command("/usr/bin/ssh-add", identity);
+            try {
+                Process p =  builder.start();
+                final InputStream inputStream = p.getInputStream();
+                final OutputStream outputStream = p.getOutputStream();
+                final InputStream errorStream = p.getErrorStream();
+
+                outputStream.write(passphrase.getBytes());
+                outputStream.flush();
+                int result = p.waitFor();
+                logger.debug("ssh-add.result = {}",result);
+                String line = null;
+                BufferedReader reader = null;
+                reader = new BufferedReader(new InputStreamReader(errorStream));
+                while( (line=reader.readLine())!=null){
+                    logger.error("  E: {}",line);
+                }
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+                while( (line=reader.readLine())!=null){
+                    logger.trace("  I: {}",line);
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
         }
     }
@@ -164,7 +206,11 @@ public class Local {
     }
     private void rsyncSend(String userName, String hostName, String path, String dest){
         ProcessBuilder builder = new ProcessBuilder();
-        builder.command("/usr/bin/rsync", "-avz", path,userName + "@" + hostName+":"+dest);
+        if(this.ssh==null) {
+            builder.command("/usr/bin/rsync", "-avz", path, userName + "@" + hostName + ":" + dest);
+        }else{
+            builder.command("/usr/bin/rsync", "-avz", "-e",this.ssh,path, userName + "@" + hostName + ":" + dest);
+        }
         try {
             Process p =  builder.start();
             final InputStream inputStream = p.getInputStream();
@@ -177,7 +223,7 @@ public class Local {
             BufferedReader reader = null;
             reader = new BufferedReader(new InputStreamReader(errorStream));
             while( (line=reader.readLine())!=null){
-                logger.trace("  E: {}",line);
+                logger.error("  E: {}",line);
             }
             reader = new BufferedReader(new InputStreamReader(inputStream));
             while( (line=reader.readLine())!=null){
@@ -204,8 +250,12 @@ public class Local {
         }
 
         ProcessBuilder builder = new ProcessBuilder();
-        builder.command("/usr/bin/rsync", "-avz", userName + "@" + hostName+":"+path,dest);
-
+        if(this.ssh==null) {
+            builder.command("/usr/bin/rsync", "-avz", userName + "@" + hostName + ":" + path, dest);
+        }else{
+            builder.command("/usr/bin/rsync", "-avz", "-e",this.ssh, userName + "@" + hostName + ":" + path, dest);
+        }
+        System.out.println(builder.command());
         try {
             Process p =  builder.start();
             final InputStream inputStream = p.getInputStream();
@@ -277,9 +327,15 @@ public class Local {
 
         ProcessBuilder builder = new ProcessBuilder();
 
-        Local local = new Local();
+        Local local = new Local(null);
 
-        List<RemoteFileInfo> remoteFiles = local.listRemoteFiles("benchuser","benchclient1","/tmp/foo/*");
+        local.ssh="ssh -i /home/wreicher/.ssh/id_rsa -o UserKnownHostsFile=/home/wreicher/.ssh/known_hosts";
+
+        local.rsyncFetch("benchuser","benchserver6","/tmp/foo","/tmp");
+
+        System.exit(0);
+
+        List<RemoteFileInfo> remoteFiles = local.listRemoteFiles("benchuser","benchserver6","/tmp/foo/*");
 
         System.exit(0);
 

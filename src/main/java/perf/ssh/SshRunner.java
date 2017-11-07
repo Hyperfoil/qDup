@@ -56,6 +56,32 @@ public class SshRunner {
             .build();
         options.addOption(state);
 
+        Option knownHosts = Option.builder("k")
+            .longOpt("knownHosts")
+            .desc("ssh known hosts path (default to ~/.ssh/known_hosts)")
+            .hasArg()
+            .argName("path")
+            .type(String.class)
+            .build();
+        options.addOption(knownHosts);
+        Option passphrase = Option.builder("p")
+            .longOpt("passphrase")
+            .desc("ssh passphrase for identify file (default no passphrase)")
+            .hasArgs()
+            .optionalArg(true)
+            .argName("password")
+            .type(String.class)
+            .build();
+        options.addOption(passphrase);
+        Option identify = Option.builder("i")
+            .longOpt("identity")
+            .argName("path")
+            .hasArg()
+            .desc("ssh identity path (default to ~/.ssh/id_rsa)")
+            .type(String.class)
+            .build();
+        options.addOption(identify);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
@@ -110,6 +136,21 @@ public class SshRunner {
 
         RunConfig config = loader.getRunConfig();
 
+        if (cmd.hasOption("knownHosts") ){
+            config.setKnownHosts(cmd.getOptionValue("knownHosts"));
+            System.out.println("knownHosts="+config.getKnownHosts());
+        }
+        if (cmd.hasOption("identity") ){
+            config.setIdentity(cmd.getOptionValue("identity"));
+            System.out.println("identity="+config.getIdentity());
+        }
+        if (cmd.hasOption("passphrase") && cmd.getOptionValue("passphrase")!=RunConfig.DEFAULT_PASSPHRASE){
+            config.setPassphrase(cmd.getOptionValue("passphrase"));
+            System.out.println("passphrase="+config.getPassphrase());
+
+        }
+
+
         System.out.println("Hosts: "+config.getHostsInRole().toList());
         Properties stateProps = cmd.getOptionProperties("S");
         if(!stateProps.isEmpty()){
@@ -130,7 +171,7 @@ public class SshRunner {
 
         ThreadFactory factory = r -> new Thread(r,"command-"+factoryCounter.getAndIncrement());
         ThreadPoolExecutor executor = new ThreadPoolExecutor(8,24,30, TimeUnit.MINUTES,workQueue,factory);
-        ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(24, runnable -> new Thread(runnable,"scheduled-"+scheduledCounter.getAndIncrement()));
+        ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(4, runnable -> new Thread(runnable,"scheduled-"+scheduledCounter.getAndIncrement()));
 
         CommandDispatcher dispatcher = new CommandDispatcher(executor,scheduled);
 

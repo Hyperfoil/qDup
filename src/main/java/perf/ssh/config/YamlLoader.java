@@ -8,6 +8,7 @@ import perf.ssh.cmd.impl.*;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
@@ -99,12 +100,15 @@ public class YamlLoader {
 
     public void load(String yamlPath){
         try {
-            for(Object obj : yaml.loadAll(new FileReader(yamlPath))){
-                readObject(obj,yamlPath);
-            }
+            load( yamlPath, new FileReader(yamlPath) );
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            errors.add("failed to load "+yamlPath);
         }
+    }
+
+    public void load(String fileName, Reader yamlReader){
+        readObject(yaml.load(yamlReader), fileName);
     }
 
     private void loadScriptCategory(String key,Object scriptObject,Consumer<String> addScript){
@@ -316,12 +320,21 @@ public class YamlLoader {
                                                         if(hostEntryValue instanceof Map && hostEntryString.equals("script")){//script
                                                             String scriptName = hostEntryString;
                                                             Map scriptMap = (Map)hostEntryValue;
-                                                            State scriptState = hostState.addChild(scriptName,null);
                                                             for(Object scriptEntry : scriptMap.keySet()){
                                                                 String scriptEntryString = scriptEntry.toString();
                                                                 Object scriptEntryValue = scriptMap.get(scriptEntry);
-                                                                if(scriptEntryValue instanceof String){
-                                                                    scriptState.set(scriptEntryString,(String)scriptEntryValue);
+                                                                State scriptState = hostState.addChild(scriptEntryString,null);
+                                                                if(scriptEntryValue instanceof Map){
+                                                                    Map scriptEntryMap = (Map)scriptEntryValue;
+                                                                    for(Object scriptEntryKey : scriptEntryMap.keySet()){
+                                                                        String scriptEntryKeyString = scriptEntryKey.toString();
+                                                                        Object scriptEntryKeyValue = scriptEntryMap.get(scriptEntryKey);
+                                                                        if(scriptEntryKeyValue instanceof String){
+                                                                            scriptState.set(scriptEntryKeyString,(String)scriptEntryKeyValue);
+                                                                        }else{
+                                                                            errors.add(hostNameString+" > "+scriptEntryString+" > "+scriptEntryKeyString+" value unknown "+scriptEntryKeyValue);
+                                                                        }
+                                                                    }
                                                                 }else{
                                                                     errors.add(hostNameString+" script: "+scriptName+" entry: "+scriptEntryString+" value unknown: "+scriptEntryValue);
                                                                 }

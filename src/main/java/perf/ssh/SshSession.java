@@ -29,13 +29,6 @@ public class SshSession implements Runnable, Consumer<String>{
 
     private static final String prompt = "#%@_ssh_!*> "; // a string unlikely to appear in the output of any command
 
-    public static final String DEFAULT_KNOWN_HOSTS = "~/.ssh/known_hosts";
-    public static final String DEFAULT_IDENTITY = "~/.ssh/id_rsa";
-
-    private static String knownHosts = DEFAULT_KNOWN_HOSTS;
-    private static String identity = DEFAULT_IDENTITY;
-    private static String passphrase = null;
-
     private Session session;
     private ChannelShell channelShell;
     private Properties sshConfig;
@@ -57,8 +50,8 @@ public class SshSession implements Runnable, Consumer<String>{
 
     private Host host;
 
-    public SshSession(Host host){ this(host,new Semaphore(1)); }
-    public SshSession(Host host,Semaphore semaphore){
+    public SshSession(Host host,String knownHosts,String identity,String passphrase){ this(host,new Semaphore(1),knownHosts,identity,passphrase); }
+    public SshSession(Host host,Semaphore semaphore,String knownHosts,String identity,String passphrase){
 
         this.host = host;
         shellLock = semaphore;
@@ -66,15 +59,12 @@ public class SshSession implements Runnable, Consumer<String>{
         sshConfig.put("StrictHostKeyChecking", "no");
         JSch jsch = new JSch();
         try {
-            String knownHostsFile = System.getProperty( "knownHosts" ) == null ? DEFAULT_KNOWN_HOSTS : System.getProperty( "knownHosts" );
-            String passphrase = System.getProperty( "passphrase" );
-            String identifyFile = System.getProperty( "identity" ) == null ? DEFAULT_IDENTITY : System.getProperty( "identity" );
 
-            jsch.setKnownHosts(knownHostsFile);
+            jsch.setKnownHosts(knownHosts);
             if ( passphrase == null ) {
-                jsch.addIdentity( identifyFile );
+                jsch.addIdentity( identity );
             } else {
-                jsch.addIdentity( identifyFile, passphrase );
+                jsch.addIdentity( identity, passphrase );
             }
             session = jsch.getSession(host.getUserName(),host.getHostName(),host.getPort());
             session.setConfig(sshConfig);
@@ -111,7 +101,6 @@ public class SshSession implements Runnable, Consumer<String>{
                 logger.error("failed to connect shell to {}",host.getHostName());
             }
             channelShell.setOutputStream(semaphoreStream,true);
-
 
             filteredStream = new FilteredStream();
             stripStream = new FilteredStream();

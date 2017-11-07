@@ -1,6 +1,5 @@
 package perf.ssh.cmd.impl;
 
-import perf.ssh.Local;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.CommandResult;
 import perf.ssh.cmd.Context;
@@ -23,8 +22,6 @@ public class Upload extends Cmd {
     protected void run(String input, Context context, CommandResult result) {
 
         String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHostName();
-        String userName = context.getSession().getUserName();
-        String hostName = context.getSession().getHostName();
         String localPath = populateStateVariables(path,context.getState());
         String destinationPath =  populateStateVariables(basePath + File.separator +destination,context.getState());
         File destinationFile = new File(destinationPath);
@@ -32,7 +29,7 @@ public class Upload extends Cmd {
             destinationFile.mkdirs();
         }
 
-        Local.get().upload(localPath,destinationPath,context.getSession().getHost());
+        context.getLocal().upload(localPath,destinationPath,context.getSession().getHost());
         result.next(this,path);
     }
 

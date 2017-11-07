@@ -13,7 +13,45 @@ import java.util.stream.Collectors;
 
 public class RunConfig {
 
+    public static final String DEFAULT_KNOWN_HOSTS = "~/.ssh/known_hosts";
+    public static final String DEFAULT_IDENTITY = "~/.ssh/id_rsa";
+    public static final String DEFAULT_PASSPHRASE = null;
+
     private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+
+    public String getKnownHosts() {
+        return knownHosts;
+    }
+
+    public boolean hasCustomKnownHosts(){
+        return !DEFAULT_KNOWN_HOSTS.equals(knownHosts);
+    }
+
+    public void setKnownHosts(String knownHosts) {
+        this.knownHosts = knownHosts;
+    }
+
+    public boolean hasCustomIdentity(){
+        return !DEFAULT_IDENTITY.equals(identity);
+    }
+    public String getIdentity() {
+        return identity;
+    }
+
+    public void setIdentity(String identity) {
+        this.identity = identity;
+    }
+
+    public boolean hasCustomPassphrase(){
+        return passphrase!=DEFAULT_PASSPHRASE;//use != because DEFAULT_PASSPHRASE is null
+    }
+    public String getPassphrase() {
+        return passphrase;
+    }
+
+    public void setPassphrase(String passphrase) {
+        this.passphrase = passphrase;
+    }
 
     class HostMap {
         private HashMap<String,Host> aliases;
@@ -51,6 +89,10 @@ public class RunConfig {
     private HashMap<String,Role> roles;
     private HostMap hosts;
 
+    private String knownHosts;
+    private String identity;
+    private String passphrase;
+
     public RunConfig(){
         this("run-"+System.currentTimeMillis());
     }
@@ -60,6 +102,10 @@ public class RunConfig {
         roles = new HashMap<>();
         hosts = new HostMap();
         this.name = name;
+
+        knownHosts = DEFAULT_KNOWN_HOSTS;
+        identity = DEFAULT_IDENTITY;
+        passphrase = DEFAULT_PASSPHRASE;
     }
 
     public void addRole(Role role){
