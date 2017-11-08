@@ -194,54 +194,61 @@ public class Run implements Runnable {
     @Override
     public String toString(){return config.getName()+" -> "+outputPath;}
 
-    @Override
-    public void run() {
-
-
-        RunValidation runValidation = config.validate();
-        if(!runValidation.isValid()){
-            //TODO raise warnings if not validated
-            if(runValidation.getSetupValidation().hasErrors()){
-                runValidation.getSetupValidation().getErrors().forEach((error->runLogger.error(error)));
-            }
-            if(runValidation.getRunValidation().hasErrors()){
-                runValidation.getRunValidation().getErrors().forEach((error->runLogger.error(error)));
-            }
-            if(runValidation.getCleanupValidation().hasErrors()){
-                runValidation.getCleanupValidation().getErrors().forEach((error->runLogger.error(error)));
-            }
-            return;
-        }
+    public boolean initializeCoordinator(){
         List<String> noSignal = new ArrayList<>();
-        Consumer<ConfigValidation> setupCoordinator = (validation)->{
-            validation.getSignals().forEach((signalName)->{
-                int count = validation.getSignalCount(signalName);
+        Consumer<ConfigValidation> setupCoordinator = (v)->{
+            v.getSignals().forEach((signalName)->{
+                int count = v.getSignalCount(signalName);
                 coordinator.initialize(signalName,count);
             });
-            validation.getWaiters().stream().filter((waitName)->
-                !validation.getSignals().contains(waitName)
+            v.getWaiters().stream().filter((waitName)->
+                    !v.getSignals().contains(waitName)
             ).forEach((notSignaled)->noSignal.add(notSignaled));
         } ;
 
-        setupCoordinator.accept(runValidation.getSetupValidation());
+        setupCoordinator.accept(validation.getSetupValidation());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} setup scripts missing signal for {}",this,notSignaled);
             });
-            return;
+            return false;
         }
-        setupCoordinator.accept(runValidation.getRunValidation());
+        setupCoordinator.accept(validation.getRunValidation());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} run scripts missing signal for {}",this,notSignaled);
             });
-            return;
+            return false;
         }
-        setupCoordinator.accept(runValidation.getCleanupValidation());
+        setupCoordinator.accept(validation.getCleanupValidation());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} cleanup scripts missing signal for {}",this,notSignaled);
             });
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public void run() {
+
+        if(!validation.isValid()){
+            //TODO raise warnings if not validated
+            if(validation.getSetupValidation().hasErrors()){
+                validation.getSetupValidation().getErrors().forEach((error->runLogger.error(error)));
+            }
+            if(validation.getRunValidation().hasErrors()){
+                validation.getRunValidation().getErrors().forEach((error->runLogger.error(error)));
+            }
+            if(validation.getCleanupValidation().hasErrors()){
+                validation.getCleanupValidation().getErrors().forEach((error->runLogger.error(error)));
+            }
+            return;
+        }
+
+        boolean coordinatorInitialized = initializeCoordinator();
+        if(!coordinatorInitialized){
             return;
         }
 
