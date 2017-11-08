@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 /**
  * Created by wreicher
  * Reads through the command tree looking for waitFor, signal, and sh that are under a watcher
+ * Identifies variable name references and regex variable names
  */
 public class CommandSummary {
 
@@ -49,7 +50,7 @@ public class CommandSummary {
             Matcher matcher = Cmd.NAMED_CAPTURE.matcher(pattern);
             while(matcher.find()){
                 String name = matcher.group(1);
-                summary.addAutoVariable(name);
+                summary.addRegexVariable(name);
             }
         }
 
@@ -79,7 +80,7 @@ public class CommandSummary {
     private Set<String> signals;
     private Set<String> waits;
     private Set<String> variables;
-    private Set<String> autoVariables;
+    private Set<String> regexVariables;
 
     private CommandSummary(String name){
         this.name = name;
@@ -88,7 +89,7 @@ public class CommandSummary {
         signals = new HashSet<>();
         waits = new HashSet<>();
         variables = new HashSet<>();
-        autoVariables = new HashSet<>();
+        regexVariables = new HashSet<>();
     }
 
     public String getName(){return name;}
@@ -96,7 +97,7 @@ public class CommandSummary {
     private void addWarning(String warning){
         warnings.add(warning);
     }
-    private void addAutoVariable(String name){ autoVariables.add(name); }
+    private void addRegexVariable(String name){ regexVariables.add(name); }
     private void addVariable(String name){ variables.add(name); }
     private void addSignal(String name){
         signals.add(name);
@@ -114,10 +115,10 @@ public class CommandSummary {
         return waits;
     }
     public Set<String> getVariables(){return variables;}
-    public Set<String> getAutoVariables(){return autoVariables;}
+    public Set<String> getRegexVariables(){return regexVariables;}
     public Set<String> getStateDependentVariables(){
         Set<String> rtrn = new HashSet<>(variables);
-        rtrn.removeAll(autoVariables);
+        rtrn.removeAll(regexVariables);
         return rtrn;
     }
     public String toString(){
@@ -139,9 +140,9 @@ public class CommandSummary {
             rtrn.append("  variables:\n");
             variables.forEach(variable -> rtrn.append("    "+variable+"\n"));
         }
-        if(!autoVariables.isEmpty()){
+        if(!regexVariables.isEmpty()){
             rtrn.append("  regexVariables:\n");
-            autoVariables.forEach(autoVariable -> rtrn.append("    "+autoVariable+"\n"));
+            regexVariables.forEach(autoVariable -> rtrn.append("    "+autoVariable+"\n"));
         }
         Set<String> stateDependent = getStateDependentVariables();
         if(!stateDependent.isEmpty()){

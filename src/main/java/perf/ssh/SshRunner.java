@@ -20,67 +20,76 @@ public class SshRunner {
 
         Options options = new Options();
 
-        Option basePath = Option.builder("b")
-            .longOpt("basePath")
-            .required()
-            .hasArg()
-            .argName("path")
-            .desc("base path for the output folder")
-            .build();
-        basePath.setRequired(true);
-        options.addOption(basePath);
+        options.addOption(
+            Option.builder("b")
+                .longOpt("basePath")
+                .required()
+                .hasArg()
+                .argName("path")
+                .required(true)
+                .desc("base path for the output folder")
+                .build()
+        );
 
-        Option commandPool = Option.builder("c")
-            .longOpt("commandPool")
-            .hasArg()
-            .argName("size")
-            .type(Integer.TYPE)
-            .desc("number of threads for executing commands (default 24)")
-            .build();
-        options.addOption(commandPool);
+        options.addOption(
+            Option.builder("c")
+                .longOpt("commandPool")
+                .hasArg()
+                .argName("size")
+                .type(Integer.TYPE)
+                .desc("number of threads for executing commands [24]")
+                .build()
+        );
 
-        Option scheduledPool = Option.builder("s")
-            .longOpt("scheduledPool")
-            .hasArg()
-            .argName("size")
-            .type(Integer.TYPE)
-            .desc("number of threads for executing scheduled tasks (default 4)")
-            .build();
-        options.addOption(scheduledPool);
+        options.addOption(
+            Option.builder("s")
+                .longOpt("scheduledPool")
+                .hasArg()
+                .argName("size")
+                .type(Integer.TYPE)
+                .desc("number of threads for executing scheduled tasks [4]")
+                .build()
+        );
 
-        Option state = Option.builder("S")
-            .argName("key=value")
-            .desc("set a state parameter")
-            .hasArgs()
-            .valueSeparator()
-            .build();
-        options.addOption(state);
+        options.addOption(
+            Option.builder("S")
+                .argName("key=value")
+                .desc("set a state parameter")
+                .hasArgs()
+                .valueSeparator()
+                .build()
+        );
 
-        Option knownHosts = Option.builder("k")
-            .longOpt("knownHosts")
-            .desc("ssh known hosts path (default to ~/.ssh/known_hosts)")
-            .hasArg()
-            .argName("path")
-            .type(String.class)
-            .build();
-        options.addOption(knownHosts);
-        Option passphrase = Option.builder("p")
-            .longOpt("passphrase")
-            .desc("ssh passphrase for identify file (default no passphrase)")
-            .hasArgs()
-            .optionalArg(true)
-            .argName("password")
-            .type(String.class)
-            .build();
-        options.addOption(passphrase);
-        Option identify = Option.builder("i")
-            .longOpt("identity")
-            .argName("path")
-            .hasArg()
-            .desc("ssh identity path (default to ~/.ssh/id_rsa)")
-            .type(String.class)
-            .build();
-        options.addOption(identify);
+
+        options.addOption(
+            Option.builder("k")
+                .longOpt("knownHosts")
+                .desc("ssh known hosts path [~/.ssh/known_hosts]")
+                .hasArg()
+                .argName("path")
+                .type(String.class)
+                .build()
+        );
+
+        options.addOption(
+            Option.builder("p")
+                .longOpt("passphrase")
+                .desc("ssh passphrase for identify file [null]")
+                .hasArgs()
+                .optionalArg(true)
+                .argName("password")
+                .type(String.class)
+                .build()
+        );
+        options.addOption(
+            Option.builder("i")
+                .longOpt("identity")
+                .argName("path")
+                .hasArg()
+                .desc("ssh identity path [~/.ssh/id_rsa]")
+                .type(String.class)
+                .build()
+        );
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -88,16 +97,16 @@ public class SshRunner {
 
         String cmdLineSyntax = "[options] [yamlFiles]";
 
-            cmdLineSyntax =
-                    "java -jar " +
-                            (new File(SshRunner.class
-                                    .getProtectionDomain()
-                                    .getCodeSource()
-                                    .getLocation()
-                                    .getPath()
-                            )).getName() +
-                            " "+
-                            cmdLineSyntax;
+        cmdLineSyntax =
+            "java -jar " +
+            (new File(SshRunner.class
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .getPath()
+            )).getName() +
+            " " +
+            cmdLineSyntax;
 
         try{
             cmd = parser.parse(options,args);
@@ -108,7 +117,7 @@ public class SshRunner {
             return;
         }
 
-        String path = cmd.getOptionValue("basePath");
+        String basePath = cmd.getOptionValue("basePath");
         int commandThreads = Integer.parseInt(cmd.getOptionValue("commandPool","24"));
         int scheduledThreads = Integer.parseInt(cmd.getOptionValue("scheduledPool","4"));
 
@@ -138,30 +147,20 @@ public class SshRunner {
 
         if (cmd.hasOption("knownHosts") ){
             config.setKnownHosts(cmd.getOptionValue("knownHosts"));
-            System.out.println("knownHosts="+config.getKnownHosts());
         }
         if (cmd.hasOption("identity") ){
             config.setIdentity(cmd.getOptionValue("identity"));
-            System.out.println("identity="+config.getIdentity());
         }
         if (cmd.hasOption("passphrase") && cmd.getOptionValue("passphrase")!=RunConfig.DEFAULT_PASSPHRASE){
             config.setPassphrase(cmd.getOptionValue("passphrase"));
-            System.out.println("passphrase="+config.getPassphrase());
-
         }
 
-
-        System.out.println("Hosts: "+config.getHostsInRole().toList());
         Properties stateProps = cmd.getOptionProperties("S");
         if(!stateProps.isEmpty()){
-            System.out.println("Setting custom state:");
-
             stateProps.forEach((k,v)->{
                 System.out.println("  "+k+" = "+v);
                 config.getState().set(k.toString(),v.toString());
             });
-
-
         }
 
         final AtomicInteger factoryCounter = new AtomicInteger(0);
@@ -170,14 +169,14 @@ public class SshRunner {
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
 
         ThreadFactory factory = r -> new Thread(r,"command-"+factoryCounter.getAndIncrement());
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(8,24,30, TimeUnit.MINUTES,workQueue,factory);
-        ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(4, runnable -> new Thread(runnable,"scheduled-"+scheduledCounter.getAndIncrement()));
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(commandThreads/2,commandThreads,30, TimeUnit.MINUTES,workQueue,factory);
+        ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(scheduledThreads, runnable -> new Thread(runnable,"scheduled-"+scheduledCounter.getAndIncrement()));
 
         CommandDispatcher dispatcher = new CommandDispatcher(executor,scheduled);
 
         DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
-        Run run = new Run(path+"/"+dt.format(LocalDateTime.now()),config,dispatcher);
+        Run run = new Run(basePath+"/"+dt.format(LocalDateTime.now()),config,dispatcher);
 
         System.out.println("Starting with output path = "+run.getOutputPath());
 
