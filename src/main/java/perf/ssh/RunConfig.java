@@ -192,7 +192,7 @@ public class RunConfig {
         final ConfigValidation rtrn = new ConfigValidation();
         for(String host : getHostsInRole().toList()){
             for( Script script : getScripts.apply(host) ){
-                CommandSummary summary = CommandSummary.apply(script,getRepo());
+                CommandSummary summary = new CommandSummary(script,this);
 
                 if(!summary.getWarnings().isEmpty()){
                     for(String warning : summary.getWarnings()){

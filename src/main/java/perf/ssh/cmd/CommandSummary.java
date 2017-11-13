@@ -1,5 +1,6 @@
 package perf.ssh.cmd;
 
+import perf.ssh.RunConfig;
 import perf.ssh.ScriptRepo;
 import perf.ssh.cmd.impl.*;
 import perf.util.StringUtil;
@@ -17,40 +18,34 @@ import java.util.regex.Matcher;
  */
 public class CommandSummary {
 
-    public static CommandSummary apply(Cmd command,ScriptRepo repo){
-        CommandSummary rtrn = new CommandSummary(command.toString());
-        processCommand(command,false,rtrn,repo);
 
-        return rtrn;
-    }
-
-    private static void processCommand(Cmd command,boolean isWatching,CommandSummary summary,ScriptRepo repo){
+    private void processCommand(Cmd command,boolean isWatching,RunConfig config){
         String toString = command.toString();
 
         if(isWatching && command instanceof Sh){
-            summary.addWarning(command+" cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
+            addWarning(command+" cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
         }
 
         if(StringUtil.countOccurances(Cmd.ENV_PREFIX,toString) != StringUtil.countOccurances(Cmd.ENV_SUFFIX,toString)){
-            summary.addWarning(command+" does not have the same number of ${{ and }} for state variable referencing");
+            addWarning(command+" does not have the same number of ${{ and }} for state variable referencing");
         }
 
         if(command instanceof Signal){
-            summary.addSignal(((Signal)command).getName());
+            addSignal(((Signal)command).getName());
         }else if (command instanceof WaitFor){
-            summary.addWait(((WaitFor)command).getName());
+            addWait(((WaitFor)command).getName());
         }else if (command instanceof ScriptCmd){
-            Script namedScript = repo.getScript(((ScriptCmd)command).getName());
-            processCommand(namedScript,isWatching,summary,repo);
+            Script namedScript = config.getScript(((ScriptCmd)command).getName());
+            processCommand(namedScript,isWatching,config);
         }else if (command instanceof InvokeCmd){
             Cmd invokedCmd = ((InvokeCmd)command).getCommand();
-            processCommand(invokedCmd,isWatching,summary,repo);
+            processCommand(invokedCmd,isWatching,config);
         }else if (command instanceof Regex){
             String pattern = ((Regex)command).getPattern();
             Matcher matcher = Cmd.NAMED_CAPTURE.matcher(pattern);
             while(matcher.find()){
                 String name = matcher.group(1);
-                summary.addRegexVariable(name);
+                addRegexVariable(name);
             }
         }
 
@@ -59,18 +54,18 @@ public class CommandSummary {
             Matcher matcher = Cmd.ENV_PATTERN.matcher(toString);
             while (matcher.find()) {
                 String name = matcher.group("name");
-                summary.addVariable(name);
+                addVariable(name);
             }
         }
 
         if(!command.getWatchers().isEmpty()){
             for(Cmd watcher : command.getWatchers()){
-                processCommand(watcher,true,summary,repo);
+                processCommand(watcher,true,config);
             }
         }
         if(!command.getThens().isEmpty()){
             for(Cmd then : command.getThens()){
-                processCommand(then,isWatching,summary,repo);
+                processCommand(then,isWatching,config);
             }
         }
     }
@@ -82,14 +77,16 @@ public class CommandSummary {
     private Set<String> variables;
     private Set<String> regexVariables;
 
-    private CommandSummary(String name){
-        this.name = name;
+    public CommandSummary(Cmd command, RunConfig config){
+        this.name = command.toString();
 
         warnings = new LinkedList<>();
         signals = new HashSet<>();
         waits = new HashSet<>();
         variables = new HashSet<>();
         regexVariables = new HashSet<>();
+
+        processCommand(command,false,config);
     }
 
     public String getName(){return name;}
