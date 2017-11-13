@@ -6,7 +6,6 @@ import perf.ssh.config.YamlLoader;
 import perf.util.StringUtil;
 
 import java.io.File;
-import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -20,16 +19,27 @@ public class SshRunner {
 
         Options options = new Options();
 
-        options.addOption(
-            Option.builder("b")
-                .longOpt("basePath")
-                .required()
-                .hasArg()
-                .argName("path")
-                .required(true)
-                .desc("base path for the output folder")
-                .build()
+        OptionGroup basePathGroup = new OptionGroup();
+        basePathGroup.addOption(Option.builder("b")
+            .longOpt("basePath")
+            .required()
+            .hasArg()
+            .argName("path")
+            .desc("base path for the output folder, creates a new YYYYMMDD_HHmmss sub-folder")
+            .build()
         );
+        basePathGroup.addOption(Option.builder("B")
+            .longOpt("fullPath")
+            .required()
+            .hasArg()
+            .argName("path")
+            .desc("full path for the output folder, does not createa  sub-folder")
+            .build()
+        );
+
+        basePathGroup.setRequired(true);
+
+        options.addOptionGroup(basePathGroup);
 
         options.addOption(
             Option.builder("c")
