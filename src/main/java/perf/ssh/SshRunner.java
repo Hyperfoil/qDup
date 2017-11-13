@@ -127,7 +127,6 @@ public class SshRunner {
             return;
         }
 
-        String basePath = cmd.getOptionValue("basePath");
         int commandThreads = Integer.parseInt(cmd.getOptionValue("commandPool","24"));
         int scheduledThreads = Integer.parseInt(cmd.getOptionValue("scheduledPool","4"));
 
@@ -184,9 +183,19 @@ public class SshRunner {
 
         CommandDispatcher dispatcher = new CommandDispatcher(executor,scheduled);
 
-        DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
-        Run run = new Run(basePath+"/"+dt.format(LocalDateTime.now()),config,dispatcher);
+
+        String outputPath=null;
+        if(cmd.hasOption("basePath")){
+            DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+            outputPath = cmd.getOptionValue("basePath") + "/" + dt.format(LocalDateTime.now());
+        }else if (cmd.hasOption("fullPath")){
+            outputPath = cmd.getOptionValue("fullPath");
+        }
+        String basePath = cmd.getOptionValue("basePath");
+
+
+        Run run = new Run(outputPath,config,dispatcher);
 
         System.out.println("Starting with output path = "+run.getOutputPath());
 
