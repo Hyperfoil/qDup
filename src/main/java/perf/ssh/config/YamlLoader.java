@@ -108,7 +108,9 @@ public class YamlLoader {
     }
 
     public void load(String fileName, Reader yamlReader){
-        readObject(yaml.load(yamlReader), fileName);
+        for(Object obj : yaml.loadAll(yamlReader)){
+            readObject(obj,fileName);
+        }
     }
 
     private void loadScriptCategory(String key,Object scriptObject,Consumer<String> addScript){

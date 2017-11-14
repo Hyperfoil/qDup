@@ -12,6 +12,35 @@ import java.util.stream.Collectors;
 
 public class YamlLoaderTest {
 
+    @Test
+    public void multipleDocuments(){
+        YamlLoader yamlLoader = new YamlLoader();
+        yamlLoader.load("states.yaml",
+                new StringReader("name: specjms \n" +
+                        "scripts: \n"+
+                        " - test: \n"+
+                        "    - sh: alpha \n"+
+                        "---\n"+
+                        "states: \n"+
+                        "  run:\n" +
+                        "    foo: bar\n"
+
+                )
+        );
+        State runState = yamlLoader.getRunConfig().getState();
+        Assert.assertEquals("state should have one entry",1,runState.getKeys().size());
+    }
+
+    @Test
+    public void emptyState(){
+
+        YamlLoader yamlLoader = new YamlLoader();
+        yamlLoader.load("states.yaml",
+        new StringReader("states:\n\n")
+        );
+        State runState = yamlLoader.getRunConfig().getState();
+        Assert.assertEquals("state should be empty",true,runState.getKeys().isEmpty());
+    }
 
     @Test
     public void allStateOptions(){
