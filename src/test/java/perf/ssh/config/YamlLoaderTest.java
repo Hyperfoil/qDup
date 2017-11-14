@@ -2,6 +2,8 @@ package perf.ssh.config;
 
 import org.junit.Assert;
 import org.junit.Test;
+import perf.ssh.HostList;
+import perf.ssh.Role;
 import perf.ssh.State;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.Script;
@@ -11,6 +13,62 @@ import java.io.StringReader;
 import java.util.stream.Collectors;
 
 public class YamlLoaderTest {
+
+    @Test
+    public void multipleHostsInRole(){
+        YamlLoader yamlLoader = new YamlLoader();
+        yamlLoader.load("multipleHosts.yaml",
+            new StringReader("name: multipleHosts \n"+
+               "---\n" +
+                "hosts:\n" +
+                "  client1: benchuser@benchclient1\n" +
+                "  client2: benchuser@benchclient2\n" +
+                "  client3: benchuser@benchclient3\n" +
+                "  client4: benchuser@benchclient4\n" +
+                "  server3:\n" +
+                "    username: root\n" +
+                "    hostname: benchserver3\n" +
+                "  server4:\n" +
+                "    username: benchuser\n" +
+                "    hostname: benchserver4\n" +
+                "    port: 22\n" +
+                "\n" +
+                "---\n"+
+                "roles:\n" +
+                "  ALL:\n" +
+                "    setup-scripts:\n" +
+                "     - sync-time\n" +
+                "    run-scripts:\n" +
+                "     - dstat\n" +
+                "#  database:\n" +
+                "#    hosts: server3\n" +
+                "#    run-scripts: docker-oracle\n" +
+                "  satellite:\n" +
+                "    hosts:\n" +
+                "      - client1\n" +
+                "      - client2\n" +
+                "      - client3\n" +
+                "      - client4\n" +
+                "    run-scripts:\n" +
+                "      - satellite\n" +
+                "  controller:\n" +
+                "    hosts:\n" +
+                "      - client1\n" +
+                "    run-scripts:\n" +
+                "      - controller\n" +
+                "  server:\n" +
+                "    hosts: server4\n" +
+                "    run-scripts:\n" +
+                "      - amq7\n")
+        );
+
+        System.out.println(yamlLoader.dump());
+        HostList hostsInRole = yamlLoader.getRunConfig().getHostsInRole();
+        System.out.println(hostsInRole.toList());
+        Role satellite = yamlLoader.getRunConfig().getRole("satellite");
+
+        Assert.assertEquals("satellite should have 4 hosts",4,satellite.toList().size());
+    }
 
     @Test
     public void multipleDocuments(){

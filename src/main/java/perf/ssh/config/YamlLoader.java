@@ -87,9 +87,14 @@ public class YamlLoader {
             HostList role = runConfig.getRole(roleName);
             for(String h : role.toList()){
                 sb.append("    "+h+"\n");
-                List<Script> runScripts = runConfig.getRunScripts(h);
-                runScripts.forEach((runScript)->{
-                    sb.append("      "+runScript.getName()+"\n");
+                runConfig.getSetupScripts(h).forEach(script->{
+                    sb.append("      setup: "+script.getName()+"\n");
+                });
+                runConfig.getRunScripts(h).forEach((runScript)->{
+                    sb.append("      run: "+runScript.getName()+"\n");
+                });
+                runConfig.getCleanupScripts(h).forEach((runScript)->{
+                    sb.append("      cleanup: "+runScript.getName()+"\n");
                 });
             }
         }
