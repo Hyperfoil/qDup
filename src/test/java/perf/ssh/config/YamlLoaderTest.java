@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class YamlLoaderTest {
 
     @Test
-    public void variableScriptInRole(){
+    public void variableScriptInRoles(){
         YamlLoader yamlLoader = new YamlLoader();
         yamlLoader.load("variableScriptInRole.yaml",
             new StringReader("name: variableScriptInRole \n"+
@@ -27,6 +27,10 @@ public class YamlLoaderTest {
                 "  test:\n"+
                 "    run-scripts:\n"+
                 "     - ${{runScript}}\n"+
+                "    setup-scripts:\n"+
+                "     - ${{setupScript}}\n"+
+                "    cleanup-scripts:\n"+
+                "     - ${{cleanupScript}}\n"+
                 "    hosts:\n"+
                 "      local\n"+
                 "scripts:\n"+
@@ -34,15 +38,25 @@ public class YamlLoaderTest {
                 "    - sh: alpha \n"+
                 " - bravo: \n"+
                 "    - sh: bravo \n"+
+                " - charlie: \n"+
+                "    - sh: charlie \n"+
                 "states:\n" +
                 "  run:\n"+
-                "    runScript: alpha"
+                "    runScript: alpha\n"+
+                "    setupScript: bravo\n"+
+                "    cleanupScript: charlie"
             )
         );
 
         List<Script> localRunScripts = yamlLoader.getRunConfig().getRunScripts("local");
-        Assert.assertEquals("runScript should contain 1 script",1,localRunScripts.size());
+        List<Script> localSetupScripts = yamlLoader.getRunConfig().getSetupScripts("local");
+        List<Script> localCleanupScripts = yamlLoader.getRunConfig().getCleanupScripts("local");
+        Assert.assertEquals("run scripts should contain 1 script",1,localRunScripts.size());
+        Assert.assertEquals("setup scripts should contain 1 script",1,localSetupScripts.size());
+        Assert.assertEquals("cleanup scripts should contain 1 script",1,localCleanupScripts.size());
         Assert.assertEquals("run script should be alpha","alpha",localRunScripts.get(0).getName());
+        Assert.assertEquals("setup script should be bravo","bravo",localSetupScripts.get(0).getName());
+        Assert.assertEquals("setup script should be charlie","charlie",localCleanupScripts.get(0).getName());
 
     }
 
