@@ -333,7 +333,7 @@ public class CommandDispatcher {
         logger.info("starting {} scripts",script2Result.size());
         if(!script2Result.isEmpty()){
             BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
-                logger.info("nanny checking {}",command);
+                logger.trace("nanny checking {}",command);
                 if(activeCommands.containsKey(command) /*&& command instanceof Sh*/){
                     long lastUpdate = activeCommands.get(command).getLastUpdate();
                     if(timestamp - lastUpdate > THRESHOLD){
