@@ -2,6 +2,7 @@ package perf.ssh;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
+import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.CommandSummary;
 import perf.ssh.cmd.Script;
 import perf.util.HashedList;
@@ -175,7 +176,8 @@ public class RunConfig {
         roles.forEach((roleName,role)->{
             if(role.matches(host)){
                 getScriptNames.apply(role).forEach((scriptName)->{
-                    Script script = getScript(scriptName);
+                    String populatedScriptName = Cmd.populateStateVariables(scriptName,state);
+                    Script script = getScript(populatedScriptName);
                     rtrn.add(script);
                 });
             }

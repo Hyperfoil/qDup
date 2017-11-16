@@ -10,9 +10,41 @@ import perf.ssh.cmd.Script;
 
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class YamlLoaderTest {
+
+    @Test
+    public void variableScriptInRole(){
+        YamlLoader yamlLoader = new YamlLoader();
+        yamlLoader.load("variableScriptInRole.yaml",
+            new StringReader("name: variableScriptInRole \n"+
+                "--- \n"+
+                "hosts:\n"+
+                "  local: user@localhost\n"+
+                "roles:\n"+
+                "  test:\n"+
+                "    run-scripts:\n"+
+                "     - ${{runScript}}\n"+
+                "    hosts:\n"+
+                "      local\n"+
+                "scripts:\n"+
+                " - alpha: \n"+
+                "    - sh: alpha \n"+
+                " - bravo: \n"+
+                "    - sh: bravo \n"+
+                "states:\n" +
+                "  run:\n"+
+                "    runScript: alpha"
+            )
+        );
+
+        List<Script> localRunScripts = yamlLoader.getRunConfig().getRunScripts("local");
+        Assert.assertEquals("runScript should contain 1 script",1,localRunScripts.size());
+        Assert.assertEquals("run script should be alpha","alpha",localRunScripts.get(0).getName());
+
+    }
 
     @Test
     public void multipleHostsInRole(){
