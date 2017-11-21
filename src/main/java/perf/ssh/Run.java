@@ -136,6 +136,7 @@ public class Run implements Runnable {
         this.aborted = true;
         logger.trace("abort");
         dispatcher.stop();//interrupts working threads and stops dispatching next commands
+        runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
         runLatch.countDown();
 
     }

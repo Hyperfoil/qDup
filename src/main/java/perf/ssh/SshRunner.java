@@ -195,13 +195,21 @@ public class SshRunner {
         String basePath = cmd.getOptionValue("basePath");
 
 
-        Run run = new Run(outputPath,config,dispatcher);
+        final Run run = new Run(outputPath,config,dispatcher);
 
         System.out.println("Starting with output path = "+run.getOutputPath());
+
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+            if(!run.isAborted()) {
+                run.abort();
+            }
+        },"shutdown-abort"));
 
         long start = System.currentTimeMillis();
 
         run.run();
+
+
 
         long stop = System.currentTimeMillis();
 
