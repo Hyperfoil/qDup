@@ -116,4 +116,12 @@ public class LineEmittingStream extends OutputStream {
         }
         reset();
     }
+
+    public int getBufferLength() {
+        return buffered.length;
+    }
+
+    public int getIndex() {
+        return index;
+    }
 }
