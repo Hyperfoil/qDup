@@ -345,9 +345,12 @@ public class CommandDispatcher {
             BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
                 logger.trace("nanny checking {}",command);
                 if(activeCommands.containsKey(command) /*&& command instanceof Sh*/){
+
                     long lastUpdate = activeCommands.get(command).getLastUpdate();
                     if(timestamp - lastUpdate > THRESHOLD){
-                        logger.warn("{} idle for {}",
+                        logger.warn("{}:{}:{} idle for {}",
+                                activeCommands.get(command).getContext().getSession().getHostName(),
+                                command.getHead(),
                                 command,
                                 String.format("%5.2f",(1.0*timestamp-lastUpdate)/1_000)
                         );
