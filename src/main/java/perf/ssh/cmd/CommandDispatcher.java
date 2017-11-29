@@ -81,22 +81,32 @@ public class CommandDispatcher {
             this.context = context;
 
         }
+
+        private void logCmdOutput(Cmd command,String output){
+            if(command!=null && output!=null){
+                if(command.getPrevious()!=null){
+                    if( !output.equals(command.getPrevious().getOutput()) ){
+                        context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
+                    }else{
+                        //skip logging the output because we don't want duplicates
+                    }
+                }else{
+                    context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
+                }
+            }
+        }
+
         @Override
         public void next(Cmd command,String output) {
             observers.forEach(o->o.onNext(command,output));
-            if(command!=null){
-                context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
-            }
-
+            logCmdOutput(command,output);
             dispatch(command,command.getNext(),output,this.context,this);
         }
 
         @Override
         public void skip(Cmd command,String output) {
             observers.forEach(o->o.onSkip(command,output));
-            if(command!=null){
-                context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
-            }
+            logCmdOutput(command,output);
             dispatch(command,command.getSkip(),"",this.context,this);
         }
 
