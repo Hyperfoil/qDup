@@ -148,7 +148,7 @@ public abstract class Cmd {
     private void tree(StringBuffer rtrn,int indent,String prefix,boolean debug){
         final int correctedIndent = indent == 0 ? 1 : indent;
         if(debug) {
-            rtrn.append(String.format("%" + correctedIndent + "s%s%s next=%s skp=%s %n", "", prefix, this, this.getNext(), this.getSkip()) );
+            rtrn.append(String.format("%" + correctedIndent + "s%s%s next=%s skp=%s prv=%s%n", "", prefix, this, this.getNext(), this.getSkip(), this.getPrevious()) );
         }else{
             rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this) );
         }
