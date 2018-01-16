@@ -33,7 +33,7 @@ public class SshRunner {
             .required()
             .hasArg()
             .argName("path")
-            .desc("full path for the output folder, does not createa  sub-folder")
+            .desc("full path for the output folder, does not create a sub-folder")
             .build()
         );
 
@@ -160,7 +160,7 @@ public class SshRunner {
         if (cmd.hasOption("identity") ){
             config.setIdentity(cmd.getOptionValue("identity"));
         }
-        if (cmd.hasOption("passphrase") && cmd.getOptionValue("passphrase")!=RunConfig.DEFAULT_PASSPHRASE){
+        if (cmd.hasOption("passphrase") && !cmd.getOptionValue("passphrase").equals( RunConfig.DEFAULT_PASSPHRASE) ){
             config.setPassphrase(cmd.getOptionValue("passphrase"));
         }
 
