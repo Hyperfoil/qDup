@@ -52,6 +52,15 @@ public class SshRunner {
         );
 
         options.addOption(
+            Option.builder("C")
+                .longOpt("colorTerminal")
+                .hasArg(false)
+                .desc("flag to enable color formatted terminal")
+                .build()
+        );
+
+
+        options.addOption(
             Option.builder("s")
                 .longOpt("scheduledPool")
                 .hasArg()
@@ -162,6 +171,10 @@ public class SshRunner {
         }
         if (cmd.hasOption("passphrase") && !cmd.getOptionValue("passphrase").equals( RunConfig.DEFAULT_PASSPHRASE) ){
             config.setPassphrase(cmd.getOptionValue("passphrase"));
+        }
+        
+        if (cmd.hasOption("colorTerminal") ){
+            config.setColorTerminal( true );
         }
 
         Properties stateProps = cmd.getOptionProperties("S");

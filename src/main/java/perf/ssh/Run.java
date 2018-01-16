@@ -70,7 +70,7 @@ public class Run implements Runnable {
 
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         PatternLayoutEncoder consoleLayout = new PatternLayoutEncoder();
-        consoleLayout.setPattern("%red(%date) %highlight(%msg) %n");
+        consoleLayout.setPattern (config.isColorTerminal() ? "%red(%date) %highlight(%msg) %n" : "%date %msg%n");
         consoleLayout.setContext(lc);
         consoleLayout.start();
         consoleAppender = new ConsoleAppender<>();

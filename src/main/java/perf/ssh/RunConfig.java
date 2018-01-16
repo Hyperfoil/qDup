@@ -54,6 +54,14 @@ public class RunConfig {
         this.passphrase = passphrase;
     }
 
+    public Boolean isColorTerminal() {
+        return colorTerminal;
+    }
+
+    public void setColorTerminal(Boolean colorTerminal) {
+        this.colorTerminal = colorTerminal;
+    }
+
     class HostMap {
         private HashMap<String,Host> aliases;
         private HashMap<String,Host> fullyQualified;
@@ -93,6 +101,8 @@ public class RunConfig {
     private String knownHosts;
     private String identity;
     private String passphrase;
+
+    private Boolean colorTerminal = false;
 
     public RunConfig(){
         this("run-"+System.currentTimeMillis());
