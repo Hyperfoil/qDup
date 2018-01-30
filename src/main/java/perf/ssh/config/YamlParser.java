@@ -27,10 +27,6 @@ public class YamlParser {
     public static final String value = "value";
     public static final String comment = "comment";
 
-
-
-
-
     Parser parser;
     TextLineReader reader;
     Json json;
@@ -45,69 +41,82 @@ public class YamlParser {
 
         //the start of documents
 
-        //the start of key / value
-        String prefix="^\\s*,?\\s*";
-        String separator="\\s*:\\s*";
-        String suffix="";
-        String normalKey = "(?<"+key+">[^,\\s\"][^,\\]]*[^\"\\s,\\]*])";
-        String quoteKey = "\"(?<"+key+">[^\"]+)\"";
-        String normalValue = "(?<"+value+">(?!\")[^,}]*[^\\n\\s,}])";//(?=\s*[,}])
-        String quoteValue = "\"(?<"+value+">[^\"]+)\"";
 
-        Exp keyed = new Exp("key","(?<"+key+">[^:#\\s]+)")
+        Exp listSep = new Exp("listSeparator","^\\s*,\\s*").eat(Eat.Match);
+        Exp keyValueSep = new Exp("kvSeparator","^\\s*:\\s*").eat(Eat.Match);
+        Exp mapStart = new Exp("inlineMapStart","^\\s*\\{").eat(Eat.Match);
+        Exp mapEnd = new Exp("inlineMapEnd","^\\s*}").eat(Eat.Match);
+        Exp listStart = new Exp("inlineList","^\\s*\\[").eat(Eat.Match);
+        Exp listEnd = new Exp("inlineListEnd","\\s*\\]").eat(Eat.Match);
+        Exp comment = new Exp("comment","^#(?<comment>.*)")
+                .eat(Eat.Line).set(Merge.Entry);
+
+
+        Exp quoteValue= new Exp("quoteValue","^\"(?<value>(?:[^\"]|\\\")+)\"")
+                .eat(Eat.Match).add(comment.clone());
+        Exp defaultValue = new Exp("defaultValue","^\\s*(?<value>[^#]+)")
+                .eat(Eat.Match).add(comment.clone());
+
+        Exp inlineValue = new Exp("inlineValue","^\\s*(?<value>[^,#\\s]+)").eat(Eat.Match);
+        Exp inlineKey = new Exp("inlineKey","^\\s*(?<key>[^:\\s,]+)").eat(Eat.Match).set(Merge.Entry);
+        Exp quoteKey = new Exp("quoteKey","^\"(?<key>(?:[^\"]|\\\")+)\"").eat(Eat.Match).set(Merge.Entry);
+        Exp k = new Exp("key","^(?<key>[^:#\\s]+)")
                 .eat(Eat.Match)
-                .add(new Exp("abvList","^\\s*:\\s*\\[")
-                        .eat(Eat.Match)
-                        .set(Rule.RepeatChildren)
-                        .add(new Exp("abvListQuotedEntry","^\\s*,?\\s*\"(?<"+key+">[^\"]+)\"")
-                                .group(child)
-                                .set(Merge.Entry)
-                                .eat(Eat.Match)
-                        )
-                        .add(new Exp("abvListEntry","^\\s*,?\\s*(?<"+key+">[^,\\]]*[^\\s,\\]])")
-                                .group(child)
-                                .set(Merge.Entry)
-                                .eat(Eat.Match)
-                        )
-                )
-                .add(new Exp("abvMap","^\\s*:\\s*\\{")
-                        .eat(Eat.Match)
-                        .set(Rule.RepeatChildren)
-                        .add(new Exp("abvMapQQEntry",prefix+quoteKey+"\\s*:\\s*"+quoteValue+suffix)
-                                .group(child)
-                                .set(Merge.Entry)
-                                .eat(Eat.Match)
-                        )
-                        .add(new Exp("abvMapQNEntry",prefix+quoteKey+separator+normalValue+suffix)
-                                .group(child)
-                                .set(Merge.Entry)
-                                .eat(Eat.Match)
-                        )
-                        .add(new Exp("abvMapNQEntry",prefix+normalKey+separator+quoteValue+suffix)
-                                .group(child)
-                                .set(Merge.Entry)
-                                .eat(Eat.Match)
-                        )
-                        .add(new Exp("abvMapNNEntry",prefix+normalKey+separator+normalValue+suffix)
-                                .group(child)
-                                .set(Merge.Entry)
-                                .eat(Eat.Match)
-                        )
-                )
-                .add(new Exp("value",":\\s*(?<"+value+">[^\\s\\n].*)"));
-        parser.add( new Exp("comment","\\s*#(?<"+comment+">.*)") );
+                .set(Merge.Entry);
+
+        Exp topLevel = k.clone()
+            .add(comment.clone().set(Merge.Collection))
+            .add(
+                keyValueSep.clone()
+                    .add(listStart.clone()
+                            .set(Rule.RepeatChildren)
+                            .group(child)
+                            .set(Merge.Entry)
+                            .debug()
+                                .add(listStart.clone().group(child).set(Merge.Entry))
+                                .add(listSep.clone())
+                                .add(listEnd.clone().set(Rule.PopTarget))
+                                .add(quoteKey.clone()
+                                    .add(keyValueSep.clone()
+                                        .add(quoteValue.clone())
+                                        .add(defaultValue.clone())
+                                    )
+                                )
+                                .add(inlineKey.clone().debug()
+                                    .add(keyValueSep.clone()
+                                            .add(quoteValue.clone())
+                                            .add(defaultValue.clone())
+                                    )
+                                )
+
+
+
+                    )
+                    .add(mapStart.clone()
+                            .set(Rule.RepeatChildren)
+
+
+                    )
+                    .add(quoteValue.clone())
+                    .add(defaultValue.clone())
+                    .add(comment.clone().set(Merge.Collection))
+            )
+            .add(quoteValue.clone())
+            .add(defaultValue.clone());
+
         parser.add( new Exp("newDoc","---").eat(Eat.Line) );
         parser.add(
-            new Exp("spaces","^\\s+(?!-)").debug()
-            .eat(Eat.Match)
-            .add(keyed)
+            new Exp("peer","^(?<"+child+":nestpeerless>[\\s]*)(?=[^-])")//(?=[\\w\"])
+                .eat(Eat.Line)
+                .add(comment.clone())
+                .add(topLevel)
         );
         parser.add(
-            new Exp("nest", "^(?<"+child+":nestLength>[\\s-]*)")
-            .eat(Eat.Match)
-            .add(keyed)
+            new Exp("nest","^(?<"+child+":nestlength>[\\s-]*-\\s*)(?=[\\w\"])")
+                .eat(Eat.Line)
+                .add(comment.clone())
+                .add(topLevel)
         );
-        parser.add(new Exp("kv","\\s+"+"(?<"+key+">[^-:#\\s]+)\\s*:\\s*(?<"+value+">[^\\s\\n].*)").set(Merge.Entry));
         parser.add(yamJson->{json.add(yamJson);});
 
         reader = new TextLineReader();
