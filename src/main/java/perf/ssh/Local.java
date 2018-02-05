@@ -13,6 +13,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -211,6 +212,7 @@ public class Local {
         }else{
             builder.command("/usr/bin/rsync", "-avz", "-e",this.ssh,path, userName + "@" + hostName + ":" + dest);
         }
+        logger.debug( "Running rsync command: " + builder.command().stream().collect( Collectors.joining(" ")));
         try {
             Process p =  builder.start();
             final InputStream inputStream = p.getInputStream();

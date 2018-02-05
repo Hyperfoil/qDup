@@ -4,8 +4,6 @@ import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.CommandResult;
 import perf.ssh.cmd.Context;
 
-import java.io.File;
-
 public class Upload extends Cmd {
     private String path;
     private String destination;
@@ -21,15 +19,18 @@ public class Upload extends Cmd {
     @Override
     protected void run(String input, Context context, CommandResult result) {
 
-        String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHostName();
         String localPath = populateStateVariables(path,context.getState());
-        String destinationPath =  populateStateVariables(basePath + File.separator +destination,context.getState());
-        File destinationFile = new File(destinationPath);
-        if(!destinationFile.exists()){
-            destinationFile.mkdirs();
-        }
+        String destinationPath =  populateStateVariables(destination ,context.getState());
 
-        context.getLocal().upload(localPath,destinationPath,context.getSession().getHost());
+        //create remote directory
+        context.getSession().sh( "mkdir -p " + destinationPath );
+        
+        context.getLocal().upload(
+            localPath,
+            destinationPath,
+            context.getSession().getHost()
+        );
+
         result.next(this,path);
     }
 
