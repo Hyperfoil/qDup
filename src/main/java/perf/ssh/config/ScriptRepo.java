@@ -1,4 +1,4 @@
-package perf.ssh;
+package perf.ssh.config;
 
 import perf.ssh.cmd.Script;
 

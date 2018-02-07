@@ -9,13 +9,13 @@ public class WaitFor extends Cmd {
     public WaitFor(String name){ this.name = name;}
     @Override
     protected void run(String input, Context context, CommandResult result) {
-        String populatedName = Cmd.populateStateVariables(name,context.getState());
+        String populatedName = Cmd.populateStateVariables(name,this,context.getState());
         context.getCoordinator().waitFor(populatedName,this,result,input);
     }
 
     @Override
     protected Cmd clone() {
-        return new WaitFor(this.name);
+        return new WaitFor(this.name).with(this.with);
     }
 
     public String getName(){return name;}

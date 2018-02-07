@@ -14,12 +14,12 @@ public class Log extends Cmd {
     }
     @Override
     protected void run(String input, Context context, CommandResult result) {
-        context.getRunLogger().info(Cmd.populateStateVariables(value,context.getState()));
+        context.getRunLogger().info(Cmd.populateStateVariables(value,this,context.getState()));
         result.next(this,input);
     }
     @Override
     protected Cmd clone() {
-        return new Log(value);
+        return new Log(value).with(this.with);
     }
     @Override
     public String toString(){return "log "+this.value;}

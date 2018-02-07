@@ -12,7 +12,7 @@ public class Abort extends Cmd {
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
-        String populatedMessage = Cmd.populateStateVariables(message,context.getState());
+        String populatedMessage = Cmd.populateStateVariables(message,this,context.getState());
         context.getRunLogger().info("abort {}",populatedMessage);
         context.abort();
     }
@@ -21,7 +21,7 @@ public class Abort extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new Abort(this.message);
+        return new Abort(this.message).with(this.with);
     }
 
     @Override

@@ -2,6 +2,7 @@ group 'perf'
 version '0.1-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'maven-publish'
 
 sourceCompatibility = 1.8
 
@@ -11,7 +12,8 @@ repositories {
 }
 
 dependencies {
-    compile project(':util')
+    compile 'perf:util:+'
+    compile 'perf:parse:+'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'org.slf4j:slf4j-ext:1.7.25'
     compile 'com.jcraft:jsch:0.1.54'

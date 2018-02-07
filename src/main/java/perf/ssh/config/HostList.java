@@ -1,8 +1,7 @@
-package perf.ssh;
+package perf.ssh.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import perf.ssh.cmd.Script;
 import perf.util.HashedList;
 
 import java.lang.invoke.MethodHandles;
@@ -10,7 +9,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Created by wreicher

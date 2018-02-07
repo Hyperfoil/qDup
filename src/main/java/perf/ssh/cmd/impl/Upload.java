@@ -36,7 +36,7 @@ public class Upload extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new Upload(this.path,this.destination);
+        return new Upload(this.path,this.destination).with(this.with);
     }
     @Override
     public String toString(){return "upload "+path+" "+destination;}

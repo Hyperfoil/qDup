@@ -29,8 +29,8 @@ public class QueueDownload extends Cmd {
     @Override
     protected void run(String input, Context context, CommandResult result) {
         String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHostName();
-        String resolvedPath = Cmd.populateStateVariables(getPath(),context.getState());
-        String resolvedDestination = Cmd.populateStateVariables(basePath + File.separator + getDestination(),context.getState());
+        String resolvedPath = Cmd.populateStateVariables(getPath(),this,context.getState());
+        String resolvedDestination = Cmd.populateStateVariables(basePath + File.separator + getDestination(),this,context.getState());
 
         context.addPendingDownload(resolvedPath,resolvedDestination);
 
@@ -44,6 +44,6 @@ public class QueueDownload extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new QueueDownload(path,destination);
+        return new QueueDownload(path,destination).with(this.with);
     }
 }

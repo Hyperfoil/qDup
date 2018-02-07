@@ -6,11 +6,13 @@ package perf.ssh;
  */
 public class Host {
 
+    public static final int DEFAULT_PORT = 22;
+
     private String hostName;
     private String userName;
     private int port;
     public Host(String userName,String hostName){
-        this(userName,hostName,22);
+        this(userName,hostName,DEFAULT_PORT);
     }
     public Host(String userName,String hostName,int port){
         this.userName = userName;

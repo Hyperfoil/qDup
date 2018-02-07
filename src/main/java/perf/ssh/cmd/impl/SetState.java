@@ -36,6 +36,6 @@ public class SetState extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new SetState(key,value);
+        return new SetState(key,value).with(this.with);
     }
 }

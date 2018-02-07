@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 /**
  * Created by wreicher
  * Provides the remote connection to run shell commands and monitor the output.
- * Needs to be updated with the current Cmd, CommandResult before sending a command to the remote host
+ * Needs to be updated WITH the current Cmd, CommandResult before sending a command to the remote host
  */
 
 //Todo separate out the prompt, the command, and the output of the command
@@ -112,7 +112,7 @@ public class SshSession implements Runnable, Consumer<String>{
 
             String newPrompt = AsciiArt.ANSI_RESET+AsciiArt.ANSI_RED+"$:"+AsciiArt.ANSI_RESET+AsciiArt.ANSI_BLACK;
 
-            filteredStream.addFilter("prompt",prompt, "$:"/*newPrompt*/);//replace the unique string prompt with something more user friendly
+            filteredStream.addFilter("prompt",prompt, "$:"/*newPrompt*/);//replace the unique string prompt WITH something more user friendly
             stripStream.addFilter("prompt","$:","");
 
             lineEmittingStream = new LineEmittingStream();

@@ -25,8 +25,8 @@ public class Download extends Cmd {
         String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHostName();
         String userName = context.getSession().getUserName();
         String hostName = context.getSession().getHostName();
-        String remotePath = populateStateVariables(path,context.getState());
-        String destinationPath =  populateStateVariables(basePath + File.separator +destination,context.getState());
+        String remotePath = populateStateVariables(path,this,context.getState());
+        String destinationPath =  populateStateVariables(basePath + File.separator +destination,this,context.getState());
         File destinationFile = new File(destinationPath);
         if(!destinationFile.exists()){
             destinationFile.mkdirs();
@@ -38,7 +38,7 @@ public class Download extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new Download(this.path,this.destination);
+        return new Download(this.path,this.destination).with(this.with);
     }
     @Override
     public String toString(){return "download "+path+" "+destination;}

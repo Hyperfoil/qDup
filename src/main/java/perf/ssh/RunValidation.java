@@ -1,27 +1,29 @@
 package perf.ssh;
 
+import perf.ssh.config.StageValidation;
+
 public class RunValidation {
 
-    private ConfigValidation setupValidation;
-    private ConfigValidation runValidation;
-    private ConfigValidation cleanupValidation;
+    private StageValidation setupValidation;
+    private StageValidation runValidation;
+    private StageValidation cleanupValidation;
 
-    public RunValidation(ConfigValidation setupValidation,
-                         ConfigValidation runValidation,
-                         ConfigValidation cleanupValidation){
+    public RunValidation(StageValidation setupValidation,
+                         StageValidation runValidation,
+                         StageValidation cleanupValidation){
         this.setupValidation = setupValidation;
         this.runValidation = runValidation;
         this.cleanupValidation = cleanupValidation;
     }
 
-    public ConfigValidation getSetupValidation() {
+    public StageValidation getSetupValidation() {
         return setupValidation;
     }
 
-    public ConfigValidation getRunValidation() {
+    public StageValidation getRunValidation() {
         return runValidation;
     }
-    public ConfigValidation getCleanupValidation() {
+    public StageValidation getCleanupValidation() {
         return cleanupValidation;
     }
 

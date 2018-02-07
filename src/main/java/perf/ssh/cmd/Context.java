@@ -38,7 +38,7 @@ public final class Context {
         return run.getOutputPath();
     }
     public Script getScript(String name){
-        return run.getConfig().getRepo().getScript(name);
+        return run.getConfig().getScript(name);
     }
     public SshSession getSession(){return  session;}
     public Coordinator getCoordinator(){return run.getCoordinator();}

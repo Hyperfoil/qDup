@@ -6,9 +6,7 @@ import perf.ssh.State;
 import perf.ssh.cmd.impl.*;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,7 +17,6 @@ import java.util.regex.Pattern;
  */
 public abstract class Cmd {
 
-
     private static final Code NO_OP = (i, s)->Result.next(i);
 
     protected final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
@@ -29,8 +26,22 @@ public abstract class Cmd {
     public static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^}]+)}}");
     public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
+    public static Cmd NO_OP(){return new Cmd(){
 
-    public static Cmd NO_OP(){return new CodeCmd(NO_OP);}
+        @Override
+        protected void run(String input, Context context, CommandResult result) {
+            result.next(this,input);
+        }
+
+        @Override
+        protected Cmd clone() {
+            return null;
+        }
+        @Override
+        public String toString(){
+            return "NO_OP";
+        }
+    };}
     public static Cmd abort(String message){return new Abort(message);}
     public static Cmd code(Code code){return new CodeCmd(code);}
     public static Cmd code(String className){return new CodeCmd(className);}
@@ -60,7 +71,21 @@ public abstract class Cmd {
     public static Cmd waitFor(String name){return new WaitFor(name);}
     public static Cmd xpath(String path){return new XPath(path);}
 
-    public static String populateStateVariables(String command,State state){
+    private boolean hasWith(String name){
+        boolean hasIt = with.containsKey(name);
+        if(!hasIt && parent!=null){
+            hasIt = parent.hasWith(name);
+        }
+        return with.containsKey(name);
+    }
+    private String getWith(String name){
+        String value = with.get(name);
+        if(value==null && parent!=null){
+            value = parent.getWith(name);
+        }
+        return value;
+    }
+    public static String populateStateVariables(String command,Cmd cmd, State state){
 
         if(command.indexOf(ENV_PREFIX)<0)
             return command;
@@ -74,10 +99,16 @@ public abstract class Cmd {
                 rtrn.append(command.substring(previous,findIndex));
             }
             String name = matcher.group("name");
-            String value = state.get(name);
+            String value = null;
+            if(cmd!=null && cmd.hasWith(name)){
+                value = cmd.getWith(name);
+            }else {
+                state.get(name);
+            }
             if(value == null ){//bad times
-                logger.error("missing {} value for {}",name,command);
-                //TODO how to propegate missing state
+                logger.error("missing {} VALUE for {}",name,command);
+                //TODO how to alert the missing state
+
                 value = "";
             }
             rtrn.append(value);
@@ -92,6 +123,7 @@ public abstract class Cmd {
 
     private static final AtomicInteger uidGenerator = new AtomicInteger(0);
 
+    protected Map<String,String> with;
     private LinkedList<Cmd> thens;
     private LinkedList<Cmd> watchers;
 
@@ -102,9 +134,16 @@ public abstract class Cmd {
 
     int uid;
 
+    protected boolean silent = false;
+
     private String output;
 
     protected Cmd(){
+        this(false);
+    }
+    protected Cmd(boolean silent){
+        this.silent = silent;
+        this.with = new HashMap<>();
         this.thens = new LinkedList<>();
         this.watchers = new LinkedList<>();
         this.next = null;
@@ -132,6 +171,18 @@ public abstract class Cmd {
         command.prev = this;
     }
 
+    public boolean isSilent(){return silent;}
+
+    public Cmd with(Map<String,String> withs){
+        this.with.putAll(withs);
+        return this;
+    }
+    public Cmd with(String key,String value){
+        with.put(key,value);
+        return this;
+    }
+    public Map<String,String> getWith(){return Collections.unmodifiableMap(with);}
+
 
 
     public int getUid(){return uid;}
@@ -153,6 +204,7 @@ public abstract class Cmd {
             rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this) );
         }
         watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watch:",debug);});
+        with.forEach((k,v)->{rtrn.append(String.format("%"+(correctedIndent+4)+"swith: %s=%s%n","",k.toString(),v.toString()));});
         thens.forEach((t)->{t.tree(rtrn,correctedIndent+2,"",debug);});
     }
 
@@ -212,7 +264,18 @@ public abstract class Cmd {
     protected List<Cmd> getThens(){return Collections.unmodifiableList(this.thens);}
     protected List<Cmd> getWatchers(){return Collections.unmodifiableList(this.watchers);}
 
+
+
+    protected final void doRun(String input,Context context,CommandResult result){
+        if(!with.isEmpty()){
+            for(String key : with.keySet()){
+                context.getState().set(key,with.get(key));
+            }
+        }
+        run(input,context,result);
+    }
     protected abstract void run(String input, Context context, CommandResult result);
+
     protected abstract Cmd clone();
 
     public Cmd deepCopy(){

@@ -5,19 +5,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wreicher
- * Conceptually a tree of maps where new [key,value] pairs default to the current map
- * but will be placed in a parent map if the key starts with the parent's prefix
+ * Conceptually a tree of maps where new [KEY,VALUE] pairs default to the current map
+ * but will be placed in a parent map if the KEY starts WITH the parent's prefix
  * (checking all the way up the tree before using the current State).
  *
- * This is used to maintain a global run state (with prefix RUN_PREFIX) with child host states
- * (with prefix HOST_PREFIX) and child script states (no prefix). Scripts run with a reference
+ * This is used to maintain a global run state (WITH prefix RUN_PREFIX) WITH CHILD host states
+ * (WITH prefix HOST_PREFIX) and CHILD script states (no prefix). Scripts run WITH a reference
  * to their unique script state so by default their keys do not conflict unless the
- * key intentionally uses a parent prefix.
+ * KEY intentionally uses a parent prefix.
  *
  * Considerations
- *   A State with an empty prefix (prefix.isEmpty()==true) will effectively make the parent States read only from that perspective.
- *     All key's will match the prefix check so no set(key,value) operations will modify a parent State.
- *   A State with a null prefix will never match a prefix check so it becomes read only from that perspective but the parents are still mutable.
+ *   A State WITH an empty prefix (prefix.isEmpty()==true) will effectively make the parent States read only from that perspective.
+ *     All KEY's will match the prefix check so no set(KEY,VALUE) operations will modify a parent State.
+ *   A State WITH a null prefix will never match a prefix check so it becomes read only from that perspective but the parents are still mutable.
  *
  */
 public class State {
@@ -42,7 +42,10 @@ public class State {
         return childStates.containsKey(name);
     }
     public State getChild(String name){
-        return addChild(name,null);//default to creating a new child
+        return getChild(name,null);
+    }
+    public State getChild(String name,String prefix){
+        return addChild(name,prefix);//default to creating a new CHILD
     }
     public State addChild(String name,String prefix){
         if(!hasChild(name)){

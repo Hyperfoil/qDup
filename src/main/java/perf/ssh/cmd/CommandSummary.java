@@ -1,8 +1,8 @@
 package perf.ssh.cmd;
 
-import perf.ssh.RunConfig;
-import perf.ssh.ScriptRepo;
+import perf.ssh.config.RunConfig;
 import perf.ssh.cmd.impl.*;
+import perf.ssh.config.RunConfigBuilder;
 import perf.util.StringUtil;
 
 import java.util.HashSet;
@@ -19,7 +19,7 @@ import java.util.regex.Matcher;
 public class CommandSummary {
 
 
-    private void processCommand(Cmd command,boolean isWatching,RunConfig config){
+    private void processCommand(Cmd command,boolean isWatching,RunConfigBuilder config){
         String toString = command.toString();
 
         if(isWatching && command instanceof Sh){
@@ -77,7 +77,7 @@ public class CommandSummary {
     private Set<String> variables;
     private Set<String> regexVariables;
 
-    public CommandSummary(Cmd command, RunConfig config){
+    public CommandSummary(Cmd command, RunConfigBuilder config){
         this.name = command.toString();
 
         warnings = new LinkedList<>();

@@ -1,10 +1,10 @@
-package perf.ssh;
+package perf.ssh.config;
 
 /**
  * Created by wreicher
  * A named HostList. Adds another convenience to associated hosts with scripts for a Run
  */
-public class Role extends HostList{
+public class Role extends HostList {
 
     private String name;
     protected Role(String name){

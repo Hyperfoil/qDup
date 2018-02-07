@@ -24,10 +24,6 @@ import java.util.function.BiConsumer;
  *     calls CommandDispatch.next(output)
  *
  *
-
-    TODO create xpath search, json search
-
-
  */
 public class CommandDispatcher {
 
@@ -53,7 +49,7 @@ public class CommandDispatcher {
             observers.forEach(o->o.onNext(command,output));
             if(command.getNext()!=null){
                 logger.trace("{}:{} using WatcherResult to invoke next={}",command.getUid(),command,command.getNext());
-                command.getNext().run(output,this.context,this);
+                command.getNext().doRun(output,this.context,this);
             }
         }
 
@@ -62,7 +58,7 @@ public class CommandDispatcher {
             observers.forEach(o->o.onSkip(command,output));
             if(command.getSkip()!=null){
                 logger.trace("{} using WatcherResult to invoke skip={}",command,command.getSkip());
-                command.getSkip().run(output,this.context,this);
+                command.getSkip().doRun(output,this.context,this);
             }
         }
 
@@ -72,7 +68,7 @@ public class CommandDispatcher {
         }
     }
     /**
-     * Stores the Context inside the CommandResult so that the Dispatcher can be used with multiple Host+Script combinations.
+     * Stores the Context inside the CommandResult so that the Dispatcher can be used WITH multiple Host+Script combinations.
      */
     class ContextedResult implements CommandResult {
         private Context context;
@@ -126,13 +122,13 @@ public class CommandDispatcher {
     }
 
     class ScriptResult {
-        private Script script;
+        private Cmd script;
         private ContextedResult result;
-        public ScriptResult(Script script,ContextedResult result){
+        public ScriptResult(Cmd script,ContextedResult result){
             this.script = script;
             this.result = result;
         }
-        public Script getScript(){return script;}
+        public Cmd getScript(){return script;}
         public ContextedResult getResult(){return result;}
     }
     class ActiveCommandInfo {
@@ -205,7 +201,7 @@ public class CommandDispatcher {
                     if(!stop) {
                         for (Cmd watcher : watchers) {
                             try {
-                                watcher.run(line, context, result);
+                                watcher.doRun(line, context, result);
                             }catch(Exception e){
                                 logger.warn("Exception from watcher {}",watcher,e);
                             }
@@ -216,7 +212,7 @@ public class CommandDispatcher {
                 logger.catching(e);
                 e.printStackTrace();
             } finally {
-                logger.debug("{} finished watching with line={}",this.name,line);
+                logger.debug("{} finished watching WITH line={}",this.name,line);
             }
         }
     }
@@ -239,7 +235,7 @@ public class CommandDispatcher {
                 logger.trace("CommandDispatch.run {}:{}",context.getSession().getHostName(), command);
                 context.getProfiler().start(command.getUid()+":"+command);
 
-                command.run(input, context, result);
+                command.doRun(input, context, result);
             }catch(Exception e){
                 logger.error("Exception while running {}@{}. Aborting",command,context.getSession().getHostName(),e);
                 context.abort();
@@ -304,10 +300,12 @@ public class CommandDispatcher {
 
     public ExecutorService getExecutor(){return executor;}
 
-    public void addScript(Script script,Context context){
-        logger.trace("add script {} to {}",script.getName(),context.getSession().getHostName());
+    public void addScript(Cmd script,Context context){
+        logger.trace("add script {} to {}",script,context.getSession().getHostName());
 
-        script = (Script)script.deepCopy();
+        //TODO this deepCopy is probably not needed and may be bad
+        //  it might break state references based on UID
+        script = script.deepCopy();
 
         //Cmd.InvokeCmd can change the tail and cause this to close profiler too soon
         //TODO make this thread safe
@@ -319,7 +317,7 @@ public class CommandDispatcher {
                 )
         );
         if(previous!=null){
-            logger.error("already have getScript.tail={} mapped to {}@{}",script.getTail().getUid(),script.getName(),context.getSession().getHostName());
+            logger.error("already have getScript.tail={} mapped to {}@{}",script.getTail().getUid(),script,context.getSession().getHostName());
         }
     }
     //TODO this should no longer be needed now that script2Head stores the head cmd not tail
@@ -327,7 +325,7 @@ public class CommandDispatcher {
         //TODO make thread safe
         ScriptResult result = script2Result.get(previousTail);
         if(result!=null){
-            logger.trace("changing {} tail from {} to {}",result.getScript().getName(),previousTail,nextTail);
+            logger.trace("changing {} tail from {} to {}",result.getScript(),previousTail,nextTail);
             script2Result.remove(previousTail);
             script2Result.put(nextTail,result);
         }
@@ -371,9 +369,9 @@ public class CommandDispatcher {
                 }, THRESHOLD, THRESHOLD, TimeUnit.MILLISECONDS);
             }
             for(ScriptResult scriptResult : script2Result.values()){
-                Script script = scriptResult.getScript();
+                Cmd script = scriptResult.getScript();
                 ContextedResult result = scriptResult.getResult();
-                logger.info("starting {}:{}",script.getName(),result.context.getSession().getHostName());
+                logger.info("starting {}:{}",script,result.context.getSession().getHostName());
                 dispatch(null,script,"",result.context,result);
             }
         }else{
@@ -420,7 +418,7 @@ public class CommandDispatcher {
 
 
     private void execute(Cmd command, String input, Context context, CommandResult result){
-        logger.trace(" execute {} with input=[{}]",command,input.length()>120?input.substring(0,120)+ AsciiArt.ELLIPSIS:input);
+        logger.trace(" execute {} WITH input=[{}]",command,input.length()>120?input.substring(0,120)+ AsciiArt.ELLIPSIS:input);
         if(isStopped){
             return;
         }
@@ -488,7 +486,7 @@ public class CommandDispatcher {
             context.getProfiler().log();
             if(context.getRunLogger().isInfoEnabled()){
                 context.getRunLogger().info("{}:{} closing script state:\n{}",
-                        script2Result.get(command.getHead()).getScript().getName(),
+                        script2Result.get(command.getHead()).getScript(),
                         context.getSession().getHostName(),
                         context.getState().tree());
             }
@@ -499,7 +497,7 @@ public class CommandDispatcher {
     }
     private void checkActiveCount(){
         if(activeCommands.size()==0 && !isStopped){
-            logger.info("activeCommands.size = {}",activeCommands.size());
+            logger.info("activeCommands.count = {}",activeCommands.size());
             executor.execute(() -> {
                 closeSessions();
                 observers.forEach(o->o.onStop());

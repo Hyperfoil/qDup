@@ -1,4 +1,4 @@
-# Ssh
+# Qdup
 Coordinate multiple shell interactions to run tests in a lab environment
 ## Introduction
 Running benchmarks (e.g. specjms) requires opening several

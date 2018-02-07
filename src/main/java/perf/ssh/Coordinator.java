@@ -6,10 +6,7 @@ import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.CommandResult;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -60,6 +57,7 @@ public class Coordinator {
     private List<Consumer<String>> observers;
 
     private Map<String,AtomicInteger> latches;
+    private Map<String,Long> latchTimes;
     private Map<String,List<Waiter>> waitFors;
 
     private Map<String,AtomicInteger> counters;
@@ -68,6 +66,7 @@ public class Coordinator {
 
     public Coordinator(){
         latches = new HashMap<>();
+        latchTimes = new LinkedHashMap<>();
         counters = new HashMap<>();
         observers = new LinkedList<>();
         waitFors = new ConcurrentHashMap<>();
@@ -108,7 +107,7 @@ public class Coordinator {
     }
     public void initialize(String name,int count){
         if(latches.containsKey(name)){
-            logger.warn("duplicate initialize for {}, using current value {} not new value {}",name,latches.get(name).get(),count);
+            logger.warn("duplicate initialize for {}, using current VALUE {} not new VALUE {}",name,latches.get(name).get(),count);
         }
         AtomicInteger latch = new AtomicInteger(count);
         latches.put(name,latch);
@@ -128,6 +127,9 @@ public class Coordinator {
         }
         if( latches.get(name).get() > 0 ){
             latches.get(name).decrementAndGet();
+            if(latches.get(name).get()==0){
+                latchTimes.put(name,System.currentTimeMillis());
+            }
         }
         if( latches.get(name).get()<=0 ) {
             if(!observers.isEmpty()){
@@ -148,7 +150,7 @@ public class Coordinator {
     }
     private void waitFor(String name,Waiter waiter){
         if(!latches.containsKey(name)){
-            logger.error("waitFor {} missing latch, using default latch with count=0",name);
+            logger.error("waitFor {} missing latch, using default latch WITH count=0",name);
             waiter.next();
         }else {
             //TODO this is a race condition, need a check after adding to the list as well. Refactor out of signal to use same check code
@@ -167,4 +169,6 @@ public class Coordinator {
         Waiter waiter = new Waiter(command,result,input);
         waitFor(name,waiter);
     }
+
+
 }

@@ -13,7 +13,7 @@ public class RepeatUntilSignal extends Cmd {
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
-        String populatedName = Cmd.populateStateVariables(name,context.getState());
+        String populatedName = Cmd.populateStateVariables(name,this,context.getState());
 
         int amount = context.getCoordinator().getSignalCount(populatedName);
         if( amount > 0 ){
@@ -34,7 +34,7 @@ public class RepeatUntilSignal extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new RepeatUntilSignal(this.name);
+        return new RepeatUntilSignal(this.name).with(this.with);
     }
     @Override
     public String toString(){return "repeat-until "+name;}

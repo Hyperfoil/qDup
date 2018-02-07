@@ -12,7 +12,9 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import org.slf4j.profiler.Profiler;
 import perf.ssh.cmd.*;
-import perf.util.Counters;
+import perf.ssh.cmd.impl.ScriptCmd;
+import perf.ssh.config.StageValidation;
+import perf.ssh.config.RunConfig;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
@@ -59,7 +61,7 @@ public class Run implements Runnable {
 
     public Run(String outputPath,RunConfig config,CommandDispatcher dispatcher){
         this.config = config;
-        this.validation = config.validate();
+
         this.outputPath = outputPath;
         this.dispatcher = dispatcher;
         this.aborted = false;
@@ -116,7 +118,7 @@ public class Run implements Runnable {
         return pendingDownloads.get(host);
     }
     public void addPendingDownload(Host host,String path,String destination){
-        List<PendingDownload> list =ensurePendingDownload(host);
+        List<PendingDownload> list = ensurePendingDownload(host);
         list.add(new PendingDownload(path,destination));
     }
     public void runPendingDownloads(){
@@ -138,7 +140,6 @@ public class Run implements Runnable {
         dispatcher.stop();//interrupts working threads and stops dispatching next commands
         runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
         runLatch.countDown();
-
     }
     private void queueSetupScripts(){
 
@@ -161,33 +162,30 @@ public class Run implements Runnable {
             }
         };
         dispatcher.addObserver(setupObserver);
-        for(String host : config.getHostsInRole().toList()){
-            if(!config.getSetupScripts(host).isEmpty()){
-                State hostState = config.getState().addChild(host,State.HOST_PREFIX);
+        for(Host host : config.getSetupHosts()){
 
-                Script hostSetup = new Script(host+"-setup");
-                for(Script script : config.getSetupScripts(host)){
-                    hostSetup.then(script.deepCopy());
-                }
-                long start = System.currentTimeMillis();
-                Profiler profiler = profiles.get(hostSetup.getName()+"@"+host);
-                Host h = config.getHost(host);
-                logger.info("{} connecting {} to {}@{}",this,hostSetup.getName(),h.getUserName(),h.getHostName());
+                State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
+
+                Cmd setupCmd = config.getSetupCmd(host);
+
+                Profiler profiler = profiles.get(setupCmd.toString());
+
+                logger.info("{} connecting {} to {}@{}",this,setupCmd,host.getUserName(),host.getHostName());
                 profiler.start("connect:"+host.toString());
-                SshSession scriptSession = new SshSession(h,config.getKnownHosts(),config.getIdentity(),config.getPassphrase());
+                SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase());
                 profiler.start("waiting for start");
                 if(!scriptSession.isOpen()){
-                    logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),hostSetup.getName(),h.getUserName(),h.getHostName());
+                    logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),setupCmd,host.getUserName(),host.getHostName());
                     abort();
                     return;
                 }
                 long stop = System.currentTimeMillis();
 
-                State scriptState = hostState.getChild(hostSetup.getName());
+                State scriptState = hostState.getChild(setupCmd.toString());
                 Context context = new Context(scriptSession,scriptState,this,profiler);
-                logger.debug("{} setup addScript {}\n{}",this,hostSetup,hostSetup.tree());
-                dispatcher.addScript(hostSetup, context);
-            }
+
+                dispatcher.addScript(setupCmd, context);
+
         }
         dispatcher.start();
     }
@@ -197,7 +195,7 @@ public class Run implements Runnable {
 
     public boolean initializeCoordinator(){
         List<String> noSignal = new ArrayList<>();
-        Consumer<ConfigValidation> setupCoordinator = (v)->{
+        Consumer<StageValidation> setupCoordinator = (v)->{
             v.getSignals().forEach((signalName)->{
                 int count = v.getSignalCount(signalName);
                 coordinator.initialize(signalName,count);
@@ -284,38 +282,32 @@ public class Run implements Runnable {
                 queueCleanupScripts();
             }
         };
-        //TODO parallel connect with ExecutorService.invokeAll(Callable / Runnable)
+        //TODO parallel connect WITH ExecutorService.invokeAll(Callable / Runnable)
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
-        for(String host : config.getHostsInRole().toList()){
-            for(Script script : config.getRunScripts(host)){
+        for(Host host : config.getRunHosts()){
+            for(ScriptCmd scriptCmd : config.getRunCmds(host)){
                 connectSessions.add(()->{
-                    State hostState = config.getState().addChild(host,State.HOST_PREFIX);
-                    State scriptState = hostState.getChild(script.getName());
+                    State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
+                    State scriptState = hostState.getChild(scriptCmd.getName());
                     long start = System.currentTimeMillis();
-                    Profiler profiler = profiles.get(script.getName()+"@"+host);
-                    Host h = config.getHost(host);
-                    if ( h == null ){
-                        logger.error("host '{}' is not defined. Aborting", host);
-                        abort();
-                        return false;
-                    }
-                    logger.info("{} connecting {} to {}@{}",this,script.getName(),h.getUserName(),h.getHostName());
+                    Profiler profiler = profiles.get(scriptCmd.getName()+"@"+host);
+                    logger.info("{} connecting {} to {}@{}",this,scriptCmd.getName(),host.getUserName(),host.getHostName());
                     profiler.start("connect:"+host.toString());
-                    SshSession scriptSession = new SshSession(h,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
+                    SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
                     profiler.start("waiting for start");
                     if(!scriptSession.isOpen()){
-                        logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),script.getName(),h.getUserName(),h.getHostName());
+                        logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),scriptCmd.getName(),host.getUserName(),host.getHostName());
                         abort();
                         return false;
                     }
-
                     long stop = System.currentTimeMillis();
-
                     Context context = new Context(scriptSession,scriptState,this,profiler);
-                    logger.debug("{} connected {}@{} in {}s",this,script.getName(),host,((stop-start)/1000));
-                    dispatcher.addScript(script, context);
+                    logger.debug("{} connected {}@{} in {}s",this,scriptCmd.getName(),host,((stop-start)/1000));
+                    dispatcher.addScript(scriptCmd, context);
                     return true;
+
+
                 });
             }
         }
@@ -363,35 +355,33 @@ public class Run implements Runnable {
         runPendingDownloads();
 
 
-        //TODO parallel connect with ExecutorService.invokeAll(Callable / Runnable)
+        //TODO parallel connect WITH ExecutorService.invokeAll(Callable / Runnable)
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
-        for(String host : config.getHostsInRole().toList()){
-            for(Script script : config.getCleanupScripts(host)){
-                connectSessions.add(()->{
-                    State hostState = config.getState().addChild(host,State.HOST_PREFIX);
-                    State scriptState = hostState.getChild(script.getName());
-                    long start = System.currentTimeMillis();
-                    Profiler profiler = profiles.get(script.getName()+"@"+host);
-                    Host h = config.getHost(host);
-                    logger.info("{} connecting {} to {}@{}",this,script.getName(),h.getUserName(),h.getHostName());
-                    profiler.start("connect:"+host.toString());
-                    SshSession scriptSession = new SshSession(h,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
-                    profiler.start("waiting for start");
-                    if(!scriptSession.isOpen()){
-                        logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),script.getName(),h.getUserName(),h.getHostName());
-                        abort();
-                        return false;
-                    }
+        for(Host host : config.getCleanupHosts()){
+            Cmd cleanupCmd = config.getCleanupCmd(host);
+            connectSessions.add(()-> {
+                State hostState = config.getState().addChild(host.getHostName(), State.HOST_PREFIX);
+                State scriptState = hostState.getChild(cleanupCmd.toString());
+                long start = System.currentTimeMillis();
+                Profiler profiler = profiles.get(cleanupCmd.toString() + "@" + host);
+                logger.info("{} connecting {} to {}@{}", this, cleanupCmd.toString(), host.getUserName(), host.getHostName());
+                profiler.start("connect:"+host.toString());
+                SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
+                profiler.start("waiting for start");
+                if(!scriptSession.isOpen()){
+                    logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),cleanupCmd.toString(),host.getUserName(),host.getHostName());
+                    abort();
+                    return false;
+                }
 
-                    long stop = System.currentTimeMillis();
+                long stop = System.currentTimeMillis();
 
-                    Context context = new Context(scriptSession,scriptState,this,profiler);
-                    logger.debug("{} connected {}@{} in {}s",this,script.getName(),host,((stop-start)/1000));
-                    dispatcher.addScript(script, context);
-                    return true;
-                });
-            }
+                Context context = new Context(scriptSession,scriptState,this,profiler);
+                logger.debug("{} connected {}@{} in {}s",this,cleanupCmd.toString(),host,((stop-start)/1000));
+                dispatcher.addScript(cleanupCmd, context);
+                return true;
+            });
         }
         if(!connectSessions.isEmpty()) {
             try {

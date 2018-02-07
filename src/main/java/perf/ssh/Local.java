@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.CommandResult;
+import perf.ssh.config.RunConfig;
+import perf.ssh.config.RunConfigBuilder;
 import perf.util.AsciiArt;
 
 import java.io.*;
@@ -18,7 +20,7 @@ import java.util.stream.Collectors;
 /**
  * Created by wreicher
  * Performs actions on the local system (without an ssh connection)
- * Currently just used to upload / download files with the SUT
+ * Currently just used to upload / download files WITH the SUT
  * uses rsync instead of scp because it was much faster in our lab
  *
  */
@@ -162,7 +164,7 @@ public class Local {
         }
     }
     private void storePassphrase(String identity, String passphrase){
-        if(passphrase!=RunConfig.DEFAULT_PASSPHRASE){
+        if(passphrase!= RunConfigBuilder.DEFAULT_PASSPHRASE){
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("/usr/bin/ssh-add", identity);
             try {
@@ -420,7 +422,7 @@ public class Local {
                         if( fileModes.reset(line).matches()){
                             System.out.println(label+" "+AsciiArt.ANSI_CYAN+"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+AsciiArt.ANSI_RESET);
                             String fileName = fileModes.group("fileName");
-                            long size = Long.parseLong(fileModes.group("size"),10);
+                            long size = Long.parseLong(fileModes.group("count"),10);
 
                             File targetFile = null;//new File(newFile.getPath()+"/"+String.join("/",directories)+"/"+fileName);
                             while( !(targetFile= new File(newFile.getPath()+"/"+String.join("/",directories)+"/"+fileName)).exists()){
@@ -431,7 +433,7 @@ public class Local {
                             if(!targetFile.exists()){
                                 System.out.println(label+" "+AsciiArt.ANSI_RED+"!!! "+fileName+" does not exist @ "+targetFile.getPath()+AsciiArt.ANSI_RESET);
                             }else{
-                                System.out.println(label+" "+AsciiArt.ANSI_CYAN+" Starting thread watcher for "+targetFile+" size="+size+AsciiArt.ANSI_RESET);
+                                System.out.println(label+" "+AsciiArt.ANSI_CYAN+" Starting thread watcher for "+targetFile+" count="+size+AsciiArt.ANSI_RESET);
                                 Thread watchFileThread = new Thread(makeFileWatcher.apply(targetFile,size));
                                 watchFileThread.start();
                             }

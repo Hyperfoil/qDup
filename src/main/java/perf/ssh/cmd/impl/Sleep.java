@@ -23,7 +23,7 @@ public class Sleep extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new Sleep(this.amount);
+        return new Sleep(this.amount).with(this.with);
     }
 
     @Override public String toString(){return "sleep "+amount;}
