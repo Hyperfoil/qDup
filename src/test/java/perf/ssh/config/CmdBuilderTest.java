@@ -3,7 +3,7 @@ package perf.ssh.config;
 import org.junit.Test;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.impl.Sh;
-import perf.util.json.Json;
+import perf.yaup.json.Json;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -47,7 +47,7 @@ public class CmdBuilderTest {
         Cmd command = builder.buildYamlCommand(sh,null);
 
         assertTrue("command should be sh",Sh.class.equals(command.getClass()));
-        assertFalse("command should not be logging",command.isSilent());
+        assertTrue("command should not be logging",command.isSilent());
 
 
 

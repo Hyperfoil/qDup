@@ -2,7 +2,7 @@ package perf.ssh.config;
 
 import org.junit.Assert;
 import org.junit.Test;
-import perf.util.json.Json;
+import perf.yaup.json.Json;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -190,7 +190,7 @@ public class YamlParserTest {
             "#comment1\n"+
             "#comment2\n"+
             "0Level1 :\n"+
-            "0Level1 : hasValue\n"+
+            "0Level2 : hasValue\n"+
             "  1 : normal\n"+
             "  1 : \"quoted[{]}\\\"Value\"\n"+
             "    - 1.1 : one\n"+
@@ -199,7 +199,7 @@ public class YamlParserTest {
             "    - 1.2 : two\n"+
             "      1.2.y:Yankee\n"+
             "    - 1.2.z:Zulu\n"+
-            "0Level2: #inlineComment\n"+
+            "0Level3: #inlineComment\n"+
             "  1 : [first, second, \"quoted\\\" :,[{]}\", other, [ subOne, subTwo], {subKey: subValue}, zed]\n"+
             "  2 : bar\n"+
             "  2 : {a:Apple,b:Banana , c : carrot, d : \"quoted\\\" :,[{]}\",e : [one, two], f: { fff: bbb}}\n"+

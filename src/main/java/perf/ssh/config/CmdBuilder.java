@@ -2,8 +2,8 @@ package perf.ssh.config;
 
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.impl.*;
-import perf.util.Sets;
-import perf.util.json.Json;
+import perf.yaup.Sets;
+import perf.yaup.json.Json;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

@@ -1,6 +1,12 @@
 package perf.ssh;
 
-import com.jcraft.jsch.*;
+
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.util.io.NoCloseOutputStream;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.ssh.cmd.Cmd;
@@ -8,13 +14,19 @@ import perf.ssh.cmd.CommandResult;
 import perf.ssh.stream.FilteredStream;
 import perf.ssh.stream.LineEmittingStream;
 import perf.ssh.stream.SemaphoreStream;
-import perf.util.AsciiArt;
+
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.security.GeneralSecurityException;
 import java.util.Properties;
 import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
+
+import static perf.ssh.config.RunConfigBuilder.DEFAULT_IDENTITY;
+import static perf.ssh.config.RunConfigBuilder.DEFAULT_KNOWN_HOSTS;
+import static perf.ssh.config.RunConfigBuilder.DEFAULT_PASSPHRASE;
 
 /**
  * Created by wreicher
@@ -29,9 +41,14 @@ public class SshSession implements Runnable, Consumer<String>{
 
     private static final String prompt = "#%@_ssh_!*> "; // a string unlikely to appear in the output of any command
 
-    private Session session;
+
+    private SshClient sshClient;
+    private ClientSession clientSession;
     private ChannelShell channelShell;
+
     private Properties sshConfig;
+
+
 
     private PrintStream commandStream;
     private ByteArrayOutputStream shStream;
@@ -45,117 +62,75 @@ public class SshSession implements Runnable, Consumer<String>{
 
     private boolean isOpen = false;
 
+
+
     private Cmd command;
     private CommandResult result;
 
     private Host host;
 
-    public SshSession(Host host,String knownHosts,String identity,String passphrase){ this(host,new Semaphore(1),knownHosts,identity,passphrase); }
+    public SshSession(Host host){
+        this(host,new Semaphore(1),DEFAULT_KNOWN_HOSTS,DEFAULT_IDENTITY,DEFAULT_PASSPHRASE);
+    }
+    public SshSession(Host host,String knownHosts,String identity,String passphrase){
+        this(host,new Semaphore(1),knownHosts,identity,passphrase);
+    }
     public SshSession(Host host,Semaphore semaphore,String knownHosts,String identity,String passphrase){
 
         this.host = host;
         shellLock = semaphore;
-        sshConfig = new Properties();
-        sshConfig.put("StrictHostKeyChecking", "no");
-        JSch jsch = new JSch();
+
+        sshClient = SshClient.setUpDefaultClient();
+        //StrictHostKeyChecking=no
+        sshClient.start();
+        sshClient.setServerKeyVerifier((clientSession1,remoteAddress,serverKey)->{return true;});
+
+        System.out.println("new SshSession");
         try {
-
-            jsch.setKnownHosts(knownHosts);
-            if ( passphrase == null ) {
-                jsch.addIdentity( identity );
-            } else {
-                jsch.addIdentity( identity, passphrase );
-            }
-            session = jsch.getSession(host.getUserName(),host.getHostName(),host.getPort());
-            session.setConfig(sshConfig);
-            session.connect(5*60_000);
-
-            if( !session.isConnected() ) {
-                logger.error("failed to connect session for {}@{}",host.getUserName(),host.getHostName());
-            }
-
-            ChannelExec channelExec = (ChannelExec)session.openChannel("exec");
-
-            channelShell = (ChannelShell)session.openChannel("shell");
-
-            channelShell.setPty(true);
-            channelShell.setPtySize(1024,80,1024,80);
+            System.out.println("connected");
+            clientSession = sshClient.connect(host.getUserName(),host.getHostName(),host.getPort()).verify().getSession();
+            System.out.println("connected  2");
+            clientSession.addPublicKeyIdentity(SecurityUtils.loadKeyPairIdentity(
+                    identity,
+                    Files.newInputStream((new File(identity)).toPath()),
+                    (resourceKey)->{return passphrase;}
+            ));
+            clientSession.auth().verify(5_000);
+            channelShell = clientSession.createShellChannel();
+            channelShell.getPtyModes().put(PtyMode.ECHO,0);
+            channelShell.setPtyType("vt100");
+            channelShell.setPtyColumns(1024);
+            channelShell.setPtyWidth(1024);
+            channelShell.setPtyHeight(80);
+            channelShell.setPtyLines(80);
+            channelShell.setUsePty(true);
 
             PipedInputStream pipeIn = new PipedInputStream();
             PipedOutputStream pipeOut = new PipedOutputStream(pipeIn);
 
-            //the output of the current sh command
-            shStream = new ByteArrayOutputStream();
+            channelShell.setIn(pipeIn);
 
-            //the stream that sends commands to the channelSession
             commandStream = new PrintStream(pipeOut);
 
-            channelShell.setInputStream(pipeIn);
+            channelShell.setOut(new NoCloseOutputStream(System.out));
+            channelShell.setErr(new NoCloseOutputStream(System.out));
+            channelShell.open();
+            isOpen=true;
+        } catch (GeneralSecurityException | IOException e) {
 
-
-            //the stream that receives the output of the chanelSession (including prompt and sent commands)
-            semaphoreStream = new SemaphoreStream(shellLock,prompt.getBytes());
-
-            channelShell.connect(5*60_000);
-            if ( !channelShell.isConnected() ) {
-                logger.error("failed to connect shell to {}",host.getHostName());
-            }
-            channelShell.setOutputStream(semaphoreStream,true);
-
-            filteredStream = new FilteredStream();
-            stripStream = new FilteredStream();
-
-            //set the prompt so semaphoreStream will detect the expected prompt and release the lock to start sending commands
-            sh("export PS1='" + prompt + "'");
-
-            sh("");//forces the thread to wait for the previous sh to complete
-
-            String newPrompt = AsciiArt.ANSI_RESET+AsciiArt.ANSI_RED+"$:"+AsciiArt.ANSI_RESET+AsciiArt.ANSI_BLACK;
-
-            filteredStream.addFilter("prompt",prompt, "$:"/*newPrompt*/);//replace the unique string prompt WITH something more user friendly
-            stripStream.addFilter("prompt","$:","");
-
-            lineEmittingStream = new LineEmittingStream();
-            lineEmittingStream.addConsumer(this);
-            //semaphoreStream.addStream("sh",shStream); // echo the entire channelSession to sh output
-
-            filteredStream.addStream("strip",stripStream); // echo the entire channelSession to sh output
-
-            stripStream.addStream("lines",lineEmittingStream);
-            stripStream.addStream("sh",shStream);
-
-            semaphoreStream.addStream("filtered",filteredStream);
-            semaphoreStream.setRunnable(this);
-
-            try {
-                shellLock.acquire();
-                //moved release to finally block, check permits to ensure it was acquired
-                //shellLock.release();//reset so the next call to aquire for sh(...) isn't blocked
-            } catch (InterruptedException e) {
-                logger.warn("{}@{} interrupted while waiting for initial prompt",host.getUserName(),host.getHostName());
-                e.printStackTrace();
-                Thread.interrupted();
-            } finally {
-                if(shellLock.availablePermits()<=0){
-                    shellLock.release();
-                }
-            }
-
-            //echoes the prompt to output if desired
-            //filteredStream.write(prompt.getBytes());
-
-            isOpen = true;
-
-        } catch (JSchException|IOException e) {
-            logger.error("Exception while connecting to {}@{}",host.getUserName(),host.getHostName(),e);
+            e.printStackTrace();
+            logger.error("Exception while connecting to {}@{}",host.getUserName(),host.getHostName());
             isOpen = false;
+
         } finally {
-            logger.debug("{} session.isConnected={} shell.isConnected={}",
+            logger.debug("{} session.isOpen={} shell.isOpen={}",
                     this.getHostName(),
-                    session.isConnected(),
-                    channelShell==null?"false":channelShell.isConnected()
+                    clientSession.isOpen(),
+                    channelShell==null?"false":channelShell.isOpen()
             );
         }
+        sshConfig = new Properties();
+        sshConfig.put("StrictHostKeyChecking", "no");
     }
     public boolean isOpen(){return isOpen;}
     public String getUserName(){return host.getUserName();}
@@ -172,7 +147,7 @@ public class SshSession implements Runnable, Consumer<String>{
         this.result = result;
     }
     public void ctrlC() {
-        if (!channelShell.isConnected()) {
+        if (!channelShell.isOpen()) {
             isOpen = false;
             logger.error("Shell is not connected for ctrlC");
         } else {
@@ -198,7 +173,7 @@ public class SshSession implements Runnable, Consumer<String>{
         if(command==null){
             return;
         }
-        if(!channelShell.isConnected()){
+        if(!channelShell.isOpen()){
             isOpen = false;
             logger.error("Shell is not connected for "+command);
         } else {
@@ -241,16 +216,14 @@ public class SshSession implements Runnable, Consumer<String>{
                     }
                 }
 
-                channelShell.getInputStream().close();
-                channelShell.setInputStream(null);
-                //semaphoreStream.removeStream("out");
+                channelShell.getIn().close();
+                channelShell.setIn(null);
                 semaphoreStream.close();
-                channelShell.setOutputStream(null);
-                channelShell.disconnect();
+                channelShell.setOut(null);
+                channelShell.close();
 
-                //channelShell.getSession().disconnect();
-
-                session.disconnect();
+                clientSession.close();
+                sshClient.stop();
 
                 this.isOpen = false;
 

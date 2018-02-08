@@ -7,9 +7,9 @@ import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.CommandSummary;
 import perf.ssh.cmd.Script;
 import perf.ssh.cmd.impl.ScriptCmd;
-import perf.util.HashedList;
-import perf.util.HashedLists;
-import perf.util.HashedSets;
+import perf.yaup.HashedList;
+import perf.yaup.HashedLists;
+import perf.yaup.HashedSets;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;

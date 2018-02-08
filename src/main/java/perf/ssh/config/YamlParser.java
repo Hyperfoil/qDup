@@ -1,8 +1,8 @@
 package perf.ssh.config;
 
-import perf.util.HashedLists;
-import perf.util.Sets;
-import perf.util.json.Json;
+import perf.yaup.HashedLists;
+import perf.yaup.Sets;
+import perf.yaup.json.Json;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -186,8 +186,8 @@ public class YamlParser {
         }
     }
     public void load(String fileName,InputStream stream){
-        Json fidigibit = new Json(true);
-        builder.reset(fidigibit);
+        Json json = new Json(true);
+        builder.reset(json);
         try(BufferedReader reader = new BufferedReader(new InputStreamReader(stream))){
             String originalLine = null;
             int lineNumber = 0;
@@ -380,6 +380,7 @@ public class YamlParser {
 
 
                         }else if (line.startsWith("}")){//end inline map
+
                             line = line.substring(1).trim();
 
                             if(!INLINE_MAP.equals(inlineStack.peek())){
@@ -437,79 +438,75 @@ public class YamlParser {
 
                                 if(line.startsWith(":")) {
                                     line = line.substring(1).trim();
-                                    if(!inlineStack.isEmpty()){
-                                        if(valueMatcher.reset(line).find()){
 
+                                    if (line.startsWith("#")) {
 
-                                            String valueValue = valueMatcher.group(VALUE);
+                                    } else if (line.startsWith("[")) {
 
-                                            if(valueValue.startsWith("\"") && valueValue.endsWith("\"")){
-                                                valueValue = valueValue.substring(1,valueValue.length()-1);
-                                            }
-
-                                            builder.target().set(VALUE,valueValue);
-
-                                            line = line.substring(valueMatcher.end()).trim();
-                                        }else{
-
-                                        }
+                                    } else if (line.startsWith("{")){
 
                                     }else{
-                                        if (line.startsWith("#")) {
+                                        int i=0;
+                                        boolean stop=false;
+                                        boolean quoted=false;
+                                        boolean inVariable=false;
+                                        while(i<line.length() && !stop){
+                                            switch (line.charAt(i)){
+                                                case ',':
+                                                    if(!quoted && !inVariable && !inlineStack.isEmpty()){
+                                                        stop=true;
+                                                        i--;
+                                                    }
+                                                    break;
+                                                case '$':
+                                                    if(line.substring(i).startsWith("${{")){
+                                                        inVariable=true;
+                                                    }
+                                                    break;
+                                                case '#':
+                                                    if(!quoted){
+                                                        stop=true;
+                                                        i--;
+                                                    }
+                                                    break;
+                                                case '"':
+                                                    if(!quoted){
+                                                        quoted=true;
+                                                    }else{
+                                                        if('\\'==line.charAt(i-1)){
 
-                                        } else if (line.startsWith("[")) {
-
-                                        } else if (line.startsWith("{")){
-
-                                        }else{
-                                            int i=0;
-                                            boolean stop=false;
-                                            boolean quoted=false;
-                                            while(i<line.length() && !stop){
-                                                switch (line.charAt(i)){
-                                                    case '#':
-                                                        if(!quoted){
+                                                        }else{
+                                                            quoted=false;
+                                                        }
+                                                    }
+                                                    break;
+                                                case '}':
+                                                    if(!quoted ){
+                                                        if(inVariable && line.substring(i).startsWith("}}")){
+                                                            i++;//skip the next }
+                                                        }else if(!inlineStack.isEmpty() && inlineStack.peek().equals(INLINE_MAP)){
                                                             stop=true;
                                                             i--;
                                                         }
-                                                        break;
-                                                    case '"':
-                                                        if(!quoted){
-                                                            quoted=true;
-                                                        }else{
-                                                            if('\\'==line.charAt(i-1)){
-
-                                                            }else{
-                                                                quoted=false;
-                                                            }
+                                                    }
+                                                    break;
+                                                case ']':
+                                                    if(!quoted ){
+                                                        if(!inlineStack.isEmpty() && inlineStack.peek().equals(INLINE_LIST)){
+                                                            stop=true;
+                                                            i--;
                                                         }
-                                                        break;
-                                                    case '}':
-                                                        if(!quoted ){
-                                                            if(!inlineStack.isEmpty() && inlineStack.peek().equals(INLINE_MAP)){
-                                                                stop=true;
-                                                                i--;
-                                                            }
-                                                        }
-                                                        break;
-                                                    case ']':
-                                                        if(!quoted ){
-                                                            if(!inlineStack.isEmpty() && inlineStack.peek().equals(INLINE_LIST)){
-                                                                stop=true;
-                                                                i--;
-                                                            }
-                                                        }
-                                                        break;
-
-                                                }
-                                                i++;
-                                            }
-
-                                            if(i>1){
-                                                builder.target().set(VALUE,line.substring(0,i));
-                                                line = line.substring(i).trim();
+                                                    }
+                                                    break;
 
                                             }
+                                            i++;
+                                        }
+
+                                        if(i>1){
+                                            builder.target().set(VALUE,line.substring(0,i));
+                                            line = line.substring(i).trim();
+
                                         }
                                     }
 
@@ -531,12 +528,12 @@ public class YamlParser {
             }
 
             if(!inlineStack.isEmpty()){
-                addError(fileName,"Unclosed inline structures: "+inlineStack.toString());
+                addError(fileName,"Unclosed inline structures: "+inlineStack.toString()+"\n"+json.getString(2));
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        loaded.put(fileName,fidigibit);
+        loaded.put(fileName,json);
 
     }
 

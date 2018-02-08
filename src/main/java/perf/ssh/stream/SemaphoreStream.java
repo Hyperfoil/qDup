@@ -42,6 +42,7 @@ public class SemaphoreStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
+        System.out.print("SS: "+new String(b,off,len));
         try {
             super.write(b, off, len);
             if (hasSuffix(b, prompt, off, len)) {

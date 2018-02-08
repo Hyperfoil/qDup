@@ -6,7 +6,7 @@ import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.CommandResult;
 import perf.ssh.config.RunConfig;
 import perf.ssh.config.RunConfigBuilder;
-import perf.util.AsciiArt;
+import perf.yaup.AsciiArt;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;

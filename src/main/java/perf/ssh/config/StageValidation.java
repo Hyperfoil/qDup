@@ -1,6 +1,6 @@
 package perf.ssh.config;
 
-import perf.util.Counters;
+import perf.yaup.Counters;
 
 import java.util.*;
 

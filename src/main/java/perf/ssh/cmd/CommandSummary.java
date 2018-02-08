@@ -3,7 +3,7 @@ package perf.ssh.cmd;
 import perf.ssh.config.RunConfig;
 import perf.ssh.cmd.impl.*;
 import perf.ssh.config.RunConfigBuilder;
-import perf.util.StringUtil;
+import perf.yaup.StringUtil;
 
 import java.util.HashSet;
 import java.util.LinkedList;

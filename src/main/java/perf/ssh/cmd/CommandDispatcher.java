@@ -3,7 +3,7 @@ package perf.ssh.cmd;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.ssh.cmd.impl.Sh;
-import perf.util.AsciiArt;
+import perf.yaup.AsciiArt;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;

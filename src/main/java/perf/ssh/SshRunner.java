@@ -3,7 +3,7 @@ package perf.ssh;
 import org.apache.commons.cli.*;
 import perf.ssh.cmd.CommandDispatcher;
 import perf.ssh.config.*;
-import perf.util.StringUtil;
+import perf.yaup.StringUtil;
 
 import java.io.File;
 import java.time.LocalDateTime;
