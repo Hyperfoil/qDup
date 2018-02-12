@@ -66,6 +66,7 @@ public class RunConfig {
 
     private Boolean colorTerminal = false;
     private List<String> errors;
+    private RunValidation runValidation;
 
     protected RunConfig(String name,List<String> errors){
         this.errors = errors;
@@ -77,6 +78,7 @@ public class RunConfig {
             Map<Host,Cmd> setupCmds,
             HashedLists<Host,ScriptCmd> runScripts,
             Map<Host,Cmd> cleanupCmds,
+            RunValidation runValidation,
             String knownHosts,
             String identity,
             String passphrase){
@@ -86,9 +88,35 @@ public class RunConfig {
         this.setupCmds = setupCmds;
         this.runScripts = runScripts;
         this.cleanupCmds = cleanupCmds;
+        this.runValidation = runValidation;
         this.knownHosts = knownHosts;
         this.identity = identity;
         this.passphrase = passphrase;
+        this.errors = new LinkedList<>();
+    }
+
+    public String debug(){
+        StringBuilder  sb = new StringBuilder();
+        sb.append("scripts\n");
+        for(String scriptName : scripts.keySet()){
+            sb.append("  "+scriptName+"\n");
+            Script script = scripts.get(scriptName);
+            sb.append(script.tree(4,false));
+        }
+        sb.append("setup\n");
+        for(Host host : setupCmds.keySet()){
+            sb.append("  "+host.toString()+"\n");
+            Cmd cmd = setupCmds.get(host);
+            sb.append("    "+cmd.toString());
+        }
+
+
+
+        return sb.toString();
+    }
+
+    public RunValidation getRunValidation() {
+        return runValidation;
     }
 
     public boolean hasErrors(){return !errors.isEmpty();}

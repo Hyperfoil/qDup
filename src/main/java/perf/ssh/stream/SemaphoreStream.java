@@ -1,9 +1,8 @@
 package perf.ssh.stream;
 
-import perf.ssh.cmd.CommandResult;
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -13,6 +12,7 @@ import java.util.concurrent.Semaphore;
 public class SemaphoreStream extends MultiStream {
     private Semaphore lock;
     private byte prompt[];
+    private int promptIndex=0;
     private Runnable runnable;
 
     public SemaphoreStream(Semaphore lock, byte bytes[]){
@@ -23,18 +23,48 @@ public class SemaphoreStream extends MultiStream {
         this.runnable = runnable;
     }
 
-    public boolean hasSuffix(byte sequence[],byte suffix[],int offset,int length){
-        if(suffix == null) {
-            return true;
-        }
-        if(sequence == null || length < suffix.length || sequence.length-offset < length){
+    //TODO checkForPrompt isn't enough to capture all use cases
+    //prompt can split between writes
+    public boolean checkForPrompt(byte sequence[], int offset, int length){
+        boolean found = false;
+        if(prompt == null) {
             return false;
         }
-        int diff = offset+length-suffix.length;
-        byte seqSuffix[] = Arrays.copyOfRange(sequence,diff,diff+suffix.length);
-        boolean rtrn =Arrays.equals(seqSuffix,suffix);
-        return rtrn;
+
+        int i=0;
+        while(i < length && !found){
+            if( promptIndex>= prompt.length) {
+                found = true;
+            } else {
+                if (prompt[promptIndex] == sequence[offset+i]){
+                    promptIndex++;
+                    //chere here in case i==length
+                    if(promptIndex >= prompt.length){
+                        found = true;
+                    }
+                }else{
+                    promptIndex=0;
+                    if(prompt[promptIndex] == sequence[offset+i]){
+                        promptIndex++;
+                        if(promptIndex >= prompt.length){//for single character prompts
+                            found = true;
+                        }
+
+                    }
+                }
+            }
+            i++;
+        }
+        if(found){
+            promptIndex=0;
+        }
+        return found;
     }
+    @Override
+    public void write(int val) throws IOException {
+        super.write(val);
+    }
+
     @Override
     public void write(byte b[]) throws IOException {
 
@@ -42,12 +72,11 @@ public class SemaphoreStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-        System.out.print("SS: "+new String(b,off,len));
         try {
             super.write(b, off, len);
-            if (hasSuffix(b, prompt, off, len)) {
-                lock.release();
+            if (checkForPrompt(b, off, len)) {
 
+                lock.release();
                 if (this.runnable != null) {
                     this.runnable.run();
                 }

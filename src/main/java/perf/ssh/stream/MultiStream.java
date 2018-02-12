@@ -23,7 +23,7 @@ public class MultiStream extends OutputStream{
                 int v = b[i];
                 String append = v+"";
                 bytes.append(append);
-                bytes.append(" ");
+                bytes.append(".");
                 if(v == 10){
                     chars.append(spaces.substring(0,append.length()-2));
                     chars.append("\\n");
@@ -34,7 +34,7 @@ public class MultiStream extends OutputStream{
                     chars.append(spaces.substring(0, append.length() - 1));
                     chars.append((char) v);
                 }
-                chars.append(" ");
+                chars.append(".");
             }
             bytes.append("]");
             chars.append("]");
@@ -71,7 +71,7 @@ public class MultiStream extends OutputStream{
 
     @Override
     public void write(int b) throws IOException {
-        System.err.println("MultiStream.write("+b+") not supported");
+        //System.err.println("MultiStream.write("+b+") not supported");
         for(OutputStream s : streams.values()){
             //s.write(b);
         }

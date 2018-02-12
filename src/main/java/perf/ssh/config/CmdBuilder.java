@@ -107,7 +107,7 @@ public class CmdBuilder {
                             }
                             break;
                         default:
-                            System.out.println(type.getTypeName()+" is not supported");
+                            System.out.println(type.getTypeName()+" is not supported as a constructor argument for "+entryClass.getName());
                             //TODO how to handle unsupported type?
                     }
 

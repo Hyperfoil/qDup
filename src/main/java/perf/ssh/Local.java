@@ -259,7 +259,6 @@ public class Local {
         }else{
             builder.command("/usr/bin/rsync", "-avz", "-e",this.ssh, userName + "@" + hostName + ":" + path, dest);
         }
-        System.out.println(builder.command());
         try {
             Process p =  builder.start();
             final InputStream inputStream = p.getInputStream();

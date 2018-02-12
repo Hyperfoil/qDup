@@ -66,6 +66,9 @@ public abstract class Cmd {
     public static Cmd sh(String command){
         return new Sh(command);
     }
+    public static Cmd sh(String command,boolean silent){
+        return new Sh(command,silent);
+    }
     public static Cmd signal(String name){return new Signal(name);}
     public static Cmd sleep(long amount){return new Sleep(amount);}
     public static Cmd waitFor(String name){return new WaitFor(name);}
@@ -152,7 +155,7 @@ public abstract class Cmd {
         this.parent = null;
         this.uid = uidGenerator.incrementAndGet();
     }
-    protected void injectThen(Cmd command,Context context){
+    public void injectThen(Cmd command,Context context){
         thens.addFirst(command);
         Cmd next = this.next;
         Cmd skip = this.skip;
@@ -238,6 +241,9 @@ public abstract class Cmd {
     }
 
     public Cmd then(Cmd command){
+        if(command==null){
+            System.out.println("then(null) from "+this.getClass().getName()+" "+this);
+        }
         if(next==null){
             next = command;
         }

@@ -40,8 +40,8 @@ public class RunConfigBuilder {
     private static final String RUN_STATE = "run";
     private static final String SCRIPT_DIR = "ENV.SCRIPT_DIR";
 
-    public static final String DEFAULT_KNOWN_HOSTS = "~/.ssh/known_hosts";
-    public static final String DEFAULT_IDENTITY = "~/.ssh/id_rsa";
+    public static final String DEFAULT_KNOWN_HOSTS = System.getProperty("user.home")+"/.ssh/known_hosts";
+    public static final String DEFAULT_IDENTITY = System.getProperty("user.home")+"/.ssh/id_rsa";
     public static final String DEFAULT_PASSPHRASE = null;
 
 
@@ -154,7 +154,7 @@ public class RunConfigBuilder {
                     String entryValue = yamlEntry.getString(VALUE);
                     Json entryChildJson = yamlEntry.getJson(CHILD, EMPTY_ARRAY);
                     if (entryKey == null) {
-                        System.out.println(yamlEntry);
+
                     }
                     switch (entryKey) {
                         case NAME:
@@ -466,6 +466,7 @@ public class RunConfigBuilder {
                     } else {
                         if (!setupCmds.containsKey(h)) {
                             Cmd hostSetupCmd = new Script("setup:" + h.toString());
+
                             setupCmds.put(h, hostSetupCmd);
                         }
                         //get the cmd from setupCmds because multiple roles can share a host
@@ -516,6 +517,7 @@ public class RunConfigBuilder {
                     setupCmds,
                     runScripts,
                     cleanupCmds,
+                    runValidation(),
                     getKnownHosts(),
                     getIdentity(),
                     getPassphrase()

@@ -16,7 +16,6 @@ public class Sh extends Cmd {
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
-
         context.getSession().setCommand(this,result);
         context.getSession().sh(populateStateVariables(command,this,context.getState()));
 

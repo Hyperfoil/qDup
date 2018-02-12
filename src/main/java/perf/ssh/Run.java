@@ -51,13 +51,14 @@ public class Run implements Runnable {
     private Profiles profiles;
     private Local local;
 
+    private Map<Host,Env> setupEnv;
     private Map<Host,List<PendingDownload>> pendingDownloads;
 
     private CountDownLatch runLatch = new CountDownLatch(1);
     private Logger runLogger;
     private ConsoleAppender<ILoggingEvent> consoleAppender;
     private FileAppender<ILoggingEvent> fileAppender;
-    private RunValidation validation;
+
 
     public Run(String outputPath,RunConfig config,CommandDispatcher dispatcher){
         this.config = config;
@@ -103,7 +104,9 @@ public class Run implements Runnable {
             runLogger.info("{} reached {}",config.getName(),signal_name);
         });
 
+
         this.pendingDownloads = new ConcurrentHashMap<>();
+        this.setupEnv = new ConcurrentHashMap<>();
     }
     public Local getLocal(){return local;}
 
@@ -142,8 +145,54 @@ public class Run implements Runnable {
         runLatch.countDown();
     }
     private void queueSetupScripts(){
-
         logger.debug("{}.setup",this);
+        CommandDispatcher.ScriptObserver scriptObserver = new CommandDispatcher.ScriptObserver() {
+
+            private Env start;
+            private Env stop;
+
+            @Override
+            public void onStart(Cmd command, Context context) {
+                context.getSession().sh("env");
+                start = new Env(context.getSession().getOutput());
+            }
+
+            @Override
+            public void onStop(Cmd command, Context context) {
+                context.getSession().sh("env");
+                stop = new Env(context.getSession().getOutput());
+
+                Set<String> beforeKeys = start.keys();
+                Set<String> afterKeys = stop.keys();
+
+                Set<String> newKeys = new HashSet<>(afterKeys);
+                newKeys.removeAll(beforeKeys);
+
+                Set<String> removeKeys = new HashSet<>(beforeKeys);
+                removeKeys.removeAll(afterKeys);
+
+                Set<String> bothKeys = new HashSet<>(beforeKeys);
+                bothKeys.retainAll(afterKeys);
+
+                Map<String,String> diffMap = new LinkedHashMap<>();
+
+                bothKeys.forEach(key->{
+                    String beforeValue = start.get(key);
+                    String afterValue = stop.get(key);
+                    if (!beforeValue.equals(afterValue)){
+                        diffMap.put(key,afterValue);
+                    }
+                });
+                newKeys.forEach(key->{
+                    diffMap.put(key,stop.get(key));
+                });
+                removeKeys.forEach(key->{
+                    diffMap.put(key,"");
+                });
+                setupEnv.put(context.getSession().getHost(),new Env(diffMap));
+                dispatcher.removeScriptObserver(this);
+            }
+        };
         CommandDispatcher.Observer setupObserver = new CommandDispatcher.Observer() {
             @Override
             public void onStart(Cmd command) {}
@@ -158,9 +207,11 @@ public class Run implements Runnable {
             public void onStop() {
                 logger.debug("{}.setup stop",this);
                 dispatcher.removeObserver(this);
+
                 queueRunScripts();
             }
         };
+        dispatcher.addScriptObserver(scriptObserver);
         dispatcher.addObserver(setupObserver);
         for(Host host : config.getSetupHosts()){
 
@@ -205,21 +256,21 @@ public class Run implements Runnable {
             ).forEach((notSignaled)->noSignal.add(notSignaled));
         } ;
 
-        setupCoordinator.accept(validation.getSetupValidation());
+        setupCoordinator.accept(config.getRunValidation().getSetupValidation());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} setup scripts missing signal for {}",this,notSignaled);
             });
             return false;
         }
-        setupCoordinator.accept(validation.getRunValidation());
+        setupCoordinator.accept(config.getRunValidation().getRunValidation());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} run scripts missing signal for {}",this,notSignaled);
             });
             return false;
         }
-        setupCoordinator.accept(validation.getCleanupValidation());
+        setupCoordinator.accept(config.getRunValidation().getCleanupValidation());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} cleanup scripts missing signal for {}",this,notSignaled);
@@ -232,16 +283,16 @@ public class Run implements Runnable {
     @Override
     public void run() {
 
-        if(!validation.isValid()){
+        if(!config.getRunValidation().isValid()){
             //TODO raise warnings if not validated
-            if(validation.getSetupValidation().hasErrors()){
-                validation.getSetupValidation().getErrors().forEach((error->runLogger.error(error)));
+            if(config.getRunValidation().getSetupValidation().hasErrors()){
+                config.getRunValidation().getSetupValidation().getErrors().forEach((error->runLogger.error(error)));
             }
-            if(validation.getRunValidation().hasErrors()){
-                validation.getRunValidation().getErrors().forEach((error->runLogger.error(error)));
+            if(config.getRunValidation().getRunValidation().hasErrors()){
+                config.getRunValidation().getRunValidation().getErrors().forEach((error->runLogger.error(error)));
             }
-            if(validation.getCleanupValidation().hasErrors()){
-                validation.getCleanupValidation().getErrors().forEach((error->runLogger.error(error)));
+            if(config.getRunValidation().getCleanupValidation().hasErrors()){
+                config.getRunValidation().getCleanupValidation().getErrors().forEach((error->runLogger.error(error)));
             }
             return;
         }
@@ -266,6 +317,7 @@ public class Run implements Runnable {
     }
     private void queueRunScripts(){
         logger.debug("{}.queueRunScripts",this);
+
         CommandDispatcher.Observer runObserver = new CommandDispatcher.Observer() {
             @Override
             public void onStart(Cmd command) {}
@@ -286,6 +338,26 @@ public class Run implements Runnable {
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
         for(Host host : config.getRunHosts()){
+
+            Env env = setupEnv.get(host);
+            if(env == null){
+                env = new Env(Collections.emptyMap());
+            }
+
+            StringBuilder setEnv = new StringBuilder();
+            StringBuilder unsetEnv = new StringBuilder();
+            for(String key : env.keys()){
+                String value = env.get(key);
+                if(value.isEmpty()){
+                    unsetEnv.append(String.format(" %s",key));
+                }else {
+                    setEnv.append(String.format(" %s=\"%s\"", key, env.get(key).replaceAll("\"(?<!\\\\)", "\\\"")));
+                }
+            }
+
+            String updateEnv = (setEnv.length()>0? "export"+setEnv.toString():"")+(unsetEnv.length()>0?";unset"+unsetEnv.toString():"");
+            logger.info("{} update env from setup {}",host,updateEnv);
+
             for(ScriptCmd scriptCmd : config.getRunCmds(host)){
                 connectSessions.add(()->{
                     State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
@@ -295,6 +367,9 @@ public class Run implements Runnable {
                     logger.info("{} connecting {} to {}@{}",this,scriptCmd.getName(),host.getUserName(),host.getHostName());
                     profiler.start("connect:"+host.toString());
                     SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
+
+
+                    scriptSession.sh("export"+setEnv);
                     profiler.start("waiting for start");
                     if(!scriptSession.isOpen()){
                         logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),scriptCmd.getName(),host.getUserName(),host.getHostName());
@@ -323,7 +398,7 @@ public class Run implements Runnable {
                 }
                 return rtrn;
             })
-            .collect(Collectors.reducing(Boolean::logicalAnd)).get();
+            .collect(Collectors.reducing(Boolean::logicalAnd)).orElse(false);
 
         } catch (InterruptedException e) {
             e.printStackTrace();
