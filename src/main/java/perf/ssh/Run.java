@@ -51,7 +51,7 @@ public class Run implements Runnable {
     private Profiles profiles;
     private Local local;
 
-    private Map<Host,Env> setupEnv;
+    private Map<Host,Env.Diff> setupEnv;
     private Map<Host,List<PendingDownload>> pendingDownloads;
 
     private CountDownLatch runLatch = new CountDownLatch(1);
@@ -162,34 +162,8 @@ public class Run implements Runnable {
                 context.getSession().sh("env");
                 stop = new Env(context.getSession().getOutput());
 
-                Set<String> beforeKeys = start.keys();
-                Set<String> afterKeys = stop.keys();
-
-                Set<String> newKeys = new HashSet<>(afterKeys);
-                newKeys.removeAll(beforeKeys);
-
-                Set<String> removeKeys = new HashSet<>(beforeKeys);
-                removeKeys.removeAll(afterKeys);
-
-                Set<String> bothKeys = new HashSet<>(beforeKeys);
-                bothKeys.retainAll(afterKeys);
-
-                Map<String,String> diffMap = new LinkedHashMap<>();
-
-                bothKeys.forEach(key->{
-                    String beforeValue = start.get(key);
-                    String afterValue = stop.get(key);
-                    if (!beforeValue.equals(afterValue)){
-                        diffMap.put(key,afterValue);
-                    }
-                });
-                newKeys.forEach(key->{
-                    diffMap.put(key,stop.get(key));
-                });
-                removeKeys.forEach(key->{
-                    diffMap.put(key,"");
-                });
-                setupEnv.put(context.getSession().getHost(),new Env(diffMap));
+                Env.Diff diff = start.diffTo(stop);
+                setupEnv.put(context.getSession().getHost(),diff);
                 dispatcher.removeScriptObserver(this);
             }
         };
@@ -339,22 +313,16 @@ public class Run implements Runnable {
 
         for(Host host : config.getRunHosts()){
 
-            Env env = setupEnv.get(host);
-            if(env == null){
-                env = new Env(Collections.emptyMap());
-            }
+            Env.Diff diff = setupEnv.containsKey(host) ? setupEnv.get(host) : new Env.Diff(Collections.emptyMap(),Collections.emptySet());
 
             StringBuilder setEnv = new StringBuilder();
             StringBuilder unsetEnv = new StringBuilder();
-            for(String key : env.keys()){
-                String value = env.get(key);
-                if(value.isEmpty()){
-                    unsetEnv.append(String.format(" %s",key));
-                }else {
-                    setEnv.append(String.format(" %s=\"%s\"", key, env.get(key).replaceAll("\"(?<!\\\\)", "\\\"")));
-                }
-            }
-
+            diff.keys().forEach(key->{
+                setEnv.append(" "+key+"="+diff.get(key));
+            });
+            diff.unset().forEach(key->{
+              unsetEnv.append(" "+key);
+            });
             String updateEnv = (setEnv.length()>0? "export"+setEnv.toString():"")+(unsetEnv.length()>0?";unset"+unsetEnv.toString():"");
             logger.info("{} update env from setup {}",host,updateEnv);
 
