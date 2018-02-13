@@ -61,7 +61,16 @@ public class Env {
     }
 
     /**
-     * Return a diff representing the changes to get this to env
+     * Returna diff representing the changes to go from env to this
+     * @param env
+     * @return
+     */
+    public Diff diffFrom(Env env){
+        return env.diffTo(this);
+    }
+
+    /**
+     * Return a diff representing the changes to go from this to env
      * @param env
      * @return
      */

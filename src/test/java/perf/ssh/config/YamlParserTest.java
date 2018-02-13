@@ -156,7 +156,7 @@ public class YamlParserTest {
             )
         );
 
-        System.out.println(parser.getJson().toString(2));
+        validateParse(parser);
 
     }
 
@@ -170,7 +170,7 @@ public class YamlParserTest {
 
             )
         );
-
+        validateParse(parser);
 
 
         Json json = parser.getJson("supportedSyntax");
@@ -237,8 +237,8 @@ public class YamlParserTest {
                 ""
             )
         );
+        validateParse(parser);
 
-        System.out.println(parser.getJson().toString(2));
     }
 
     @Test
@@ -320,8 +320,8 @@ public class YamlParserTest {
 
         YamlParser parser = new YamlParser();
         parser.load("listOfMaps",stream(test));
+        validateParse(parser);
 
-        System.out.println(parser.getJson().toString(2));
 
         Json json = parser.getJson();
 
@@ -343,7 +343,7 @@ public class YamlParserTest {
         " - bar.foo : bf\n"+
         "   bar.bar : bb\n"));
 
-        System.out.println(parser.getJson().toString(2));
+
 
         validateParse(parser);
 
@@ -382,10 +382,10 @@ public class YamlParserTest {
                 "biz: [ a [ a.a, a.b ], [b.a,b.b]]\n"+
                 ""
         ));
-
+        validateParse(parser);
         Json json = parser.getJson("list.yaml");
 
-        System.out.println(json.toString(2));
+
 
 
     }
@@ -398,10 +398,11 @@ public class YamlParserTest {
                 "  bar: biz\n"+
                 ""
         ));
+        validateParse(parser);
         Json json = parser.getJson();
 
 
-        validateParse(parser);
+
 
     }
 
@@ -451,7 +452,7 @@ public class YamlParserTest {
                         "    cleanupScript: charlie"
                 )
         );
-
+        validateParse(parser);
 
     }
     @Test
@@ -543,7 +544,7 @@ public class YamlParserTest {
         assertEquals("second entry should contain one pair: \n"+entry.toString(2),1,entry.size());
 
 
-        System.out.println(json.toString(2));
+
     }
 
     @Test
@@ -563,7 +564,7 @@ public class YamlParserTest {
             )
         );
 
-        System.out.println(parser.getJson().toString(2));
+
     }
 
     @Test

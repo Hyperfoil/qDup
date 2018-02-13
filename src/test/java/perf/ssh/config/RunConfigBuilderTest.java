@@ -1,6 +1,8 @@
 package perf.ssh.config;
 
+import org.junit.Ignore;
 import org.junit.Test;
+import perf.ssh.RunValidation;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -13,7 +15,7 @@ public class RunConfigBuilderTest {
     }
 
 
-    @Test
+    @Test @Ignore
     public void testRoleExpession(){
         YamlParser parser = new YamlParser();
         parser.load("roleExpression",stream(""+
@@ -38,7 +40,7 @@ public class RunConfigBuilderTest {
 
     }
 
-    @Test
+    @Test @Ignore
     public void testSyntax(){
         YamlParser parser = new YamlParser();
         parser.load("supportedSyntax",stream(""+
@@ -93,7 +95,6 @@ public class RunConfigBuilderTest {
                 )
         );
 
-        System.out.println(parser.getJson().toString(2));
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
         builder.loadYaml(parser);
     }

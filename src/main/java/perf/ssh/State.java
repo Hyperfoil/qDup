@@ -38,6 +38,23 @@ public class State {
         this.prefix = prefix;
     }
 
+
+    public Map<String,String> getOwnState(){
+        return Collections.unmodifiableMap(state);
+    }
+    public Map<String,String> getFullState(){
+        Map<String,String> rtrn = new HashMap<>(state);
+        State target = this.parent;
+        while( target!=null ){
+            for(String key : target.getKeys()){
+                if(!rtrn.containsKey(key)){
+                    rtrn.put(key,target.get(key));
+                }
+            }
+            target = target.parent;
+        }
+        return rtrn;
+    }
     public boolean hasChild(String name){
         return childStates.containsKey(name);
     }
@@ -102,6 +119,18 @@ public class State {
             sb.append(String.format("%"+space+"s%s : %n","",childName));
             getChild(childName).tree(indent+2,sb);
         }
+    }
+
+    public State clone(){
+        State rtrn = new State(this.parent,this.prefix);
+        //break abstraction to avoid prefix checks
+        this.state.forEach((k,v)->{
+            rtrn.state.put(k,v);
+        });
+        this.childStates.forEach((k,v)->{
+            rtrn.childStates.put(k,v);
+        });
+        return rtrn;
     }
 
 }

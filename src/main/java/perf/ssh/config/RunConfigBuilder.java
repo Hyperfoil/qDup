@@ -375,6 +375,7 @@ public class RunConfigBuilder {
                         CommandSummary summary = new CommandSummary(script,this);
                         summary.getWaits().forEach(rtrn::addWait);
                         summary.getSignals().forEach(rtrn::addSignal);
+                        summary.getWarnings().forEach(rtrn::addError);
                     });
                 }
             });

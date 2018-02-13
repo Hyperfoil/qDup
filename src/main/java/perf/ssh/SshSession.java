@@ -40,7 +40,7 @@ public class SshSession implements Runnable, Consumer<String>{
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-    private static final String prompt = "#%@_ssh_!*> "; // a string unlikely to appear in the output of any command
+    private static final String prompt = "#%@_qdup_!*> "; // a string unlikely to appear in the output of any command
 
 
     private SshClient sshClient;
@@ -48,8 +48,6 @@ public class SshSession implements Runnable, Consumer<String>{
     private ChannelShell channelShell;
 
     private Properties sshConfig;
-
-
 
     private PrintStream commandStream;
     private ByteArrayOutputStream shStream;
@@ -116,7 +114,6 @@ public class SshSession implements Runnable, Consumer<String>{
 
             semaphoreStream = new SemaphoreStream(shellLock,("\n"+prompt).getBytes());
 
-            SemaphoreStream errStream = new SemaphoreStream(shellLock,("\n"+prompt).getBytes());
 
             //channelShell.setOut(semaphoreStream);
             channelShell.setOut(semaphoreStream);
@@ -149,20 +146,21 @@ public class SshSession implements Runnable, Consumer<String>{
             sh("unset PROMPT_COMMAND; export PS1='" + prompt + "'");
             sh("");//forces the thread to wait for the previous sh to complete
 
-            try {
-                shellLock.acquire();
-                try{
-                    shellLock.release();
-                }finally{
-
-                }
-                //moved release to finally block, check permits to ensure it was acquired
-                //shellLock.release();//reset so the next call to aquire for sh(...) isn't blocked
-            } catch (InterruptedException e) {
-                logger.warn("{}@{} interrupted while waiting for initial prompt",host.getUserName(),host.getHostName());
-                e.printStackTrace();
-                Thread.interrupted();
-            }
+//is this what is bugging out envTest?
+//            try {
+//                shellLock.acquire();
+//                try{
+//                    shellLock.release();
+//                }finally{
+//
+//                }
+//                //moved release to finally block, check permits to ensure it was acquired
+//                //shellLock.release();//reset so the next call to aquire for sh(...) isn't blocked
+//            } catch (InterruptedException e) {
+//                logger.warn("{}@{} interrupted while waiting for initial prompt",host.getUserName(),host.getHostName());
+//                e.printStackTrace();
+//                Thread.interrupted();
+//            }
 
         } catch (GeneralSecurityException | IOException e) {
 
@@ -190,6 +188,10 @@ public class SshSession implements Runnable, Consumer<String>{
     public void removeConsumer(Consumer<String> consumer){
         lineEmittingStream.removeConsumer(consumer);
     }
+    public void clearCommand(){
+        this.command=null;
+        this.result = null;
+    }
     public void setCommand(Cmd command,CommandResult result){
         this.command = command;
         this.result = result;
@@ -209,6 +211,7 @@ public class SshSession implements Runnable, Consumer<String>{
         }
     }
     public String getOutput(){
+        //TODO a better way to know when there is output available
         if(shellLock.availablePermits()>0){
             return shStream.toString();
         }else{
@@ -231,7 +234,6 @@ public class SshSession implements Runnable, Consumer<String>{
         sh(command,true);
     }
     public void sh(String command,boolean acquireLock){
-        //System.out.println("SshSesion.sh w/ lock="+acquireLock+" @ "+shellLock.availablePermits()+" command="+command);
         logger.trace("sh: {}, lock: {}",command,acquireLock);
         if(command==null){
             return;
@@ -303,8 +305,9 @@ public class SshSession implements Runnable, Consumer<String>{
     public void run() {
         if(this.command !=null){
             Cmd thisCommand = this.command;
+            String output = getOutput();
             this.command = null;
-            this.result.next(thisCommand,shStream.toString());
+            this.result.next(thisCommand,output);
         }
     }
 

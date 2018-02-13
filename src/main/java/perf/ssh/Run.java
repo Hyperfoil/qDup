@@ -31,7 +31,6 @@ public class Run implements Runnable {
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-
     class PendingDownload {
         private String path;
         private String destination;
@@ -153,12 +152,15 @@ public class Run implements Runnable {
 
             @Override
             public void onStart(Cmd command, Context context) {
+                context.getSession().clearCommand();
                 context.getSession().sh("env");
                 start = new Env(context.getSession().getOutput());
             }
 
             @Override
             public void onStop(Cmd command, Context context) {
+
+                context.getSession().clearCommand();
                 context.getSession().sh("env");
                 stop = new Env(context.getSession().getOutput());
 
@@ -308,7 +310,6 @@ public class Run implements Runnable {
                 queueCleanupScripts();
             }
         };
-        //TODO parallel connect WITH ExecutorService.invokeAll(Callable / Runnable)
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
         for(Host host : config.getRunHosts()){
@@ -336,8 +337,10 @@ public class Run implements Runnable {
                     profiler.start("connect:"+host.toString());
                     SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
 
-
-                    scriptSession.sh("export"+setEnv);
+                    if(!updateEnv.isEmpty()) {
+                        scriptSession.sh(updateEnv);
+                        String output = scriptSession.getOutput();//take output to ensure lock stays @ 1
+                    }
                     profiler.start("waiting for start");
                     if(!scriptSession.isOpen()){
                         logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),scriptCmd.getName(),host.getUserName(),host.getHostName());
@@ -349,7 +352,6 @@ public class Run implements Runnable {
                     logger.debug("{} connected {}@{} in {}s",this,scriptCmd.getName(),host,((stop-start)/1000));
                     dispatcher.addScript(scriptCmd, context);
                     return true;
-
 
                 });
             }
@@ -397,8 +399,6 @@ public class Run implements Runnable {
         //run before cleanup
         runPendingDownloads();
 
-
-        //TODO parallel connect WITH ExecutorService.invokeAll(Callable / Runnable)
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
         for(Host host : config.getCleanupHosts()){
