@@ -21,9 +21,14 @@ public abstract class Cmd {
 
     protected final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-    public static final String ENV_PREFIX = "${{";
-    public static final String ENV_SUFFIX = "}}";
-    public static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^}]+)}}");
+    public static final String STATE_PREFIX = "${{";
+    public static final String STATE_SUFFIX = "}}";
+    public static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^}]+)}}");
+
+    public static final String ENV_PREFIX = "${";
+    public static final String ENV_SUFFIX = "}";
+    public static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{(?<name>[^\\{][^\\}]*)}");
+
     public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
     public static Cmd NO_OP(){return new Cmd(){
@@ -90,12 +95,12 @@ public abstract class Cmd {
     }
     public static String populateStateVariables(String command,Cmd cmd, State state){
 
-        if(command.indexOf(ENV_PREFIX)<0)
+        if(command.indexOf(STATE_PREFIX)<0)
             return command;
 
         int previous = 0;
         StringBuffer rtrn = new StringBuffer();
-        Matcher matcher = ENV_PATTERN.matcher(command);
+        Matcher matcher = STATE_PATTERN.matcher(command);
         while(matcher.find()){
             int findIndex = matcher.start();
             if(findIndex > previous){
@@ -241,9 +246,6 @@ public abstract class Cmd {
     }
 
     public Cmd then(Cmd command){
-        if(command==null){
-            System.out.println("then(null) from "+this.getClass().getName()+" "+this);
-        }
         if(next==null){
             next = command;
         }
@@ -274,6 +276,7 @@ public abstract class Cmd {
 
     protected final void doRun(String input,Context context,CommandResult result){
         if(!with.isEmpty()){
+            //TODO should we first clone the State to avoid impacting commands that are not children of this command?
             for(String key : with.keySet()){
                 context.getState().set(key,with.get(key));
             }

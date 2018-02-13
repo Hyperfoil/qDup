@@ -26,7 +26,6 @@ public class CmdBuilderTest {
         CmdBuilder builder = CmdBuilder.getBuilder();
         List<String> out = builder.split("foo   bar");
 
-        System.out.println(out);
         assertEquals("split \"foo bar\" should create 2 entries",2,out.size());
     }
     @Test

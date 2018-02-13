@@ -19,8 +19,6 @@ public class CmdTest {
 
         Cmd X = A.getTail();
 
-        System.out.println(A.tree(2,true));
-
         Assert.assertEquals("X should be tail of A",true,X.toString().contains("X"));
         Assert.assertEquals("X previous should be B",true,X.getPrevious().toString().contains("B"));
 

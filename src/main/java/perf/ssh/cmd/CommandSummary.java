@@ -1,6 +1,5 @@
 package perf.ssh.cmd;
 
-import perf.ssh.config.RunConfig;
 import perf.ssh.cmd.impl.*;
 import perf.ssh.config.RunConfigBuilder;
 import perf.yaup.StringUtil;
@@ -26,7 +25,7 @@ public class CommandSummary {
             addWarning(command+" cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
         }
 
-        if(StringUtil.countOccurances(Cmd.ENV_PREFIX,toString) != StringUtil.countOccurances(Cmd.ENV_SUFFIX,toString)){
+        if(StringUtil.countOccurances(Cmd.STATE_PREFIX,toString) != StringUtil.countOccurances(Cmd.STATE_SUFFIX,toString)){
             addWarning(command+" does not have the same number of ${{ and }} for state variable referencing");
         }
 
@@ -49,9 +48,9 @@ public class CommandSummary {
             }
         }
 
-        if(toString.indexOf(Cmd.ENV_PREFIX)>-1) {
+        if(toString.indexOf(Cmd.STATE_PREFIX)>-1) {
 
-            Matcher matcher = Cmd.ENV_PATTERN.matcher(toString);
+            Matcher matcher = Cmd.STATE_PATTERN.matcher(toString);
             while (matcher.find()) {
                 String name = matcher.group("name");
                 addVariable(name);

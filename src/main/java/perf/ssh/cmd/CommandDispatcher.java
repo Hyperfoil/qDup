@@ -8,6 +8,7 @@ import perf.yaup.AsciiArt;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 /**
@@ -87,14 +88,16 @@ public class CommandDispatcher {
 
         private void logCmdOutput(Cmd command,String output){
             if(command!=null && output!=null){
-                if(command.getPrevious()!=null){
+                if(command.getPrevious()!=null && !command.isSilent()){
                     if( !output.equals(command.getPrevious().getOutput()) ){
                         context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
                     }else{
                         //skip logging the output because we don't want duplicates
                     }
                 }else{
-                    context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
+                    if(!command.isSilent()) {
+                        context.getRunLogger().info("{}:{}:{}\n{}", command.getHead(), context.getSession().getHost().toString(), command, output);
+                    }
                 }
             }
         }
@@ -272,8 +275,20 @@ public class CommandDispatcher {
 
     public CommandDispatcher(){
         this(
-                new ThreadPoolExecutor(2,4,30, TimeUnit.MINUTES,new LinkedBlockingQueue<>()),
-                new ScheduledThreadPoolExecutor(2)
+                new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors()/2, Runtime.getRuntime().availableProcessors(), 30, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactory() {
+                    AtomicInteger count = new AtomicInteger(0);
+                    @Override
+                    public Thread newThread(Runnable runnable) {
+                        return new Thread(runnable,"execute-"+count.getAndAdd(1));
+                    }
+                }),
+                new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors()/2,new ThreadFactory() {
+                    AtomicInteger count = new AtomicInteger(0);
+                    @Override
+                    public Thread newThread(Runnable runnable) {
+                        return new Thread(runnable,"schedule-"+count.getAndAdd(1));
+                    }
+                })
         );
     }
     public CommandDispatcher(ThreadPoolExecutor executor,ScheduledThreadPoolExecutor scheduler){

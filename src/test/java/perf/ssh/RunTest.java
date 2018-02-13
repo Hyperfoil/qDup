@@ -29,26 +29,21 @@ public class RunTest {
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
         Script setupScript = new Script("setup-env");
+        setupScript.then(Cmd.sh("env",true));
         setupScript.then(Cmd.sh("export FOO=\"FOO\""));
         setupScript.then(Cmd.sh("unset PROMPT_COMMAND"));
         setupScript.then(Cmd.sh("export VERTX_HOME=\"/tmp\"")
-        //        .then(Cmd.echo())
         );
-        //setupScript.then(Cmd.sh("env"));
-
-
-        Script runScript = new Script("run-env");
-        runScript.then(Cmd.sh("env",false).then(Cmd.code((input,state)->{
+        Script runScript = new Script("run-env").then(Cmd.log("post-run-env-script"));
+        runScript.then(Cmd.sh("env",true).then(Cmd.code((input,state)->{
             runEnvBuffer.append(input);
             return Result.next(input);
         })));
-        //runScript.then(Cmd.echo());
-
         builder.addScript(setupScript);
         builder.addScript(runScript);
 
-        builder.addHostAlias("local","wreicher@localhost:22");//+testServer.getPort());
-        //builder.addHostAlias("local","wreicher@localhost:"+testServer.getPort());
+        //builder.addHostAlias("local","wreicher@localhost:22");//+testServer.getPort());
+        builder.addHostAlias("local","wreicher@localhost:"+testServer.getPort());
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-env",new HashMap<>());
         builder.addRoleSetup("role","setup-env",new HashMap<>());
@@ -61,9 +56,7 @@ public class RunTest {
         run.run();
 
         String runEnv = runEnvBuffer.toString();
-        assertTrue("run-env output should contain FOO=FOO",runEnv.contains("FOO=FOO"));
+        assertTrue("run-env output should contain FOO=FOO but was\n"+runEnv,runEnv.contains("FOO=FOO"));
         assertTrue("run-env output should contain VERTX_HOME=/tmp",runEnv.contains("VERTX_HOME=/tmp"));
-
-
     }
 }
