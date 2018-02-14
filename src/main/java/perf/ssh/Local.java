@@ -17,6 +17,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static perf.ssh.Host.DEFAULT_PORT;
+
 /**
  * Created by wreicher
  * Performs actions on the local system (without an ssh connection)
@@ -26,6 +28,8 @@ import java.util.stream.Collectors;
  */
 // Has a lot of extra code for download queueing and progress updates which are not used at the moment
 public class Local {
+
+    private static final String SSH_PATH = "/usr/bin/ssh";
 
     final static Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -135,9 +139,10 @@ public class Local {
     private String ssh;
 
 
+
     public Local(RunConfig config){
         if(config!=null && (config.hasCustomIdentity() || config.hasCustomKnownHosts() || config.hasCustomPassphrase())){
-            this.ssh="/usr/bin/ssh ";
+            this.ssh=SSH_PATH;
             if(config.hasCustomKnownHosts()){
                 this.ssh+="-o UserKnownHostsFile="+config.getKnownHosts()+" ";
             }
@@ -159,7 +164,7 @@ public class Local {
             String hostName = host.getHostName();
             String userName = host.getUserName();
             logger.info("Local.upload({},{}@{}:{})",path,userName,hostName,destination);
-            rsyncSend(userName, hostName, path, destination);
+            rsyncSend(userName, hostName, host.getPort(), path, destination);
 
         }
     }
@@ -204,15 +209,18 @@ public class Local {
             String hostName = host.getHostName();
             String userName = host.getUserName();
             logger.info("Local.download({}@{}:{},{})",userName,hostName,path,destination);
-            rsyncFetch(userName, hostName, path, destination);
+            rsyncFetch(userName, hostName, host.getPort(), path, destination);
         }
     }
-    private void rsyncSend(String userName, String hostName, String path, String dest){
+    private void rsyncSend(String userName, String hostName, int port, String path, String dest){
         ProcessBuilder builder = new ProcessBuilder();
-        if(this.ssh==null) {
+
+
+        String sshOpt = prepSshString(port);
+        if(sshOpt==null || sshOpt.isEmpty()) {
             builder.command("/usr/bin/rsync", "-avz", path, userName + "@" + hostName + ":" + dest);
         }else{
-            builder.command("/usr/bin/rsync", "-avz", "-e",this.ssh,path, userName + "@" + hostName + ":" + dest);
+            builder.command("/usr/bin/rsync", "-avz", "-e",sshOpt,path, userName + "@" + hostName + ":" + dest);
         }
         logger.debug( "Running rsync command: " + builder.command().stream().collect( Collectors.joining(" ")));
         try {
@@ -241,7 +249,18 @@ public class Local {
         }
 
     }
-    private void rsyncFetch(String userName, String hostName, String path, String dest){
+
+    private String prepSshString(int port){
+        String rtrn = this.ssh;
+        if(port != DEFAULT_PORT){
+            if(rtrn == null ){
+                rtrn = SSH_PATH;
+            }
+            rtrn+=" -p "+port+" ";
+        }
+        return rtrn;
+    }
+    private void rsyncFetch(String userName, String hostName,int port, String path, String dest){
         File destinationFile = new File(dest);
         if(!destinationFile.exists()){
             if(destinationFile.isDirectory()){
@@ -254,10 +273,12 @@ public class Local {
         }
 
         ProcessBuilder builder = new ProcessBuilder();
-        if(this.ssh==null) {
+
+        String sshOpt = prepSshString(port);
+        if(sshOpt==null || sshOpt.isEmpty()) {
             builder.command("/usr/bin/rsync", "-avz", userName + "@" + hostName + ":" + path, dest);
         }else{
-            builder.command("/usr/bin/rsync", "-avz", "-e",this.ssh, userName + "@" + hostName + ":" + path, dest);
+            builder.command("/usr/bin/rsync", "-avz", "-e",sshOpt, userName + "@" + hostName + ":" + path, dest);
         }
         try {
             Process p =  builder.start();
@@ -334,7 +355,7 @@ public class Local {
 
         local.ssh="ssh -i /home/wreicher/.ssh/id_rsa -o UserKnownHostsFile=/home/wreicher/.ssh/known_hosts";
 
-        local.rsyncFetch("benchuser","benchserver6","/tmp/foo","/tmp");
+        local.rsyncFetch("benchuser","benchserver6",22,"/tmp/foo","/tmp");
 
         System.exit(0);
 
