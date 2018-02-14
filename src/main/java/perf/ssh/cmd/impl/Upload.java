@@ -19,8 +19,8 @@ public class Upload extends Cmd {
     @Override
     protected void run(String input, Context context, CommandResult result) {
 
-        String localPath = populateStateVariables(path,context.getState());
-        String destinationPath =  populateStateVariables(destination ,context.getState());
+        String localPath = populateStateVariables(path,this, context.getState());
+        String destinationPath =  populateStateVariables(destination ,this, context.getState());
 
         //create remote directory
         context.getSession().sh( "mkdir -p " + destinationPath );
