@@ -42,7 +42,8 @@ public class QueueDownloadTest {
 
         builder.addScript(runScript);
 
-        builder.addHostAlias("local","wreicher@localhost:"+testServer.getPort());
+        //builder.addHostAlias("local","wreicher@localhost:"+testServer.getPort());
+        builder.addHostAlias("local","wreicher@localhost:22");
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-queue",new HashMap<>());
 

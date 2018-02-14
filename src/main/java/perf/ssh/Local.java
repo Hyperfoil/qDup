@@ -292,7 +292,7 @@ public class Local {
             BufferedReader reader = null;
             reader = new BufferedReader(new InputStreamReader(errorStream));
             while( (line=reader.readLine())!=null){
-                logger.trace("  E: {}",line);
+                logger.error("  E: {}",line);
             }
             reader = new BufferedReader(new InputStreamReader(inputStream));
             while( (line=reader.readLine())!=null){
