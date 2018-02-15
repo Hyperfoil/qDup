@@ -144,6 +144,7 @@ public class Run implements Runnable {
         runLatch.countDown();
     }
     private void queueSetupScripts(){
+        System.out.println("queueSetupScripts");
         logger.debug("{}.setup",this);
         CommandDispatcher.ScriptObserver scriptObserver = new CommandDispatcher.ScriptObserver() {
 
@@ -153,20 +154,25 @@ public class Run implements Runnable {
             @Override
             public void onStart(Cmd command, Context context) {
                 context.getSession().clearCommand();
+                System.out.println(">> Run.scriptObserver.onStart");
                 context.getSession().sh("env");
                 start = new Env(context.getSession().getOutput());
+                System.out.println("Run.scriptObserver.onStart start.size="+start.size());
+                System.out.println("<< Run.scriptObserver.onStart");
             }
 
             @Override
             public void onStop(Cmd command, Context context) {
 
                 context.getSession().clearCommand();
+                System.out.println(">> Run.scriptObserver.onStop");
                 context.getSession().sh("env");
                 stop = new Env(context.getSession().getOutput());
 
                 Env.Diff diff = start.diffTo(stop);
                 setupEnv.put(context.getSession().getHost(),diff);
                 dispatcher.removeScriptObserver(this);
+
             }
         };
         CommandDispatcher.Observer setupObserver = new CommandDispatcher.Observer() {
@@ -292,6 +298,7 @@ public class Run implements Runnable {
         //dispatcher.closeSessions(); //was racing the close sessions from checkActiveCount
     }
     private void queueRunScripts(){
+        System.out.println("queueRunScripts");
         logger.debug("{}.queueRunScripts",this);
 
         CommandDispatcher.Observer runObserver = new CommandDispatcher.Observer() {

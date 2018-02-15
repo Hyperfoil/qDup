@@ -19,7 +19,7 @@ public class ScriptCmd extends Cmd {
 
     public String getName(){return name;}
     @Override
-    public String toString(){return "invoke "+name;}
+    public String toString(){return "invoke: "+name;}
 
     @Override
     protected void run(String input, Context context, CommandResult result) {

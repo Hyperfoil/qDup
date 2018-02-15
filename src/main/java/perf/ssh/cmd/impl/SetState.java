@@ -23,13 +23,13 @@ public class SetState extends Cmd {
 
     @Override
     public String toString(){
-        return "set-state "+this.key+(this.value==null?"":" "+this.value);
+        return "set-state: "+this.key+(this.value==null?"":" "+this.value);
     }
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
+        System.out.println("set-state: "+key+" -> "+value);
         String value = this.value==null ? input.trim() : this.value;
-
         context.getState().set(key,value);
         result.next(this,input);
     }

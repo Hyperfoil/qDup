@@ -17,7 +17,20 @@ import java.util.regex.Pattern;
  */
 public abstract class Cmd {
 
-    private static final Code NO_OP = (i, s)->Result.next(i);
+    private static class NO_OP extends Cmd{
+        @Override
+        protected void run(String input, Context context, CommandResult result) {
+            result.next(this,input);
+        }
+        @Override
+        protected Cmd clone() {
+            return new NO_OP().with(this.with);
+        }
+        @Override
+        public String toString(){
+            return "NO_OP";
+        }
+    }
 
     protected final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
@@ -31,22 +44,7 @@ public abstract class Cmd {
 
     public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
-    public static Cmd NO_OP(){return new Cmd(){
-
-        @Override
-        protected void run(String input, Context context, CommandResult result) {
-            result.next(this,input);
-        }
-
-        @Override
-        protected Cmd clone() {
-            return null;
-        }
-        @Override
-        public String toString(){
-            return "NO_OP";
-        }
-    };}
+    public static Cmd NO_OP(){return new NO_OP();}
     public static Cmd abort(String message){return new Abort(message);}
     public static Cmd code(Code code){return new CodeCmd(code);}
     public static Cmd code(String className){return new CodeCmd(className);}
@@ -80,16 +78,21 @@ public abstract class Cmd {
     public static Cmd xpath(String path){return new XPath(path);}
 
     private boolean hasWith(String name){
+
         boolean hasIt = with.containsKey(name);
-        if(!hasIt && parent!=null){
-            hasIt = parent.hasWith(name);
+        Cmd target = this.parent;
+        while(!hasIt && target!=null){
+            hasIt = target.with.containsKey(name);
+            target = target.parent;
         }
-        return with.containsKey(name);
+        return hasIt;
     }
     private String getWith(String name){
         String value = with.get(name);
-        if(value==null && parent!=null){
-            value = parent.getWith(name);
+        Cmd target = this.parent;
+        while(value==null && target!=null){
+            value = target.with.get(name);
+            target = target.parent;
         }
         return value;
     }
@@ -111,10 +114,10 @@ public abstract class Cmd {
             if(cmd!=null && cmd.hasWith(name)){
                 value = cmd.getWith(name);
             }else {
-                state.get(name);
+                value = state.get(name);
             }
             if(value == null ){//bad times
-                logger.error("missing {} VALUE for {}",name,command);
+                logger.error("missing {} state variable for {}",name,command);
                 //TODO how to alert the missing state
 
                 value = "";
@@ -272,14 +275,14 @@ public abstract class Cmd {
     protected List<Cmd> getThens(){return Collections.unmodifiableList(this.thens);}
     protected List<Cmd> getWatchers(){return Collections.unmodifiableList(this.watchers);}
 
-
-
     protected final void doRun(String input,Context context,CommandResult result){
         if(!with.isEmpty()){
-            //TODO should we first clone the State to avoid impacting commands that are not children of this command?
-            for(String key : with.keySet()){
-                context.getState().set(key,with.get(key));
-            }
+
+            //TODO the is currently being handles by populateStateVariables
+            // a good idea might be to create a new context for this and this.then()
+//            for(String key : with.keySet()){
+//                context.getState().set(key,with.get(key));
+//            }
         }
         run(input,context,result);
     }

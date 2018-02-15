@@ -4,20 +4,27 @@ import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 
 import java.io.IOException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by wreicher
  * A MultiStream that releases a Semaphore when a suffix is present
  */
 public class SemaphoreStream extends MultiStream {
+
+    private static final AtomicInteger counter = new AtomicInteger();
+
     private Semaphore lock;
     private byte prompt[];
     private int promptIndex=0;
     private Runnable runnable;
 
+    private int uid;
+
     public SemaphoreStream(Semaphore lock, byte bytes[]){
         this.lock = lock;
         this.prompt = bytes;
+        this.uid = counter.incrementAndGet();
     }
     public void setRunnable(Runnable runnable){
         this.runnable = runnable;
@@ -72,11 +79,13 @@ public class SemaphoreStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
+        System.out.println("SS("+this.uid+").write "+new String(b,off,len));
         try {
             super.write(b, off, len);
             if (checkForPrompt(b, off, len)) {
 
                 lock.release();
+                System.out.println("SS.release -> "+lock.availablePermits());
                 if (this.runnable != null) {
                     this.runnable.run();
                 }

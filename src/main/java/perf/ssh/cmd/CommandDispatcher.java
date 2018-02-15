@@ -90,13 +90,13 @@ public class CommandDispatcher {
             if(command!=null && output!=null){
                 if(command.getPrevious()!=null && !command.isSilent()){
                     if( !output.equals(command.getPrevious().getOutput()) ){
-                        context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
+                        context.getRunLogger().info("logCmdOutput-{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
                     }else{
                         //skip logging the output because we don't want duplicates
                     }
                 }else{
                     if(!command.isSilent()) {
-                        context.getRunLogger().info("{}:{}:{}\n{}", command.getHead(), context.getSession().getHost().toString(), command, output);
+                        context.getRunLogger().info("logCmdOutput-{}:{}:{}\n{}", command.getHead(), context.getSession().getHost().toString(), command, output);
                     }
                 }
             }
@@ -104,6 +104,7 @@ public class CommandDispatcher {
 
         @Override
         public void next(Cmd command,String output) {
+            System.out.println("CD.next cmd="+command+" output=[["+output+"]]");
             //get off the calling thread
             executor.submit(()->{
                 observers.forEach(o->o.onNext(command,output));
@@ -114,9 +115,12 @@ public class CommandDispatcher {
 
         @Override
         public void skip(Cmd command,String output) {
-            observers.forEach(o->o.onSkip(command,output));
-            logCmdOutput(command,output);
-            dispatch(command,command.getSkip(),"",this.context,this);
+            //get off the calling thread
+            executor.submit(()-> {
+                observers.forEach(o -> o.onSkip(command, output));
+                logCmdOutput(command, output);
+                dispatch(command, command.getSkip(), "", this.context, this);
+            });
         }
 
         @Override
@@ -325,7 +329,10 @@ public class CommandDispatcher {
 
 
     public void addScriptObserver(ScriptObserver observer){scriptObservers.add(observer);}
-    public void removeScriptObserver(ScriptObserver observer){scriptObservers.remove(observer);}
+    public void removeScriptObserver(ScriptObserver observer){
+        scriptObservers.remove(observer);
+        System.out.println("dispatcher.removeScriptObserver size="+scriptObservers.size());
+    }
     public void addObserver(Observer observer){
         observers.add(observer);
     }
