@@ -37,5 +37,5 @@ public class RepeatUntilSignal extends Cmd {
         return new RepeatUntilSignal(this.name).with(this.with);
     }
     @Override
-    public String toString(){return "repeat-until "+name;}
+    public String toString(){return "repeat-until: "+name;}
 }

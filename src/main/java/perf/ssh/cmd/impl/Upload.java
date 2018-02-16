@@ -39,6 +39,6 @@ public class Upload extends Cmd {
         return new Upload(this.path,this.destination).with(this.with);
     }
     @Override
-    public String toString(){return "upload "+path+" "+destination;}
+    public String toString(){return "upload: "+path+" "+destination;}
 
 }

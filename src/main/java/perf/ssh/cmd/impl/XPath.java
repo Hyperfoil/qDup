@@ -22,7 +22,7 @@ public class XPath extends Cmd {
 
     @Override
     public String toString(){
-        return "xpath "+path;
+        return "xpath: "+path;
     }
 
     @Override
@@ -32,6 +32,7 @@ public class XPath extends Cmd {
         if(path.indexOf(FileUtility.SEARCH_KEY)>0){ //file>xpath ...
             String filePath = Cmd.populateStateVariables(path.substring(0,path.indexOf(FileUtility.SEARCH_KEY)),this,context.getState());
             path = path.substring(path.indexOf(FileUtility.SEARCH_KEY)+FileUtility.SEARCH_KEY.length());
+            System.out.println("path\nfilePath="+filePath+"\npath="+path);
             try {
                 File tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
                 context.getLocal().download(filePath,tmpDest.getPath(),context.getSession().getHost());
@@ -44,7 +45,10 @@ public class XPath extends Cmd {
                 String search = opIndex>-1 ? Cmd.populateStateVariables(path.substring(0,opIndex),this,context.getState()).trim() : path;
                 String operation = opIndex>-1 ? Cmd.populateStateVariables(path.substring(opIndex),this,context.getState()).trim() : "";
 
+                System.out.println("Xpath operation= "+operation);
+
                 xml = loader.loadXml(tmpDest.toPath());
+                System.out.println("Xpath search="+search);
                 List<Xml> found = xml.getAll(search);
                 if(operation.isEmpty()){
                     //convert found to a string and send it to next

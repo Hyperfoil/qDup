@@ -25,5 +25,5 @@ public class Abort extends Cmd {
     }
 
     @Override
-    public String toString(){return "abort "+this.message;}
+    public String toString(){return "abort: "+this.message;}
 }

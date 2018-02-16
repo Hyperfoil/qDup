@@ -20,5 +20,5 @@ public class Signal extends Cmd {
         return new Signal(this.name).with(this.with);
     }
 
-    @Override public String toString(){return "signal "+name;}
+    @Override public String toString(){return "signal: "+name;}
 }

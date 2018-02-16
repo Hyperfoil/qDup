@@ -19,5 +19,5 @@ public class WaitFor extends Cmd {
     }
 
     public String getName(){return name;}
-    @Override public String toString(){return "waitFor "+name;}
+    @Override public String toString(){return "wait-for: "+name;}
 }

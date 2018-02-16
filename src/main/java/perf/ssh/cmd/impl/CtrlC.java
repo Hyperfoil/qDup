@@ -17,5 +17,5 @@ public class CtrlC extends Cmd {
         return new CtrlC().with(this.with);
     }
 
-    @Override public String toString(){return "^C";}
+    @Override public String toString(){return "ctrlC:";}
 }

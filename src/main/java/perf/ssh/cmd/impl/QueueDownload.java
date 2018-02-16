@@ -27,7 +27,7 @@ public class QueueDownload extends Cmd {
 
 
     @Override
-    public String toString(){return "queueDownload " + path + (destination.isEmpty()?"":(" -> "+destination));}
+    public String toString(){return "queue-download: " + path + (destination.isEmpty()?"":(" -> "+destination));}
 
     @Override
     protected void run(String input, Context context, CommandResult result) {

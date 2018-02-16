@@ -22,5 +22,5 @@ public class Log extends Cmd {
         return new Log(value).with(this.with);
     }
     @Override
-    public String toString(){return "log "+this.value;}
+    public String toString(){return "log: "+this.value;}
 }

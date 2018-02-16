@@ -55,10 +55,6 @@ public class RunConfigBuilderTest {
         Script script = runConfig.getScript("first");
 
         assertTrue("the first script definition should be used",script.tree().contains("echo FOO"));
-
-
-
-
     }
 
 

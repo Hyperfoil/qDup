@@ -24,5 +24,5 @@ public class InvokeCmd extends Cmd {
         return new InvokeCmd(command.deepCopy()).with(this.with);
     }
     @Override
-    public String toString(){return "invoke "+command.toString();}
+    public String toString(){return "invoke: "+command.toString();}
 }

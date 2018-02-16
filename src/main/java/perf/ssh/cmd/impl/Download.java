@@ -41,6 +41,6 @@ public class Download extends Cmd {
         return new Download(this.path,this.destination).with(this.with);
     }
     @Override
-    public String toString(){return "download "+path+" "+destination;}
+    public String toString(){return "download: "+path+" "+destination;}
 
 }

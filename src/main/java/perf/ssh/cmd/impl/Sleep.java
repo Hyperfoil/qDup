@@ -26,5 +26,5 @@ public class Sleep extends Cmd {
         return new Sleep(this.amount).with(this.with);
     }
 
-    @Override public String toString(){return "sleep "+amount;}
+    @Override public String toString(){return "sleep: "+amount;}
 }
