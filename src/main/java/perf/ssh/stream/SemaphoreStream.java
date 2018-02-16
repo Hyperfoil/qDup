@@ -79,16 +79,13 @@ public class SemaphoreStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-        System.out.println("SS("+this.uid+").write "+new String(b,off,len));
         try {
             super.write(b, off, len);
             if (checkForPrompt(b, off, len)) {
-
-                lock.release();
-                System.out.println("SS.release -> "+lock.availablePermits());
                 if (this.runnable != null) {
                     this.runnable.run();
                 }
+                lock.release();
             }
         }catch(Exception e){
             e.printStackTrace();

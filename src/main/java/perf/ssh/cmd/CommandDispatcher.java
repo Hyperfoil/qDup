@@ -104,7 +104,6 @@ public class CommandDispatcher {
 
         @Override
         public void next(Cmd command,String output) {
-            System.out.println("CD.next cmd="+command+" output=[["+output+"]]");
             //get off the calling thread
             executor.submit(()->{
                 observers.forEach(o->o.onNext(command,output));
@@ -331,7 +330,6 @@ public class CommandDispatcher {
     public void addScriptObserver(ScriptObserver observer){scriptObservers.add(observer);}
     public void removeScriptObserver(ScriptObserver observer){
         scriptObservers.remove(observer);
-        System.out.println("dispatcher.removeScriptObserver size="+scriptObservers.size());
     }
     public void addObserver(Observer observer){
         observers.add(observer);

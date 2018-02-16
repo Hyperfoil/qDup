@@ -220,25 +220,17 @@ public class SshSession implements Runnable, Consumer<String>{
         }
     }
     public String getOutput(){
-        System.out.println("getOutput "+outputQueue.size());
         String rtrn = "";
         //we are somehow getting the output of the previous command :(
-        if(outputQueue.isEmpty()){
-            try {
+        try {
+            synchronized (outputQueue) {
                 rtrn = outputQueue.take();
                 outputQueue.put(rtrn);
-            } catch (InterruptedException e) {
-                //TODO handle interruption of getOutput
-                //e.printStackTrace();
             }
-        }else{
-            if(outputQueue.size()>1){
-                System.out.println("WTF, how is output queue "+outputQueue.size());
-                System.out.println(outputQueue);
-            }
-            rtrn = outputQueue.peek();
+        } catch (InterruptedException e) {
+            //TODO handle interruption of getOutput
+            //e.printStackTrace();
         }
-        System.out.println("getOutput << size="+outputQueue.size()+" rtrn=[["+rtrn+"]]");
         return rtrn;
     }
     public void sh(String command){
@@ -262,23 +254,23 @@ public class SshSession implements Runnable, Consumer<String>{
             if(acquireLock){
                 try {
                     shellLock.acquire();
-                    System.out.println("Sh.acquired -> "+shellLock.availablePermits());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                     Thread.interrupted();
                 }
             }
 
-            System.out.println("sh("+uid+") command="+command+" lock="+acquireLock+" cmd="+cmd+" queue="+outputQueue.size());
-
-            outputQueue.clear();
             setCommand(cmd,result);
 
             if(!command.isEmpty()){
                 //filteredStream.addFilter("command",command,AsciiArt.ANSI_RESET+AsciiArt.ANSI_CYAN+command+AsciiArt.ANSI_RESET+AsciiArt.ANSI_MAGENTA);
                 stripStream.addFilter("command",command,"");
             }
-            shStream.reset();
+            synchronized (outputQueue) {
+                outputQueue.clear();
+                shStream.reset();
+            }
+
             commandStream.println(command);
             commandStream.flush();
             logger.debug("{}@{} flushed {}",this.command==null?"?":this.command.getUid(),host.getHostName(),command);
@@ -290,7 +282,6 @@ public class SshSession implements Runnable, Consumer<String>{
         close(true);
     }
     public void close(boolean wait) {
-        System.out.println("SshSession.close("+wait+")");
         if (this.isOpen) {
             try {
                 if (wait) {
@@ -328,7 +319,6 @@ public class SshSession implements Runnable, Consumer<String>{
     @Override
     public void run() {
         String output = shStream.toString();
-        System.out.println("Sh("+uid+") run.output = ||"+output+"||");
         shStream.reset();
         try {
             outputQueue.put(output);
