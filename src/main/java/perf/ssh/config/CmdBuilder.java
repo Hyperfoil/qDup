@@ -1,5 +1,6 @@
 package perf.ssh.config;
 
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.impl.*;
 import perf.yaup.Sets;
@@ -9,6 +10,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static perf.ssh.config.YamlParser.*;
@@ -16,7 +18,6 @@ import static perf.ssh.config.YamlParser.*;
 public class CmdBuilder {
 
     private static final List supported = Arrays.asList("long","int","java.lang.String","boolean","java.lang.Boolean");
-
 
     public static CmdBuilder getBuilder(){
         CmdBuilder rtrn = new CmdBuilder();
@@ -45,7 +46,6 @@ public class CmdBuilder {
         return rtrn;
     }
 
-
     private class Key {
         private String name;
         private String type;
@@ -65,7 +65,35 @@ public class CmdBuilder {
             sizedConstructors = new HashMap<>();
             keyedConstructors = new TreeMap<>(Comparator.comparingInt(Set::size));
         }
+        public boolean checkArgTypes(List<String> args){
+            boolean rtrn = true;
+            if(sizedConstructors.containsKey(args.size())){
+                Constructor constructor = sizedConstructors.get(args.size());
+                Type types[] = constructor.getParameterTypes();
+                for(int i=0; i<args.size(); i++){
+                    Type type = types[i];
+                    Object existing = args.get(i);
 
+                    if(existing==null){
+                        rtrn = false;
+                    }else{
+                        switch (type.getTypeName()){
+                            case "long":
+                            case "int":
+                                rtrn = rtrn && Pattern.matches("\\d+",existing.toString());
+                                break;
+                            case "java.lang.String":
+                                break;
+                            case "boolean":
+                            case "java.lang.Boolean":
+                                rtrn = rtrn && Sets.of("yes","no","true","false").contains(existing.toString().toLowerCase());
+                                break;
+                        }
+                    }
+                }
+            }
+            return rtrn;
+        }
         public Cmd create(List<Object> args){
             Cmd rtrn = Cmd.NO_OP();
             if(sizedConstructors.containsKey(args.size())){
@@ -107,10 +135,8 @@ public class CmdBuilder {
                             }
                             break;
                         default:
-                            System.out.println(type.getTypeName()+" is not supported as a constructor argument for "+entryClass.getName());
                             //TODO how to handle unsupported type?
                     }
-
                 }
 
                 try {
@@ -224,20 +250,17 @@ public class CmdBuilder {
     }
     public Cmd buildYamlCommand(Json json,Cmd parent){
         Cmd rtrn = Cmd.NO_OP();
-
         final List<Object> args = new ArrayList<>();
         Json target = json;
         String shortname=null;
         if(json.isArray()){
-
             target = json.getJson(0);
             shortname = target.getString(KEY);
 
             if(target.has(VALUE)){
                 List<String> split = split(target.getString(VALUE));
-                if(commands.get(shortname).sizes().contains(split.size())){
+                if(commands.get(shortname).sizes().contains(split.size()) && commands.get(shortname).checkArgTypes(split)){
                     args.addAll(split);
-                    //TODO when do we check the valueTypes match?
                 }else if (commands.get(shortname).sizes().contains(1)){
                     args.add(target.getString(VALUE));
                 }else{
@@ -347,8 +370,6 @@ public class CmdBuilder {
                 }
             }
         }
-
-
         return rtrn;
     }
     public static List<String> split(String input){

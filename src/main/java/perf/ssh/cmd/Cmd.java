@@ -215,7 +215,10 @@ public abstract class Cmd {
             rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this) );
         }
         watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watch:",debug);});
-        with.forEach((k,v)->{rtrn.append(String.format("%"+(correctedIndent+4)+"swith: %s=%s%n","",k.toString(),v.toString()));});
+        with.forEach((k,v)->{
+            String value = String.format("%"+(correctedIndent+4)+"swith: %s=%s%n","",k.toString(),v.toString());
+            rtrn.append(value);
+        });
         thens.forEach((t)->{t.tree(rtrn,correctedIndent+2,"",debug);});
     }
 

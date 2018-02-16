@@ -20,7 +20,6 @@ public class CmdBuilderTest {
         return new ByteArrayInputStream(input.getBytes());
     }
 
-
     @Test
     public void splitSpaces(){
         CmdBuilder builder = CmdBuilder.getBuilder();
@@ -30,13 +29,10 @@ public class CmdBuilderTest {
     }
     @Test
     public void splitQuoted(){
-
         CmdBuilder builder = CmdBuilder.getBuilder();
         List<String> out = builder.split("\"foo \t\\\"bar\"  bar");
 
-
         assertEquals("split \"foo bar\" should create 2 entries",2,out.size());
-
     }
     @Test
     public void shSilent(){
@@ -47,8 +43,7 @@ public class CmdBuilderTest {
 
         assertTrue("command should be sh",Sh.class.equals(command.getClass()));
         assertTrue("command should not be logging",command.isSilent());
-
-
-
     }
+
+
 }

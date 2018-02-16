@@ -171,7 +171,9 @@ public class RunConfigBuilder {
                                     logger.warn("{} tried to add script {} which already exists",yamlPath,scriptName);
                                 }else {
                                     Script newScript = new Script(scriptName);
-                                    newScript.with(SCRIPT_DIR,new File(yamlPath).getParent());
+                                    File yamlFile = new File(yamlPath);
+                                    String scriptDir = yamlFile.exists() ? yamlFile.getParent() : yamlPath;
+                                    newScript.with(SCRIPT_DIR,scriptDir);
                                     eachChildArray(scriptEntry, (commandIndex, scriptCommand) -> {
                                         Cmd childCmd = cmdBuilder.buildYamlCommand(scriptCommand, newScript);
                                         newScript.then(childCmd);

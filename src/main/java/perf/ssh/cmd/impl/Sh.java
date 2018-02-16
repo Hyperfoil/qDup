@@ -26,5 +26,5 @@ public class Sh extends Cmd {
         return new Sh(this.command).with(this.with);
     }
 
-    @Override public String toString(){return "sh "+command;}
+    @Override public String toString(){return "sh: "+command;}
 }
