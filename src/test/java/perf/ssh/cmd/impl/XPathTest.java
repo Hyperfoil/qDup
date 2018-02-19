@@ -79,8 +79,11 @@ public class XPathTest {
             assertFalse("conent should not contain buz",content.contains("buz"));
             assertTrue("conent should not contain biz",content.contains("biz"));
 
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+        tmpXml.delete();
     }
 }
