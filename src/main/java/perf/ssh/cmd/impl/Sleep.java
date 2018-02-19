@@ -6,7 +6,7 @@ import perf.ssh.cmd.CommandResult;
 
 public class Sleep extends Cmd {
     long amount;
-    public Sleep(long amount){this.amount = amount;}
+    public Sleep(long amount){super(true);this.amount = amount;}
     @Override
     protected void run(String input, Context context, CommandResult result) {
         context.schedule(this,() -> result.next(this,input),amount);
