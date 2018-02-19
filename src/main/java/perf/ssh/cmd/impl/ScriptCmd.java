@@ -22,7 +22,7 @@ public class ScriptCmd extends Cmd {
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
-        Script toCall = context.getScript(this.name);
+        Script toCall = context.getScript(this.name,this);
         injectThen(toCall.deepCopy(),context);
         for(String key : with.keySet()){
             context.getState().set(key,with.get(key));

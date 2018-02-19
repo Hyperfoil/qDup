@@ -1,6 +1,5 @@
 package perf.ssh.cmd.impl;
 
-import perf.ssh.Local;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;

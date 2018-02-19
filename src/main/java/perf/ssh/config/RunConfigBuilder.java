@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import static perf.ssh.cmd.Cmd.STATE_PREFIX;
 import static perf.ssh.config.YamlParser.*;
 
 public class RunConfigBuilder {
@@ -210,11 +211,12 @@ public class RunConfigBuilder {
                                             Map<String, String> scriptWiths = new LinkedHashMap<>();
                                             eachChildEntry(scriptRefernce, (childIndex, scriptChild) -> {
                                                 String childName = scriptChild.getString(KEY);
-                                                if (WITH.equals(childName)) {
+                                                if (WITH.equalsIgnoreCase(childName)) {
                                                     Map<String, String> withs = yamlChildMap(scriptChild);
                                                     scriptWiths.putAll(withs);
                                                 }
                                             });
+
                                             switch (sectionName) {
                                                 case SETUP_SCRIPTS:
                                                     addRoleSetup(roleName, scriptName, scriptWiths);
@@ -237,12 +239,20 @@ public class RunConfigBuilder {
                                 String hostName = host.getString(KEY);
                                 String hostValue = host.getString(VALUE, "");
                                 if (hostValue.isEmpty()) {
+
                                     Map<String, String> hostMap = yamlChildMap(host);
+
                                     if (hostMap.containsKey("username") && hostMap.containsKey("hostname")) {
-                                        hostValue = host.getString("username") + "@" + host.getString("hostname") + ":" + host.getLong("port", Host.DEFAULT_PORT);
+                                        String un = hostMap.get("username").toString();
+                                        String hn = hostMap.get("hostname").toString();
+                                        int port = hostMap.containsKey("port") ? Integer.parseInt(hostMap.get("port")) : Host.DEFAULT_PORT;
+                                        hostValue = un+ "@" + hn + ":" + port;
+                                    }else{
+
                                     }
                                 }
                                 if (!hostValue.isEmpty()) {
+
                                     addHostAlias(hostName, hostValue);
                                 }
 
@@ -340,8 +350,20 @@ public class RunConfigBuilder {
         return scripts.containsKey(name);
     }
     public Script getScript(String name){
-        return scripts.get(name);
+        return getScript(name,null);
     }
+    public Script getScript(String name, Cmd command){
+        if(name.contains(STATE_PREFIX)){
+            String scriptNameWithVariable = name;
+            name = Cmd.populateStateVariables(name,command,state);
+
+        }
+        Script script = scripts.get(name);
+        if(script==null){ // we don't find it
+        }
+        return script;
+    }
+
 
     public boolean isValid(){
         isValid = validate();
@@ -363,6 +385,7 @@ public class RunConfigBuilder {
     public RunValidation runValidation(){
         return new RunValidation(validate(roleSetup,roleHosts),validate(roleRun,roleHosts),validate(roleCleanup,roleHosts));
     }
+
     private StageValidation validate(HashedLists<String,ScriptCmd> stage, HashedSets<String,String> hosts){
         final StageValidation rtrn = new StageValidation();
 
@@ -373,7 +396,10 @@ public class RunConfigBuilder {
                     rtrn.addError(roleName+" missing script "+scriptCmd.getName());
                 }else{
                     hosts.get(roleName).forEach(host->{
-                        Script script = scripts.get(scriptCmd.getName());
+
+                        String scriptName = scriptCmd.getName();
+                        Script script = getScript(scriptName,scriptCmd);
+
                         CommandSummary summary = new CommandSummary(script,this);
                         summary.getWaits().forEach(rtrn::addWait);
                         summary.getSignals().forEach(rtrn::addSignal);
@@ -398,7 +424,6 @@ public class RunConfigBuilder {
         Map<Host,Cmd> setupCmds = new HashMap<>();
         HashedLists<Host,ScriptCmd> runScripts = new HashedLists<>();
         Map<Host,Cmd> cleanupCmds = new HashMap<>();
-
 
         roleHosts.forEach((roleName,hostSet)->{
             for(String hostShortname : hostSet){
@@ -488,7 +513,7 @@ public class RunConfigBuilder {
                     addError(roleName + " is missing a host definition for " + hostShortname);
                 } else {
                     if (!cleanupCmds.containsKey(h)) {
-                        Cmd hostSetupCmd = new Script("setup:" + h.toString());
+                        Cmd hostSetupCmd = new Script("cleanup:" + h.toString());
                         cleanupCmds.put(h, hostSetupCmd);
                     }
                     //get the cmd from setupCmds because multiple roles can share a host

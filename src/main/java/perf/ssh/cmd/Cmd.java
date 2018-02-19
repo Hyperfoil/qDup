@@ -117,9 +117,8 @@ public abstract class Cmd {
                 value = state.get(name);
             }
             if(value == null ){//bad times
-                logger.error("missing {} state variable for {}",name,command);
+                logger.debug("missing {} state variable for {}",name,command);
                 //TODO how to alert the missing state
-
                 value = "";
             }
             rtrn.append(value);
@@ -275,8 +274,12 @@ public abstract class Cmd {
         return this;
     }
 
-    protected List<Cmd> getThens(){return Collections.unmodifiableList(this.thens);}
-    protected List<Cmd> getWatchers(){return Collections.unmodifiableList(this.watchers);}
+    public boolean hasThens(){return !thens.isEmpty();}
+    public List<Cmd> getThens(){return Collections.unmodifiableList(this.thens);}
+
+    public boolean hasWatchers(){return !this.watchers.isEmpty();}
+    public List<Cmd> getWatchers(){return Collections.unmodifiableList(this.watchers);}
+
 
     protected final void doRun(String input,Context context,CommandResult result){
         if(!with.isEmpty()){

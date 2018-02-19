@@ -196,7 +196,6 @@ public class YamlParser {
 
             Stack<String> inlineStack = new Stack<>();
             while((originalLine=reader.readLine())!=null && ++lineNumber > 0){
-
                 String line = originalLine;
 
                 if (line.trim().startsWith("---")) {

@@ -34,8 +34,15 @@ public class CommandSummary {
         }else if (command instanceof WaitFor){
             addWait(((WaitFor)command).getName());
         }else if (command instanceof ScriptCmd){
-            Script namedScript = config.getScript(((ScriptCmd)command).getName());
-            processCommand(namedScript,isWatching,config);
+            String scriptName = ((ScriptCmd)command).getName();
+
+            Script namedScript = config.getScript(scriptName,command);
+            if(namedScript==null){
+                //TODO is it an error if a script isn't found?
+            }else{
+                processCommand(namedScript,isWatching,config);
+            }
+
         }else if (command instanceof InvokeCmd){
             Cmd invokedCmd = ((InvokeCmd)command).getCommand();
             processCommand(invokedCmd,isWatching,config);

@@ -15,6 +15,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class XPathTest {
 
     @Test
@@ -53,8 +57,6 @@ public class XPathTest {
                             return Result.next(input);
                         }))
         );
-
-
         builder.addScript(runScript);
         builder.addHostAlias("local","wreicher@localhost:22");
         builder.addHostToRole("role","local");
@@ -65,18 +67,20 @@ public class XPathTest {
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
 
-        System.out.println("first="+first.toString());
-        System.out.println("second="+second.toString());
-        System.out.println("third="+third.toString());
-
+        assertEquals("/tmp/foo.xml>/foo/biz/text() should be buz","buz",first.toString());
+        assertEquals("/tmp/foo.xml>/foo/biz/text() should be biz after xpath","biz",second.toString());
+        assertEquals("/tmp/foo.xml>/foo/bar/@value should be two afer xpath","two",third.toString());
         File tmpXml = new File("/tmp/foo.xml");
 
         try {
             String content = new String(Files.readAllBytes(tmpXml.toPath()));
-            System.out.println(content);
+
+            assertFalse("content should not contain one",content.contains("one"));
+            assertFalse("conent should not contain buz",content.contains("buz"));
+            assertTrue("conent should not contain biz",content.contains("biz"));
+
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 }

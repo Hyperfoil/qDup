@@ -97,21 +97,52 @@ public class RunConfig {
 
     public String debug(){
         StringBuilder  sb = new StringBuilder();
-        sb.append("scripts\n");
-        for(String scriptName : scripts.keySet()){
-            sb.append("  "+scriptName+"\n");
-            Script script = scripts.get(scriptName);
-            sb.append(script.tree(4,false));
+        if(!scripts.isEmpty()){
+            sb.append("scripts\n");
+            for(String scriptName : scripts.keySet()){
+                sb.append("  "+scriptName+"\n");
+                Script script = scripts.get(scriptName);
+                sb.append(script.tree(4,false));
+            }
+        }else{
+            sb.append("no scripts\n");
         }
-        sb.append("setup\n");
-        for(Host host : setupCmds.keySet()){
-            sb.append("  "+host.toString()+"\n");
-            Cmd cmd = setupCmds.get(host);
-            sb.append("    "+cmd.toString());
+        if(!setupCmds.isEmpty()){
+            sb.append("setup\n");
+            for(Host host : setupCmds.keySet()){
+                sb.append("  "+host.toString()+"\n");
+                Cmd cmd = setupCmds.get(host);
+                sb.append(cmd.tree());
+                cmd.getThens().forEach(then->{
+
+                });
+            }
+        }else{
+            sb.append("no setup cmds\n");
+        }
+        if(!runScripts.isEmpty()){
+            sb.append("run\n");
+            for(Host host : runScripts.keys()){
+                sb.append("  "+host.toString()+"\n");
+                 List<ScriptCmd> scriptCmds = runScripts.get(host);
+                 scriptCmds.forEach(c->sb.append("    "+c.getName()+"\n"));
+            }
+        }else{
+            sb.append("no run scripts\n");
+        }
+        if(!cleanupCmds.isEmpty()){
+            sb.append("cleanup\n");
+            for(Host host : cleanupCmds.keySet()){
+                sb.append("  "+host.toString()+"\n");
+                Cmd cmd = cleanupCmds.get(host);
+                sb.append("    "+cmd.getThens().toString()+"\n");
+            }
+        }else{
+            sb.append("no cleanup cmds\n");
         }
 
-
-
+        sb.append("state:\n");
+        sb.append(state.tree());
         return sb.toString();
     }
 
@@ -129,11 +160,49 @@ public class RunConfig {
 
     public State getState(){return state;}
 
+    /**
+     * get a script using the global state and no command variables
+     * @param name
+     * @return
+     */
     public Script getScript(String name){
-        return scripts.get(name);
+        return getScript(name,null,state);
     }
 
+    /**
+     * get a script using the target state but no command variables
+     * @param name
+     * @param state
+     * @return
+     */
+    public Script getScript(String name,State state){
+        return getScript(name,null,state);
+    }
+
+    /**
+     * get a script using the target state and the commands variables
+     * @param name
+     * @param command
+     * @param state
+     * @return
+     */
+    public Script getScript(String name,Cmd command,State state){
+
+        String populatedName = Cmd.populateStateVariables(name,command,state);
+        return scripts.get(populatedName);
+    }
+
+    /**
+     * get the hosts that have setup scripts
+     * @return
+     */
     public Set<Host> getSetupHosts(){return setupCmds.keySet();}
+
+    /**
+     * get the cmd that will invoke all setup scripts for the host
+     * @param host
+     * @return
+     */
     public Cmd getSetupCmd(Host host){return setupCmds.get(host);}
 
     public Set<Host> getRunHosts(){return runScripts.keys();}
