@@ -74,6 +74,13 @@ public class CommandSummary {
                 processCommand(then,isWatching,config);
             }
         }
+        if(command.hasTimers()){
+            for(int timeout: command.getTimeouts()){
+                for(Cmd timer : command.getTimers(timeout)){
+                    processCommand(timer,true,config);
+                }
+            }
+        }
     }
 
     private String name;
