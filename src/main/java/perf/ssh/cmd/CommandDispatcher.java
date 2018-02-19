@@ -388,7 +388,7 @@ public class CommandDispatcher {
                 if(activeCommands.containsKey(command) /*&& command instanceof Sh*/){
 
                     long lastUpdate = activeCommands.get(command).getLastUpdate();
-                    if(timestamp - lastUpdate > THRESHOLD){
+                    if(timestamp - lastUpdate > THRESHOLD && !command.isSilent()){
                         logger.warn("{}:{}:{} idle for {}",
                                 activeCommands.get(command).getContext().getSession().getHostName(),
                                 command.getHead(),
