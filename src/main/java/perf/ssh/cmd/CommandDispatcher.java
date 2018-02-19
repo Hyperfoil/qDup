@@ -232,6 +232,29 @@ public class CommandDispatcher {
             }
         }
     }
+    class RunTimer implements Runnable {
+        Cmd toRun;
+        Cmd observing;
+        Context context;
+        CommandResult result;
+        int timeout;
+        public RunTimer(int timeout,Cmd toRun,Cmd observing,Context context,CommandResult result){
+            this.timeout = timeout;
+            this.toRun = toRun;
+            this.observing = observing;
+            this.context = context;
+            this.result = result;
+        }
+        @Override
+        public void run(){
+            if(activeCommands.containsKey(observing)){
+                toRun.doRun(""+timeout,context,result);
+            }else{
+
+            }
+        }
+
+    }
     class RunCommand implements Runnable {
         Cmd command;
         String input;
@@ -476,6 +499,17 @@ public class CommandDispatcher {
             activeCommands.get(command).setRunWatchers(watcherRunnable);
             logger.trace("queueing {} watchers for {}",command.getWatchers().size(),command);
             executor.execute(watcherRunnable);
+        }
+        if(command.hasTimers()){
+            WatcherResult watcherResult = new WatcherResult(context);
+
+            for(int timeout: command.getTimeouts()){
+               List<Cmd> timers = command.getTimers(timeout);
+               for(Cmd timer : timers){
+                   RunTimer runTimer = new RunTimer(timeout,timer,command,context,watcherResult);
+                   scheduler.schedule(runTimer,timeout,TimeUnit.MILLISECONDS);
+               }
+           }
         }
 
         executor.execute(new RunCommand(command,input,context,result));

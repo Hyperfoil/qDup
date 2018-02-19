@@ -4,6 +4,7 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.ssh.State;
 import perf.ssh.cmd.impl.*;
+import perf.yaup.HashedLists;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -136,6 +137,7 @@ public abstract class Cmd {
     protected Map<String,String> with;
     private LinkedList<Cmd> thens;
     private LinkedList<Cmd> watchers;
+    private HashedLists<Integer,Cmd> timers;
 
     private Cmd parent;
     private Cmd prev;
@@ -156,12 +158,22 @@ public abstract class Cmd {
         this.with = new HashMap<>();
         this.thens = new LinkedList<>();
         this.watchers = new LinkedList<>();
+        this.timers = new HashedLists<>();
         this.next = null;
         this.skip = null;
         this.prev = null;
         this.parent = null;
         this.uid = uidGenerator.incrementAndGet();
     }
+    public Cmd addTimer(int timeout,Cmd command){
+        timers.put(timeout,command);
+        return this;
+    }
+    public List<Cmd> getTimers(int timeout){
+        return timers.get(timeout);
+    }
+    public Set<Integer> getTimeouts(){return timers.keys();}
+    public boolean hasTimers(){return !timers.isEmpty();}
     public void injectThen(Cmd command,Context context){
         thens.addFirst(command);
         Cmd next = this.next;
@@ -213,10 +225,17 @@ public abstract class Cmd {
         }else{
             rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this) );
         }
-        watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watch:",debug);});
+
         with.forEach((k,v)->{
             String value = String.format("%"+(correctedIndent+4)+"swith: %s=%s%n","",k.toString(),v.toString());
             rtrn.append(value);
+        });
+        watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watch:",debug);});
+        timers.forEach((timeout,cmdList)->{
+            rtrn.append(String.format("%"+(correctedIndent+4)+"stimer: %i%n","",timeout));
+            cmdList.forEach(cmd->{
+                cmd.tree(rtrn,correctedIndent+6,"",debug);
+            });
         });
         thens.forEach((t)->{t.tree(rtrn,correctedIndent+2,"",debug);});
     }
@@ -303,6 +322,11 @@ public abstract class Cmd {
         }
         for(Cmd then : this.getThens()){
             clone.then(then.deepCopy());
+        }
+        for(int timeout: this.getTimeouts()){
+            for(Cmd timed : this.getTimers(timeout)){
+                clone.addTimer(timeout,timed);
+            }
         }
         return clone;
     }

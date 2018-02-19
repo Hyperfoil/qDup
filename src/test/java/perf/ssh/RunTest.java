@@ -13,13 +13,48 @@ import perf.ssh.config.RunConfigBuilder;
 
 import java.util.HashMap;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class RunTest {
 
-    @Rule
-    public final TestServer testServer = new TestServer();
+//    @Rule
+//    public final TestServer testServer = new TestServer();
 
+
+    @Test
+    public void testTimer(){
+        final StringBuilder first = new StringBuilder();
+        final StringBuilder second = new StringBuilder();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        Script script = new Script("run-timer");
+        script.then(
+                Cmd.sleep(4_000).addTimer(2_000,Cmd.code(((input, state) -> {
+                    first.append(input);
+                    return Result.next(input);
+                }))).addTimer(10_000,Cmd.code(((input, state) -> {
+                    second.append(input);
+                    return Result.next(input);
+                })))
+        );
+
+        builder.addScript(script);
+        builder.addHostAlias("local","wreicher@localhost:22");//+testServer.getPort());
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run-timer",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run run = new Run("/tmp",config,dispatcher);
+
+        run.run();
+
+        String firstString = first.toString();
+        String secondString = second.toString();
+        assertEquals("first should container the 10000 timeout value","2000",firstString);
+        assertEquals("second should not run because the parent command finished","",secondString);
+    }
 
     @Test
     public void testEnvCapture(){
@@ -42,8 +77,8 @@ public class RunTest {
         builder.addScript(setupScript);
         builder.addScript(runScript);
 
-        //builder.addHostAlias("local","wreicher@localhost:22");//+testServer.getPort());
-        builder.addHostAlias("local","wreicher@localhost:"+testServer.getPort());
+        builder.addHostAlias("local","wreicher@localhost:22");//+testServer.getPort());
+        //builder.addHostAlias("local","wreicher@localhost:"+testServer.getPort());
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-env",new HashMap<>());
         builder.addRoleSetup("role","setup-env",new HashMap<>());

@@ -41,6 +41,7 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("signal",Signal.class,"name");
         rtrn.addCmdDefinition("sleep",Sleep.class,"ms");
         rtrn.addCmdDefinition("wait-for",WaitFor.class,"name");
+        rtrn.addCmdDefinition("wait-for",WaitFor.class,"name","silent");
         rtrn.addCmdDefinition("xpath",XPath.class,"path");
 
         return rtrn;
@@ -248,6 +249,30 @@ public class CmdBuilder {
             //TODO alert the error?
         }
     }
+    public void addTimer(Cmd command,Json json){
+        String jsonKey = json.getString(KEY);
+        String jsonValue = json.getString(VALUE);
+        if(TIMER.equalsIgnoreCase(jsonKey)){
+            if(jsonValue!=null && jsonValue.matches("[\\d_]+")){
+                int timeout = Integer.parseInt(jsonValue.toString().replaceAll("_",""));
+                if(json.has(CHILD)){
+                    Json childArray = json.getJson(CHILD);
+                    Cmd timedCmd = Cmd.NO_OP();
+                    for(int i=0; i<childArray.size(); i++){
+                        Json childEntryList = childArray.getJson(i);
+                        for(int c=0; c<childEntryList.size();c++){
+                            Json childEntry = childEntryList.getJson(c);
+                            Cmd childCmd = buildYamlCommand(childEntry,timedCmd);
+                            timedCmd.then(childCmd);
+                        }
+                    }
+                    command.addTimer(timeout,timedCmd);
+                }
+            }else{
+                //TODO warn that timers need a value?
+            }
+        }
+    }
     public Cmd buildYamlCommand(Json json,Cmd parent){
         Cmd rtrn = Cmd.NO_OP();
         final List<Object> args = new ArrayList<>();
@@ -359,6 +384,8 @@ public class CmdBuilder {
                         case WITH:
                             addWith(rtrn.getTail(),childEntry);
                             break;
+                        case TIMER:
+                            addTimer(rtrn.getTail(),childEntry);
                         default://
                             if(has(childKey)){// a known command
                                 Cmd next = buildYamlCommand(childEntry,rtrn);

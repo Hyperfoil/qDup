@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 public class YamlParser {
 
+    public static final String TIMER = "timer";
     public static final String WATCH = "watch";
     public static final String WITH = "with";
     public static final Set<String> RESERVED = Sets.of(WATCH, WITH);

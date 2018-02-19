@@ -66,6 +66,48 @@ public class RunConfigBuilderTest {
         assertFalse("the second should script not be merged",script.tree().contains("echo BAR"));
     }
 
+
+
+
+    @Test
+    public void testCmdTimer(){
+        YamlParser parser = new YamlParser();
+        parser.load("cmdTimer",stream("",
+            "scripts:",
+            "  first:",
+            "    - sh: long running command",
+            "        timer: 30_000",
+            "          - signal: 30_seconds_later",
+            "          - abort: not good"
+        ));
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        builder.loadYaml(parser);
+        RunConfig runConfig = builder.buildConfig();
+
+        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+
+        Script script = runConfig.getScript("first");
+
+        assertNotNull("script should exist",script);
+
+        Cmd next = script.getNext();
+
+        assertTrue("next should have a timer",next.hasTimers());
+        Set<Integer> timeouts = next.getTimeouts();
+
+        assertTrue("timeouts should contain 30_000",timeouts.contains(30_000));
+        assertEquals("timeout should only contain 1 entry",1,timeouts.size());
+
+        List<Cmd> timeout = next.getTimers(30_000);
+
+        assertEquals("timeout should have 1 entry",1,timeout.size());
+
+        Cmd first = timeout.get(0);
+
+        assertEquals("command should have 2 child commands",2,first.getThens().size());
+
+    }
+
     /**
      * A role defined in 2 yaml should merge
      */
