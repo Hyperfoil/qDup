@@ -1,18 +1,67 @@
 # Qdup
 Coordinate multiple shell interactions to run tests in a lab environment
 ## Introduction
-Running benchmarks (e.g. specjms) requires opening several
+Running benchmarks requires opening several
 terminals and monitoring the output of one terminal to start
 a command in another terminal. This project provides a way to script
 multiple shells and coordinate between them.
 
-Each connection starts by executing a sequence of commands
-in a `Script`. All `Scripts` start at the same time but `waitFor`,
-`signal`, and `repeat-until` commands help coordinate between `Scripts`
+## Example
+The easiest way to use qDup is by writing a yaml to control a run.
+```YAML
+name: example #the name of the test we plan to run
+scripts:
+  sync-time: #the script name
+    - sh: ntpdate -u clock.redhat.com  # runs ntpdate in the shell
 
-## TODO
- - waitFor when already at 0 does not dispatch?
- - abort doesn't stop waitFor
+  widflyScript: # the name of the script
+    - sh: cd ${{WF_HOME}}    #cd to the WF_HOME state variable
+    - sh: rm ./standalone/log/*   #remove the old logs
+    - queue-download: ./standalone/log  #save the files after the script runs
+    - sh: ./bin/standalone.sh &   #start the server as a background process
+    - sleep: 1_000                #wait a second for the new log files
+    - sh: tail -f ./standalone/log/server.log   #tail server.log
+       - watch: #watchers receive a stream of each new line of output
+          - regex: ".*?FATAL.*"   #if the line contains FATAL
+             - ctrlC:             #send ctrl+c to the shell (ends tail -f)
+             - abort: WF error    #abort the run with a message WF error
+          - regex: ".*? started in (?<startTime>\\d+)ms.*"
+             - log: startTime=${{startTime}} # named capture groups are automaticall added as state variables
+             - ctrlC:
+             - signal: WF_STARTED
+    - wait-for: RUN_FINISHED
+       - timer: 600_000           #wait 5m
+          - abort: run took longer than 5 minutes
+
+hosts:
+  local : me@localhost:22         #use local to refer to me on my laptop
+  server :                        #use the name server
+    username : root               #the username
+    hostname : labserver4         #the dns hostname
+    port: 2222                    #the ssh port on the server
+
+
+roles:                            #roles are how scripts are applied to hosts
+  wildfly:                        #unique name for the role
+    hosts:                        #a list of hosts in this role
+      server
+    setup-scripts:
+    run-scripts:                  #scripts to using during the run stage
+      widflyScript                #wildflyScript will run on each host
+    cleanup-scripts:
+  ALL:                            #the ALL role automacically includes all hosts from other roles
+    setup-scripts: [sync-time]    #
+      
+
+```
+The main workflow is broken into 3 stages: setup, run, cleanup
+
+Setup scripts are run sequentially with the same ssh session to help
+capture all the changes and ensure a consistent state for the run state
+Run scripts are all executed in parallel and will start with whatever
+environment changes occur from setup.
+Cleanup scripts are again run sequentially to ensure a consistent ending
+state.
 
 ## Scripts
 A `Script` a is tree of commands that run one at a time. Each command accepts
@@ -33,7 +82,6 @@ argumentString to identify the appropriate arguments.
 2. `- command : [<argument>, <argument>, ...]`
 Arguments are passed as a list (using either bracket or dash notation). Arguments
 are matched based on their position in the list and the declared order for the command.
-Missing arguments will be passed a null
 3. `- command : { argumentName: argumentValue, ...}`
 Arguments are explicitly mapped to the command's declared argument names.
 This is the least ambiguous but most verbose and is rarely necessary.
@@ -60,6 +108,8 @@ run output path + `destination`
 upload a file from the local `path` to `destination` on the remote host
 * `echo:`
 log the input to console
+* `invoke: <name>`
+Invoke the `name` script as part of the current script
 * `log: <message>`
 log `message` to the run log
 * `read-state: <name>`
@@ -75,13 +125,11 @@ is signalled in all runs (e.g. be careful of error conditions)
 * `set-state <name> ?<value>`
 set the named state attribute to `value`
 if present or to the input if no value is provided
-* `script: <name>`
-Invoke the `name` script as part of the current script
-* `sh: <command>`
-Execute a remote shell command
+* `sh: <command> [<silent>]`
+Execute a remote shell command. The silent option (when true) prevents
+qDup from logging the command output (useful when tailing a long file)
 * `signal: <name>`
-send one signal for `name` Runs parse all script and
-host associations to calculate the expected number of `signals` for each
+send one signal for `name`. Runs calculate the expected number of `signals` for each
 `name` and `waitFor` will wait for the expected number of `signal`
 * `sleep: <ms>`
 pause the current script for the given number of milliseconds
@@ -100,7 +148,8 @@ This is an overloaded command that can perform an xpath
    - `file>xpath --` - delete xpath matches from their parents
    - `file>xpath @key=value` - add the key=value attribute to xpath matches
 
-## Watching
+## Monitoring
+### Watching
 Some commands (e.g. sh commands) can provide updates during execution.
 A child command with the `watch` prefix will receive each new line of
 output from the parent command as they are available (instead of after
@@ -109,14 +158,25 @@ and to subsequently call `signal STATE` or `ctrlC` the command when a
 condition is met.
 ```YAML
  - sh: tail -f /tmp/server.log
- - - watch:
+   - watch:
      - regex: .*?FATAL.*
-     - - ctrlC:
+       - ctrlC:
        - abort: FATAL error
 ```
 
 Note: `sh`, `waitFor`, and `repeat-until` cannot be used when watching
 a command because they can block the execution of other watchers.
+
+### Timers
+Another option for long running commands is to set a timer that will
+execute if the command has been active for longer than the timeout.
+```YAML
+ - wait-for: SERVER_STARTED
+   - timer: 120_000 #ms
+     - abort: server took too long to start, aborting
+```
+Note: `sh`, `waitFor`, and `repeat-until` cannot be used in a timer
+because they can block the execution of other timers
 
 ## State
 State is the main way to introduce variability into a run. Commands can
@@ -218,5 +278,3 @@ command.
 
 ## Building
 > gradle jar
-
-## Running Example
