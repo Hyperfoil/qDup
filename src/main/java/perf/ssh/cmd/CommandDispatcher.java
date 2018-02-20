@@ -90,13 +90,13 @@ public class CommandDispatcher {
             if(command!=null && output!=null){
                 if(command.getPrevious()!=null && !command.isSilent()){
                     if( !output.equals(command.getPrevious().getOutput()) ){
-                        context.getRunLogger().info("logCmdOutput-{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
+                        context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
                     }else{
                         //skip logging the output because we don't want duplicates
                     }
                 }else{
                     if(!command.isSilent()) {
-                        context.getRunLogger().info("logCmdOutput-{}:{}:{}\n{}", command.getHead(), context.getSession().getHost().toString(), command, output);
+                        context.getRunLogger().info("{}:{}:{}\n{}", command.getHead(), context.getSession().getHost().toString(), command, output);
                     }
                 }
             }

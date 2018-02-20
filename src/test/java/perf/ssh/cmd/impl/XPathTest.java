@@ -47,9 +47,10 @@ public class XPathTest {
                             return Result.next(input);
                         }))
         );
-        runScript.then(
+        runScript.then( //somehow this does not finish the write before the next Cmd runs :(
                 Cmd.xpath("/tmp/foo.xml>/foo/bar/@value == two")
         );
+
         runScript.then(
                 Cmd.xpath("/tmp/foo.xml>/foo/bar/@value")
                         .then(Cmd.code((input,state)->{

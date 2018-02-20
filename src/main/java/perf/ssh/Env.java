@@ -37,7 +37,7 @@ public class Env {
     public static Map<String,String> parse(String input){
         Map<String,String> rtrn = new LinkedHashMap<>();
         if(input!=null && !input.isEmpty()){
-            String split[] = input.split("\n");
+            String split[] = input.split("\r?\n");
             String prevKey="";
             for(int i=0; i<split.length; i++){
                 String line = split[i];
@@ -46,10 +46,12 @@ public class Env {
                 if(equalsIndex>-1 && (spaceIndex==-1 || equalsIndex < spaceIndex)){//we think the line is a key=var
                     String key = line.substring(0,equalsIndex);
                     String value = equalsIndex < line.length() ? line.substring(equalsIndex+1) : "";
+                    value = value.replaceAll("\r|\n",""); //not necessary but defensive
                     prevKey = key;
                     rtrn.put(key,value);
                 }else{
                     if(!prevKey.isEmpty()){//the line is probably a continuation of the previous entry
+                        line = line.replaceAll("\r|\n",""); //not necessary but defensive
                         rtrn.put(prevKey,rtrn.get(prevKey)+System.lineSeparator()+line);
                     }
                 }

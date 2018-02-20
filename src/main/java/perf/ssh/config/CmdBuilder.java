@@ -278,9 +278,13 @@ public class CmdBuilder {
         final List<Object> args = new ArrayList<>();
         Json target = json;
         String shortname=null;
+        int childStartIndex=0;
         if(json.isArray()){
+
             target = json.getJson(0);
             shortname = target.getString(KEY);
+
+            //System.out.println(shortname+" isArray "+json.toString(2));
 
             if(target.has(VALUE)){
                 List<String> split = split(target.getString(VALUE));
@@ -292,6 +296,8 @@ public class CmdBuilder {
                     //ERROR
                 }
             }else if(json.size()>1 && args.isEmpty()){
+                RuntimeException e = new RuntimeException();
+                e.printStackTrace();
                 //the list entry has peers who aren't prepended WITH a -
                 Map<String,String> entries = new HashMap<>();
                 for(int i=1; i<json.size(); i++){
@@ -312,6 +318,29 @@ public class CmdBuilder {
                         entries.clear();
                     }
                 }
+
+            }else if (target.has(CHILD) && target.getJson(CHILD).size()>1){
+                Json childEntry = target.getJson(CHILD).getJson(0);
+                Map<String,String> entries = new HashMap<>();
+                for(int i=0; i<childEntry.size(); i++){
+                    Json arg = childEntry.getJson(i);
+                    String argKey = arg.getString(KEY);
+                    if(arg.has(VALUE)) {
+                        entries.put(argKey, arg.getString(VALUE));
+                    }else{
+                        //what sort of craziness was added inline like this?
+                    }
+                }
+                if(commands.get(shortname).sizes().contains(entries.size())){
+                    for(String expected : commands.get(shortname).getOption(entries.size())){
+                        args.add(entries.get(expected));
+                    }
+                    childStartIndex=1; //skip the first child. It was used to create the command
+                }else{
+                    entries.clear();
+                }
+
+
 
             }
         }else {
@@ -372,7 +401,7 @@ public class CmdBuilder {
 
         if(target.has(CHILD)){
             Json childList = target.getJson(CHILD);
-            for(int i=0; i<childList.size();i++){
+            for(int i=childStartIndex; i<childList.size();i++){
                 Json childEntryList = childList.getJson(i);
                 for(int c=0; c<childEntryList.size(); c++){
                     Json childEntry = childEntryList.getJson(c);

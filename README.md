@@ -15,43 +15,50 @@ scripts:
     - sh: ntpdate -u clock.redhat.com  # runs ntpdate in the shell
 
   widflyScript: # the name of the script
-    - sh: cd ${{WF_HOME}}    #cd to the WF_HOME state variable
-    - sh: rm ./standalone/log/*   #remove the old logs
-    - queue-download: ./standalone/log  #save the files after the script runs
-    - sh: ./bin/standalone.sh &   #start the server as a background process
-    - sleep: 1_000                #wait a second for the new log files
-    - sh: tail -f ./standalone/log/server.log   #tail server.log
-       - watch: #watchers receive a stream of each new line of output
-          - regex: ".*?FATAL.*"   #if the line contains FATAL
-             - ctrlC:             #send ctrl+c to the shell (ends tail -f)
-             - abort: WF error    #abort the run with a message WF error
+    - sh: cd ${{WF_HOME}}                      # cd to the WF_HOME state variable
+    - sh: rm ./standalone/log/*                # remove the old logs
+    - queue-download: ./standalone/log         # save the files after the script runs
+    - sh: ./bin/standalone.sh &                # start the server as a background process
+    - sleep: 1_000                             # wait a second for the new log files
+    - sh: {
+         silent : true                          # omit output from the run log
+         command: tail -f ./standalone/log/server.log  # tail server.log
+      }
+       - watch:                                # watchers receive a stream of each new line of output
+          - regex: ".*?FATAL.*"                # if the line contains FATAL
+             - ctrlC:                          # send ctrl+c to the shell (ends tail -f)
+             - abort: WF error                 # abort the run with a message WF error
           - regex: ".*? started in (?<startTime>\\d+)ms.*"
-             - log: startTime=${{startTime}} # named capture groups are automaticall added as state variables
+             - log: startTime=${{startTime}}   # named capture groups are added as state variables
              - ctrlC:
              - signal: WF_STARTED
     - wait-for: RUN_FINISHED
-       - timer: 600_000           #wait 5m
+       - timer: 600_000                        # wait 5m
           - abort: run took longer than 5 minutes
 
 hosts:
-  local : me@localhost:22         #use local to refer to me on my laptop
-  server :                        #use the name server
-    username : root               #the username
-    hostname : labserver4         #the dns hostname
-    port: 2222                    #the ssh port on the server
+  local : me@localhost:22         # use local as an alias for me on my laptop
+  server :                        # use the name server
+    username : root               # the username
+    hostname : labserver4         # the dns hostname
+    port: 2222                    # the ssh port on the server
 
-
-roles:                            #roles are how scripts are applied to hosts
-  wildfly:                        #unique name for the role
-    hosts:                        #a list of hosts in this role
+roles:                            # roles are how scripts are applied to hosts
+  wildfly:                        # unique name for the role
+    hosts:                        # a list of hosts in this role
       server
     setup-scripts:
-    run-scripts:                  #scripts to using during the run stage
-      widflyScript                #wildflyScript will run on each host
+    run-scripts:                  # scripts to using during the run stage
+      - wildflyScript             # wildflyScript will run on each host
+      - wildflyScript             # run a second copy of widflyScript
+        - with:                   # with allows an override for state variables
+           WF_HOME : /dev/wf-12   # WF_HOME will be different for this instance of wildflyScript
     cleanup-scripts:
-  ALL:                            #the ALL role automacically includes all hosts from other roles
-    setup-scripts: [sync-time]    #
-      
+  ALL:                            # the ALL role automacically includes all hosts from other roles
+    setup-scripts: [sync-time]    # run sync-time on all hosts during the setup stage
+
+states:
+  WF_HOME: /runtime/wf-11         # WF_HOME is
 
 ```
 The main workflow is broken into 3 stages: setup, run, cleanup

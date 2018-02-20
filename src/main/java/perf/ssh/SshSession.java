@@ -154,6 +154,8 @@ public class SshSession implements Runnable, Consumer<String>{
             isOpen=true;
 
             sh("unset PROMPT_COMMAND; export PS1='" + prompt + "'");
+            sh("pwd");
+            System.out.println("sh.pwd="+getOutput());
             sh("");//forces the thread to wait for the previous sh to complete
 
 //is this what is bugging out envTest?

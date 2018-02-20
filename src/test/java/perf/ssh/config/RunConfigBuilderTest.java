@@ -4,9 +4,11 @@ import org.junit.Ignore;
 import org.junit.Test;
 import perf.ssh.Host;
 import perf.ssh.RunValidation;
+import perf.ssh.SshTestBase;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.Script;
 import perf.ssh.cmd.impl.ScriptCmd;
+import perf.ssh.cmd.impl.Sh;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -17,18 +19,9 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
-public class RunConfigBuilderTest {
+public class RunConfigBuilderTest extends SshTestBase {
 
     private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-    private static InputStream stream(String input){
-        return new ByteArrayInputStream(input.getBytes());
-    }
-    public static InputStream stream(String...input){
-        return new ByteArrayInputStream(
-                Arrays.asList(input).stream()
-                        .collect(Collectors.joining("\n")).getBytes()
-        );
-    }
 
     /**
      * The first yaml to load a script wins. Scripts do not merge
@@ -67,7 +60,38 @@ public class RunConfigBuilderTest {
     }
 
 
+    @Test
+    public void testSilentWithWatcher(){
+        YamlParser parser = new YamlParser();
+        parser.load("silentWithWatcher",stream("",
+            "scripts:",
+            "  first:",
+            "    - sh: {",
+            "        silent: true",
+            "        command: tail -f ./standalone/server.log",
+            "      }",
+            "      - watch:",
+            "        - regex: .*FATAL.*",
+            "          - abort: fatal"
+        ));
 
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        builder.loadYaml(parser);
+        RunConfig runConfig = builder.buildConfig();
+
+        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+
+        Script first = runConfig.getScript("first");
+
+        assertNotNull("first script should not be null",first);
+        Cmd next = first.getNext();
+        assertTrue("next should be an Sh command but was "+next.getClass(),(next instanceof Sh));
+
+        Sh sh = (Sh) next;
+        assertTrue("next should be silent",sh.isSilent());
+        assertTrue("next should have a watcher",sh.hasWatchers());
+
+    }
 
     @Test
     public void testCmdTimer(){

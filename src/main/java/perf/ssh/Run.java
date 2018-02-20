@@ -317,11 +317,20 @@ public class Run implements Runnable {
 
             Env.Diff diff = setupEnv.containsKey(host) ? setupEnv.get(host) : new Env.Diff(Collections.emptyMap(),Collections.emptySet());
 
-            StringBuilder setEnv = new StringBuilder();
-            StringBuilder unsetEnv = new StringBuilder();
-            diff.keys().forEach(key->{
-                setEnv.append(" "+key+"="+diff.get(key));
-            });
+            final StringBuilder setEnv = new StringBuilder();
+            final StringBuilder unsetEnv = new StringBuilder();
+            try {
+                diff.keys().forEach(key -> {
+                    String keyValue = diff.get(key);
+                    if (setEnv.length() > 0) {
+                        setEnv.append(" ");
+                    }
+                    setEnv.append(" " + key + "=" + keyValue);
+                });
+            }catch(Exception e){
+                e.printStackTrace();
+                System.exit(0);
+            }
             diff.unset().forEach(key->{
               unsetEnv.append(" "+key);
             });

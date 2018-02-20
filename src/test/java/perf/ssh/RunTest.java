@@ -16,7 +16,7 @@ import java.util.HashMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class RunTest {
+public class RunTest extends SshTestBase{
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
@@ -39,7 +39,7 @@ public class RunTest {
         );
 
         builder.addScript(script);
-        builder.addHostAlias("local","wreicher@localhost:22");//+testServer.getPort());
+        builder.addHostAlias("local",getHost().toString());//+testServer.getPort());
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-timer",new HashMap<>());
 
@@ -77,8 +77,7 @@ public class RunTest {
         builder.addScript(setupScript);
         builder.addScript(runScript);
 
-        builder.addHostAlias("local","wreicher@localhost:22");//+testServer.getPort());
-        //builder.addHostAlias("local","wreicher@localhost:"+testServer.getPort());
+        builder.addHostAlias("local",getHost().toString());//+testServer.getPort());
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-env",new HashMap<>());
         builder.addRoleSetup("role","setup-env",new HashMap<>());
