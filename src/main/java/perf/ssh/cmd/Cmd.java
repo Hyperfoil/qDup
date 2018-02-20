@@ -74,7 +74,7 @@ public abstract class Cmd {
         return new Sh(command,silent);
     }
     public static Cmd signal(String name){return new Signal(name);}
-    public static Cmd sleep(long amount){return new Sleep(amount);}
+    public static Cmd sleep(String amount){return new Sleep(amount);}
     public static Cmd waitFor(String name){return new WaitFor(name);}
     public static Cmd xpath(String path){return new XPath(path);}
 

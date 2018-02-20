@@ -29,7 +29,7 @@ public class RunTest extends SshTestBase{
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
         Script script = new Script("run-timer");
         script.then(
-                Cmd.sleep(4_000).addTimer(2_000,Cmd.code(((input, state) -> {
+                Cmd.sleep("4_000").addTimer(2_000,Cmd.code(((input, state) -> {
                     first.append(input);
                     return Result.next(input);
                 }))).addTimer(10_000,Cmd.code(((input, state) -> {
