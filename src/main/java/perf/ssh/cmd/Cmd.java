@@ -137,7 +137,7 @@ public abstract class Cmd {
     protected Map<String,String> with;
     private LinkedList<Cmd> thens;
     private LinkedList<Cmd> watchers;
-    private HashedLists<Integer,Cmd> timers;
+    private HashedLists<Long,Cmd> timers;
 
     private Cmd parent;
     private Cmd prev;
@@ -165,14 +165,14 @@ public abstract class Cmd {
         this.parent = null;
         this.uid = uidGenerator.incrementAndGet();
     }
-    public Cmd addTimer(int timeout,Cmd command){
+    public Cmd addTimer(long timeout,Cmd command){
         timers.put(timeout,command);
         return this;
     }
-    public List<Cmd> getTimers(int timeout){
+    public List<Cmd> getTimers(long timeout){
         return timers.get(timeout);
     }
-    public Set<Integer> getTimeouts(){return timers.keys();}
+    public Set<Long> getTimeouts(){return timers.keys();}
     public boolean hasTimers(){return !timers.isEmpty();}
     public void injectThen(Cmd command,Context context){
         thens.addFirst(command);
@@ -323,7 +323,7 @@ public abstract class Cmd {
         for(Cmd then : this.getThens()){
             clone.then(then.deepCopy());
         }
-        for(int timeout: this.getTimeouts()){
+        for(long timeout: this.getTimeouts()){
             for(Cmd timed : this.getTimers(timeout)){
                 clone.addTimer(timeout,timed);
             }

@@ -7,38 +7,42 @@ a command in another terminal. This project provides a way to script
 multiple shells and coordinate between them.
 
 ## Example
-The easiest way to use qDup is by writing a yaml to control a run.
+The main way to use qDup is with yaml configuration files passed to the executable jar.
+Let's look at a sample yaml.
 ```YAML
-name: example #the name of the test we plan to run
-scripts:
-  sync-time: #the script name
-    - sh: ntpdate -u clock.redhat.com  # runs ntpdate in the shell
+name: example                                  # the name of the test we plan to run
+scripts:                                       # scripts are the series of commands to run a test
+  sync-time:                                   # the unique script name
+    - sh: ntpdate -u clock.redhat.com          # runs ntpdate in the remote shell
 
-  widflyScript: # the name of the script
+  widflyScript:                                # the name of a new script
     - sh: cd ${{WF_HOME}}                      # cd to the WF_HOME state variable
     - sh: rm ./standalone/log/*                # remove the old logs
-    - queue-download: ./standalone/log         # save the files after the script runs
-    - sh: ./bin/standalone.sh &                # start the server as a background process
-    - sleep: 1_000                             # wait a second for the new log files
-    - sh: {
-         silent : true                          # omit output from the run log
-         command: tail -f ./standalone/log/server.log  # tail server.log
+    - queue-download: ./standalone/log         # save the files after the script stops
+    - sh: ./bin/standalone.sh &                # starts wildfly as a background process
+    - sleep: 1s                                # wait a second for the new log files
+    - sh: cd ./standalone/log                  # change to the log directory
+    - sh: {                                    # inline maps help for commands with multiple arguments
+         silent : true                         # omit output from the run log
+         command: tail -f server.log           # tail server.log
       }
-       - watch:                                # watchers receive a stream of each new line of output
+       - watch:                                # watch streams each line of output to the sub commands
+          - regex: ".*?tail: no files.*"       # a tail error message that server.log was missing
+             - abort: WF error                 # abort the run with a message WF error
           - regex: ".*?FATAL.*"                # if the line contains FATAL
              - ctrlC:                          # send ctrl+c to the shell (ends tail -f)
              - abort: WF error                 # abort the run with a message WF error
           - regex: ".*? started in (?<startTime>\\d+)ms.*"
-             - log: startTime=${{startTime}}   # named capture groups are added as state variables
+             - log: startTime=${{startTime}}   # named regex groups are added as state variables
              - ctrlC:
-             - signal: WF_STARTED
-    - wait-for: RUN_FINISHED
-       - timer: 600_000                        # wait 5m
+             - signal: WF_STARTED              # notify other scripts that wildfly started
+    - wait-for: DONE                           # pause this script until DONE is signalled
+       - timer: 30m                            # wait 30m then run sub-commands if still waiting for DONE
           - abort: run took longer than 5 minutes
 
-hosts:
+hosts:                            # qDup needs a list of all the hosts involved in the test
   local : me@localhost:22         # use local as an alias for me on my laptop
-  server :                        # use the name server
+  server :                        # use server as an alias for labserver4
     username : root               # the username
     hostname : labserver4         # the dns hostname
     port: 2222                    # the ssh port on the server
@@ -52,13 +56,13 @@ roles:                            # roles are how scripts are applied to hosts
       - wildflyScript             # wildflyScript will run on each host
       - wildflyScript             # run a second copy of widflyScript
         - with:                   # with allows an override for state variables
-           WF_HOME : /dev/wf-12   # WF_HOME will be different for this instance of wildflyScript
+           WF_HOME : /dev/wf-x    # WF_HOME will be different for this instance of wildflyScript
     cleanup-scripts:
   ALL:                            # the ALL role automacically includes all hosts from other roles
     setup-scripts: [sync-time]    # run sync-time on all hosts during the setup stage
 
 states:
-  WF_HOME: /runtime/wf-11         # WF_HOME is
+  WF_HOME: /runtime/wf-11         # sets WF_HOME state variable
 
 ```
 The main workflow is broken into 3 stages: setup, run, cleanup
@@ -284,4 +288,10 @@ command.
 ```
 
 ## Building
+qDup builds to a single executable jar that includes all the dependencies
+but it has a dependency that is not part of maven central.  [RedHatPerf/yaup]{https://github.com/RedHatPerf/yaup}
+is a utility library that needs to be downloaded and installed in the local
+maven repo before qDup will build. Yaup builds with
+> gradle clean build install
+Once yaup installs you can build qDup with the jar task
 > gradle jar

@@ -237,8 +237,8 @@ public class CommandDispatcher {
         Cmd observing;
         Context context;
         CommandResult result;
-        int timeout;
-        public RunTimer(int timeout,Cmd toRun,Cmd observing,Context context,CommandResult result){
+        long timeout;
+        public RunTimer(long timeout,Cmd toRun,Cmd observing,Context context,CommandResult result){
             this.timeout = timeout;
             this.toRun = toRun;
             this.observing = observing;
@@ -503,7 +503,7 @@ public class CommandDispatcher {
         if(command.hasTimers()){
             WatcherResult watcherResult = new WatcherResult(context);
 
-            for(int timeout: command.getTimeouts()){
+            for(long timeout: command.getTimeouts()){
                List<Cmd> timers = command.getTimers(timeout);
                for(Cmd timer : timers){
                    RunTimer runTimer = new RunTimer(timeout,timer,command,context,watcherResult);

@@ -254,7 +254,7 @@ public class CmdBuilder {
         String jsonValue = json.getString(VALUE);
         if(TIMER.equalsIgnoreCase(jsonKey)){
             if(jsonValue!=null && jsonValue.matches("[\\d_]+")){
-                int timeout = Integer.parseInt(jsonValue.toString().replaceAll("_",""));
+                long timeout = Sleep.parseToMs(jsonValue);
                 if(json.has(CHILD)){
                     Json childArray = json.getJson(CHILD);
                     Cmd timedCmd = Cmd.NO_OP();

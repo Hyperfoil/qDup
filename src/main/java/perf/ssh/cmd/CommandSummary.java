@@ -75,7 +75,7 @@ public class CommandSummary {
             }
         }
         if(command.hasTimers()){
-            for(int timeout: command.getTimeouts()){
+            for(long timeout: command.getTimeouts()){
                 for(Cmd timer : command.getTimers(timeout)){
                     processCommand(timer,true,config);
                 }

@@ -6,10 +6,8 @@ import static org.junit.Assert.assertEquals;
 
 public class SleepTest {
 
-
     @Test
     public void parseMs(){
-
 
         assertEquals("1_000",1000,Sleep.parseToMs("1_000"));
         assertEquals("1ms",1,Sleep.parseToMs("1ms"));

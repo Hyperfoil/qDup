@@ -117,12 +117,12 @@ public class RunConfigBuilderTest extends SshTestBase {
         Cmd next = script.getNext();
 
         assertTrue("next should have a timer",next.hasTimers());
-        Set<Integer> timeouts = next.getTimeouts();
+        Set<Long> timeouts = next.getTimeouts();
 
-        assertTrue("timeouts should contain 30_000",timeouts.contains(30_000));
+        assertTrue("timeouts should contain 30_000",timeouts.contains(30_000l));
         assertEquals("timeout should only contain 1 entry",1,timeouts.size());
 
-        List<Cmd> timeout = next.getTimers(30_000);
+        List<Cmd> timeout = next.getTimers(30_000l);
 
         assertEquals("timeout should have 1 entry",1,timeout.size());
 
