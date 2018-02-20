@@ -51,13 +51,13 @@ roles:                            # roles are how scripts are applied to hosts
   wildfly:                        # unique name for the role
     hosts:                        # a list of hosts in this role
       server
-    setup-scripts:
-    run-scripts:                  # scripts to using during the run stage
+    setup-scripts:                # scripts run sequentially before the run stage
+    run-scripts:                  # scripts run in parallel during the run stage
       - wildflyScript             # wildflyScript will run on each host
       - wildflyScript             # run a second copy of widflyScript
         - with:                   # with allows an override for state variables
            WF_HOME : /dev/wf-x    # WF_HOME will be different for this instance of wildflyScript
-    cleanup-scripts:
+    cleanup-scripts:              # scripts run sequentially after the run stage
   ALL:                            # the ALL role automacically includes all hosts from other roles
     setup-scripts: [sync-time]    # run sync-time on all hosts during the setup stage
 
@@ -69,10 +69,32 @@ The main workflow is broken into 3 stages: setup, run, cleanup
 
 Setup scripts are run sequentially with the same ssh session to help
 capture all the changes and ensure a consistent state for the run state
+Setup scripts should not use `signal` or `wait-for` because they are all
+run on the same connection that would stall the test.
+
 Run scripts are all executed in parallel and will start with whatever
 environment changes occur from setup.
+
 Cleanup scripts are again run sequentially to ensure a consistent ending
-state.
+state. They occur after any pending `queue-download` files are downloaded
+so it is safe to cleanup anything left in the lab
+
+### Running a yaml
+The qDup jar lists all the options when run without any arguemnts
+starting a test does require a base path (or `-B` full path):
+
+> java -jar qDup.jar -b /tmp test.yaml
+
+ - `-b` the base path where the run folder will be created (/tmp/ is a good choice)
+
+This example shows only 1 yaml but you can also load helper yamls for
+reusable scripts and roles
+
+> java -jar qDup.jar -b /tmp test.yaml helper.yaml
+
+Remember to put your main yaml first because it will take naming precedence
+over any scripts or hosts that are defined in subsequent yaml.
+Roles, however, are merged between yaml 
 
 ## Scripts
 A `Script` a is tree of commands that run one at a time. Each command accepts
@@ -293,5 +315,7 @@ but it has a dependency that is not part of maven central.  [RedHatPerf/yaup]{ht
 is a utility library that needs to be downloaded and installed in the local
 maven repo before qDup will build. Yaup builds with
 > gradle clean build install
+
 Once yaup installs you can build qDup with the jar task
+
 > gradle jar
