@@ -13,6 +13,7 @@ repositories {
 
 dependencies {
     compile 'org.apache.sshd:sshd-core:1.7.0'
+    compile 'net.i2p.crypto:eddsa:0.2.0'
     compile 'perf:yaup:+'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'org.slf4j:slf4j-ext:1.7.25'
