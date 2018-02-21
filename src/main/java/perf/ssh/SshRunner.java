@@ -178,7 +178,6 @@ public class SshRunner {
         if (cmd.hasOption("passphrase") && !cmd.getOptionValue("passphrase").equals( RunConfigBuilder.DEFAULT_PASSPHRASE) ){
             runConfigBuilder.setPassphrase(cmd.getOptionValue("passphrase"));
         }
-        
 
         Properties stateProps = cmd.getOptionProperties("S");
         if(!stateProps.isEmpty()){

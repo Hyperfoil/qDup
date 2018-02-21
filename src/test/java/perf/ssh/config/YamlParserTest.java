@@ -2,6 +2,7 @@ package perf.ssh.config;
 
 import org.junit.Assert;
 import org.junit.Test;
+import perf.ssh.SshTestBase;
 import perf.yaup.json.Json;
 
 import java.io.ByteArrayInputStream;
@@ -16,15 +17,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static perf.ssh.config.YamlParser.*;
 
-public class YamlParserTest {
-
-
+public class YamlParserTest extends SshTestBase {
 
     private static Json EMPTY_ARRAY = new Json();
-    private static InputStream stream(String input){
-        return new ByteArrayInputStream(input.getBytes());
-    }
-
     /*
      * A CHILD should be an array where each entry is an array of objects
      */
@@ -112,46 +107,46 @@ public class YamlParserTest {
     public void testSyntax(){
         YamlParser parser = new YamlParser();
         parser.load("supportedSyntax",stream(""+
-            "name: syntax\n"+
-            "scripts:\n"+
-            "  firstScript:#this is my first script\n"+
-            "    - sh: inline shell arguments\n"+
-            "    - queue-download:\n"+
-            "      path: ./\n"+
-            "      destination: ./\n"+
-            "    - sh: top\n"+
-            "      - sh: second\n"+
-            "      - sh: third\n"+
-            "    - sh: [first, second, third]\n"+
-            "      - watch:\n"+
-            "      - regex: \".*?\"\n"+
-            "        - abort: fail\n"+
-            "      - sh: childCommand\n"+
-            "    - invoke: ${{scriptName}}\n"+
-            "  secondScript:#this is the otherScript\n"+
-            "    - sh: do this please\n"+
-            "    - abort: ha!\n"+
-            "hosts:\n"+
-            "  laptop: wreicher@laptop\n"+
-            "  server:\n"+
-            "     username: root\n"+
-            "     hostname: serverName\n"+
-            "     port: 22\n"+
-            "---\n"+
-            "roles:\n"+
-            "  ALL:\n"+
-            "    setup-scripts:\n"+
-            "     - firstScript\n"+
-            "    run-scripts\n"+
-            "     - secondScript\n"+
-            "    cleanup-scripts:\n"+
-            "     - ${{cleanupScript}}\n"+
-            "---\n"+
-            "states:\n"+
-            "  RUN:\n"+
-            "    FOO: bar\n"+
-            "  laptop:\n"+
-            "    FOO: biz\n"+
+            "name: syntax",
+            "scripts:",
+            "  firstScript:#this is my first script",
+            "    - sh: inline shell arguments",
+            "    - queue-download:",
+            "      path: ./",
+            "      destination: ./",
+            "    - sh: top",
+            "      - sh: second",
+            "      - sh: third",
+            "    - sh: [first, second, third]",
+            "      - watch:",
+            "      - regex: \".*?\"",
+            "        - abort: fail",
+            "      - sh: childCommand",
+            "    - invoke: ${{scriptName}}",
+            "  secondScript:#this is the otherScript",
+            "    - sh: do this please",
+            "    - abort: ha!",
+            "hosts:",
+            "  laptop: wreicher@laptop",
+            "  server:",
+            "     username: root",
+            "     hostname: serverName",
+            "     port: 22",
+            "---",
+            "roles:",
+            "  ALL:",
+            "    setup-scripts:",
+            "     - firstScript",
+            "    run-scripts",
+            "     - secondScript",
+            "    cleanup-scripts:",
+            "     - ${{cleanupScript}}",
+            "---",
+            "states:",
+            "  RUN:",
+            "    FOO: bar",
+            "  laptop:",
+            "    FOO: biz",
             ""
             )
         );
@@ -164,8 +159,8 @@ public class YamlParserTest {
     public void multiPartValueString(){
         YamlParser parser = new YamlParser();
         parser.load("supportedSyntax",stream(""+
-                "foo: \"biz \\\"buz:fuz\\\" :#boom\" 2ndValue#COMMENT\n"+
-                "bar: bar\n"+
+                "foo: \"biz \\\"buz:fuz\\\" :#boom\" 2ndValue#COMMENT",
+                "bar: bar",
                 ""
 
             )
@@ -186,26 +181,25 @@ public class YamlParserTest {
 
     @Test
     public void supportedSyntax(){
-        String test = ""+
-            "#comment1\n"+
-            "#comment2\n"+
-            "0Level1 :\n"+
-            "0Level2 : hasValue\n"+
-            "  1 : normal\n"+
-            "  1 : \"quoted[{]}\\\"Value\"\n"+
-            "    - 1.1 : one\n"+
-            "      1.1.a:Alpha\n"+
-            "      1.1.b:Bravo\n"+
-            "    - 1.2 : two\n"+
-            "      1.2.y:Yankee\n"+
-            "    - 1.2.z:Zulu\n"+
-            "0Level3: #inlineComment\n"+
-            "  1 : [first, second, \"quoted\\\" :,[{]}\", other, [ subOne, subTwo], {subKey: subValue}, zed]\n"+
-            "  2 : bar\n"+
-            "  2 : {a:Apple,b:Banana , c : carrot, d : \"quoted\\\" :,[{]}\",e : [one, two], f: { fff: bbb}}\n"+
-            "";
         YamlParser parser = new YamlParser();
-        parser.load("supportedSyntax",stream(test));
+        parser.load("supportedSyntax",stream(""+
+                "#comment1",
+                "#comment2",
+                "0Level1 :",
+                "0Level2 : hasValue",
+                "  1 : normal",
+                "  1 : \"quoted[{]}\\\"Value\"",
+                "    - 1.1 : one",
+                "      1.1.a:Alpha",
+                "      1.1.b:Bravo",
+                "    - 1.2 : two",
+                "      1.2.y:Yankee",
+                "    - 1.2.z:Zulu",
+                "0Level3: #inlineComment",
+                "  1 : [first, second, \"quoted\\\" :,[{]}\", other, [ subOne, subTwo], {subKey: subValue}, zed]",
+                "  2 : bar",
+                "  2 : {a:Apple,b:Banana , c : carrot, d : \"quoted\\\" :,[{]}\",e : [one, two], f: { fff: bbb}}",
+                ""));
 
         Json json = parser.getJson("supportedSyntax");
 
@@ -220,20 +214,20 @@ public class YamlParserTest {
     public void commandOptions(){
         YamlParser parser = new YamlParser();
         parser.load("comments",stream(""+
-                "test:\n"+
-                "  - sh : shellArguments WITH spaces | and pipes | ${{variables}} and whatnot\n"+
-                "  - sh :\n"+
-                "      watch:\n"+
-                "        - regex: \".*?FOO\"\n"+
-                "            - log: foo\n"+
-                "  - argCmd:\n"+
-                "      arg1: value1\n"+
-                "      arg2: value2\n"+
-                "  - parentCmd:\n"+
-                "      - childCmd:\n"+
-                "          - grandChildCmd:\n"+
-                "              - greatGrandChildCmd:\n"+
-                "      - 2ndChildCmd:\n"+
+                "test:",
+                "  - sh : shellArguments WITH spaces | and pipes | ${{variables}} and whatnot",
+                "  - sh :",
+                "      watch:",
+                "        - regex: \".*?FOO\"",
+                "            - log: foo",
+                "  - argCmd:",
+                "      arg1: value1",
+                "      arg2: value2",
+                "  - parentCmd:",
+                "      - childCmd:",
+                "          - grandChildCmd:",
+                "              - greatGrandChildCmd:",
+                "      - 2ndChildCmd:",
                 ""
             )
         );
@@ -243,11 +237,10 @@ public class YamlParserTest {
 
     @Test
     public void testKeys(){
-        String test=""+
-            "KEY:VALUE\n"+
-            "\"ke:y\":VALUE";
         YamlParser parser = new YamlParser();
-        parser.load("comments",stream(test));
+        parser.load("comments",stream(""+
+                "KEY:VALUE",
+                "\"ke:y\":VALUE"));
 
         Json json = parser.getJson();
 
@@ -257,19 +250,18 @@ public class YamlParserTest {
 
     @Test
     public void comments(){
-        String test=""+
-            "#full line\n"+
-            "#second full line\n"+
-            "a : a\n"+
-            "  a.a : a.a #inline\n"+
-            "  #aComment1\n"+
-            "  a.b : \"a.a #notComment\"\n"+
-            "#commentTreeBreak\n"+
-            "  a.c : a.a #withQuote\"\n"+
-            "  a.d : a.d \\#notComment\n"+
-            "  #aComment2\n";
         YamlParser parser = new YamlParser();
-        parser.load("comments",stream(test));
+        parser.load("comments",stream(""+
+                "#full line",
+                "#second full line",
+                "a : a",
+                "  a.a : a.a #inline",
+                "  #aComment1",
+                "  a.b : \"a.a #notComment\"",
+                "#commentTreeBreak",
+                "  a.c : a.a #withQuote\"",
+                "  a.d : a.d \\#notComment",
+                "  #aComment2"));
 
         Json json = parser.getJson();
 
@@ -280,20 +272,18 @@ public class YamlParserTest {
 
     @Test
     public void spaceNesting(){
-        String test = ""+
-                "#startComment\n"+
-                "#2ndstartComment\n"+
-                "a : a\n"+
-                "  a.a : a.a\n"+
-                "    a.a.a : a.a.a #commentAAA\n"+
-                "      - a.a.a.a : a.a.a.a\n"+
-                "        a.a.a.b : a.a.a.b\n"+
-                "      - a.a.a.c : a.a.a.c\n"+
-                "        a.a.a.d : a.a.a.d\n"+
-                "  a.b : a.b\n";
-
         YamlParser parser = new YamlParser();
-        parser.load("spaceNesting",stream(test));
+        parser.load("spaceNesting",stream(""+
+                "#startComment",
+                "#2ndstartComment",
+                "a : a",
+                "  a.a : a.a",
+                "    a.a.a : a.a.a #commentAAA",
+                "      - a.a.a.a : a.a.a.a",
+                "        a.a.a.b : a.a.a.b",
+                "      - a.a.a.c : a.a.a.c",
+                "        a.a.a.d : a.a.a.d",
+                "  a.b : a.b"));
 
         validateParse(parser);
 
@@ -309,17 +299,13 @@ public class YamlParserTest {
     //Demonstrates a difference between how YamlParser and Yaml would parse input
     @Test
     public void listOfMaps(){
-        String test = ""+
-                "foo:\n"+
-                "  - name: firstName\n"+
-                "    label: firstLabel\n"+
-                "  - name: secondName\n"+
-                "    label: secondLabel\n";
-
-
-
         YamlParser parser = new YamlParser();
-        parser.load("listOfMaps",stream(test));
+        parser.load("listOfMaps",stream(""+
+                "foo:",
+                "  - name: firstName",
+                "    label: firstLabel",
+                "  - name: secondName",
+                "    label: secondLabel"));
         validateParse(parser);
 
 
@@ -334,14 +320,14 @@ public class YamlParserTest {
     public void nestedMap(){
         YamlParser parser = new YamlParser();
         parser.load("nestMap",stream(""+
-        "foo:\n"+
-        " - foo.foo : ff\n"+
-        "   foo.bar : fb\n"+
-        " - foo.foo : ff\n"+
-        "   foo.bar : fb\n"+
-        "bar:\n"+
-        " - bar.foo : bf\n"+
-        "   bar.bar : bb\n"));
+        "foo:",
+        " - foo.foo : ff",
+        "   foo.bar : fb",
+        " - foo.foo : ff",
+        "   foo.bar : fb",
+        "bar:",
+        " - bar.foo : bf",
+        "   bar.bar : bb"));
 
 
 
@@ -359,12 +345,12 @@ public class YamlParserTest {
     public void nesting(){
         YamlParser parser = new YamlParser();
         parser.load("nesting.yaml",stream(""+
-            "foo: 1\n"+
-            "- foo.foo: 1.1\n"+
-            "  - foo.foo.foo: 1.1.1\n"+
-            "    - foo.foo.foo.foo : 1.1.1.1\n"+
-            "- foo.bar: 1.2\n"+
-            "  foo.biz: biz\n"+
+            "foo: 1",
+            "- foo.foo: 1.1",
+            "  - foo.foo.foo: 1.1.1",
+            "    - foo.foo.foo.foo : 1.1.1.1",
+            "- foo.bar: 1.2",
+            "  foo.biz: biz",
             ""
         ));
 
@@ -376,10 +362,10 @@ public class YamlParserTest {
     @Test
     public void inlineList(){
         YamlParser parser = new YamlParser();
-        parser.load("list.yaml",stream("---\n"+
-                "foo: [a, b , c  ,    d]\n"+
-                "bar: [ a , \"b[]][{}}{,\" , c,d ]\n"+
-                "biz: [ a [ a.a, a.b ], [b.a,b.b]]\n"+
+        parser.load("list.yaml",stream("---",
+                "foo: [a, b , c  ,    d]",
+                "bar: [ a , \"b[]][{}}{,\" , c,d ]",
+                "biz: [ a [ a.a, a.b ], [b.a,b.b]]",
                 ""
         ));
         validateParse(parser);
@@ -392,10 +378,10 @@ public class YamlParserTest {
     @Test
     public void inlineMap(){
         YamlParser parser = new YamlParser();
-        parser.load("map.yaml",stream("---\n"+
-                "top:\n"+
-                "  foo: {foo : 1 , foo.foo: 1 1 , foo.bar : \"1,][{}}{.2\" , foo.biz { f.b.a : one , f.b.a : two}, zed: end }\n"+
-                "  bar: biz\n"+
+        parser.load("map.yaml",stream("---",
+                "top:",
+                "  foo: {foo : 1 , foo.foo: 1 1 , foo.bar : \"1,][{}}{.2\" , foo.biz { f.b.a : one , f.b.a : two}, zed: end }",
+                "  bar: biz",
                 ""
         ));
         validateParse(parser);
@@ -410,9 +396,9 @@ public class YamlParserTest {
     public void variableKeyValue(){
         YamlParser parser = new YamlParser();
         parser.load("variableKeyValue",stream(""+
-            "role:\n"+
-            "  - ${{keyNovalue}}\n"+
-            "  - ${{keyWithValue}} : ${{VALUE}} - ${{meToo}}\n"+
+            "role:",
+            "  - ${{keyNovalue}}",
+            "  - ${{keyWithValue}} : ${{VALUE}} - ${{meToo}}",
             ""
         ));
         validateParse(parser);
@@ -424,31 +410,31 @@ public class YamlParserTest {
     public void variableScriptInRoles(){
         YamlParser parser = new YamlParser();
         parser.load("variableScriptInRole.yaml",
-                stream("name: variableScriptInRole \n"+
-                        "--- \n"+
-                        "hosts:\n"+
-                        "  local: user@localhost\n"+
-                        "roles:\n"+
-                        "  test:\n"+
-                        "    run-scripts:\n"+
-                        "     - ${{runScript}}\n"+
-                        "    setup-scripts:\n"+
-                        "     - ${{setupScript}}\n"+
-                        "    cleanup-scripts:\n"+
-                        "     - ${{cleanupScript}}\n"+
-                        "    hosts:\n"+
-                        "      local\n"+
-                        "scripts:\n"+
-                        " - alpha: \n"+
-                        "    - sh: alpha \n"+
-                        " - bravo: \n"+
-                        "    - sh: bravo \n"+
-                        " - charlie: \n"+
-                        "    - sh: charlie \n"+
-                        "states:\n" +
-                        "  run:\n"+
-                        "    runScript: alpha\n"+
-                        "    setupScript: bravo\n"+
+                stream("name: variableScriptInRole ",
+                        "--- ",
+                        "hosts:",
+                        "  local: user@localhost",
+                        "roles:",
+                        "  test:",
+                        "    run-scripts:",
+                        "     - ${{runScript}}",
+                        "    setup-scripts:",
+                        "     - ${{setupScript}}",
+                        "    cleanup-scripts:",
+                        "     - ${{cleanupScript}}",
+                        "    hosts:",
+                        "      local",
+                        "scripts:",
+                        " - alpha: ",
+                        "    - sh: alpha ",
+                        " - bravo: ",
+                        "    - sh: bravo ",
+                        " - charlie: ",
+                        "    - sh: charlie ",
+                        "states:",
+                        "  run:",
+                        "    runScript: alpha",
+                        "    setupScript: bravo",
                         "    cleanupScript: charlie"
                 )
         );
@@ -459,48 +445,48 @@ public class YamlParserTest {
     public void multipleHostsInRole(){
         YamlParser parser = new YamlParser();
         parser.load("multipleHosts.yaml",
-                stream("name: multipleHosts \n"+
-                        "---\n" +
-                        "hosts:\n" +
-                        "  client1: benchuser@benchclient1\n" +
-                        "  client2: benchuser@benchclient2\n" +
-                        "  client3: benchuser@benchclient3\n" +
-                        "  client4: benchuser@benchclient4\n" +
-                        "  server3:\n" +
-                        "    username: root\n" +
-                        "    hostname: benchserver3\n" +
-                        "  server4:\n" +
-                        "    username: benchuser\n" +
-                        "    hostname: benchserver4\n" +
-                        "    port: 22\n" +
-                        "\n" +
-                        "---\n"+
-                        "roles:\n" +
-                        "  ALL:\n" +
-                        "    setup-scripts:\n" +
-                        "     - sync-time\n" +
-                        "    run-scripts:\n" +
-                        "     - dstat\n" +
-                        "#  database:\n" +
-                        "#    hosts: server3\n" +
-                        "#    run-scripts: docker-oracle\n" +
-                        "  satellite:\n" +
-                        "    hosts:\n" +
-                        "      - client1\n" +
-                        "      - client2\n" +
-                        "      - client3\n" +
-                        "      - client4\n" +
-                        "    run-scripts:\n" +
-                        "      - satellite\n" +
-                        "  controller:\n" +
-                        "    hosts:\n" +
-                        "      - client1\n" +
-                        "    run-scripts:\n" +
-                        "      - controller\n" +
-                        "  server:\n" +
-                        "    hosts: server4\n" +
-                        "    run-scripts:\n" +
-                        "      - amq7\n")
+                stream("name: multipleHosts ",
+                        "---",
+                        "hosts:",
+                        "  client1: benchuser@benchclient1",
+                        "  client2: benchuser@benchclient2",
+                        "  client3: benchuser@benchclient3",
+                        "  client4: benchuser@benchclient4",
+                        "  server3:",
+                        "    username: root",
+                        "    hostname: benchserver3",
+                        "  server4:",
+                        "    username: benchuser",
+                        "    hostname: benchserver4",
+                        "    port: 22",
+                        "",
+                        "---",
+                        "roles:",
+                        "  ALL:",
+                        "    setup-scripts:",
+                        "     - sync-time",
+                        "    run-scripts:",
+                        "     - dstat",
+                        "#  database:",
+                        "#    hosts: server3",
+                        "#    run-scripts: docker-oracle",
+                        "  satellite:",
+                        "    hosts:",
+                        "      - client1",
+                        "      - client2",
+                        "      - client3",
+                        "      - client4",
+                        "    run-scripts:",
+                        "      - satellite",
+                        "  controller:",
+                        "    hosts:",
+                        "      - client1",
+                        "    run-scripts:",
+                        "      - controller",
+                        "  server:",
+                        "    hosts: server4",
+                        "    run-scripts:",
+                        "      - amq7")
         );
 
     }
@@ -509,13 +495,13 @@ public class YamlParserTest {
     public void emptyNestLine(){
         YamlParser parser = new YamlParser();
         parser.load("emptyNestLine",stream(""+
-                "top : \n"+
-                " - \n"+
-                "   foo : fizz\n"+
-                "   bar : buzz\n"+
-                " - #commented\n"+
-                "   foo : fuzz#commentedToo\n"+
-                "   bar : bizz\n"
+                "top : ",
+                " - ",
+                "   foo : fizz",
+                "   bar : buzz",
+                " - #commented",
+                "   foo : fuzz#commentedToo",
+                "   bar : bizz"
         ));
 
 
@@ -527,9 +513,9 @@ public class YamlParserTest {
     public void multiLineInlineMap(){
         YamlParser parser = new YamlParser();
         parser.load("multiLineInlineMap",stream(""+
-            "top : {\n"+
-            "    foo : fizz\n"+
-            "    bar : buzz}\n"+
+            "top : {",
+            "    foo : fizz",
+            "    bar : buzz}",
             "  - entry : here"
         ));
 
@@ -551,15 +537,15 @@ public class YamlParserTest {
     public void multipleDocuments(){
         YamlParser parser = new YamlParser();
         parser.load("states.yaml",
-            stream("\n"+
-                "name: specjms \n" +
-                "scripts: \n"+
-                " - test: \n"+
-                "    - sh: alpha \n"+
-                "---\n"+
-                "states: \n"+
-                "  run:\n" +
-                "    foo: bar\n"
+            stream("",
+                "name: specjms ",
+                "scripts: ",
+                " - test: ",
+                "    - sh: alpha ",
+                "---",
+                "states: ",
+                "  run:",
+                "    foo: bar"
 
             )
         );
@@ -571,16 +557,16 @@ public class YamlParserTest {
     public void allStateOptions(){
         YamlParser parser = new YamlParser();
         parser.load("states.yaml",
-                stream("\n"+
-                        "states:\n" +
-                        "  run:\n" +
-                        "    FOO: 42\n" +
-                        "\n" +
-                        "  host:\n" +
-                        "    local:\n" +
-                        "      BAR : home\n" +
-                        "      script:\n" +
-                        "        myScript:\n" +
+                stream("",
+                        "states:",
+                        "  run:",
+                        "    FOO: 42",
+                        "",
+                        "  host:",
+                        "    local:",
+                        "      BAR : home",
+                        "      script:",
+                        "        myScript:",
                         "          BUZ: bar")
         );
 
@@ -594,14 +580,14 @@ public class YamlParserTest {
 
         parser.load("nmesting.yaml",
                 stream(
-                        "scripts:\n" +
-                                "  myScript:\n" +
-                                "    - sh: 1\n" +
-                                "    - - sh: 2\n" +
-                                "    - - - sh: 3\n" +
-                                "    - - sh: 4\n" +
-                                "    - - - sh: 5\n" +
-                                "    - sh: 6\n"
+                        "scripts:",
+                                "  myScript:",
+                                "    - sh: 1",
+                                "    - - sh: 2",
+                                "    - - - sh: 3",
+                                "    - - sh: 4",
+                                "    - - - sh: 5",
+                                "    - sh: 6"
                 )
         );
 

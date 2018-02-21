@@ -253,7 +253,7 @@ public class CmdBuilder {
         String jsonKey = json.getString(KEY);
         String jsonValue = json.getString(VALUE);
         if(TIMER.equalsIgnoreCase(jsonKey)){
-            if(jsonValue!=null && jsonValue.matches("[\\d_]+")){
+            if(jsonValue!=null){
                 long timeout = Sleep.parseToMs(jsonValue);
                 if(json.has(CHILD)){
                     Json childArray = json.getJson(CHILD);

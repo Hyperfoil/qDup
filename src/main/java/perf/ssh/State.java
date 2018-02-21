@@ -31,6 +31,9 @@ public class State {
     private Map<String,State> childStates;
     private String prefix;
 
+    public State(String prefix){
+        this(null,prefix);
+    }
     public State(State parent,String prefix){
         this.parent = parent;
         this.state = new ConcurrentHashMap<>();
@@ -74,8 +77,8 @@ public class State {
     public String set(String key,String value){
         State target = this;
         do {
-            if(target.prefix!=null && !target.prefix.isEmpty() && key.startsWith(target.prefix)){
-                return target.state.put(key,value);
+            if(target.prefix!=null && key.startsWith(target.prefix)){
+                return target.state.put(key.substring(target.prefix.length()),value);
             }
         }while( (target=target.parent)!=null);
         //at this point there wasn't a prefix match
@@ -87,9 +90,20 @@ public class State {
     public String get(String key){
         State target = this;
         String rtrn = null;
+        //check for a prefix match
         do {
-            rtrn = target.state.get(key);
-        } while (rtrn == null && (target=target.parent)!=null);
+            if(target.prefix!=null && key.startsWith(target.prefix)){
+                rtrn = target.state.get(key.substring(target.prefix.length()));
+            }
+        }while( (target=target.parent)!=null && rtrn==null);
+
+        //if there wasn't a prefix match
+        if(rtrn == null) {
+            target = this;
+            do {
+                rtrn = target.state.get(key);
+            } while (rtrn == null && (target = target.parent) != null);
+        }
         return rtrn;
     }
 

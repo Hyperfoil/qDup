@@ -7,8 +7,10 @@ consistent and runs can be queued.
 
 ## Example
 The main way to use qDup is with yaml-esque* configuration files passed to the executable jar.
-I say yaml-esque but yaml parsers don't support key value pairs with nested lists
-but let's go ahead and call it yaml because that is the config of choice right now.
+We say yaml-esque because yaml parsers do not support key value pairs with nested lists or maps.
+It can help to think of the config as yaml but not all yaml features are supported. See the yaml section
+for more details
+
 Let's look at a sample yaml.
 ```YAML
 name: example                                  # the name of the test we plan to run
@@ -228,9 +230,24 @@ new entries with standard java regex capture groups `(?<name>.*)`
        - ctrlC:
 ```
 ## YAML
-The best way to use the tool is to build with `gradle jar` and use the executable
-jar to run tests based on yaml configuration. The yaml format supports
-the following:
+qDup configuration is not yaml but it looks very similar to yaml so we often call it yaml.
+The problem (as mentioned in the Introduction) is that yaml does not support key value pairs
+with nested lists or maps and we use those to denote sub-commands.
+
+We use a custom parser based on yaml and recommend files stick to using a
+`-` before each command and using inline list or map notation when specifying
+multiple arguments to a command.
+
+```YAML
+  - command : value
+     - subCommand: subCommandValue
+  - command : {
+       arg1 : value,
+       arg2 : secondValue }
+     - subCommand: subCommandValue
+```
+
+Configuration files can include the following sections:
 
 __name__ the name of the benchmark
 ```YAML
@@ -277,45 +294,18 @@ only have name : value pairs as children
 states:
   run:
     foo : bar
-    local: # host reference
-      biz : buzz
-      test-script:
-        greeting: hello
-      other-script:
-        greeting: hola
-  host:
+    biz : buzz
     hostName:
-      key: value
-      script:
-        scriptName:
-          key2: value2
+      key : value
+      scriptName:
+        key : otherValue
 ```
 script commands can reference state variables by surrouning the variable
 names with `${{` `}}` (e.g. `${{greeting}}`)
 
-### YAML syntax support
-We use snakeyaml to parse the yaml configuration according to the yaml
-spec but this leads to some unique corner cases with how the scripts
-can be structured.
-1. YAML uses `:` to separate a key and value pair so any arguments with
-`:` in the value need to be wrapped in quotes.
-2. YAML does not allow a `key : value` to have a child mappings (e.g. `watch`).
-This is a problem when a command has arguments and child commands
-or watchers. We get around this by using double dash on the child command
-or watcher. In YAML this is technically a sibling with a nested list but
-the parser will associate the nested list as a child of the previous
-command.
-```YAML
- - command: argument
- - - child-command: child-arguments
- - command: argument
- - - watch:
-     - command: argument
-```
-
 ## Building
 qDup builds to a single executable jar that includes all the dependencies
-but it has a dependency that is not part of maven central.  [RedHatPerf/yaup]{https://github.com/RedHatPerf/yaup}
+but it has a dependency that is not part of maven central.  [RedHatPerf/yaup](https://github.com/RedHatPerf/yaup)
 is a utility library that needs to be downloaded and installed in the local
 maven repo before qDup will build. Yaup builds with
 > gradle clean build install
