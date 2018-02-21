@@ -1,5 +1,5 @@
 # Qdup
-Normally running benchmarks requires opening several
+Running benchmarks requires opening several
 terminals and monitoring the output of one terminal to time the start
 a command in another terminal. This project provides a way to script
 multiple shells and coordinate between them so that timings are
@@ -16,7 +16,7 @@ Let's look at a sample yaml.
 name: example                                  # the name of the test we plan to run
 scripts:                                       # scripts are the series of commands to run a test
   sync-time:                                   # the unique script name
-    - sh: ntpdate -u clock.redhat.com          # runs ntpdate in the remote shell
+    - sh: ntpdate -u time.google.com           # runs ntpdate in the remote shell
 
   widflyScript:                                # the name of a new script
     - sh: cd ${{WF_HOME}}                      # cd to the WF_HOME state variable
@@ -29,7 +29,7 @@ scripts:                                       # scripts are the series of comma
          silent : true                         # omit output from the run log
          command: tail -f server.log           # tail server.log
       }
-       - watch:                                # watch streams each line of output to the sub commands
+         watch:                                # watch streams each line of output to the sub commands
           - regex: ".*?tail: no files.*"       # a tail error message that server.log was missing
              - abort: WF error                 # abort the run with a message WF error
           - regex: ".*?FATAL.*"                # if the line contains FATAL
@@ -40,8 +40,8 @@ scripts:                                       # scripts are the series of comma
              - ctrlC:
              - signal: WF_STARTED              # notify other scripts that wildfly started
     - wait-for: DONE                           # pause this script until DONE is signalled
-       - timer: 30m                            # wait 30m then run sub-commands if still waiting for DONE
-          - abort: run took longer than 5 minutes
+         timer: 30m                            # wait 30m then run sub-commands if still waiting for DONE
+          - abort: run took longer than 30 minutes
 
 hosts:                            # qDup needs a list of all the hosts involved in the test
   local : me@localhost:22         # use local as an alias for me on my laptop
@@ -58,12 +58,14 @@ roles:                            # roles are how scripts are applied to hosts
     run-scripts:                  # scripts run in parallel during the run stage
       - wildflyScript             # wildflyScript will run on each host
       - wildflyScript             # run a second copy of widflyScript
-        - with:                   # with allows an override for state variables
+          with:                   # with allows an override for state variables
            WF_HOME : /dev/wf-x    # WF_HOME will be different for this instance of wildflyScript
     cleanup-scripts:              # scripts run sequentially after the run stage
   ALL:                            # the ALL role automacically includes all hosts from other roles
     setup-scripts: [sync-time]    # run sync-time on all hosts during the setup stage
-
+    run-scripts:
+      ${{hostMonitoring}}         # a script name defined in a state variable
+                                  # leaving hostMonitoring undefined means a script is not run
 states:
   run:                            # variables visible to the entire run
     WF_HOME: /runtime/wf-11       # sets WF_HOME state variable
