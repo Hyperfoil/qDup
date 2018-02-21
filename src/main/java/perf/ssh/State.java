@@ -81,6 +81,9 @@ public class State {
         //at this point there wasn't a prefix match
         return this.state.put(key,value);
     }
+    public boolean has(String key){
+        return state.containsKey(key);
+    }
     public String get(String key){
         State target = this;
         String rtrn = null;

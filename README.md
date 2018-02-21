@@ -1,13 +1,14 @@
 # Qdup
-Coordinate multiple shell interactions to run tests in a lab environment
-## Introduction
-Running benchmarks requires opening several
-terminals and monitoring the output of one terminal to start
+Normally running benchmarks requires opening several
+terminals and monitoring the output of one terminal to time the start
 a command in another terminal. This project provides a way to script
-multiple shells and coordinate between them.
+multiple shells and coordinate between them so that timings are
+consistent and runs can be queued.
 
 ## Example
-The main way to use qDup is with yaml configuration files passed to the executable jar.
+The main way to use qDup is with yaml-esque* configuration files passed to the executable jar.
+I say yaml-esque but yaml parsers don't support key value pairs with nested lists
+but let's go ahead and call it yaml because that is the config of choice right now.
 Let's look at a sample yaml.
 ```YAML
 name: example                                  # the name of the test we plan to run
@@ -62,39 +63,43 @@ roles:                            # roles are how scripts are applied to hosts
     setup-scripts: [sync-time]    # run sync-time on all hosts during the setup stage
 
 states:
-  WF_HOME: /runtime/wf-11         # sets WF_HOME state variable
-
+  run:                            # variables visible to the entire run
+    WF_HOME: /runtime/wf-11       # sets WF_HOME state variable
+  server:                         # variables only visible to scripts running on server
+    UNUSED : value
 ```
 The main workflow is broken into 3 stages: setup, run, cleanup
 
-Setup scripts are run sequentially with the same ssh session to help
-capture all the changes and ensure a consistent state for the run state
-Setup scripts should not use `signal` or `wait-for` because they are all
-run on the same connection that would stall the test.
+Setup scripts sequentially execute with a shared ssh session to help
+capture all the changes and ensure a consistent state for the run stage.
+Any environment changes to the setup ssh session will be copied to all
+the run stage sessions.
 
-Run scripts are all executed in parallel and will start with whatever
+Run scripts execute in parallel and will start with whatever
 environment changes occur from setup.
 
-Cleanup scripts are again run sequentially to ensure a consistent ending
-state. They occur after any pending `queue-download` files are downloaded
-so it is safe to cleanup anything left in the lab
+Cleanup scripts sequentially execute with a shared ssh session to ensure
+a consistent ending state.
+They occur after any pending `queue-download` from the run stage
+so it is safe to cleanup anything left on the hosts
 
 ### Running a yaml
-The qDup jar lists all the options when run without any arguemnts
-starting a test does require a base path (or `-B` full path):
+trying to run `java -jar qDup.jar` without any arguments will list
+the supported options for the jar. The only required option is to either
+specify the base folder where qDup should create the run folder
+(`-b /tmp`) or to specify the full path where qDup should save the run
+files (`-B /tmp/myRun`)
 
 > java -jar qDup.jar -b /tmp test.yaml
 
- - `-b` the base path where the run folder will be created (/tmp/ is a good choice)
-
-This example shows only 1 yaml but you can also load helper yamls for
-reusable scripts and roles
+This example shows only 1 yaml but you can also load helper yamls with
+shared definitions (e.g. scripts)
 
 > java -jar qDup.jar -b /tmp test.yaml helper.yaml
 
 Remember to put your main yaml first because it will take naming precedence
-over any scripts or hosts that are defined in subsequent yaml.
-Roles, however, are merged between yaml 
+over any scripts, state, or hosts that are defined in subsequent yaml.
+Roles, however, are merged between yaml
 
 ## Scripts
 A `Script` a is tree of commands that run one at a time. Each command accepts
@@ -246,7 +251,7 @@ hosts:
    - hostname: server
    - port: 22 # port is optional and will default to 22
 ```
-__roles___ a map of roleName : a hosts list and at least one of:
+__roles__ a map of roleName : a hosts list and at least one of:
 setup-scripts, run-scripts, cleanup-scripts. If the hosts list is missing
 then the role is applied to all hosts in the run. It is a best practice
 to use a role name that makes it clear it will apply ALL hosts
@@ -261,7 +266,6 @@ roles:
     setup-scripts:
      - some-script
 ```
-
 
 __states__ a nested map of name : value pairs used to inject variables
 into the run configuration. The top level entry must be `run` then the

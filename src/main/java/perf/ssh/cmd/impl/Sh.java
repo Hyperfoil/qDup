@@ -14,6 +14,8 @@ public class Sh extends Cmd {
         this.command = command;
     }
 
+    public String getCommand(){return command;}
+
     @Override
     protected void run(String input, Context context, CommandResult result) {
         String commandString = populateStateVariables(command,this,context.getState());

@@ -183,7 +183,7 @@ public class SshRunner {
         Properties stateProps = cmd.getOptionProperties("S");
         if(!stateProps.isEmpty()){
             stateProps.forEach((k,v)->{
-                runConfigBuilder.setRunState(k.toString(),v.toString());
+                runConfigBuilder.forceRunState(k.toString(),v.toString());
             });
         }
 

@@ -2,7 +2,6 @@ package perf.ssh.cmd;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
-import perf.ssh.cmd.impl.Sh;
 import perf.yaup.AsciiArt;
 
 import java.lang.invoke.MethodHandles;
@@ -38,7 +37,7 @@ public class CommandDispatcher {
         public default void onStop(Cmd command,Context context){}
     }
 
-    public interface Observer {
+    public interface CommandObserver {
         public default void onStart(Cmd command){}
         public default void onStop(Cmd command){}
         public default void onNext(Cmd command,String output){}
@@ -46,8 +45,9 @@ public class CommandDispatcher {
         public default void onUpdate(Cmd command,String output){}
         public default void onStart(){}
         public default void onStop(){}
-
     }
+
+
     class WatcherResult implements CommandResult {
         private Context context;
         public WatcherResult(Context context){ this.context = context; }
@@ -289,7 +289,7 @@ public class CommandDispatcher {
 
     private ConcurrentHashMap<Cmd,ScriptResult> script2Result;
 
-    private List<Observer> observers;
+    private List<CommandObserver> observers;
     private List<ScriptObserver> scriptObservers;
 
     private ThreadPoolExecutor executor;
@@ -354,10 +354,10 @@ public class CommandDispatcher {
     public void removeScriptObserver(ScriptObserver observer){
         scriptObservers.remove(observer);
     }
-    public void addObserver(Observer observer){
+    public void addObserver(CommandObserver observer){
         observers.add(observer);
     }
-    public void removeObserver(Observer observer){
+    public void removeObserver(CommandObserver observer){
         observers.remove(observer);
     }
 
@@ -520,8 +520,10 @@ public class CommandDispatcher {
             return;
         }
         if(previousCommand!=null){
-            observers.forEach(c->c.onStop(previousCommand));
             previousCommand.setOutput(input);
+            for(CommandObserver observer : observers){
+                observer.onStop(previousCommand);
+            }
             //TODO BUG if previousCommand is last command in script but nextCommand references a repeat-until then this pre-maturely ends the script
             if(nextCommand==null){//nextCommand is only null when end of watcher or end of script
                 checkScriptDone(previousCommand,context);

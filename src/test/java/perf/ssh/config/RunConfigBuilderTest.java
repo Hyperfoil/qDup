@@ -5,6 +5,7 @@ import org.junit.Test;
 import perf.ssh.Host;
 import perf.ssh.RunValidation;
 import perf.ssh.SshTestBase;
+import perf.ssh.State;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.Script;
 import perf.ssh.cmd.impl.ScriptCmd;
@@ -22,6 +23,38 @@ import static org.junit.Assert.*;
 public class RunConfigBuilderTest extends SshTestBase {
 
     private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+
+    /**
+     * The first yaml to set a state name wins. State merge without override
+     */
+    @Test
+    public void testSameStateName(){
+        YamlParser parser = new YamlParser();
+        parser.load("firstDef",stream("",
+            "states:",
+            "  run:",
+            "    FOO : FOO"
+        ));
+        parser.load("secondDef",stream("",
+            "states:",
+            "  run:",
+            "    FOO : BAR",
+            "    BAR : BAR"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        builder.loadYaml(parser);
+        RunConfig runConfig = builder.buildConfig();
+
+        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+
+        State state = runConfig.getState();
+
+        assertTrue("state missing BAR : "+state.getKeys(),state.getKeys().contains("BAR"));
+        assertEquals("FOO should not change after initial load","FOO",state.get("FOO"));
+        assertEquals("BAR should loaded from the second yaml","BAR",state.get("BAR"));
+    }
 
     /**
      * The first yaml to load a script wins. Scripts do not merge
@@ -58,7 +91,6 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertTrue("the first script definition should be used",script.tree().contains("echo FOO"));
         assertFalse("the second should script not be merged",script.tree().contains("echo BAR"));
     }
-
 
     @Test
     public void testSilentWithWatcher(){
@@ -100,7 +132,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "scripts:",
             "  first:",
             "    - sh: long running command",
-            "        timer: 30_000",
+            "        timer: 30s",
             "          - signal: 30_seconds_later",
             "          - abort: not good"
         ));
@@ -189,16 +221,23 @@ public class RunConfigBuilderTest extends SshTestBase {
                 "  foo : user@foo",
                 "  bar : user@bar",
                 "  biz : user@biz",
+                "  buz : user@buz",
                 "roles:",
+                "  buzzer:",
+                "    hosts: [buz]",
+                "    run-scripts: [BuzScript]",
                 "  foo:",
                 "    hosts: [foo]",
                 "    run-scripts: [FooRunScript]",
-                "  bar",
+                "  foobarbiz",
                 "    hosts: [foo, bar, biz]",
                 "    run-scripts: [AllRunScript]",
                 "  NotFoo",
-                "    hosts: bar !foo",
+                "    hosts: = foobarbiz - foo",
                 "    run-scripts: [NotFooRunScript]",
+                "  AllNotBar:",
+                "    hosts: = all - foobarbiz",
+                "    run-scripts: [AllNotBarScript]",
                 ""
         ));
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
@@ -207,22 +246,28 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("RunConfig should be valid but saw errors:\n"+runConfig.getErrors(),runConfig.hasErrors());
+        assertFalse("RunConfig should not contain errors but saw:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
         Host foo = new Host("user","foo");
         Host bar = new Host("user","bar");
         Host biz = new Host("user","biz");
+        Host buz = new Host("user","buz");
 
-        List<ScriptCmd> fooScripts = runConfig.getRunCmds(foo);
-        List<ScriptCmd> barScripts = runConfig.getRunCmds(bar);
-        List<ScriptCmd> bizScripts = runConfig.getRunCmds(biz);
+        String fooScripts = runConfig.getRunCmds(foo).toString();
+        String barScripts = runConfig.getRunCmds(bar).toString();
+        String bizScripts = runConfig.getRunCmds(biz).toString();
+        String buzScripts = runConfig.getRunCmds(buz).toString();
 
-        assertTrue("foo host should run FooRunScript and AllRunScript",fooScripts.toString().contains("FooRunScript") && fooScripts.toString().contains("AllRunScript"));
-        assertFalse("foo host should not have NotFooRunScript",fooScripts.toString().contains("NotFooRunScript"));
+        assertTrue("foo host should run FooRunScript and AllRunScript",fooScripts.contains("FooRunScript") && fooScripts.contains("AllRunScript"));
+        assertFalse("foo host should not have NotFooRunScript",fooScripts.contains("NotFooRunScript"));
 
-        assertTrue("bar host should run AllRunScript and NotFooRunScript",barScripts.toString().contains("AllRunScript") && barScripts.toString().contains("NotFooRunScript"));
-        assertFalse("bar host should not contain FooRunScript",barScripts.toString().contains(" FooRunScript"));//need space otherwise matches NotFooRunScript
+        assertTrue("bar host should run AllRunScript and NotFooRunScript",barScripts.contains("AllRunScript") && barScripts.contains("NotFooRunScript"));
+        assertFalse("bar host should not contain FooRunScript",barScripts.contains(" FooRunScript"));//need space otherwise matches NotFooRunScript
 
+        assertTrue("buz should contain AllNotBarScript: "+buzScripts,buzScripts.contains("AllNotBarScript"));
+        assertFalse("foo should not have AllNotBarScript: "+fooScripts,fooScripts.contains("AllNotBarScript"));
+        assertFalse("bar should not have AllNotBarScript: "+barScripts,barScripts.contains("AllNotBarScript"));
+        assertFalse("biz should not have AllNotBarScript: "+bizScripts,bizScripts.contains("AllNotBarScript"));
     }
 
     @Test

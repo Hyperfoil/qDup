@@ -170,7 +170,7 @@ public class Run implements Runnable {
 
             }
         };
-        CommandDispatcher.Observer setupObserver = new CommandDispatcher.Observer() {
+        CommandDispatcher.CommandObserver setupObserver = new CommandDispatcher.CommandObserver() {
             @Override
             public void onStart(Cmd command) {}
 
@@ -295,7 +295,7 @@ public class Run implements Runnable {
     private void queueRunScripts(){
         logger.debug("{}.queueRunScripts",this);
 
-        CommandDispatcher.Observer runObserver = new CommandDispatcher.Observer() {
+        CommandDispatcher.CommandObserver runObserver = new CommandDispatcher.CommandObserver() {
             @Override
             public void onStart(Cmd command) {}
 
@@ -389,7 +389,7 @@ public class Run implements Runnable {
     }
     private void queueCleanupScripts(){
         logger.info("{}.queueCleanupScripts",this);
-        CommandDispatcher.Observer cleanupObserver = new CommandDispatcher.Observer() {
+        CommandDispatcher.CommandObserver cleanupObserver = new CommandDispatcher.CommandObserver() {
             @Override
             public void onStart(Cmd command) {}
 

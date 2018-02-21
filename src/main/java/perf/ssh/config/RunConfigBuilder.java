@@ -45,7 +45,9 @@ public class RunConfigBuilder {
     public static final String DEFAULT_IDENTITY = System.getProperty("user.home")+"/.ssh/id_rsa";
     public static final String DEFAULT_PASSPHRASE = null;
 
-
+    public static final String HOST_EXPRESSION_PREFIX = "=";
+    public static final String HOST_EXPRESSING_INCLUDE = "+";
+    public static final String HOST_EXPRESSION_EXCLUDE = "-";
 
 
     private String identity = DEFAULT_IDENTITY;
@@ -193,7 +195,13 @@ public class RunConfigBuilder {
                                     String sectionName = roleSection.getString(KEY, "");
                                     if (HOSTS.equals(sectionName)) {
                                         if(roleSection.has(VALUE)){
-                                            setRoleHostExpession(roleName,roleSection.getString(VALUE,""));
+                                            String roleSectionValue = roleSection.getString(VALUE).trim();
+                                            if(roleSectionValue.startsWith(HOST_EXPRESSION_PREFIX)) {
+                                                setRoleHostExpession(roleName, roleSection.getString(VALUE, ""));
+                                            }else{
+                                                //assume the value is just the only host? This could also just be a syntax error
+                                                addHostToRole(roleName,roleSectionValue);
+                                            }
                                         }
                                         eachChildEntry(roleSection, (hostIndex, host) -> {
                                             String hostReference = host.getString(KEY, "");
@@ -332,8 +340,16 @@ public class RunConfigBuilder {
         target.put(role,cmd);
     }
 
-    public void setRunState(String key,String value){
+    public void forceRunState(String key,String value){
         state.set(key,value);
+    }
+    public void setRunState(String key,String value){
+        if(!state.has(key)){
+            state.set(key, value);
+        } else {
+            //TODO log the error
+
+        }
     }
     public void setHostState(String host,String key,String value){
         state.getChild(host,State.HOST_PREFIX).set(key,value);
@@ -441,8 +457,9 @@ public class RunConfigBuilder {
                                 hostname = hostname.substring(0,hostname.indexOf(":"));
                             }
                             Host newHost = new Host(username,hostname,port);
-                            seenHosts.put(fullyQualified,newHost);
+                            seenHosts.put(fullyQualified,newHost);//might omit port
                             seenHosts.put(hostShortname,newHost);
+                            seenHosts.put(newHost.toString(),newHost);//could duplicate fullyQualified but guarantees to include port
                         }else{
                             addError("Host "+hostShortname+" = "+fullyQualified+" needs to match user@hostName but is missing an @");
                         }
@@ -461,23 +478,36 @@ public class RunConfigBuilder {
         //roleHostExpessions
         roleHostExpression.forEach((roleName,expession)->{
             List<String> split = CmdBuilder.split(expession);
-            Set<String> toAdd = new HashSet<>();
+            Set<Host> toAdd = new HashSet<>();
+            Set<Host> toRemove = new HashSet<>();
 
-            split.stream().forEach(roleReference->{
-                if(roleHosts.has(roleReference)){
-                    toAdd.addAll(roleHosts.get(roleReference));
-                }
-            });
-            split.stream().forEach(roleReference->{
-                if(roleReference.startsWith("!")){
-                    roleReference = roleReference.substring(1);
-                    if(roleHosts.has(roleReference)){
-                        toAdd.removeAll(roleHosts.get(roleReference));
+            for(int i=0; i<split.size(); i++){
+                String token = split.get(i);
+                if( token.equals(HOST_EXPRESSION_PREFIX) || token.equals(HOST_EXPRESSING_INCLUDE) ){
+                    if( i + 1 < split.size() ) {
+                        toAdd.addAll(roleHosts.get(split.get(i+1)).stream().map(seenHosts::get).collect(Collectors.toList()));
+                        i++;
+                    }else{
+                        //how does the expression end with an = or +?
+                        addError("host expresion for "+roleName+" should not end with "+token);
                     }
+                } else if (token.equals(HOST_EXPRESSION_EXCLUDE)){
+                    if( i + 1 < split.size() ) {
+                        toRemove.addAll(roleHosts.get(split.get(i+1)).stream().map(seenHosts::get).collect(Collectors.toList()));
+                        i++;
+                    }else{
+                        //how does an expression end with -
+                        addError("host expresion for "+roleName+" should not end with "+token);
+                    }
+                }else{
+                    addError("host expressions should be = <role> [+-] <role>... but "+roleName+" could not parse "+token+" in: "+expession);
                 }
-            });
+            }
+
+            toAdd.removeAll(toRemove);
+
             if(!toAdd.isEmpty()){
-                roleHosts.putAll(roleName,toAdd);
+                roleHosts.putAll(roleName,toAdd.stream().map(Host::toString).collect(Collectors.toList()));
             }else{
 
             }
@@ -490,7 +520,7 @@ public class RunConfigBuilder {
                 for (String hostShortname : roleHosts.get(roleName)) {
                     Host h = seenHosts.get(hostShortname);
                     if (h == null) {
-                        addError(roleName + " is missing a host definition for " + hostShortname);
+                        addError(roleName + " is missing a host definition for " + hostShortname+"\n has "+seenHosts.keySet());
                     } else {
                         if (!setupCmds.containsKey(h)) {
                             Cmd hostSetupCmd = new Script("setup:" + h.toString());
@@ -510,7 +540,7 @@ public class RunConfigBuilder {
             for (String hostShortname : roleHosts.get(roleName)) {
                 Host h = seenHosts.get(hostShortname);
                 if (h == null) {
-                    addError(roleName + " is missing a host definition for " + hostShortname);
+                    addError(roleName + " is missing a host definition for " + hostShortname+"\n has "+seenHosts.keySet());
                 } else {
                     if (!cleanupCmds.containsKey(h)) {
                         Cmd hostSetupCmd = new Script("cleanup:" + h.toString());
@@ -527,7 +557,7 @@ public class RunConfigBuilder {
             for (String hostShortname : roleHosts.get(roleName)) {
                 Host h = seenHosts.get(hostShortname);
                 if (h == null) {
-                    addError(roleName + " is missing a host definition for " + hostShortname);
+                    addError(roleName + " is missing a host definition for " + hostShortname+"\n has "+seenHosts.keySet());
                 } else {
                     cmds.forEach(scriptCmd -> {
                         runScripts.put(h, scriptCmd);
