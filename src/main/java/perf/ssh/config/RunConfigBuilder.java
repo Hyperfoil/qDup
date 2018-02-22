@@ -200,7 +200,8 @@ public class RunConfigBuilder {
                                                 setRoleHostExpession(roleName, roleSection.getString(VALUE, ""));
                                             }else{
                                                 //assume the value is just the only host? This could also just be a syntax error
-                                                addHostToRole(roleName,roleSectionValue);
+                                                //just going with syntax error to simplify the parsing
+                                                addError(roleName+" hosts should either be a host expression (= role [+-] otherRole) or a list of host aliases but was "+roleSectionValue);
                                             }
                                         }
                                         eachChildEntry(roleSection, (hostIndex, host) -> {
@@ -269,13 +270,32 @@ public class RunConfigBuilder {
                         case STATES:
                             eachChildEntry(yamlEntry, (stateIndex, stateJson) -> {
                                 String stateName = stateJson.getString(KEY, "");
-                                eachChildEntry(stateJson, (entryIndex, entry) -> {
-                                    if (RUN_STATE.equals(stateName)) {
-                                        setRunState(entry.getString(KEY), entry.getString(VALUE));
-                                    } else {
-                                        setHostState(stateName, entry.getString(KEY), entry.getString(VALUE));
-                                    }
-                                });
+                                if(stateJson.has(VALUE)){
+                                    String stateValue = stateJson.getString(VALUE);
+                                    setRunState(stateName,stateValue);
+                                }else {
+                                    eachChildEntry(stateJson, (entryIndex, entry) -> {
+                                        if (RUN_STATE.equals(stateName)) {
+                                            if (!entry.has(VALUE) && entry.has(CHILD)) {
+                                                String hostName = entry.getString(KEY);
+                                                eachChildEntry(entry, (hostEntryIndex, hostEntry) -> {
+                                                    if (!hostEntry.has(VALUE) && hostEntry.has(CHILD)) {
+                                                        String scriptName = hostEntry.getString(KEY);
+                                                        eachChildEntry(hostEntry, (scriptEntryIndex, scriptEntry) -> {
+                                                            //TODO add script entry under host
+                                                        });
+                                                    } else {
+                                                        //TODO add host entry
+                                                    }
+                                                });
+                                            } else {
+                                                setRunState(entry.getString(KEY), entry.getString(VALUE));
+                                            }
+                                        } else {
+                                            setHostState(stateName, entry.getString(KEY), entry.getString(VALUE));
+                                        }
+                                    });
+                                }
                             });
                             break;
                         default:
@@ -352,6 +372,12 @@ public class RunConfigBuilder {
         }
     }
     public void setHostState(String host,String key,String value){
+        State target = state.getChild(host,State.HOST_PREFIX);
+        if(!target.has(key)){
+            target.set(key,value);
+        }else{
+
+        }
         state.getChild(host,State.HOST_PREFIX).set(key,value);
     }
     public boolean addScript(Script script){

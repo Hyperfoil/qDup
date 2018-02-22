@@ -19,10 +19,43 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static perf.ssh.State.RUN_PREFIX;
 
 public class RunConfigBuilderTest extends SshTestBase {
 
     private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+
+
+    @Test
+    public void testImplicitRunState(){
+        YamlParser parser = new YamlParser();
+        parser.load("implicitState",stream("",
+            "states:",
+            "  foo : foo",
+            "  host :",
+            "    foo : bar"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        builder.loadYaml(parser);
+        RunConfig runConfig = builder.buildConfig();
+
+        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+
+        State state = runConfig.getState();
+
+        assertTrue("missing default run state",state.has("foo"));
+        assertEquals("foo",state.get("foo"));
+
+        assertTrue("state should have a host child",state.hasChild("host"));
+
+        State hostState = state.getChild("host");
+
+        assertEquals("host should see foo = bar","bar",hostState.get("foo"));
+        assertEquals("host["+RUN_PREFIX+"foo]=foo","foo",hostState.get(RUN_PREFIX+"foo"));
+
+    }
 
     /**
      * The first yaml to set a state name wins. State merge without override

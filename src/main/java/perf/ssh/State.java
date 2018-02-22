@@ -24,7 +24,7 @@ public class State {
 
     public static final String RUN_PREFIX = "RUN";
     public static final String HOST_PREFIX = "HOST";
-
+    public static final String CHILD_DELIMINATOR = ".";
 
     private State parent;
     private Map<String,String> state;
@@ -81,9 +81,18 @@ public class State {
                 return target.state.put(key.substring(target.prefix.length()),value);
             }
         }while( (target=target.parent)!=null);
+
+        //see if the key starts with a child name
+        for(String childName : childStates.keySet()){
+            if(key.startsWith(childName+CHILD_DELIMINATOR)){
+                childStates.get(childName).set(key.substring(childName.length()+CHILD_DELIMINATOR.length()),value);
+            }
+        }
+
         //at this point there wasn't a prefix match
         return this.state.put(key,value);
     }
+
     public boolean has(String key){
         return state.containsKey(key);
     }
