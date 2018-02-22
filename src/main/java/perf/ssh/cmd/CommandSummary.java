@@ -1,9 +1,8 @@
 package perf.ssh.cmd;
 
-import perf.ssh.RunConfig;
-import perf.ssh.ScriptRepo;
 import perf.ssh.cmd.impl.*;
-import perf.util.StringUtil;
+import perf.ssh.config.RunConfigBuilder;
+import perf.yaup.StringUtil;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -19,14 +18,14 @@ import java.util.regex.Matcher;
 public class CommandSummary {
 
 
-    private void processCommand(Cmd command,boolean isWatching,RunConfig config){
+    private void processCommand(Cmd command,boolean isWatching,RunConfigBuilder config){
         String toString = command.toString();
 
         if(isWatching && command instanceof Sh){
             addWarning(command+" cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
         }
 
-        if(StringUtil.countOccurances(Cmd.ENV_PREFIX,toString) != StringUtil.countOccurances(Cmd.ENV_SUFFIX,toString)){
+        if(StringUtil.countOccurances(Cmd.STATE_PREFIX,toString) != StringUtil.countOccurances(Cmd.STATE_SUFFIX,toString)){
             addWarning(command+" does not have the same number of ${{ and }} for state variable referencing");
         }
 
@@ -35,8 +34,15 @@ public class CommandSummary {
         }else if (command instanceof WaitFor){
             addWait(((WaitFor)command).getName());
         }else if (command instanceof ScriptCmd){
-            Script namedScript = config.getScript(((ScriptCmd)command).getName());
-            processCommand(namedScript,isWatching,config);
+            String scriptName = ((ScriptCmd)command).getName();
+
+            Script namedScript = config.getScript(scriptName,command);
+            if(namedScript==null){
+                //TODO is it an error if a script isn't found?
+            }else{
+                processCommand(namedScript,isWatching,config);
+            }
+
         }else if (command instanceof InvokeCmd){
             Cmd invokedCmd = ((InvokeCmd)command).getCommand();
             processCommand(invokedCmd,isWatching,config);
@@ -49,9 +55,9 @@ public class CommandSummary {
             }
         }
 
-        if(toString.indexOf(Cmd.ENV_PREFIX)>-1) {
+        if(toString.indexOf(Cmd.STATE_PREFIX)>-1) {
 
-            Matcher matcher = Cmd.ENV_PATTERN.matcher(toString);
+            Matcher matcher = Cmd.STATE_PATTERN.matcher(toString);
             while (matcher.find()) {
                 String name = matcher.group("name");
                 addVariable(name);
@@ -68,6 +74,13 @@ public class CommandSummary {
                 processCommand(then,isWatching,config);
             }
         }
+        if(command.hasTimers()){
+            for(long timeout: command.getTimeouts()){
+                for(Cmd timer : command.getTimers(timeout)){
+                    processCommand(timer,true,config);
+                }
+            }
+        }
     }
 
     private String name;
@@ -77,7 +90,7 @@ public class CommandSummary {
     private Set<String> variables;
     private Set<String> regexVariables;
 
-    public CommandSummary(Cmd command, RunConfig config){
+    public CommandSummary(Cmd command, RunConfigBuilder config){
         this.name = command.toString();
 
         warnings = new LinkedList<>();

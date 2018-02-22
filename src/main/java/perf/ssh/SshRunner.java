@@ -2,8 +2,8 @@ package perf.ssh;
 
 import org.apache.commons.cli.*;
 import perf.ssh.cmd.CommandDispatcher;
-import perf.ssh.config.YamlLoader;
-import perf.util.StringUtil;
+import perf.ssh.config.*;
+import perf.yaup.StringUtil;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -45,7 +45,7 @@ public class SshRunner {
             Option.builder("c")
                 .longOpt("commandPool")
                 .hasArg()
-                .argName("size")
+                .argName("count")
                 .type(Integer.TYPE)
                 .desc("number of threads for executing commands [24]")
                 .build()
@@ -64,7 +64,7 @@ public class SshRunner {
             Option.builder("s")
                 .longOpt("scheduledPool")
                 .hasArg()
-                .argName("size")
+                .argName("count")
                 .type(Integer.TYPE)
                 .desc("number of threads for executing scheduled tasks [4]")
                 .build()
@@ -72,7 +72,7 @@ public class SshRunner {
 
         options.addOption(
             Option.builder("S")
-                .argName("key=value")
+                .argName("KEY=VALUE")
                 .desc("set a state parameter")
                 .hasArgs()
                 .valueSeparator()
@@ -148,41 +148,59 @@ public class SshRunner {
             return;
         }
 
-        YamlLoader loader = new YamlLoader();
+
+        YamlParser yamlParser = new YamlParser();
         for(String yamlPath : yamlPaths){
             System.out.println("loading: "+yamlPath);
-            loader.load(yamlPath);
+            yamlParser.load(yamlPath);
         }
-        if(loader.hasErrors()){
-            for(String error : loader.getErrors()){
+
+        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+        RunConfigBuilder runConfigBuilder = new RunConfigBuilder(cmdBuilder);
+
+        if(yamlParser.hasErrors()){
+            for(String error : yamlParser.getErrors()){
                 System.out.println("Error: "+error);
             }
             System.exit(1);
             return;
         }
 
-        RunConfig config = loader.getRunConfig();
+        runConfigBuilder.loadYaml(yamlParser);
+
 
         if (cmd.hasOption("knownHosts") ){
-            config.setKnownHosts(cmd.getOptionValue("knownHosts"));
+            runConfigBuilder.setKnownHosts(cmd.getOptionValue("knownHosts"));
         }
         if (cmd.hasOption("identity") ){
-            config.setIdentity(cmd.getOptionValue("identity"));
+            runConfigBuilder.setIdentity(cmd.getOptionValue("identity"));
         }
-        if (cmd.hasOption("passphrase") && !cmd.getOptionValue("passphrase").equals( RunConfig.DEFAULT_PASSPHRASE) ){
-            config.setPassphrase(cmd.getOptionValue("passphrase"));
-        }
-        
-        if (cmd.hasOption("colorTerminal") ){
-            config.setColorTerminal( true );
+        if (cmd.hasOption("passphrase") && !cmd.getOptionValue("passphrase").equals( RunConfigBuilder.DEFAULT_PASSPHRASE) ){
+            runConfigBuilder.setPassphrase(cmd.getOptionValue("passphrase"));
         }
 
         Properties stateProps = cmd.getOptionProperties("S");
         if(!stateProps.isEmpty()){
             stateProps.forEach((k,v)->{
-                System.out.println("  "+k+" = "+v);
-                config.getState().set(k.toString(),v.toString());
+                runConfigBuilder.forceRunState(k.toString(),v.toString());
             });
+        }
+
+
+        RunConfig config = runConfigBuilder.buildConfig();
+
+        //TODO RunConfig should be immutable and terminal color is porbably better stored in Run
+        if (cmd.hasOption("colorTerminal") ){
+            config.setColorTerminal( true );
+        }
+
+
+        if(config.hasErrors()){
+            for(String error: config.getErrors()){
+                System.out.println("Error: "+error);
+            }
+            System.exit(1);
+            return;
         }
 
         final AtomicInteger factoryCounter = new AtomicInteger(0);
@@ -196,8 +214,6 @@ public class SshRunner {
 
         CommandDispatcher dispatcher = new CommandDispatcher(executor,scheduled);
 
-
-
         String outputPath=null;
         if(cmd.hasOption("basePath")){
             DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -210,7 +226,7 @@ public class SshRunner {
 
         final Run run = new Run(outputPath,config,dispatcher);
 
-        System.out.println("Starting with output path = "+run.getOutputPath());
+        System.out.println("Starting WITH output path = "+run.getOutputPath());
 
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
             if(!run.isAborted()) {
@@ -221,8 +237,6 @@ public class SshRunner {
         long start = System.currentTimeMillis();
 
         run.run();
-
-
 
         long stop = System.currentTimeMillis();
 

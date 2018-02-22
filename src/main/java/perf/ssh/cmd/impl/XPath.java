@@ -1,12 +1,11 @@
 package perf.ssh.cmd.impl;
 
-import perf.ssh.Local;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.Context;
 import perf.ssh.cmd.CommandResult;
-import perf.util.file.FileUtility;
-import perf.util.xml.Xml;
-import perf.util.xml.XmlLoader;
+import perf.yaup.file.FileUtility;
+import perf.yaup.xml.Xml;
+import perf.yaup.xml.XmlLoader;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +21,7 @@ public class XPath extends Cmd {
 
     @Override
     public String toString(){
-        return "xpath "+path;
+        return "xpath: "+path;
     }
 
     @Override
@@ -30,7 +29,7 @@ public class XPath extends Cmd {
         XmlLoader loader = new XmlLoader();
         Xml xml = null;
         if(path.indexOf(FileUtility.SEARCH_KEY)>0){ //file>xpath ...
-            String filePath = Cmd.populateStateVariables(path.substring(0,path.indexOf(FileUtility.SEARCH_KEY)),context.getState());
+            String filePath = Cmd.populateStateVariables(path.substring(0,path.indexOf(FileUtility.SEARCH_KEY)),this,context.getState());
             path = path.substring(path.indexOf(FileUtility.SEARCH_KEY)+FileUtility.SEARCH_KEY.length());
             try {
                 File tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
@@ -41,8 +40,8 @@ public class XPath extends Cmd {
                     return rtrn;
                 }).max().getAsInt();
 
-                String search = opIndex>-1 ? Cmd.populateStateVariables(path.substring(0,opIndex),context.getState()).trim() : path;
-                String operation = opIndex>-1 ? Cmd.populateStateVariables(path.substring(opIndex),context.getState()).trim() : "";
+                String search = opIndex>-1 ? Cmd.populateStateVariables(path.substring(0,opIndex),this,context.getState()).trim() : path;
+                String operation = opIndex>-1 ? Cmd.populateStateVariables(path.substring(opIndex),this,context.getState()).trim() : "";
 
                 xml = loader.loadXml(tmpDest.toPath());
                 List<Xml> found = xml.getAll(search);
@@ -81,6 +80,6 @@ public class XPath extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new XPath(this.path);
+        return new XPath(this.path).with(this.with);
     }
 }

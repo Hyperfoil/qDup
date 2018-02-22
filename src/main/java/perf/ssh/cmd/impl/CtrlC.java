@@ -14,8 +14,8 @@ public class CtrlC extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new CtrlC();
+        return new CtrlC().with(this.with);
     }
 
-    @Override public String toString(){return "^C";}
+    @Override public String toString(){return "ctrlC:";}
 }

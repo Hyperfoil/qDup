@@ -10,15 +10,15 @@ public class Signal extends Cmd {
     public String getName(){return name;}
     @Override
     protected void run(String input, Context context, CommandResult result) {
-        String populatedName = Cmd.populateStateVariables(name,context.getState());
+        String populatedName = Cmd.populateStateVariables(name,this,context.getState());
         context.getCoordinator().signal(populatedName);
         result.next(this,input);
     }
 
     @Override
     protected Cmd clone() {
-        return new Signal(this.name);
+        return new Signal(this.name).with(this.with);
     }
 
-    @Override public String toString(){return "signal "+name;}
+    @Override public String toString(){return "signal: "+name;}
 }

@@ -4,11 +4,10 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.ssh.State;
 import perf.ssh.cmd.impl.*;
+import perf.yaup.HashedLists;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,18 +18,34 @@ import java.util.regex.Pattern;
  */
 public abstract class Cmd {
 
-
-    private static final Code NO_OP = (i, s)->Result.next(i);
+    private static class NO_OP extends Cmd{
+        @Override
+        protected void run(String input, Context context, CommandResult result) {
+            result.next(this,input);
+        }
+        @Override
+        protected Cmd clone() {
+            return new NO_OP().with(this.with);
+        }
+        @Override
+        public String toString(){
+            return "NO_OP";
+        }
+    }
 
     protected final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-    public static final String ENV_PREFIX = "${{";
-    public static final String ENV_SUFFIX = "}}";
-    public static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^}]+)}}");
+    public static final String STATE_PREFIX = "${{";
+    public static final String STATE_SUFFIX = "}}";
+    public static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^}]+)}}");
+
+    public static final String ENV_PREFIX = "${";
+    public static final String ENV_SUFFIX = "}";
+    public static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{(?<name>[^\\{][^\\}]*)}");
+
     public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
-
-    public static Cmd NO_OP(){return new CodeCmd(NO_OP);}
+    public static Cmd NO_OP(){return new NO_OP();}
     public static Cmd abort(String message){return new Abort(message);}
     public static Cmd code(Code code){return new CodeCmd(code);}
     public static Cmd code(String className){return new CodeCmd(className);}
@@ -55,29 +70,56 @@ public abstract class Cmd {
     public static Cmd sh(String command){
         return new Sh(command);
     }
+    public static Cmd sh(String command,boolean silent){
+        return new Sh(command,silent);
+    }
     public static Cmd signal(String name){return new Signal(name);}
-    public static Cmd sleep(long amount){return new Sleep(amount);}
+    public static Cmd sleep(String amount){return new Sleep(amount);}
     public static Cmd waitFor(String name){return new WaitFor(name);}
     public static Cmd xpath(String path){return new XPath(path);}
 
-    public static String populateStateVariables(String command,State state){
+    private boolean hasWith(String name){
 
-        if(command.indexOf(ENV_PREFIX)<0)
+        boolean hasIt = with.containsKey(name);
+        Cmd target = this.parent;
+        while(!hasIt && target!=null){
+            hasIt = target.with.containsKey(name);
+            target = target.parent;
+        }
+        return hasIt;
+    }
+    private String getWith(String name){
+        String value = with.get(name);
+        Cmd target = this.parent;
+        while(value==null && target!=null){
+            value = target.with.get(name);
+            target = target.parent;
+        }
+        return value;
+    }
+    public static String populateStateVariables(String command,Cmd cmd, State state){
+
+        if(command.indexOf(STATE_PREFIX)<0)
             return command;
 
         int previous = 0;
         StringBuffer rtrn = new StringBuffer();
-        Matcher matcher = ENV_PATTERN.matcher(command);
+        Matcher matcher = STATE_PATTERN.matcher(command);
         while(matcher.find()){
             int findIndex = matcher.start();
             if(findIndex > previous){
                 rtrn.append(command.substring(previous,findIndex));
             }
             String name = matcher.group("name");
-            String value = state.get(name);
+            String value = null;
+            if(cmd!=null && cmd.hasWith(name)){
+                value = cmd.getWith(name);
+            }else {
+                value = state.get(name);
+            }
             if(value == null ){//bad times
-                logger.error("missing {} value for {}",name,command);
-                //TODO how to propegate missing state
+                logger.debug("missing {} state variable for {}",name,command);
+                //TODO how to alert the missing state
                 value = "";
             }
             rtrn.append(value);
@@ -92,8 +134,10 @@ public abstract class Cmd {
 
     private static final AtomicInteger uidGenerator = new AtomicInteger(0);
 
+    protected Map<String,String> with;
     private LinkedList<Cmd> thens;
     private LinkedList<Cmd> watchers;
+    private HashedLists<Long,Cmd> timers;
 
     private Cmd parent;
     private Cmd prev;
@@ -102,18 +146,35 @@ public abstract class Cmd {
 
     int uid;
 
+    protected boolean silent = false;
+
     private String output;
 
     protected Cmd(){
+        this(false);
+    }
+    protected Cmd(boolean silent){
+        this.silent = silent;
+        this.with = new HashMap<>();
         this.thens = new LinkedList<>();
         this.watchers = new LinkedList<>();
+        this.timers = new HashedLists<>();
         this.next = null;
         this.skip = null;
         this.prev = null;
         this.parent = null;
         this.uid = uidGenerator.incrementAndGet();
     }
-    protected void injectThen(Cmd command,Context context){
+    public Cmd addTimer(long timeout,Cmd command){
+        timers.put(timeout,command);
+        return this;
+    }
+    public List<Cmd> getTimers(long timeout){
+        return timers.get(timeout);
+    }
+    public Set<Long> getTimeouts(){return timers.keys();}
+    public boolean hasTimers(){return !timers.isEmpty();}
+    public void injectThen(Cmd command,Context context){
         thens.addFirst(command);
         Cmd next = this.next;
         Cmd skip = this.skip;
@@ -131,6 +192,18 @@ public abstract class Cmd {
         command.parent = this;
         command.prev = this;
     }
+
+    public boolean isSilent(){return silent;}
+
+    public Cmd with(Map<String,String> withs){
+        this.with.putAll(withs);
+        return this;
+    }
+    public Cmd with(String key,String value){
+        with.put(key,value);
+        return this;
+    }
+    public Map<String,String> getWith(){return Collections.unmodifiableMap(with);}
 
 
 
@@ -152,7 +225,18 @@ public abstract class Cmd {
         }else{
             rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this) );
         }
+
+        with.forEach((k,v)->{
+            String value = String.format("%"+(correctedIndent+4)+"swith: %s=%s%n","",k.toString(),v.toString());
+            rtrn.append(value);
+        });
         watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watch:",debug);});
+        timers.forEach((timeout,cmdList)->{
+            rtrn.append(String.format("%"+(correctedIndent+4)+"stimer: %i%n","",timeout));
+            cmdList.forEach(cmd->{
+                cmd.tree(rtrn,correctedIndent+6,"",debug);
+            });
+        });
         thens.forEach((t)->{t.tree(rtrn,correctedIndent+2,"",debug);});
     }
 
@@ -209,10 +293,26 @@ public abstract class Cmd {
         return this;
     }
 
-    protected List<Cmd> getThens(){return Collections.unmodifiableList(this.thens);}
-    protected List<Cmd> getWatchers(){return Collections.unmodifiableList(this.watchers);}
+    public boolean hasThens(){return !thens.isEmpty();}
+    public List<Cmd> getThens(){return Collections.unmodifiableList(this.thens);}
 
+    public boolean hasWatchers(){return !this.watchers.isEmpty();}
+    public List<Cmd> getWatchers(){return Collections.unmodifiableList(this.watchers);}
+
+
+    protected final void doRun(String input,Context context,CommandResult result){
+        if(!with.isEmpty()){
+
+            //TODO the is currently being handles by populateStateVariables
+            // a good idea might be to create a new context for this and this.then()
+//            for(String key : with.keySet()){
+//                context.getState().set(key,with.get(key));
+//            }
+        }
+        run(input,context,result);
+    }
     protected abstract void run(String input, Context context, CommandResult result);
+
     protected abstract Cmd clone();
 
     public Cmd deepCopy(){
@@ -222,6 +322,11 @@ public abstract class Cmd {
         }
         for(Cmd then : this.getThens()){
             clone.then(then.deepCopy());
+        }
+        for(long timeout: this.getTimeouts()){
+            for(Cmd timed : this.getTimers(timeout)){
+                clone.addTimer(timeout,timed);
+            }
         }
         return clone;
     }

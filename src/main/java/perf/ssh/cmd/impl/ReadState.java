@@ -16,7 +16,7 @@ public class ReadState extends Cmd {
 
     @Override
     public String toString(){
-        return "read-state "+key;
+        return "read-state: "+key;
     }
 
     @Override
@@ -30,6 +30,6 @@ public class ReadState extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new ReadState(key);
+        return new ReadState(key).with(this.with);
     }
 }

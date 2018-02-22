@@ -4,91 +4,133 @@ import org.junit.Assert;
 import org.junit.Test;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.Script;
+import perf.ssh.config.CmdBuilder;
+import perf.ssh.config.RunConfig;
+import perf.ssh.config.RunConfigBuilder;
+
+import java.util.Collections;
 
 public class RunValidationTest {
 
+    private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
 
     @Test
     public void signalOneScriptOneHost(){
-        RunConfig config = new RunConfig();
-        Script signal = config.getScript("signal");
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));
 
-        config.addHost("local",new Host("guest","localhost"));
-        config.getRole("role").add("local").addRunScript("signal");
+        builder.addScript(signal);
 
-        RunValidation validation = config.validate();
+        builder.addHostAlias("local","guest@localhost");
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","signal", Collections.emptyMap());
+
+        RunValidation validation = builder.runValidation();
 
         Assert.assertEquals("expect 1 signal for FOO",1,validation.getRunValidation().getSignalCount("FOO"));
 
     }
     @Test
     public void signalOneScriptTwoHosts(){
-        RunConfig config = new RunConfig();
-        Script signal = config.getScript("signal");
+
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));
 
-        config.addHost("alpha",new Host("guest","alpha"));
-        config.addHost("bravo",new Host("guest","bravo"));
-        config.getRole("role").add("alpha","bravo").addRunScript("signal");
+        builder.addScript(signal);
 
-        RunValidation validation = config.validate();
+        builder.addHostAlias("alpha","guest@alpha");
+        builder.addHostAlias("bravo","guest@bravo");
+        builder.addHostToRole("role","alpha");
+        builder.addHostToRole("role","bravo");
+        builder.addRoleRun("role","signal", Collections.emptyMap());
+
+
+        RunValidation validation = builder.runValidation();
 
         Assert.assertEquals("expect 2 signals for FOO",2,validation.getRunValidation().getSignalCount("FOO"));
 
     }
     @Test
     public void signalTwoScriptsOneHost(){
-        RunConfig config = new RunConfig();
-        Script signal = config.getScript("signal");
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+
+        Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));
-        Script second = config.getScript("second");
+        Script second = new Script("second");
         second.then(Cmd.signal("FOO"));
 
-        config.addHost("alpha",new Host("guest","alpha"));
+        builder.addScript(signal);
+        builder.addScript(second);
 
-        config.getRole("role").add("alpha").addRunScript("signal");
-        config.getRole("role").addRunScript("second");
+        builder.addHostAlias("alpha","guest@alpha");
+        builder.addHostToRole("role","alpha");
 
-        RunValidation validation = config.validate();
+        builder.addRoleRun("role","signal", Collections.emptyMap());
+        builder.addRoleRun("role","second", Collections.emptyMap());
+
+
+        RunValidation validation = builder.runValidation();
+
 
         Assert.assertEquals("expect 2 signals for FOO",2,validation.getRunValidation().getSignalCount("FOO"));
 
     }
     @Test
     public void signalTwoScriptsTwoHosts(){
-        RunConfig config = new RunConfig();
-        Script signal = config.getScript("signal");
+
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));
-        Script second = config.getScript("second");
+        Script second = new Script("second");
         second.then(Cmd.signal("FOO"));
 
-        config.addHost("alpha",new Host("guest","alpha"));
-        config.addHost("bravo",new Host("guest","bravo"));
+        builder.addScript(signal);
+        builder.addScript(second);
 
-        config.getRole("role").add("alpha","bravo").addRunScript("signal");
-        config.getRole("role").addRunScript("second");
+        builder.addHostAlias("alpha","guest@alpha");
+        builder.addHostAlias("bravo","guest@bravo");
 
-        RunValidation validation = config.validate();
+        builder.addHostToRole("role","alpha");
+        builder.addHostToRole("role","bravo");
+
+        builder.addRoleRun("role","signal", Collections.emptyMap());
+        builder.addRoleRun("role","second", Collections.emptyMap());
+
+
+        RunValidation validation = builder.runValidation();
 
         Assert.assertEquals("expect 4 signals for FOO",4,validation.getRunValidation().getSignalCount("FOO"));
 
     }
     @Test
     public void signalInSubScript(){
-        RunConfig config = new RunConfig();
-        Script signal = config.getScript("signal");
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));
-        Script second = config.getScript("second");
+        Script second = new Script("second");
         second.then(Cmd.script("signal"));
 
-        config.addHost("alpha",new Host("guest","alpha"));
-        config.addHost("bravo",new Host("guest","bravo"));
+        builder.addScript(signal);
+        builder.addScript(second);
 
-        config.getRole("role").add("alpha","bravo").addRunScript("signal");
-        config.getRole("role").addRunScript("second");
+        builder.addHostAlias("alpha","guest@alpha");
+        builder.addHostAlias("bravo","guest@bravo");
 
-        RunValidation validation = config.validate();
+        builder.addHostToRole("role","alpha");
+        builder.addHostToRole("role","bravo");
+
+        builder.addRoleRun("role","signal", Collections.emptyMap());
+        builder.addRoleRun("role","second", Collections.emptyMap());
+
+
+        RunValidation validation = builder.runValidation();
 
         Assert.assertEquals("expect 4 signals for FOO",4,validation.getRunValidation().getSignalCount("FOO"));
 
@@ -96,18 +138,23 @@ public class RunValidationTest {
 
     @Test
     public void variableSignal(){
-        RunConfig config = new RunConfig();
-        Script signal = config.getScript("signal");
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        Script signal = new Script("signal");
         signal.then(Cmd.signal("${{FOO}}"));
 
-        config.addHost("local",new Host("guest","localhost"));
-        config.getRole("role").add("local").addRunScript("signal");
+        builder.addScript(signal);
 
-        RunValidation validation = config.validate();
+        builder.addHostAlias("alpha","guest@alpha");
 
-        System.out.println(validation.getRunValidation().getSignals());
+        builder.addHostToRole("role","alpha");
 
-        //Assert.assertEquals("expect 1 signal for FOO",1,validation.getRunValidation().getSignalCount("FOO"));
+        builder.addRoleRun("role","signal", Collections.emptyMap());
+
+
+        RunValidation validation = builder.runValidation();
+
+        Assert.assertEquals("expect 1 signal for ${{FOO}}",1,validation.getRunValidation().getSignalCount("${{FOO}}"));
 
     }
 

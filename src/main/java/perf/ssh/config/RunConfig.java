@@ -1,0 +1,214 @@
+package perf.ssh.config;
+
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
+import perf.ssh.*;
+import perf.ssh.cmd.Cmd;
+import perf.ssh.cmd.CommandSummary;
+import perf.ssh.cmd.Script;
+import perf.ssh.cmd.impl.ScriptCmd;
+import perf.yaup.HashedList;
+import perf.yaup.HashedLists;
+import perf.yaup.HashedSets;
+
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+/**
+ * Immutable representation of the Configuration for the Run
+ * This includes all Hosts, Scripts, and State
+ */
+public class RunConfig {
+
+    private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+
+    public String getKnownHosts() {
+        return knownHosts;
+    }
+    public boolean hasCustomKnownHosts(){
+        return !RunConfigBuilder.DEFAULT_KNOWN_HOSTS.equals(knownHosts);
+    }
+
+    public String getIdentity() {
+        return identity;
+    }
+    public boolean hasCustomIdentity(){
+        return !RunConfigBuilder.DEFAULT_IDENTITY.equals(identity);
+    }
+
+    public String getPassphrase() {
+        return passphrase;
+    }
+    public boolean hasCustomPassphrase(){
+        return passphrase!= RunConfigBuilder.DEFAULT_PASSPHRASE;//use != because DEFAULT_PASSPHRASE is null
+    }
+
+    public Boolean isColorTerminal() {
+        return colorTerminal;
+    }
+    public void setColorTerminal(Boolean colorTerminal) {
+        this.colorTerminal = colorTerminal;
+    }
+
+    private String name;
+    private String knownHosts;
+    private String identity;
+    private String passphrase;
+
+    private Map<String,Script> scripts;
+    private State state;
+
+    private Map<Host,Cmd> setupCmds;
+    private HashedLists<Host,ScriptCmd> runScripts;
+    private Map<Host,Cmd> cleanupCmds;
+
+    private Boolean colorTerminal = false;
+    private List<String> errors;
+    private RunValidation runValidation;
+
+    protected RunConfig(String name,List<String> errors){
+        this.errors = errors;
+    }
+    protected RunConfig(
+            String name,
+            Map<String,Script> scripts,
+            State state,
+            Map<Host,Cmd> setupCmds,
+            HashedLists<Host,ScriptCmd> runScripts,
+            Map<Host,Cmd> cleanupCmds,
+            RunValidation runValidation,
+            String knownHosts,
+            String identity,
+            String passphrase){
+        this.name = name;
+        this.scripts = scripts;
+        this.state = state;
+        this.setupCmds = setupCmds;
+        this.runScripts = runScripts;
+        this.cleanupCmds = cleanupCmds;
+        this.runValidation = runValidation;
+        this.knownHosts = knownHosts;
+        this.identity = identity;
+        this.passphrase = passphrase;
+        this.errors = new LinkedList<>();
+    }
+
+    public String debug(){
+        StringBuilder  sb = new StringBuilder();
+        if(!scripts.isEmpty()){
+            sb.append("scripts\n");
+            for(String scriptName : scripts.keySet()){
+                sb.append("  "+scriptName+"\n");
+                Script script = scripts.get(scriptName);
+                sb.append(script.tree(4,false));
+            }
+        }else{
+            sb.append("no scripts\n");
+        }
+        if(!setupCmds.isEmpty()){
+            sb.append("setup\n");
+            for(Host host : setupCmds.keySet()){
+                sb.append("  "+host.toString()+"\n");
+                Cmd cmd = setupCmds.get(host);
+                sb.append(cmd.tree());
+                cmd.getThens().forEach(then->{
+
+                });
+            }
+        }else{
+            sb.append("no setup cmds\n");
+        }
+        if(!runScripts.isEmpty()){
+            sb.append("run\n");
+            for(Host host : runScripts.keys()){
+                sb.append("  "+host.toString()+"\n");
+                 List<ScriptCmd> scriptCmds = runScripts.get(host);
+                 scriptCmds.forEach(c->sb.append("    "+c.getName()+"\n"));
+            }
+        }else{
+            sb.append("no run scripts\n");
+        }
+        if(!cleanupCmds.isEmpty()){
+            sb.append("cleanup\n");
+            for(Host host : cleanupCmds.keySet()){
+                sb.append("  "+host.toString()+"\n");
+                Cmd cmd = cleanupCmds.get(host);
+                sb.append("    "+cmd.getThens().toString()+"\n");
+            }
+        }else{
+            sb.append("no cleanup cmds\n");
+        }
+
+        sb.append("state:\n");
+        sb.append(state.tree());
+        return sb.toString();
+    }
+
+    public RunValidation getRunValidation() {
+        return runValidation;
+    }
+
+    public boolean hasErrors(){return !errors.isEmpty();}
+    public List<String> getErrors(){return Collections.unmodifiableList(errors);}
+    public void addError(String error){
+        errors.add(error);
+    }
+
+    public String getName(){return name;}
+
+    public State getState(){return state;}
+
+    /**
+     * get a script using the global state and no command variables
+     * @param name
+     * @return
+     */
+    public Script getScript(String name){
+        return getScript(name,null,state);
+    }
+
+    /**
+     * get a script using the target state but no command variables
+     * @param name
+     * @param state
+     * @return
+     */
+    public Script getScript(String name,State state){
+        return getScript(name,null,state);
+    }
+
+    /**
+     * get a script using the target state and the commands variables
+     * @param name
+     * @param command
+     * @param state
+     * @return
+     */
+    public Script getScript(String name,Cmd command,State state){
+
+        String populatedName = Cmd.populateStateVariables(name,command,state);
+        return scripts.get(populatedName);
+    }
+
+    /**
+     * get the hosts that have setup scripts
+     * @return
+     */
+    public Set<Host> getSetupHosts(){return setupCmds.keySet();}
+
+    /**
+     * get the cmd that will invoke all setup scripts for the host
+     * @param host
+     * @return
+     */
+    public Cmd getSetupCmd(Host host){return setupCmds.get(host);}
+
+    public Set<Host> getRunHosts(){return runScripts.keys();}
+    public List<ScriptCmd> getRunCmds(Host host){return runScripts.get(host);}
+
+    public Set<Host> getCleanupHosts(){return cleanupCmds.keySet();}
+    public Cmd getCleanupCmd(Host host){return cleanupCmds.get(host);}
+
+}

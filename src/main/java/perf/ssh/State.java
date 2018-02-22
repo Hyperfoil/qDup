@@ -5,32 +5,35 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wreicher
- * Conceptually a tree of maps where new [key,value] pairs default to the current map
- * but will be placed in a parent map if the key starts with the parent's prefix
+ * Conceptually a tree of maps where new [KEY,VALUE] pairs default to the current map
+ * but will be placed in a parent map if the KEY starts WITH the parent's prefix
  * (checking all the way up the tree before using the current State).
  *
- * This is used to maintain a global run state (with prefix RUN_PREFIX) with child host states
- * (with prefix HOST_PREFIX) and child script states (no prefix). Scripts run with a reference
+ * This is used to maintain a global run state (WITH prefix RUN_PREFIX) WITH CHILD host states
+ * (WITH prefix HOST_PREFIX) and CHILD script states (no prefix). Scripts run WITH a reference
  * to their unique script state so by default their keys do not conflict unless the
- * key intentionally uses a parent prefix.
+ * KEY intentionally uses a parent prefix.
  *
  * Considerations
- *   A State with an empty prefix (prefix.isEmpty()==true) will effectively make the parent States read only from that perspective.
- *     All key's will match the prefix check so no set(key,value) operations will modify a parent State.
- *   A State with a null prefix will never match a prefix check so it becomes read only from that perspective but the parents are still mutable.
+ *   A State WITH an empty prefix (prefix.isEmpty()==true) will effectively make the parent States read only from that perspective.
+ *     All KEY's will match the prefix check so no set(KEY,VALUE) operations will modify a parent State.
+ *   A State WITH a null prefix will never match a prefix check so it becomes read only from that perspective but the parents are still mutable.
  *
  */
 public class State {
 
     public static final String RUN_PREFIX = "RUN";
     public static final String HOST_PREFIX = "HOST";
-
+    public static final String CHILD_DELIMINATOR = ".";
 
     private State parent;
     private Map<String,String> state;
     private Map<String,State> childStates;
     private String prefix;
 
+    public State(String prefix){
+        this(null,prefix);
+    }
     public State(State parent,String prefix){
         this.parent = parent;
         this.state = new ConcurrentHashMap<>();
@@ -38,11 +41,31 @@ public class State {
         this.prefix = prefix;
     }
 
+
+    public Map<String,String> getOwnState(){
+        return Collections.unmodifiableMap(state);
+    }
+    public Map<String,String> getFullState(){
+        Map<String,String> rtrn = new HashMap<>(state);
+        State target = this.parent;
+        while( target!=null ){
+            for(String key : target.getKeys()){
+                if(!rtrn.containsKey(key)){
+                    rtrn.put(key,target.get(key));
+                }
+            }
+            target = target.parent;
+        }
+        return rtrn;
+    }
     public boolean hasChild(String name){
         return childStates.containsKey(name);
     }
     public State getChild(String name){
-        return addChild(name,null);//default to creating a new child
+        return getChild(name,null);
+    }
+    public State getChild(String name,String prefix){
+        return addChild(name,prefix);//default to creating a new CHILD
     }
     public State addChild(String name,String prefix){
         if(!hasChild(name)){
@@ -54,19 +77,42 @@ public class State {
     public String set(String key,String value){
         State target = this;
         do {
-            if(target.prefix!=null && !target.prefix.isEmpty() && key.startsWith(target.prefix)){
-                return target.state.put(key,value);
+            if(target.prefix!=null && key.startsWith(target.prefix)){
+                return target.state.put(key.substring(target.prefix.length()),value);
             }
         }while( (target=target.parent)!=null);
+
+        //see if the key starts with a child name
+        for(String childName : childStates.keySet()){
+            if(key.startsWith(childName+CHILD_DELIMINATOR)){
+                childStates.get(childName).set(key.substring(childName.length()+CHILD_DELIMINATOR.length()),value);
+            }
+        }
+
         //at this point there wasn't a prefix match
         return this.state.put(key,value);
+    }
+
+    public boolean has(String key){
+        return state.containsKey(key);
     }
     public String get(String key){
         State target = this;
         String rtrn = null;
+        //check for a prefix match
         do {
-            rtrn = target.state.get(key);
-        } while (rtrn == null && (target=target.parent)!=null);
+            if(target.prefix!=null && key.startsWith(target.prefix)){
+                rtrn = target.state.get(key.substring(target.prefix.length()));
+            }
+        }while( (target=target.parent)!=null && rtrn==null);
+
+        //if there wasn't a prefix match
+        if(rtrn == null) {
+            target = this;
+            do {
+                rtrn = target.state.get(key);
+            } while (rtrn == null && (target = target.parent) != null);
+        }
         return rtrn;
     }
 
@@ -99,6 +145,18 @@ public class State {
             sb.append(String.format("%"+space+"s%s : %n","",childName));
             getChild(childName).tree(indent+2,sb);
         }
+    }
+
+    public State clone(){
+        State rtrn = new State(this.parent,this.prefix);
+        //break abstraction to avoid prefix checks
+        this.state.forEach((k,v)->{
+            rtrn.state.put(k,v);
+        });
+        this.childStates.forEach((k,v)->{
+            rtrn.childStates.put(k,v);
+        });
+        return rtrn;
     }
 
 }
