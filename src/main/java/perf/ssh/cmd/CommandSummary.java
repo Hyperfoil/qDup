@@ -35,7 +35,6 @@ public class CommandSummary {
             addWait(((WaitFor)command).getName());
         }else if (command instanceof ScriptCmd){
             String scriptName = ((ScriptCmd)command).getName();
-
             Script namedScript = config.getScript(scriptName,command);
             if(namedScript==null){
                 //TODO is it an error if a script isn't found?

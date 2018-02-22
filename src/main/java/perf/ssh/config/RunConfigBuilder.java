@@ -434,14 +434,12 @@ public class RunConfigBuilder {
         stage.keys().forEach(roleName->{
 
             stage.get(roleName).forEach(scriptCmd -> {
-                if(!scripts.containsKey(scriptCmd.getName())){
+                String scriptName = scriptCmd.getName();
+                Script script = getScript(scriptName,scriptCmd);
+                if(script == null){
                     rtrn.addError(roleName+" missing script "+scriptCmd.getName());
                 }else{
                     hosts.get(roleName).forEach(host->{
-
-                        String scriptName = scriptCmd.getName();
-                        Script script = getScript(scriptName,scriptCmd);
-
                         CommandSummary summary = new CommandSummary(script,this);
                         summary.getWaits().forEach(rtrn::addWait);
                         summary.getSignals().forEach(rtrn::addSignal);

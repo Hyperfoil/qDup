@@ -25,6 +25,46 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
 
+    @Test
+    public void testVariableScriptWithWaitFor(){
+        YamlParser parser = new YamlParser();
+        parser.load("waitFor",stream("",
+            "scripts:",
+            "  signal:",
+            "    signal: SERVER_READY",
+            "  waiter:",
+            "    wait-for: SERVER_READY",
+            "hosts:",
+            "  local: me@localhost",
+            "  server: me@serverHostName",
+            "roles:",
+            "  test:",
+            "    hosts: [local, server]",
+            "    run-scripts:",
+            "      ${{SCRIPT_NAME}}",
+            "      ${{WAIT_NAME}}",
+            "states:",
+            "  SCRIPT_NAME : signal",
+            "  WAIT_NAME : waiter"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        builder.loadYaml(parser);
+        RunConfig runConfig = builder.buildConfig();
+
+        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+
+        Set<String> signalNames = runConfig.getRunValidation().getRunValidation().getSignals();
+        Set<String> waitNames = runConfig.getRunValidation().getRunValidation().getWaiters();
+
+        assertTrue("signal: "+signalNames.toString(),signalNames.contains("SERVER_READY"));
+        assertTrue("wait-for: "+waitNames.toString(),waitNames.contains("SERVER_READY"));
+
+        int signalCount = runConfig.getRunValidation().getRunValidation().getSignalCount("SERVER_READY");
+
+        assertEquals("signal count for SERVER_READY",2,signalCount);
+    }
 
     @Test
     public void testImplicitRunState(){
