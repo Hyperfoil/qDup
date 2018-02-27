@@ -11,11 +11,12 @@ import java.util.stream.Collectors;
 
 public class ShErrorObserver implements CommandDispatcher.CommandObserver {
 
-
     public static ShErrorObserver getObserver(Context context) {
         ShErrorObserver rtrn = new ShErrorObserver(context);
 
         rtrn.addGlobalError("command not found...");
+        rtrn.addCommandError("ant","BUILD FAILURE");
+        rtrn.addCommandError("ant","Build failed");
         rtrn.addCommandError("grep", "grep: Invalid regular expression");
         rtrn.addCommandError("cd", "No such file or directory");
         rtrn.addCommandError("tail", "tail: no files remaining");
