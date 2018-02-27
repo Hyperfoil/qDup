@@ -233,21 +233,21 @@ public class Run implements Runnable {
             ).forEach((notSignaled)->noSignal.add(notSignaled));
         } ;
 
-        setupCoordinator.accept(config.getRunValidation().getSetupValidation());
+        setupCoordinator.accept(config.getRunValidation().getSetupStage());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} setup scripts missing signal for {}",this,notSignaled);
             });
             return false;
         }
-        setupCoordinator.accept(config.getRunValidation().getRunValidation());
+        setupCoordinator.accept(config.getRunValidation().getRunStage());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} run scripts missing signal for {}",this,notSignaled);
             });
             return false;
         }
-        setupCoordinator.accept(config.getRunValidation().getCleanupValidation());
+        setupCoordinator.accept(config.getRunValidation().getCleanupStage());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} cleanup scripts missing signal for {}",this,notSignaled);
@@ -262,14 +262,14 @@ public class Run implements Runnable {
 
         if(!config.getRunValidation().isValid()){
             //TODO raise warnings if not validated
-            if(config.getRunValidation().getSetupValidation().hasErrors()){
-                config.getRunValidation().getSetupValidation().getErrors().forEach((error->runLogger.error(error)));
+            if(config.getRunValidation().getSetupStage().hasErrors()){
+                config.getRunValidation().getSetupStage().getErrors().forEach((error->runLogger.error(error)));
             }
-            if(config.getRunValidation().getRunValidation().hasErrors()){
-                config.getRunValidation().getRunValidation().getErrors().forEach((error->runLogger.error(error)));
+            if(config.getRunValidation().getRunStage().hasErrors()){
+                config.getRunValidation().getRunStage().getErrors().forEach((error->runLogger.error(error)));
             }
-            if(config.getRunValidation().getCleanupValidation().hasErrors()){
-                config.getRunValidation().getCleanupValidation().getErrors().forEach((error->runLogger.error(error)));
+            if(config.getRunValidation().getCleanupStage().hasErrors()){
+                config.getRunValidation().getCleanupStage().getErrors().forEach((error->runLogger.error(error)));
             }
             return;
         }

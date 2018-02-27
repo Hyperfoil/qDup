@@ -5,7 +5,6 @@ import org.junit.Test;
 import perf.ssh.cmd.Cmd;
 import perf.ssh.cmd.Script;
 import perf.ssh.config.CmdBuilder;
-import perf.ssh.config.RunConfig;
 import perf.ssh.config.RunConfigBuilder;
 
 import java.util.Collections;
@@ -29,7 +28,7 @@ public class RunValidationTest {
 
         RunValidation validation = builder.runValidation();
 
-        Assert.assertEquals("expect 1 signal for FOO",1,validation.getRunValidation().getSignalCount("FOO"));
+        Assert.assertEquals("expect 1 signal for FOO",1,validation.getRunStage().getSignalCount("FOO"));
 
     }
     @Test
@@ -51,7 +50,7 @@ public class RunValidationTest {
 
         RunValidation validation = builder.runValidation();
 
-        Assert.assertEquals("expect 2 signals for FOO",2,validation.getRunValidation().getSignalCount("FOO"));
+        Assert.assertEquals("expect 2 signals for FOO",2,validation.getRunStage().getSignalCount("FOO"));
 
     }
     @Test
@@ -77,7 +76,7 @@ public class RunValidationTest {
         RunValidation validation = builder.runValidation();
 
 
-        Assert.assertEquals("expect 2 signals for FOO",2,validation.getRunValidation().getSignalCount("FOO"));
+        Assert.assertEquals("expect 2 signals for FOO",2,validation.getRunStage().getSignalCount("FOO"));
 
     }
     @Test
@@ -105,7 +104,7 @@ public class RunValidationTest {
 
         RunValidation validation = builder.runValidation();
 
-        Assert.assertEquals("expect 4 signals for FOO",4,validation.getRunValidation().getSignalCount("FOO"));
+        Assert.assertEquals("expect 4 signals for FOO",4,validation.getRunStage().getSignalCount("FOO"));
 
     }
     @Test
@@ -132,7 +131,7 @@ public class RunValidationTest {
 
         RunValidation validation = builder.runValidation();
 
-        Assert.assertEquals("expect 4 signals for FOO",4,validation.getRunValidation().getSignalCount("FOO"));
+        Assert.assertEquals("expect 4 signals for FOO",4,validation.getRunStage().getSignalCount("FOO"));
 
     }
 
@@ -154,7 +153,7 @@ public class RunValidationTest {
 
         RunValidation validation = builder.runValidation();
 
-        Assert.assertEquals("expect 1 signal for ${{FOO}}",1,validation.getRunValidation().getSignalCount("${{FOO}}"));
+        Assert.assertEquals("expect 1 signal for ${{FOO}}",1,validation.getRunStage().getSignalCount("${{FOO}}"));
 
     }
 

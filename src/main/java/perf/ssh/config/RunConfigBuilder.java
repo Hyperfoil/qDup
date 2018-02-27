@@ -54,10 +54,11 @@ public class RunConfigBuilder {
     private String knownHosts = DEFAULT_KNOWN_HOSTS;
     private String passphrase = DEFAULT_PASSPHRASE;
 
-    private String name;
+    private String name = null;
     private State state;
 
     private HashMap<String,Script> scripts;
+
     private HashedSets<String,String> roleHosts;
     private HashMap<String,String> roleHostExpression;
 
@@ -71,6 +72,27 @@ public class RunConfigBuilder {
     private List<String> errors;
 
     private boolean isValid = false;
+
+    public Set<String> getRolesWithScripts(){
+        HashSet<String> rtrn = new HashSet<>();
+        rtrn.addAll(roleSetup.keys());
+        rtrn.addAll(roleRun.keys());
+        rtrn.addAll(roleCleanup.keys());
+        return rtrn;
+    }
+    public Set<String> getRolesWithoutHosts(){
+        Set<String> rtrn = getRolesWithScripts();
+        rtrn.removeAll(roleHostExpression.keySet());
+        rtrn.removeAll(roleHosts.keys());
+        return rtrn;
+    }
+    public Set<String> getRolesWithoutScripts(){
+        Set<String> rtrn = new HashSet<>();
+        rtrn.addAll(roleHosts.keys());
+        rtrn.addAll(roleHostExpression.keySet());
+        rtrn.removeAll(getRolesWithScripts());
+        return rtrn;
+    }
 
     public RunConfigBuilder(CmdBuilder cmdBuilder){
         this("run-"+System.currentTimeMillis(),cmdBuilder);
@@ -130,7 +152,6 @@ public class RunConfigBuilder {
         errors.addAll(error);
     }
     public int errorCount(){return errors.size();}
-
 
     public boolean loadYaml(YamlParser yamlParser) {
         boolean ok = true;
@@ -315,7 +336,9 @@ public class RunConfigBuilder {
 
 
     public void setName(String name){
-        this.name = name;
+        if(this.name == null) {
+            this.name = name;
+        }
     }
     public String getName(){return name;}
 

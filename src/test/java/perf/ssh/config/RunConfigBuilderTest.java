@@ -3,7 +3,6 @@ package perf.ssh.config;
 import org.junit.Ignore;
 import org.junit.Test;
 import perf.ssh.Host;
-import perf.ssh.RunValidation;
 import perf.ssh.SshTestBase;
 import perf.ssh.State;
 import perf.ssh.cmd.Cmd;
@@ -11,9 +10,6 @@ import perf.ssh.cmd.Script;
 import perf.ssh.cmd.impl.ScriptCmd;
 import perf.ssh.cmd.impl.Sh;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,13 +51,13 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
-        Set<String> signalNames = runConfig.getRunValidation().getRunValidation().getSignals();
-        Set<String> waitNames = runConfig.getRunValidation().getRunValidation().getWaiters();
+        Set<String> signalNames = runConfig.getRunValidation().getRunStage().getSignals();
+        Set<String> waitNames = runConfig.getRunValidation().getRunStage().getWaiters();
 
         assertTrue("signal: "+signalNames.toString(),signalNames.contains("SERVER_READY"));
         assertTrue("wait-for: "+waitNames.toString(),waitNames.contains("SERVER_READY"));
 
-        int signalCount = runConfig.getRunValidation().getRunValidation().getSignalCount("SERVER_READY");
+        int signalCount = runConfig.getRunValidation().getRunStage().getSignalCount("SERVER_READY");
 
         assertEquals("signal count for SERVER_READY",2,signalCount);
     }
@@ -94,7 +90,6 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         assertEquals("host should see foo = bar","bar",hostState.get("foo"));
         assertEquals("host["+RUN_PREFIX+"foo]=foo","foo",hostState.get(RUN_PREFIX+"foo"));
-
     }
 
     /**

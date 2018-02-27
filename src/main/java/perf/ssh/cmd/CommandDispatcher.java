@@ -31,7 +31,6 @@ public class CommandDispatcher {
 
     final static long THRESHOLD = 30_000; //30s
 
-
     public interface ScriptObserver {
         public default void onStart(Cmd command,Context context){}
         public default void onStop(Cmd command,Context context){}

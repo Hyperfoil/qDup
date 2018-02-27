@@ -16,14 +16,14 @@ public class RunValidation {
         this.cleanupValidation = cleanupValidation;
     }
 
-    public StageValidation getSetupValidation() {
+    public StageValidation getSetupStage() {
         return setupValidation;
     }
 
-    public StageValidation getRunValidation() {
+    public StageValidation getRunStage() {
         return runValidation;
     }
-    public StageValidation getCleanupValidation() {
+    public StageValidation getCleanupStage() {
         return cleanupValidation;
     }
 
