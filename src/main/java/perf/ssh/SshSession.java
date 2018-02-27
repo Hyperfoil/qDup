@@ -238,6 +238,7 @@ public class SshSession implements Runnable, Consumer<String>{
     public void sh(String command){
         sh(command,true,null,null);
     }
+    public void response(String command) { sh(command,false,null,null); }
     public void sh(String command, Cmd cmd,CommandResult result){ sh(command,true,cmd,result);}
     private void sh(String command,boolean acquireLock,Cmd cmd, CommandResult result){
 
