@@ -277,13 +277,13 @@ to use a role name that makes it clear it will apply ALL hosts
 ```YAML
 roles:
   test:
-    hosts:
-     - local
-    run-scripts:
-     - test-script
-  ALL:
-    setup-scripts:
-     - some-script
+    hosts: [local]
+    run-scripts: [test-script]
+  notTest:
+    hosts: = ALL - tests                  #host expressions start with = and
+    run-scripts: [notTest-script]
+  ALL:                                    #ALL automatically includes all hosts from other roles
+    setup-scripts: [some-script]
 ```
 
 __states__ a nested map of name : value pairs used to inject variables
