@@ -1,5 +1,7 @@
 package perf.ssh;
 
+import perf.yaup.json.Json;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -85,7 +87,7 @@ public class State {
         //see if the key starts with a child name
         for(String childName : childStates.keySet()){
             if(key.startsWith(childName+CHILD_DELIMINATOR)){
-                childStates.get(childName).set(key.substring(childName.length()+CHILD_DELIMINATOR.length()),value);
+                return childStates.get(childName).set(key.substring(childName.length()+CHILD_DELIMINATOR.length()),value);
             }
         }
 
@@ -135,6 +137,18 @@ public class State {
         StringBuilder buffer = new StringBuilder();
         tree(1,buffer);
         return buffer.toString();
+    }
+    public Json toJson(){
+        Json rtrn = new Json();
+
+        for(String key : state.keySet()){
+            rtrn.set(key,state.get(key));
+        }
+        for(String child : childStates.keySet()){
+            rtrn.set(child,childStates.get(child).toJson());
+        }
+
+        return rtrn;
     }
     public void tree(int indent,StringBuilder sb){
         int space = indent>0? indent:1;

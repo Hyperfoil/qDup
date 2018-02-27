@@ -79,6 +79,8 @@ public class Coordinator {
         return waitFors.get(name);
     }
 
+    public Map<String,Long> getLatchTimes(){return Collections.unmodifiableMap(latchTimes);}
+
     public void addObserver(Consumer<String> observer){
         observers.add(observer);
     }
