@@ -10,17 +10,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Regex extends Cmd {
-    private Pattern pattern;
     private String patternString;
     public Regex(String pattern){
-
         this.patternString = pattern;
-        this.pattern = Pattern.compile(pattern,Pattern.DOTALL);
-
     }
     public String getPattern(){return patternString;}
     @Override
     protected void run(String input, Context context, CommandResult result) {
+
+        String populatedPattern = populateStateVariables(patternString,this,context.getState());
+        Pattern pattern = Pattern.compile(populatedPattern,Pattern.DOTALL);
 
         Matcher matcher = pattern.matcher(input);
         if(matcher.matches()){
