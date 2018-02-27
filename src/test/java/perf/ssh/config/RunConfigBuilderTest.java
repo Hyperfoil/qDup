@@ -372,7 +372,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertTrue("watcher should have abort as child",watcher.getNext().toString().contains("abort"));
     }
 
-    @Test
+    @Test @Ignore
     public void testSyntax(){
         YamlParser parser = new YamlParser();
         parser.load("supportedSyntax",stream(""+
@@ -401,7 +401,7 @@ public class RunConfigBuilderTest extends SshTestBase {
                         "  thirdScript:",
                         "    - sh: rm -rf /tmp/bar",
                         "hosts:",
-                        "  laptop: wreicher@laptop",
+                        "  laptop: me@laptop",
                         "  server:",
                         "     username: root",
                         "     hostname: serverName",
@@ -412,19 +412,19 @@ public class RunConfigBuilderTest extends SshTestBase {
                         "    hosts:",
                         "     - laptop",
                         "     - server",
-                        "    setup-scripts:",
-                        "     - firstScript",
-                        "        - WITH: {foo:bar,biz:buz}",
-                        "     - firstScript",
-                        "        - WITH: {foo:yaba,biz:daba}",
-                        "    run-scripts",
+                        "    setup-scripts",
                         "     - secondScript",
+                        "    run-scripts:",
+                        "     - firstScript",
+                        "        - WITH: {FOO:bar,biz:buz}",
+                        "     - firstScript",
+                        "        - WITH: {FOO:yaba,biz:daba}",
                         "    cleanup-scripts:",
                         "     - ${{cleanupScript}}",
                         "---",
                         "states:",
                         "  RUN:",
-                        "    FOO: bar",
+                        "    FOO: foo",
                         "    cleanupScript: thirdScript",
                         "  laptop:",
                         "    FOO: biz",
@@ -436,7 +436,22 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         RunConfig runConfig = builder.buildConfig();
 
+        Host local = new Host("me","laptop",22);
+
         Set<Host> cleanupHosts = runConfig.getCleanupHosts();
+        Set<Host> setupHosts = runConfig.getSetupHosts();
+        List<ScriptCmd> localRunCmds = runConfig.getRunCmds(local);
+
+        assertTrue("setup should include local",setupHosts.contains(local));
+        assertEquals("local should have 2 run scripts",2,localRunCmds.size());
+
+        ScriptCmd firstCmd = localRunCmds.get(0);
+        ScriptCmd secondCmd = localRunCmds.get(1);
+
+        assertEquals("first should be wih FOO: bar","bar",firstCmd.getWith().get("FOO"));
+        assertEquals("first should be wih biz: buz","buz",firstCmd.getWith().get("biz"));
+        assertEquals("second should be wih FOO: yaba","yaba",secondCmd.getWith().get("FOO"));
+        assertEquals("second should be wih biz: daba","daba",secondCmd.getWith().get("biz"));
     }
 
 }

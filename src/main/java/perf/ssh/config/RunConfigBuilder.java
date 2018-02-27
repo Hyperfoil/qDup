@@ -210,7 +210,7 @@ public class RunConfigBuilder {
                             eachChildEntry(yamlEntry, (entryIndex, roleEntry) -> {
                                 String roleName = roleEntry.getString(KEY, "");
 
-                                //TODO check if the role is already defined and raise a warning
+                                //roles merge so no warning if already defined
 
                                 eachChildEntry(roleEntry, (sectionIndex, roleSection) -> {
                                     String sectionName = roleSection.getString(KEY, "");

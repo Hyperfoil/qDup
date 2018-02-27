@@ -403,7 +403,7 @@ public class CmdBuilder {
                 Json childEntryList = childList.getJson(i);
                 for(int c=0; c<childEntryList.size(); c++){
                     Json childEntry = childEntryList.getJson(c);
-                    String childKey = childEntry.getString(KEY);
+                    String childKey = childEntry.getString(KEY).toLowerCase();
                     switch (childKey){
                         case WATCH:
                             addWatchers(rtrn,childEntry);
