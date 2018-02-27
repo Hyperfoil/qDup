@@ -13,7 +13,7 @@ import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SshRunner {
+public class JarMain {
 
     public static void main(String[] args) {
 
@@ -118,7 +118,7 @@ public class SshRunner {
 
         cmdLineSyntax =
             "java -jar " +
-            (new File(SshRunner.class
+            (new File(JarMain.class
                 .getProtectionDomain()
                 .getCodeSource()
                 .getLocation()
