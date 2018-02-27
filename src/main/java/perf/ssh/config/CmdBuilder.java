@@ -296,8 +296,6 @@ public class CmdBuilder {
                     //ERROR
                 }
             }else if(json.size()>1 && args.isEmpty()){
-                RuntimeException e = new RuntimeException();
-                e.printStackTrace();
                 //the list entry has peers who aren't prepended WITH a -
                 Map<String,String> entries = new HashMap<>();
                 for(int i=1; i<json.size(); i++){
