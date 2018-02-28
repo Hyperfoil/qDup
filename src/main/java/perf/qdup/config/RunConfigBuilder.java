@@ -41,8 +41,8 @@ public class RunConfigBuilder {
     private static final String RUN_STATE = "run";
     private static final String SCRIPT_DIR = "ENV.SCRIPT_DIR";
 
-    public static final String DEFAULT_KNOWN_HOSTS = System.getProperty("user.home")+"/.qdup/known_hosts";
-    public static final String DEFAULT_IDENTITY = System.getProperty("user.home")+"/.qdup/id_rsa";
+    public static final String DEFAULT_KNOWN_HOSTS = System.getProperty("user.home")+"/.ssh/known_hosts";
+    public static final String DEFAULT_IDENTITY = System.getProperty("user.home")+"/.ssh/id_rsa";
     public static final String DEFAULT_PASSPHRASE = null;
 
     public static final String HOST_EXPRESSION_PREFIX = "=";
