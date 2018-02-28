@@ -24,6 +24,7 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("code",CodeCmd.class,"className");
         rtrn.addCmdDefinition("countdown", Countdown.class,"name","initial");
         rtrn.addCmdDefinition("ctrlC",CtrlC.class);
+        rtrn.addCmdDefinition("done",Done.class);
         rtrn.addCmdDefinition("download", Download.class,"path","destination");
         rtrn.addCmdDefinition("upload",Upload.class,"path","destination");
         rtrn.addCmdDefinition("echo",Echo.class);
@@ -34,6 +35,7 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("read-state",ReadState.class,"name");
         rtrn.addCmdDefinition("regex",Regex.class,"pattern");
         rtrn.addCmdDefinition("repeat-until",RepeatUntilSignal.class,"name");
+        rtrn.addCmdDefinition("response",ShResponse.class,"response");
         rtrn.addCmdDefinition("set-state",SetState.class,"name","VALUE");
         rtrn.addCmdDefinition("sh",Sh.class,"command");
         rtrn.addCmdDefinition("sh",Sh.class,"command","silent");
