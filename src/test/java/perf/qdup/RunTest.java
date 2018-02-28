@@ -10,6 +10,7 @@ import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,8 +31,10 @@ public class RunTest extends SshTestBase{
         final AtomicBoolean staysFalse = new AtomicBoolean(false);
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
         Script doneScript = new Script("run-done");
+
         doneScript
-            .then(Cmd.log("going to wait 2s"))
+            .then(Cmd.sh("echo foo > /tmp/foo.txt"))
+            .then(Cmd.queueDownload("/tmp/foo.txt"))
             .then(Cmd.sleep("2_000"))
             .then(Cmd.log("done waiting"))
             .then(Cmd.done())
@@ -69,6 +72,18 @@ public class RunTest extends SshTestBase{
         assertFalse("script should not invoke beyond a done",staysFalse.get());
         assertTrue("cleanupTimer should be > 0",cleanupTimer.get() > 0);
         assertTrue("done should stop before NEVER is signalled",cleanupTimer.get() - start < 30_000);
+
+
+        File foo = new File("/tmp/foo.txt");
+        File outputPath = new File(run.getOutputPath());
+        File downloaded = new File(outputPath.getAbsolutePath(),"laptop/foo.txt");
+
+        assertTrue("queue-download should execute despite done",downloaded.exists());
+
+
+        foo.delete();
+        downloaded.delete();
+        downloaded.getParentFile().delete();
     }
 
     @Test
