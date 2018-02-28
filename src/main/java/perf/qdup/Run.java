@@ -228,13 +228,13 @@ public class Run implements Runnable {
 
     public boolean initializeCoordinator(){
         List<String> noSignal = new ArrayList<>();
-        Consumer<StageValidation> setupCoordinator = (v)->{
-            v.getSignals().forEach((signalName)->{
-                int count = v.getSignalCount(signalName);
+        Consumer<StageValidation> setupCoordinator = (stageValidation)->{
+            stageValidation.getSignals().forEach((signalName)->{
+                int count = stageValidation.getSignalCount(signalName);
                 coordinator.initialize(signalName,count);
             });
-            v.getWaiters().stream().filter((waitName)->
-                    !v.getSignals().contains(waitName)
+            stageValidation.getWaiters().stream().filter((waitName)->
+                    !stageValidation.getSignals().contains(waitName)
             ).forEach((notSignaled)->noSignal.add(notSignaled));
         } ;
 

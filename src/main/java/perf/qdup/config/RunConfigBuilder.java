@@ -340,6 +340,9 @@ public class RunConfigBuilder {
             this.name = name;
         }
     }
+
+    public State getState(){return state;}
+
     public String getName(){return name;}
 
     public String getKnownHosts(){return knownHosts;}

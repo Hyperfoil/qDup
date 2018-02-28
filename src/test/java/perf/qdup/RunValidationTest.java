@@ -9,6 +9,9 @@ import perf.qdup.config.RunConfigBuilder;
 
 import java.util.Collections;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class RunValidationTest {
 
     private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
@@ -150,11 +153,14 @@ public class RunValidationTest {
 
         builder.addRoleRun("role","signal", Collections.emptyMap());
 
-
         RunValidation validation = builder.runValidation();
+        assertFalse("should not be valid to signal an undefined state variable",validation.isValid());
 
-        Assert.assertEquals("expect 1 signal for ${{FOO}}",1,validation.getRunStage().getSignalCount("${{FOO}}"));
 
+        builder.setRunState("FOO","foo");
+        validation = builder.runValidation();
+        assertTrue("adding state FOO = foo should make the config valid",validation.isValid());
+        assertTrue("run should signal foo (state value of FOO)",validation.getRunStage().getSignals().contains("foo"));
     }
 
 }

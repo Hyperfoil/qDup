@@ -11,7 +11,11 @@ public class WaitFor extends Cmd {
     @Override
     protected void run(String input, Context context, CommandResult result) {
         String populatedName = Cmd.populateStateVariables(name,this,context.getState());
-        context.getCoordinator().waitFor(populatedName,this,result,input);
+        if(populatedName==null || populatedName.isEmpty()){
+            result.next(this,input);
+        }else {
+            context.getCoordinator().waitFor(populatedName, this, result, input);
+        }
     }
 
     @Override

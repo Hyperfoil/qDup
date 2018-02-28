@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 
+import static perf.qdup.cmd.Cmd.STATE_PREFIX;
+
 /**
  * Created by wreicher
  * Reads through the command tree looking for waitFor, signal, and sh that are under a watcher
@@ -25,14 +27,24 @@ public class CommandSummary {
             addWarning(command+" cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
         }
 
-        if(StringUtil.countOccurances(Cmd.STATE_PREFIX,toString) != StringUtil.countOccurances(Cmd.STATE_SUFFIX,toString)){
+        if(StringUtil.countOccurances(STATE_PREFIX,toString) != StringUtil.countOccurances(Cmd.STATE_SUFFIX,toString)){
             addWarning(command+" does not have the same number of ${{ and }} for state variable referencing");
         }
 
         if(command instanceof Signal){
-            addSignal(((Signal)command).getName());
+            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),command,config.getState(),false);
+            if(populatedSignal.contains(STATE_PREFIX)){
+                addWarning("signal: "+populatedSignal+" does not have a known value for state variable and cannot calculate expected signal count");
+            } else {
+                addSignal(populatedSignal);
+            }
         }else if (command instanceof WaitFor){
-            addWait(((WaitFor)command).getName());
+            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),command,config.getState(),false);
+            if(populatedWait.contains(STATE_PREFIX)){
+                addWarning("wait-for: "+populatedWait+" does not have a known value for state variable and cannot calculate expected signal count");
+            } else {
+                addWait(populatedWait);
+            }
         }else if (command instanceof ScriptCmd){
             String scriptName = ((ScriptCmd)command).getName();
             Script namedScript = config.getScript(scriptName,command);
@@ -54,7 +66,7 @@ public class CommandSummary {
             }
         }
 
-        if(toString.indexOf(Cmd.STATE_PREFIX)>-1) {
+        if(toString.indexOf(STATE_PREFIX)>-1) {
 
             Matcher matcher = Cmd.STATE_PATTERN.matcher(toString);
             while (matcher.find()) {

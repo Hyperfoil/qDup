@@ -99,6 +99,9 @@ public abstract class Cmd {
         return value;
     }
     public static String populateStateVariables(String command,Cmd cmd, State state){
+        return populateStateVariables(command,cmd,state,true);
+    }
+    public static String populateStateVariables(String command,Cmd cmd, State state,boolean replaceUndefined){
 
         if(command.indexOf(STATE_PREFIX)<0)
             return command;
@@ -120,8 +123,12 @@ public abstract class Cmd {
             }
             if(value == null ){//bad times
                 logger.debug("missing {} state variable for {}",name,command);
+                if(replaceUndefined){
+                    value = "";
+                }else{
+                    value = STATE_PREFIX+name+STATE_SUFFIX;
+                }
                 //TODO how to alert the missing state
-                value = "";
             }
             rtrn.append(value);
             previous = matcher.end();
