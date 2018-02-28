@@ -122,6 +122,9 @@ public class Coordinator {
         return latches.get(name).get();
     }
 
+    public void clearWaiters(){
+        waitFors.clear();
+    }
     public void signal(String name){
         if(!latches.containsKey(name)){
             logger.warn("signal {} missing latch, ignoring",name);

@@ -45,6 +45,7 @@ public abstract class Cmd {
 
     public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
+    public static Cmd done(){return new Done();}
     public static Cmd NO_OP(){return new NO_OP();}
     public static Cmd abort(String message){return new Abort(message);}
     public static Cmd code(Code code){return new CodeCmd(code);}

@@ -52,5 +52,8 @@ public final class Context {
     public void abort(){
         run.abort();
     }
+    public void done(){
+        run.done();
+    }
     public Local getLocal(){return run.getLocal();}
 }

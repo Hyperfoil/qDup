@@ -461,6 +461,19 @@ public class CommandDispatcher {
         stop();
         //scheduler.shutdownNow();
     }
+    public void clearActive(){
+        closeSessions();
+        activeCommands.forEach((cmd,activeCommand)->{
+            if( activeCommand.getRunWatchers()!=null ){
+                activeCommand.getRunWatchers().stop();
+            }
+            if( activeCommand.getScheduledFuture()!=null ){
+                activeCommand.getScheduledFuture().cancel(true);
+            }
+        });
+        activeCommands.clear();
+        observers.forEach(c -> c.onStop());
+    }
     public void stop(){
         logger.debug("CD.stop");
         isStopped=true;

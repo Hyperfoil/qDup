@@ -1,5 +1,6 @@
 package perf.qdup;
 
+import org.junit.Assert;
 import org.junit.Test;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandDispatcher;
@@ -10,8 +11,11 @@ import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
 
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class RunTest extends SshTestBase{
@@ -19,6 +23,53 @@ public class RunTest extends SshTestBase{
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
+    @Test(timeout=45_000)
+    public void testDone(){
+        final StringBuilder first = new StringBuilder();
+        final AtomicLong cleanupTimer = new AtomicLong();
+        final AtomicBoolean staysFalse = new AtomicBoolean(false);
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        Script doneScript = new Script("run-done");
+        doneScript
+            .then(Cmd.log("going to wait 2s"))
+            .then(Cmd.sleep("2_000"))
+            .then(Cmd.log("done waiting"))
+            .then(Cmd.done())
+            .then(Cmd.code((input, state) -> {
+                staysFalse.set(true);
+                return Result.next(input);
+            }));
+        Script waitScript = new Script("run-wait");
+        waitScript.then(Cmd.waitFor("NEVER"));
+        Script signalScript = new Script("run-signal");
+        signalScript.then(Cmd.sleep("30s")).then(Cmd.signal("NEVER"));
+        Script cleanupScript = new Script("cleanup");
+        cleanupScript.then(Cmd.code((input,state)->{
+            first.append(System.currentTimeMillis());
+            cleanupTimer.set(System.currentTimeMillis());
+            return Result.next(input);
+        }));
+
+        builder.addScript(doneScript);
+        builder.addScript(waitScript);
+        builder.addScript(signalScript);
+        builder.addScript(cleanupScript);
+        builder.addHostAlias("local",getHost().toString());//+testServer.getPort());
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run-done",new HashMap<>());
+        builder.addRoleRun("role","run-wait",new HashMap<>());
+        builder.addRoleRun("role","run-signal",new HashMap<>());
+        builder.addRoleCleanup("role","cleanup",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run run = new Run("/tmp",config,dispatcher);
+        long start = System.currentTimeMillis();
+        run.run();
+        assertFalse("script should not invoke beyond a done",staysFalse.get());
+        assertTrue("cleanupTimer should be > 0",cleanupTimer.get() > 0);
+        assertTrue("done should stop before NEVER is signalled",cleanupTimer.get() - start < 30_000);
+    }
 
     @Test
     public void testTimer(){
@@ -27,13 +78,13 @@ public class RunTest extends SshTestBase{
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
         Script script = new Script("run-timer");
         script.then(
-                Cmd.sleep("4_000").addTimer(2_000,Cmd.code(((input, state) -> {
-                    first.append(input);
-                    return Result.next(input);
-                }))).addTimer(10_000,Cmd.code(((input, state) -> {
-                    second.append(input);
-                    return Result.next(input);
-                })))
+            Cmd.sleep("4_000").addTimer(2_000,Cmd.code(((input, state) -> {
+                first.append(input);
+                return Result.next(input);
+            }))).addTimer(10_000,Cmd.code(((input, state) -> {
+                second.append(input);
+                return Result.next(input);
+            })))
         );
 
         builder.addScript(script);
