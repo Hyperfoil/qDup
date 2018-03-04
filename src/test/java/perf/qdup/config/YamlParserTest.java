@@ -153,6 +153,22 @@ public class YamlParserTest extends SshTestBase {
     }
 
     @Test
+    public void listCommandArgument(){
+        YamlParser parser = new YamlParser();
+        parser.load("listCommandArgument",stream(""+
+                "foo: {",
+                "  arg: \"value\"",
+                "  options: [",
+                "    \"first Option is crazy\"",
+                "    \"second options is not bettter\"",
+                "  ]",
+                "}"
+        ));
+        validateParse(parser);
+        System.out.println(parser.getJson("listCommandArgument").toString(2));
+    }
+
+    @Test
     public void multiPartValueString(){
         YamlParser parser = new YamlParser();
         parser.load("supportedSyntax",stream(""+
