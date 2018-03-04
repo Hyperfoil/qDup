@@ -18,8 +18,8 @@ public class SshSessionTest extends SshTestBase{
         String currentDir = System.getProperty("user.dir");
         SshSession sshSession = new SshSession(
                 getHost(),
-                userHome+"/.qdup/known_hosts",
-                userHome+"/.qdup/id_rsa",
+                userHome+"/.ssh/known_hosts",
+                userHome+"/.ssh/id_rsa",
                 null
         );
         assertTrue("SshSession should be open after init",sshSession.isOpen());
