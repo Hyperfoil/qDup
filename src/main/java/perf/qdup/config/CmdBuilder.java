@@ -10,13 +10,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static perf.qdup.config.YamlParser.*;
 
 public class CmdBuilder {
 
-    private static final List supported = Arrays.asList("long","int","java.lang.String","boolean","java.lang.Boolean");
+    private static final List supported = Arrays.asList("long","int","java.lang.String","java.lang.String[]","boolean","java.lang.Boolean");
 
     public static CmdBuilder getBuilder(){
         CmdBuilder rtrn = new CmdBuilder();
@@ -43,9 +44,17 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("sleep",Sleep.class,"ms");
         rtrn.addCmdDefinition("wait-for",WaitFor.class,"name");
         rtrn.addCmdDefinition("wait-for",WaitFor.class,"name","silent");
-        rtrn.addCmdDefinition("xpath",XPath.class,"path");
+        rtrn.addCmdDefinition("xml",XmlCmd.class,"path");
+        rtrn.addCmdDefinition("xml",XmlCmd.class,"path","operations");
 
         return rtrn;
+    }
+
+    public static void main(String[] args) {
+
+
+
+        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
     }
 
     private class Key {
@@ -90,6 +99,8 @@ public class CmdBuilder {
                             case "java.lang.Boolean":
                                 rtrn = rtrn && Sets.of("yes","no","true","false").contains(existing.toString().toLowerCase());
                                 break;
+                            case "java.lang.String[]":
+                                rtrn = rtrn && (existing.toString().startsWith("[") && existing.toString().endsWith("]") );
                         }
                     }
                 }
@@ -129,6 +140,15 @@ public class CmdBuilder {
                                 args.add(i,existing.toString());
                             }
                             break;
+                        case "java.lang.String[]":
+                            if(! (existing instanceof String[])){
+                                if(existing instanceof List){
+                                    List<String> list = ((List<?>) existing).stream().map(Object::toString).collect(Collectors.toList());
+                                    args.remove(i);
+                                    args.add(i,list.toArray(new String[]{}));
+                                }
+                            }
+                            break;
                         case "boolean":
                         case "java.lang.Boolean":
                             if(! (existing instanceof Boolean) ){
@@ -136,6 +156,7 @@ public class CmdBuilder {
                                 args.add(i,"true".equalsIgnoreCase(existing.toString()) || "yes".equalsIgnoreCase(existing.toString()));
                             }
                             break;
+
                         default:
                             //TODO how to handle unsupported type?
                     }
@@ -192,9 +213,6 @@ public class CmdBuilder {
         public Set<Set<String>> getOptions(){
             return keyedConstructors.keySet();
         }
-
-
-
     }
 
     public boolean has(String shortname){
@@ -285,7 +303,7 @@ public class CmdBuilder {
             target = json.getJson(0);
             shortname = target.getString(KEY);
 
-            //System.out.println(shortname+" isArray "+json.toString(2));
+
 
             if(target.has(VALUE)){
                 List<String> split = split(target.getString(VALUE));
@@ -318,28 +336,52 @@ public class CmdBuilder {
                     }
                 }
 
-            }else if (target.has(CHILD) && target.getJson(CHILD).size()>1){
-                Json childEntry = target.getJson(CHILD).getJson(0);
-                Map<String,String> entries = new HashMap<>();
-                for(int i=0; i<childEntry.size(); i++){
-                    Json arg = childEntry.getJson(i);
-                    String argKey = arg.getString(KEY);
-                    if(arg.has(VALUE)) {
-                        entries.put(argKey, arg.getString(VALUE));
-                    }else{
-                        //what sort of craziness was added inline like this?
+            }else if (target.has(CHILD) ) {
+
+                if(target.getJson(CHILD).size()>=1){//added >= to test, would eventually just remve check if it works
+                    //if there are multiple children then only check the first for arguments
+                    //the other children are sub-commands or modifiers (with, timer, watch...)
+
+                    Json childEntry = target.getJson(CHILD).getJson(0);
+                    Map<String, Object> entries = new HashMap<>();
+                    for (int i = 0; i < childEntry.size(); i++) {
+                        Json arg = childEntry.getJson(i);
+                        String argKey = arg.getString(KEY);
+                        if (arg.has(VALUE)) {
+                            entries.put(argKey, arg.getString(VALUE));
+                        } else if(arg.has(CHILD)){
+                            Json argChild = arg.getJson(CHILD);
+                            List<String> entryList = new ArrayList<>();
+                            if(argChild.size()==1){
+                                Json argChildList = argChild.getJson(0);
+                                for(int v=0; v<argChildList.size(); v++){
+                                    Json argChildEntry = argChildList.getJson(v);
+                                    if(argChildEntry.has(KEY)){
+                                        entryList.add(argChildEntry.getString(KEY));
+                                    }
+                                }
+                            }else{
+                                //they used -'s? not sure what goes in the branch (a bit late)
+                            }
+                            entries.put(argKey,entryList);
+
+                            //tread arg as a list
+                        } else {
+                            //what sort of craziness was added inline like this?
+                        }
                     }
-                }
-                if(commands.get(shortname).sizes().contains(entries.size())){
-                    for(String expected : commands.get(shortname).getOption(entries.size())){
-                        args.add(entries.get(expected));
+                    if (commands.get(shortname).sizes().contains(entries.size())) {
+                        for (String expected : commands.get(shortname).getOption(entries.size())) {
+                            args.add(entries.get(expected));
+                        }
+                        childStartIndex = 1; //skip the first child. It was used to create the command
+                    } else {
+                        entries.clear();
                     }
-                    childStartIndex=1; //skip the first child. It was used to create the command
+
                 }else{
-                    entries.clear();
+
                 }
-
-
 
             }
         }else {

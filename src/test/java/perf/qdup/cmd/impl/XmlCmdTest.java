@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class XPathTest {
+public class XmlCmdTest {
 
     @Test
     public void xpathTest(){
@@ -28,31 +28,31 @@ public class XPathTest {
         StringBuilder third = new StringBuilder();
 
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-        Script runScript = new Script("run-xpath");
+        Script runScript = new Script("run-xml");
         runScript.then(Cmd.sh("echo \\<foo\\>\\<bar value=\\\"one\\\"\\>\\</bar\\>\\<biz\\>buz\\</biz\\>\\</foo\\> > /tmp/foo.xml"));
         runScript.then(
-                Cmd.xpath("/tmp/foo.xml>/foo/biz/text()")
+                Cmd.xml("/tmp/foo.xml>/foo/biz/text()")
                         .then(Cmd.code((input,state)->{
                             first.append(input.trim());
                             return Result.next(input);
                         }))
         );
         runScript.then(
-                Cmd.xpath("/tmp/foo.xml>/foo/biz == biz")
+                Cmd.xml("/tmp/foo.xml>/foo/biz == biz")
         );
         runScript.then(
-                Cmd.xpath("/tmp/foo.xml>/foo/biz/text()")
+                Cmd.xml("/tmp/foo.xml>/foo/biz/text()")
                         .then(Cmd.code((input,state)->{
                             second.append(input.trim());
                             return Result.next(input);
                         }))
         );
         runScript.then( //TODO this does not finish the write before the next Cmd runs (sometimes)
-                Cmd.xpath("/tmp/foo.xml>/foo/bar/@value == two")
+                Cmd.xml("/tmp/foo.xml>/foo/bar/@value == two")
         );
 
         runScript.then(
-                Cmd.xpath("/tmp/foo.xml>/foo/bar/@value")
+                Cmd.xml("/tmp/foo.xml>/foo/bar/@value")
                         .then(Cmd.code((input,state)->{
                             third.append(input.trim());
                             return Result.next(input);
@@ -61,7 +61,7 @@ public class XPathTest {
         builder.addScript(runScript);
         builder.addHostAlias("local","wreicher@localhost:22");
         builder.addHostToRole("role","local");
-        builder.addRoleRun("role","run-xpath",new HashMap<>());
+        builder.addRoleRun("role","run-xml",new HashMap<>());
 
         RunConfig config = builder.buildConfig();
         CommandDispatcher dispatcher = new CommandDispatcher();
@@ -69,8 +69,8 @@ public class XPathTest {
         run.run();
 
         assertEquals("/tmp/foo.xml>/foo/biz/text() should be buz","buz",first.toString());
-        assertEquals("/tmp/foo.xml>/foo/biz/text() should be biz after xpath","biz",second.toString());
-        assertEquals("/tmp/foo.xml>/foo/bar/@value should be two afer xpath","two",third.toString());
+        assertEquals("/tmp/foo.xml>/foo/biz/text() should be biz after xml","biz",second.toString());
+        assertEquals("/tmp/foo.xml>/foo/bar/@value should be two afer xml","two",third.toString());
         File tmpXml = new File("/tmp/foo.xml");
 
         try {

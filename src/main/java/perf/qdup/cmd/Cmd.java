@@ -77,7 +77,11 @@ public abstract class Cmd {
     public static Cmd signal(String name){return new Signal(name);}
     public static Cmd sleep(String amount){return new Sleep(amount);}
     public static Cmd waitFor(String name){return new WaitFor(name);}
-    public static Cmd xpath(String path){return new XPath(path);}
+    public static Cmd xml(String path){return new XmlCmd(path);}
+    public static Cmd xml(String path,String...operations){
+        return new XmlCmd(path,operations);
+    }
+
 
     private boolean hasWith(String name){
 

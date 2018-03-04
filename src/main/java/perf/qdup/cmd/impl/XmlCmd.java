@@ -3,6 +3,7 @@ package perf.qdup.cmd.impl;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
 import perf.qdup.cmd.CommandResult;
+import perf.yaup.StringUtil;
 import perf.yaup.file.FileUtility;
 import perf.yaup.xml.Xml;
 import perf.yaup.xml.XmlLoader;
@@ -10,76 +11,119 @@ import perf.yaup.xml.XmlLoader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class XPath extends Cmd {
+import static perf.yaup.StringUtil.removeQuotes;
+
+public class XmlCmd extends Cmd {
     String path;
-    public XPath(String path){
-        this.path = path;
+    List<String> operations;
+    //TODO calling remoeQuotes in Cmd just exposes artifacts from yaml parsing, should be done in CmdBuilder
+    public XmlCmd(String path){
+        this(
+            path.substring(0,path.indexOf(FileUtility.SEARCH_KEY)),
+
+            path.substring(
+                path.indexOf(FileUtility.SEARCH_KEY)+FileUtility.SEARCH_KEY.length()
+            ).split("\n")
+
+        );
     }
+    public XmlCmd(String path,String...operations){
+        this.path = removeQuotes(path);
+        this.operations = Stream.of(operations).map(StringUtil::removeQuotes).collect(Collectors.toList());
+    }
+
+
+    public String getPath(){return path;}
+
+    public List<String> getOperations(){return Collections.unmodifiableList(operations);}
 
     @Override
     public String toString(){
-        return "xpath: "+path;
+        return "xml: {path:"+path+", operations: "+operations+"}";
     }
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
+        System.out.println("RUN: "+this);
         XmlLoader loader = new XmlLoader();
         Xml xml = null;
-        if(path.indexOf(FileUtility.SEARCH_KEY)>0){ //file>xpath ...
-            String filePath = Cmd.populateStateVariables(path.substring(0,path.indexOf(FileUtility.SEARCH_KEY)),this,context.getState());
-            path = path.substring(path.indexOf(FileUtility.SEARCH_KEY)+FileUtility.SEARCH_KEY.length());
-            try {
-                File tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
-                context.getLocal().download(filePath,tmpDest.getPath(),context.getSession().getHost());
+        boolean successful = true;
+        String output = input;
+        File tmpDest = null;
+        try {
+
+            if(path==null || path.isEmpty()){
+                xml = loader.loadXml(input);
+            }else{
+                tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
+                System.out.println(tmpDest.getAbsolutePath());
+                context.getLocal().download(path,tmpDest.getPath(),context.getSession().getHost());
                 xml = loader.loadXml(tmpDest.toPath());
+            }
+            for(int i=0; i<operations.size(); i++){
+                String operation = operations.get(i);
                 int opIndex = FileUtility.OPERATIONS.stream().mapToInt(op->{
-                    int rtrn = path.indexOf(op);
+                    int rtrn = operation.indexOf(op);
                     return rtrn;
                 }).max().getAsInt();
+                String search = opIndex>-1 ? Cmd.populateStateVariables(operation.substring(0,opIndex),this,context.getState()).trim() : operation;
+                String modification = opIndex>-1 ? Cmd.populateStateVariables(operation.substring(opIndex),this,context.getState()).trim() : "";
 
-                String search = opIndex>-1 ? Cmd.populateStateVariables(path.substring(0,opIndex),this,context.getState()).trim() : path;
-                String operation = opIndex>-1 ? Cmd.populateStateVariables(path.substring(opIndex),this,context.getState()).trim() : "";
-
-                xml = loader.loadXml(tmpDest.toPath());
+                System.out.println("search       "+search);
+                System.out.println("modification "+modification);
+                System.out.println(xml.documentString(2));
                 List<Xml> found = xml.getAll(search);
-                if(operation.isEmpty()){
-                    //convert found to a string and send it to next
-                    if(found.isEmpty()){
-                        result.skip(this,input);
-                    }else {
-                        String rtrn = found.stream().map(Xml::toString).collect(Collectors.joining("\n"));
-                        tmpDest.delete();
-                        result.next(this, rtrn);
-                    }
-                }else{
-                    if(found.isEmpty()){
-                        result.skip(this,input);
+                if(found.isEmpty()){
+
+                    if(modification.isEmpty()){
+                        //we didn't find the xml
+
+                        successful = false;
+
                     }else{
-                        found.forEach(x->x.modify(operation));
-                        try(  PrintWriter out = new PrintWriter( tmpDest )  ){
-                            out.print(xml.documentString());
-                        }
-                        context.getLocal().upload(tmpDest.getPath(),filePath,context.getSession().getHost());
-                        tmpDest.delete();
-                        result.next(this,input);//TODO decide a more appropriate output
+                        //TODO check if set operation and create node
                     }
-
+                } else {
+                    if(modification.isEmpty()){
+                        output = found.stream().map(Xml::toString).collect(Collectors.joining("\n"));
+                        System.out.println("set output = "+output);
+                    }else{
+                        found.forEach(x->x.modify(modification));
+                    }
                 }
-            } catch (IOException e) {
-                logger.error("{}@{} failed to create local tmp file",this.toString(),context.getSession().getHostName(),e);
             }
-        }else{
-            //assume the input is the xml to process
-            xml = loader.loadXml(input);
-        }
+            System.out.println("post modification\n"+xml.documentString(2));
+            try(  PrintWriter out = new PrintWriter( tmpDest )  ){
+                out.print(xml.documentString());
+                out.flush();
+            }
+            context.getLocal().upload(tmpDest.getPath(),path,context.getSession().getHost());
 
+        } catch (IOException e) {
+            logger.error("{}@{} failed to create local tmp file",this.toString(),context.getSession().getHostName(),e);
+            successful = false;
+            output = "COULD NOT LOAD: "+path;
+        } finally {
+            if(tmpDest != null){
+                tmpDest.delete();
+            }
+            if(successful){
+                result.next(this,output);
+            }else{
+                result.skip(this,output);
+            }
+        }
     }
 
     @Override
     protected Cmd clone() {
-        return new XPath(this.path).with(this.with);
+        return new XmlCmd(this.path,this.operations.toArray(new String[]{})).with(this.with);
     }
+
 }
