@@ -105,9 +105,9 @@ public class Local {
 
         String sshOpt = prepSshString(port);
         if(sshOpt==null || sshOpt.isEmpty()) {
-            builder.command("/usr/bin/rsync", "-avz", path, userName + "@" + hostName + ":" + dest);
+            builder.command("/usr/bin/rsync", "-avzI", path, userName + "@" + hostName + ":" + dest);
         }else{
-            builder.command("/usr/bin/rsync", "-avz", "-e",sshOpt,path, userName + "@" + hostName + ":" + dest);
+            builder.command("/usr/bin/rsync", "-avzI", "-e",sshOpt,path, userName + "@" + hostName + ":" + dest);
         }
         logger.debug( "Running rsync command: " + builder.command().stream().collect( Collectors.joining(" ")));
         try {

@@ -1,8 +1,8 @@
 package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.Context;
 import perf.qdup.cmd.CommandResult;
+import perf.qdup.cmd.Context;
 import perf.yaup.StringUtil;
 import perf.yaup.file.FileUtility;
 import perf.yaup.xml.Xml;
@@ -11,7 +11,6 @@ import perf.yaup.xml.XmlLoader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;

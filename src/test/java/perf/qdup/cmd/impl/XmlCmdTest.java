@@ -40,7 +40,6 @@ public class XmlCmdTest {
         runScript.then(
                 Cmd.xml("/tmp/foo.xml>/foo/biz == biz")
         );
-        runScript.then(Cmd.sleep("2s"));
         runScript.then(
                 Cmd.xml("/tmp/foo.xml>/foo/biz/text()")
                         .then(Cmd.code((input,state)->{
@@ -51,7 +50,6 @@ public class XmlCmdTest {
         runScript.then( //TODO this does not finish the write before the next Cmd runs (sometimes)
                 Cmd.xml("/tmp/foo.xml>/foo/bar/@value == two")
         );
-        runScript.then(Cmd.sleep("1s"));
         runScript.then(
                 Cmd.xml("/tmp/foo.xml>/foo/bar/@value")
                         .then(Cmd.code((input,state)->{
@@ -76,13 +74,9 @@ public class XmlCmdTest {
 
         try {
             String content = new String(Files.readAllBytes(tmpXml.toPath()));
-
             assertFalse("content should not contain one",content.contains("one"));
             assertFalse("content should not contain buz",content.contains("buz"));
             assertTrue("content should not contain biz",content.contains("biz"));
-
-
-
         } catch (IOException e) {
             e.printStackTrace();
         }
