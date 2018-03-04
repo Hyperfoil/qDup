@@ -50,7 +50,7 @@ public class XmlCmd extends Cmd {
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
-        System.out.println("RUN: "+this);
+
         XmlLoader loader = new XmlLoader();
         Xml xml = null;
         boolean successful = true;
@@ -62,7 +62,7 @@ public class XmlCmd extends Cmd {
                 xml = loader.loadXml(input);
             }else{
                 tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
-                System.out.println(tmpDest.getAbsolutePath());
+
                 context.getLocal().download(path,tmpDest.getPath(),context.getSession().getHost());
                 xml = loader.loadXml(tmpDest.toPath());
             }
@@ -75,9 +75,6 @@ public class XmlCmd extends Cmd {
                 String search = opIndex>-1 ? Cmd.populateStateVariables(operation.substring(0,opIndex),this,context.getState()).trim() : operation;
                 String modification = opIndex>-1 ? Cmd.populateStateVariables(operation.substring(opIndex),this,context.getState()).trim() : "";
 
-                System.out.println("search       "+search);
-                System.out.println("modification "+modification);
-                System.out.println(xml.documentString(2));
                 List<Xml> found = xml.getAll(search);
                 if(found.isEmpty()){
 
@@ -92,13 +89,13 @@ public class XmlCmd extends Cmd {
                 } else {
                     if(modification.isEmpty()){
                         output = found.stream().map(Xml::toString).collect(Collectors.joining("\n"));
-                        System.out.println("set output = "+output);
+
                     }else{
                         found.forEach(x->x.modify(modification));
                     }
                 }
             }
-            System.out.println("post modification\n"+xml.documentString(2));
+
             try(  PrintWriter out = new PrintWriter( tmpDest )  ){
                 out.print(xml.documentString());
                 out.flush();
