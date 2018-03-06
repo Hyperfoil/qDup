@@ -222,6 +222,36 @@ public class YamlParserTest extends SshTestBase {
 
 
     }
+    @Test
+    public void scalar(){
+        YamlParser parser = new YamlParser();
+        parser.load("scalar",stream(""+
+            "key: |",
+            "  <foo>",
+            "    bar",
+            "  </foo>",
+            "foo: >",
+            "  <foo>",
+            "    bar",
+            "  </foo>"
+        ));
+        validateParse(parser);
+        Json scalar = parser.getJson("scalar");
+
+
+        assertEquals("two entries",2,scalar.size());
+
+        Json first = scalar.getJson(0);
+        Json second = scalar.getJson(1);
+
+        assertTrue(first.has(VALUE));
+        assertEquals("3 lines for literal scalar",3,first.getString(VALUE,"").split(System.lineSeparator()).length);
+        assertEquals("first lineNumber",1,first.getLong("lineNumber"));
+
+        assertEquals("second lineNumber",5,second.getLong("lineNumber"));
+        assertEquals("1 line for folded scalar",1,second.getString(VALUE,"").split(System.lineSeparator()).length);
+
+    }
 
     @Test
     public void commandOptions(){
@@ -256,6 +286,7 @@ public class YamlParserTest extends SshTestBase {
                 "\"ke:y\":VALUE"));
 
         Json json = parser.getJson();
+
 
         validateParse(parser);
 

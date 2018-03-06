@@ -194,12 +194,46 @@ public class YamlParser {
             int lineNumber = 0;
             boolean nestedDash = false;
             boolean emptyDash = false;
+            boolean scalar = false;
+            boolean foldedScalar = false;
 
             Stack<String> inlineStack = new Stack<>();
             while((originalLine=reader.readLine())!=null && ++lineNumber > 0){
                 String line = originalLine;
 
-                if (line.trim().startsWith("---")) {
+                if(scalar){
+                    int keyIndent = builder.getInt(CHILD_LENGTH, true);
+                    int lineIndent = 0;
+                    while(line.startsWith(" ",lineIndent)){
+                        lineIndent++;
+                    }
+                    if(lineIndent>keyIndent){
+                        //TODO deal with newlines
+                        String prefix = "";
+                        if(!foldedScalar) {
+                            if(builder.target().getString(VALUE,"").length()>0) {
+                                prefix = System.lineSeparator();
+                            }
+                        }else {
+                            //TODO need to be able to know if it is more indented
+                            if(builder.target().getString(VALUE,"").length()>0) {
+                                prefix = " ";
+                            }
+                        }
+                        builder.target().set(VALUE,builder.target().get(VALUE)+prefix+line.trim());
+                        line = "";
+                    }else if (line.isEmpty()) {
+                        String prefix = System.lineSeparator();
+                        builder.target().set(VALUE,builder.target().get(VALUE)+prefix);
+                    }else{
+                        scalar = false;
+                        foldedScalar = false;
+                    }
+                }
+
+                if(line.isEmpty()){
+
+                }else if (line.trim().startsWith("---")) {
 
                 }else if (line.trim().startsWith("...")){
 
@@ -503,8 +537,16 @@ public class YamlParser {
                                             i++;
                                         }
 
-                                        if(i>1){
-                                            builder.target().set(VALUE,line.substring(0,i));
+                                        if(i>=1){
+                                            String lineValue = line.substring(0,i);
+                                            if ("|".equals(lineValue.trim()) || ">".equals(lineValue.trim()) && line.endsWith(lineValue)) {
+                                                scalar=true;
+                                                if(">".endsWith(lineValue.trim())){
+                                                    foldedScalar=true;
+                                                }
+                                                lineValue="";
+                                            }
+                                            builder.target().set(VALUE,lineValue);
                                             line = line.substring(i).trim();
 
                                         }
