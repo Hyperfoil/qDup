@@ -50,13 +50,6 @@ public class CmdBuilder {
         return rtrn;
     }
 
-    public static void main(String[] args) {
-
-
-
-        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-    }
-
     private class Key {
         private String name;
         private String type;
