@@ -186,6 +186,23 @@ public class YamlParser {
             addError(yamlPath,"failed to read "+yamlPath);
         }
     }
+    private int charactersUntil(String line,char target){
+        return charactersUntil(line,target,0);
+    }
+    private int charactersUntil(String line,char target,int start){
+        boolean stop = false;
+        int i=start;
+        while(i<line.length() && !stop){
+            if(target == line.charAt(i)){
+                if('\\'==line.charAt(i-1)){
+                }else{
+                    stop=true;
+                }
+            }
+            i++;
+        }
+        return i;
+    }
     public void load(String fileName,InputStream stream){
         Json json = new Json(true);
         builder.reset(json);
@@ -196,11 +213,13 @@ public class YamlParser {
             boolean emptyDash = false;
             boolean scalar = false;
             boolean foldedScalar = false;
-
+            boolean quoted=false;
+            boolean finishedMultiLineKey = false;
+            String quotedKey="";
+            char quoteClose='"';
             Stack<String> inlineStack = new Stack<>();
             while((originalLine=reader.readLine())!=null && ++lineNumber > 0){
                 String line = originalLine;
-
                 if(scalar){
                     int keyIndent = builder.getInt(CHILD_LENGTH, true);
                     int lineIndent = 0;
@@ -229,6 +248,27 @@ public class YamlParser {
                         scalar = false;
                         foldedScalar = false;
                     }
+                }else if (quoted){
+                    boolean stop = false;
+                    int i= charactersUntil(line,quoteClose);
+                    if(!line.isEmpty() && (i < line.length() || (quoteClose==line.charAt(i-1) && '/'!=line.charAt(i-2))) ){
+                        quoted=false;
+                        if(KEY.equals(quotedKey)){
+                            finishedMultiLineKey=true;
+                        }
+                    }
+                    String additionalValue = line.substring(0,i);
+
+                    if(!quoted){
+                        if(KEY.equals(quotedKey) && additionalValue.endsWith(quoteClose+"")){
+                            additionalValue = additionalValue.substring(0,additionalValue.length()-1);
+                        }
+                    }
+
+                    line = line.substring(i);
+                    //TODO do we trim the lines?
+                    //this assumes we are working on value, what if it's a key?
+                    builder.target().set(quotedKey,builder.target().get(quotedKey)+additionalValue);
                 }
 
                 if(line.isEmpty()){
@@ -239,89 +279,96 @@ public class YamlParser {
 
                 }else if (line.trim().isEmpty()){
 
-                }else if (nestMatcher.reset(line).find()){
-                    String childValue = nestMatcher.group(CHILD);
-                    int childLength = childValue.length();
-                    int contextLength = builder.getInt(CHILD_LENGTH, true);
+                }else if ( nestMatcher.reset(line).find()){
+                    if(!finishedMultiLineKey) {
+                        String childValue = nestMatcher.group(CHILD);
+                        int childLength = childValue.length();
+                        int contextLength = builder.getInt(CHILD_LENGTH, true);
 
-                    if(inlineStack.isEmpty() && !emptyDash) {
+                        if (inlineStack.isEmpty() && !emptyDash) {
 
 
-                        if (childLength > contextLength) { // CHILD
-                            Json childAry = new Json();
-                            Json newChild = new Json(false);
+                            if (childLength > contextLength) { // CHILD
+                                Json childAry = new Json();
+                                Json newChild = new Json(false);
 
-                            if (builder.target().has(CHILD)) {
-                                childAry = builder.target().getJson(CHILD);
-                            } else {
-                                builder.target().add(CHILD, childAry);
-                            }
-
-                            childAry.add(newChild);
-
-                            builder.push(childAry);
-                            builder.set(CHILD_ARRAY, true);
-                            builder.push(newChild);
-                            builder.set(CHILD_LENGTH, childLength);
-
-                        } else if (childLength < contextLength) { // elder
-
-                            while (childLength < builder.getInt(CHILD_LENGTH, true) || builder.has(CHILD_ARRAY, false)) {
-                                builder.pop();
-                            }
-
-                            if (childValue.contains("-")) {
-                                while (!builder.has(CHILD_ARRAY, false)) {
-                                    builder.pop();
+                                if (builder.target().has(CHILD)) {
+                                    childAry = builder.target().getJson(CHILD);
+                                } else {
+                                    builder.target().add(CHILD, childAry);
                                 }
-                                Json newEntry = new Json(false);
-                                builder.target().add(newEntry);
-                                builder.push(newEntry);
+
+                                childAry.add(newChild);
+
+                                builder.push(childAry);
+                                builder.set(CHILD_ARRAY, true);
+                                builder.push(newChild);
                                 builder.set(CHILD_LENGTH, childLength);
-                            } else {
-                                //space indent, don't change target
+
+                            } else if (childLength < contextLength) { // elder
+
+                                while (childLength < builder.getInt(CHILD_LENGTH, true) || builder.has(CHILD_ARRAY, false)) {
+                                    builder.pop();
+                                }
+
+                                if (childValue.contains("-")) {
+                                    while (!builder.has(CHILD_ARRAY, false)) {
+                                        builder.pop();
+                                    }
+                                    Json newEntry = new Json(false);
+                                    builder.target().add(newEntry);
+                                    builder.push(newEntry);
+                                    builder.set(CHILD_LENGTH, childLength);
+                                } else {
+                                    //space indent, don't change target
+                                }
+
+                            } else {//sibling
+                                if (childValue.contains("-")) {
+                                    while (!builder.has(CHILD_ARRAY, false)) {
+                                        builder.pop();
+                                    }
+
+                                    Json newJson = new Json(false);
+                                    builder.target().add(newJson);
+                                    builder.push(newJson);
+
+
+                                } else {
+                                    while (!builder.target().isArray()) {
+                                        builder.pop();
+                                    }
+                                }
+                                builder.set(CHILD_LENGTH, childLength);
+
+
                             }
 
-                        } else {//sibling
                             if (childValue.contains("-")) {
-                                while (!builder.has(CHILD_ARRAY, false)) {
-                                    builder.pop();
-                                }
-
-                                Json newJson = new Json(false);
-                                builder.target().add(newJson);
-                                builder.push(newJson);
-
-
-                            } else {
-                                while (!builder.target().isArray()) {
-                                    builder.pop();
-                                }
+                                nestedDash = true;
                             }
-                            builder.set(CHILD_LENGTH, childLength);
 
 
+                            //nesting all done, now look at content of line
                         }
-
-                        if (childValue.contains("-")) {
-                            nestedDash = true;
+                        if (!inlineStack.isEmpty() && childValue.contains("-")) {
+                            //we are in an inline structure but there is a -
+                            addError(fileName, String.format("Encountered - inside an inline list | map%n%s[%d]: %s%n", fileName, lineNumber, originalLine));
                         }
+                        line = line.substring(nestMatcher.end());
 
-
-                        //nesting all done, now look at content of line
-                    }
-                    if(!inlineStack.isEmpty() && childValue.contains("-")){
-                        //we are in an inline structure but there is a -
-                        addError(fileName,String.format("Encountered - inside an inline list | map%n%s[%d]: %s%n",fileName,lineNumber,originalLine));
-                    }
-                    line = line.substring(nestMatcher.end());
-                    if(line.trim().isEmpty() && nestedDash){
-                        emptyDash=true;
+                        if (line.trim().isEmpty() && nestedDash) {
+                            emptyDash = true;
+                        } else {
+                            emptyDash = false;
+                        }
                     }else{
-                        emptyDash=false;
+                        line = line.trim();
+                        finishedMultiLineKey = false;
                     }
 
                     while(!line.isEmpty() && !hasErrors()){
+
                         if(line.startsWith("#")){
                             if(builder.target().isEmpty() || builder.target().isArray()){
                                 Json commentJson = new Json();
@@ -347,6 +394,7 @@ public class YamlParser {
 
                             }else{
                                 //WTF, error
+                                addError(fileName,String.format("encountered , @ {}but not in an inline map nor list",lineNumber));
                             }
                         }else if (line.startsWith("[")){//new inline list
 
@@ -429,15 +477,42 @@ public class YamlParser {
 
 
                         }else{
-                            if(keyMatcher.reset(line).find()){
+                            String keyValue = null;
+                            int end=0;
+                            if(line.startsWith("\"") || line.startsWith("'")) {
+                                quoteClose = line.charAt(0);
+                                quoted=true;
+                                quotedKey=KEY;
+                                line = line.substring(1);
+                                int i = charactersUntil(line,quoteClose);
+
+                                if(!line.isEmpty() && (i < line.length() || (quoteClose==line.charAt(i-1) && '/'!=line.charAt(i-2))) ){
+                                    quoted=false;
+                                }
+                                end = i;
+                                keyValue = line.substring(0,i);
+                                if(!quoted && keyValue.endsWith(quoteClose+"")){
+                                    keyValue = keyValue.substring(0,keyValue.length()-1);
+                                }
+
+                            }else if(keyMatcher.reset(line).find()) {
+
+                                keyValue = keyMatcher.group(KEY);
+                                end = keyMatcher.end();
+
+                            }
+                            if(keyValue!=null) {
+                                if ((keyValue.startsWith("\"") && keyValue.endsWith("\"")) || (keyValue.startsWith("'") && keyValue.endsWith("'"))) {
+                                    keyValue = keyValue.substring(1, keyValue.length() - 1);
+                                }
                                 //start the new entry
-                                if(builder.target().isEmpty()){
+                                if (builder.target().isEmpty()) {
                                     Json newEntry = new Json(false);
                                     builder.target().add(newEntry);
                                     builder.push(newEntry);
 
-                                }else if(!builder.target().isArray()){
-                                    while(!builder.target().isArray()){
+                                } else if (!builder.target().isArray()) {
+                                    while (!builder.target().isArray()) {
                                         builder.pop();
                                     }
                                     Json newEntry = new Json(false);
@@ -445,118 +520,116 @@ public class YamlParser {
                                     builder.push(newEntry);
 
 
-                                }else{
+                                } else {
                                     Json newEntry = new Json(false);
                                     builder.target().add(newEntry);
                                     builder.push(newEntry);
                                 }
 
-                                String keyValue = keyMatcher.group(KEY);
-                                if(keyValue.startsWith("\"") && keyValue.endsWith("\"")){
-                                    keyValue = keyValue.substring(1,keyValue.length()-1);
-                                }
-                                if(builder.target().has(KEY)){
-                                    addError(fileName,String.format("Key already exists %n%s[%d]: %s%n",fileName,lineNumber,originalLine));
-                                }else{
-                                    builder.target().set(KEY,keyValue);
-                                    builder.target().set(LINE_NUMBER,lineNumber);
+                                if (builder.target().has(KEY)) {
+                                    addError(fileName, String.format("Key already exists %n%s[%d]: %s%n", fileName, lineNumber, originalLine));
+                                } else {
+                                    builder.target().set(KEY, keyValue);
+                                    builder.target().set(LINE_NUMBER, lineNumber);
                                 }
 
 
-                                if(nestedDash){
-                                    builder.target().set(DASHED,true);
-                                    nestedDash=false;
+                                if (nestedDash) {
+                                    builder.target().set(DASHED, true);
+                                    nestedDash = false;
                                 }
-
-                                line = line.substring(keyMatcher.end()).trim();
-
-                                if(line.startsWith(":")) {
-                                    line = line.substring(1).trim();
-
-                                    if (line.startsWith("#")) {
-
-                                    } else if (line.startsWith("[")) {
-
-                                    } else if (line.startsWith("{")){
-
-                                    }else{
-                                        int i=0;
-                                        boolean stop=false;
-                                        boolean quoted=false;
-                                        boolean inVariable=false;
-                                        while(i<line.length() && !stop){
-                                            switch (line.charAt(i)){
-                                                case ',':
-                                                    if(!quoted && !inVariable && !inlineStack.isEmpty()){
-                                                        stop=true;
-                                                        i--;
-                                                    }
-                                                    break;
-                                                case '$':
-                                                    if(line.substring(i).startsWith("${{")){
-                                                        inVariable=true;
-                                                    }
-                                                    break;
-                                                case '#':
-                                                    if(!quoted){
-                                                        stop=true;
-                                                        i--;
-                                                    }
-                                                    break;
-                                                case '"':
-                                                    if(!quoted){
-                                                        quoted=true;
-                                                    }else{
-                                                        if('\\'==line.charAt(i-1)){
-
-                                                        }else{
-                                                            quoted=false;
-                                                        }
-                                                    }
-                                                    break;
-                                                case '}':
-                                                    if(!quoted ){
-                                                        if(inVariable && line.substring(i).startsWith("}}")){
-                                                            i++;//skip the next }
-                                                        }else if(!inlineStack.isEmpty() && inlineStack.peek().equals(INLINE_MAP)){
-                                                            stop=true;
-                                                            i--;
-                                                        }
-                                                    }
-                                                    break;
-                                                case ']':
-                                                    if(!quoted ){
-                                                        if(!inlineStack.isEmpty() && inlineStack.peek().equals(INLINE_LIST)){
-                                                            stop=true;
-                                                            i--;
-                                                        }
-                                                    }
-                                                    break;
-
-                                            }
-                                            i++;
-                                        }
-
-                                        if(i>=1){
-                                            String lineValue = line.substring(0,i);
-                                            if ("|".equals(lineValue.trim()) || ">".equals(lineValue.trim()) && line.endsWith(lineValue)) {
-                                                scalar=true;
-                                                if(">".endsWith(lineValue.trim())){
-                                                    foldedScalar=true;
-                                                }
-                                                lineValue="";
-                                            }
-                                            builder.target().set(VALUE,lineValue);
-                                            line = line.substring(i).trim();
-
-                                        }
-                                    }
-
-                                }
-
+                                line = line.substring(end).trim();
                             }else{
-                                addError(fileName,String.format("Expecting KEY : VALUE %n%s[%d]: %s%n",fileName,lineNumber,originalLine));
+                                //addError(fileName,String.format("Expecting KEY : VALUE %n%s[%d]: %s%n",fileName,lineNumber,originalLine));
                             }
+                            if(line.startsWith(":")) {
+                                line = line.substring(1).trim();
+
+                                if (line.startsWith("#")) {
+
+                                } else if (line.startsWith("[")) {
+
+                                } else if (line.startsWith("{")){
+
+                                }else{
+                                    int i=0;
+                                    boolean stop=false;
+
+                                    boolean inVariable=false;
+                                    while(i<line.length() && !stop){
+                                        switch (line.charAt(i)){
+                                            case ',':
+                                                if(!quoted && !inVariable && !inlineStack.isEmpty()){
+                                                    stop=true;
+                                                    i--;
+                                                }
+                                                break;
+                                            case '$':
+                                                if(line.substring(i).startsWith("${{")){
+                                                    inVariable=true;
+                                                }
+                                                break;
+                                            case '#':
+                                                if(!quoted){
+                                                    stop=true;
+                                                    i--;
+                                                }
+                                                break;
+                                            case '"':
+                                            case '\'':
+                                                if(!quoted){
+                                                    quoted=true;
+                                                    quoteClose=line.charAt(i);
+                                                    quotedKey=VALUE;
+                                                }else{
+                                                    if('\\'==line.charAt(i-1) || quoteClose!=line.charAt(i)){
+
+                                                    }else{
+                                                        quoted=false;
+                                                        //stop=true; //don't stop, could just be a quite in the line
+                                                    }
+                                                }
+                                                break;
+                                            case '}':
+                                                if(!quoted ){
+                                                    if(inVariable && line.substring(i).startsWith("}}")){
+                                                        i++;//skip the next }
+                                                    }else if(!inlineStack.isEmpty() && inlineStack.peek().equals(INLINE_MAP)){
+                                                        stop=true;
+                                                        i--;
+                                                    }
+                                                }
+                                                break;
+                                            case ']':
+                                                if(!quoted ){
+                                                    if(!inlineStack.isEmpty() && inlineStack.peek().equals(INLINE_LIST)){
+                                                        stop=true;
+                                                        i--;
+                                                    }
+                                                }
+                                                break;
+
+                                        }
+                                        i++;
+                                    }
+                                    if(i>=1){
+                                        String lineValue = line.substring(0,i);
+                                        if ("|".equals(lineValue.trim()) || ">".equals(lineValue.trim()) && line.endsWith(lineValue)) {
+                                            scalar=true;
+                                            if(">".endsWith(lineValue.trim())){
+                                                foldedScalar=true;
+                                            }
+                                            lineValue="";
+                                        }
+                                        builder.target().set(VALUE,lineValue);
+                                        line = line.substring(i).trim();
+
+                                    }
+                                }
+
+                            }
+
+
 
                         }
 

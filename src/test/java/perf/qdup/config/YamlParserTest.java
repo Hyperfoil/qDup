@@ -9,9 +9,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static perf.qdup.config.YamlParser.*;
 
 public class YamlParserTest extends SshTestBase {
@@ -165,7 +163,7 @@ public class YamlParserTest extends SshTestBase {
                 "}"
         ));
         validateParse(parser);
-        System.out.println(parser.getJson("listCommandArgument").toString(2));
+
     }
 
     @Test
@@ -183,7 +181,7 @@ public class YamlParserTest extends SshTestBase {
 
         Json json = parser.getJson("supportedSyntax");
         assertTrue("json should be an array",json.isArray());
-        assertEquals("json should have 2 entires",2,json.size());
+        assertEquals("json should have 2 entries:\n"+json.toString(2),2,json.size());
         Json foo = json.getJson(0);
         Json second = json.getJson(1);
 
@@ -221,6 +219,54 @@ public class YamlParserTest extends SshTestBase {
 
 
 
+    }
+
+    @Test
+    public void multilineKey(){
+        YamlParser parser = new YamlParser();
+        parser.load("multiline",stream(""+
+            "'key",
+            "   still key' : \"value",
+            "      alsoValue\"",
+            "key : [ foo, \"",
+            "  one",
+            "  two\", three]"
+        ));
+
+        validateParse(parser);
+
+        Json json = parser.getJson("multiline");
+        assertEquals(2,json.size());
+
+        Json first = json.getJson(0);
+
+        String firstKey = first.getString(KEY,"");
+        assertFalse("keys don't save quotes",firstKey.contains("'"));
+
+        Json second = json.getJson(1);
+
+        assertEquals(3,second.size());
+
+    }
+
+    @Test
+    public void multilineQuote(){
+        YamlParser parser = new YamlParser();
+        parser.load("multiline",stream(""+
+            "key: \"",
+            "  <foo>",
+            "    bar",
+            "  </foo>\""
+        ));
+        Json json = parser.getJson("multiline");
+        assertEquals(1,json.size());
+        Json first = json.getJson(0);
+        String value = first.getString(VALUE,"");
+
+        assertTrue("keep start quote",value.startsWith("\""));
+        assertTrue("keep end quote",value.endsWith("\""));
+
+        assertFalse(json.getJson(0).has(CHILD));
     }
     @Test
     public void scalar(){
