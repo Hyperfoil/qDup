@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class State {
 
-    public static final String RUN_PREFIX = "RUN";
-    public static final String HOST_PREFIX = "HOST";
+    public static final String RUN_PREFIX = "RUN.";
+    public static final String HOST_PREFIX = "HOST.";
     public static final String CHILD_DELIMINATOR = ".";
 
     private State parent;
@@ -82,7 +82,7 @@ public class State {
             if(target.prefix!=null && key.startsWith(target.prefix)){
                 return target.state.put(key.substring(target.prefix.length()),value);
             }
-        }while( (target=target.parent)!=null);
+        } while( (target=target.parent)!=null );
 
         //see if the key starts with a child name
         for(String childName : childStates.keySet()){

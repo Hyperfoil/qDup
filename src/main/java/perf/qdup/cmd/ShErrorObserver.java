@@ -13,6 +13,7 @@ public class ShErrorObserver implements CommandDispatcher.CommandObserver {
     public static ShErrorObserver getObserver(Context context) {
         ShErrorObserver rtrn = new ShErrorObserver(context);
 
+        rtrn.addGlobalError("-bash:: Permission denied");
         rtrn.addGlobalError("command not found...");
         rtrn.addCommandError("ant","BUILD FAILURE");
         rtrn.addCommandError("ant","Build failed");

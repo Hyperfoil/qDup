@@ -468,25 +468,33 @@ public class CmdBuilder {
         int current=0;
         boolean quoted = false;
         boolean pop = false;
+        char quoteChar = '"';
         while(current<input.length()){
             switch (input.charAt(current)){
-                case '\"':
+                case '\'':
+                case '"':
                     if(!quoted){
                         quoted=true;
+                        input.charAt(current);
                         if(current>start){
                             pop=true;
                         }
-                    }else{
-                        if('\\'== input.charAt(current-1)){
+                    } else {
+                        if (quoteChar == input.charAt(current)) {
+                            if ('\\' == input.charAt(current - 1)) {
 
-                        }else{
-                            quoted=false;
-                            if(current>start){
-                                pop=true;
+                            } else {
+                                quoted = false;
+                                if (current > start) {
+                                    pop = true;
+                                }
+
                             }
-
+                        }else{
+                            //this characters was not what started the quote so just in the quote
                         }
                     }
+
                     break;
                 case ' ':
                 case '\t':
@@ -506,7 +514,7 @@ public class CmdBuilder {
                 //drop spaces if not already at end
                 if(current+1<input.length()) {
                     int drop = current + 1;
-                    while (input.charAt(drop) == ' ' || input.charAt(drop) == '\t') {
+                    while (drop+1 < input.length() && (input.charAt(drop) == ' ' || input.charAt(drop) == '\t') ) {
                         drop++;
                     }
                     start = drop;
