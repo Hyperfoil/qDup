@@ -105,6 +105,27 @@ public abstract class Cmd {
     public static String populateStateVariables(String command,Cmd cmd, State state){
         return populateStateVariables(command,cmd,state,true);
     }
+
+    //handles recursive variable references
+    private static String populateVariable(String name, Cmd cmd,State state){
+        String rtrn = null;
+        String currentName = name;
+        do {
+            if(currentName.startsWith(STATE_PREFIX) && currentName.endsWith(STATE_SUFFIX)){
+                currentName = currentName.substring(
+                    STATE_PREFIX.length(),
+                    currentName.length()-STATE_SUFFIX.length()
+                );
+
+            }
+            if (cmd != null && cmd.hasWith(currentName)) {
+                rtrn = cmd.getWith(currentName);
+            } else {
+                rtrn = state.get(currentName);
+            }
+        }while (rtrn!=null && (currentName=rtrn).startsWith(STATE_PREFIX));
+        return rtrn;
+    }
     public static String populateStateVariables(String command,Cmd cmd, State state,boolean replaceUndefined){
 
         if(command.indexOf(STATE_PREFIX)<0)
@@ -119,12 +140,7 @@ public abstract class Cmd {
                 rtrn.append(command.substring(previous,findIndex));
             }
             String name = matcher.group("name");
-            String value = null;
-            if(cmd!=null && cmd.hasWith(name)){
-                value = cmd.getWith(name);
-            }else {
-                value = state.get(name);
-            }
+            String value = populateVariable(name,cmd,state);
             if(value == null ){//bad times
                 logger.debug("missing {} state variable for {}",name,command);
                 if(replaceUndefined){
