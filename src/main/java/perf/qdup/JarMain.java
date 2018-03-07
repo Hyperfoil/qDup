@@ -189,7 +189,7 @@ public class JarMain {
 
         RunConfig config = runConfigBuilder.buildConfig();
 
-        //TODO RunConfig should be immutable and terminal color is porbably better stored in Run
+        //TODO RunConfig should be immutable and terminal color is probably better stored in Run
         if (cmd.hasOption("colorTerminal") ){
             config.setColorTerminal( true );
         }
@@ -231,12 +231,14 @@ public class JarMain {
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
             if(!run.isAborted()) {
                 run.abort();
+                run.writeRunJson();
             }
         },"shutdown-abort"));
 
         long start = System.currentTimeMillis();
 
         run.run();
+        run.writeRunJson();
 
         long stop = System.currentTimeMillis();
 

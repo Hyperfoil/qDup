@@ -15,8 +15,9 @@ import perf.qdup.cmd.*;
 import perf.qdup.cmd.impl.ScriptCmd;
 import perf.qdup.config.StageValidation;
 import perf.qdup.config.RunConfig;
+import perf.yaup.json.Json;
 
-import java.io.File;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.*;
@@ -42,6 +43,8 @@ public class Run implements Runnable {
         public String getDestination(){return destination;}
     }
 
+
+    private Map<String,Long> timestamps;
     private RunConfig config;
     private String outputPath;
     private boolean aborted;
@@ -66,6 +69,8 @@ public class Run implements Runnable {
         this.dispatcher = dispatcher;
         this.aborted = false;
 
+
+        this.timestamps = new LinkedHashMap<>();
         this.profiles = new Profiles();
         this.coordinator = new Coordinator();
         this.local = new Local(config);
@@ -126,20 +131,53 @@ public class Run implements Runnable {
     public void runPendingDownloads(){
         logger.info("{} runPendingDownloads",config.getName());
         if(!pendingDownloads.isEmpty()){
+            timestamps.put("downloadStart",System.currentTimeMillis());
             for(Host host : pendingDownloads.keySet()){
                 List<PendingDownload> downloadList = pendingDownloads.get(host);
                 for(PendingDownload pendingDownload : downloadList){
                     local.download(pendingDownload.getPath(),pendingDownload.getDestination(),host);
                 }
             }
+            timestamps.put("downloadStop",System.currentTimeMillis());
             pendingDownloads.clear();
         }
     }
     public void done(){
         coordinator.clearWaiters();
         dispatcher.clearActive();
+    }
+    public void writeRunJson(){
+        try (FileOutputStream out = new FileOutputStream(this.outputPath+File.separator+"run.json")) {
 
+            Json toWrite = new Json();
 
+            toWrite.set("state",this.getConfig().getState().toJson());
+
+            Json latches = new Json();
+            this.getCoordinator().getLatchTimes().forEach((key,value)->{
+                latches.set(key,value);
+            });
+            Json counters = new Json();
+            this.getCoordinator().getCounters().forEach((key,value)->{
+                counters.set(key,value);
+            });
+            Json timestamps = new Json();
+            this.timestamps.forEach((key,value)->{
+                timestamps.set(key,value);
+            });
+
+            toWrite.set("timetamps",timestamps);
+            toWrite.set("latches",latches);
+            toWrite.set("counters",counters);
+            toWrite.set("profiles",profiles.getJson());
+
+            out.write(toWrite.toString().getBytes());
+            out.flush();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     public void abort(){
         //TODO how to interrupt watchers
@@ -150,6 +188,7 @@ public class Run implements Runnable {
     }
     private void queueSetupScripts(){
         logger.debug("{}.setup",this);
+        timestamps.put("setupStart",System.currentTimeMillis());
         CommandDispatcher.ScriptObserver scriptObserver = new CommandDispatcher.ScriptObserver() {
 
             private Env start;
@@ -190,6 +229,7 @@ public class Run implements Runnable {
                 logger.debug("{}.setup stop",this);
                 dispatcher.removeObserver(this);
 
+                timestamps.put("setupStop",System.currentTimeMillis());
                 queueRunScripts();
             }
         };
@@ -264,6 +304,8 @@ public class Run implements Runnable {
 
     @Override
     public void run() {
+        timestamps.put("run",System.currentTimeMillis());
+
 
         if(!config.getRunValidation().isValid()){
             //TODO raise warnings if not validated
@@ -276,11 +318,13 @@ public class Run implements Runnable {
             if(config.getRunValidation().getCleanupStage().hasErrors()){
                 config.getRunValidation().getCleanupStage().getErrors().forEach((error->runLogger.error(error)));
             }
+            timestamps.put("end",System.currentTimeMillis());
             return;
         }
 
         boolean coordinatorInitialized = initializeCoordinator();
         if(!coordinatorInitialized){
+            timestamps.put("end",System.currentTimeMillis());
             return;
         }
 
@@ -298,6 +342,7 @@ public class Run implements Runnable {
         //dispatcher.closeSessions(); //was racing the close sessions from checkActiveCount
     }
     private void queueRunScripts(){
+        timestamps.put("runStart",System.currentTimeMillis());
         logger.debug("{}.queueRunScripts",this);
 
         CommandDispatcher.CommandObserver runObserver = new CommandDispatcher.CommandObserver() {
@@ -313,6 +358,7 @@ public class Run implements Runnable {
             @Override
             public void onStop() {
                 dispatcher.removeObserver(this);
+                timestamps.put("runStop",System.currentTimeMillis());
                 queueCleanupScripts();
             }
         };
@@ -393,6 +439,7 @@ public class Run implements Runnable {
         dispatcher.start();
     }
     private void queueCleanupScripts(){
+        timestamps.put("cleanupStart",System.currentTimeMillis());
         logger.info("{}.queueCleanupScripts",this);
         CommandDispatcher.CommandObserver cleanupObserver = new CommandDispatcher.CommandObserver() {
             @Override
@@ -406,6 +453,7 @@ public class Run implements Runnable {
 
             @Override
             public void onStop() {
+                timestamps.put("cleanupStop",System.currentTimeMillis());
                 dispatcher.removeObserver(this);
                 postRun();
             }

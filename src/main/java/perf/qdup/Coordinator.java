@@ -80,6 +80,13 @@ public class Coordinator {
     }
 
     public Map<String,Long> getLatchTimes(){return Collections.unmodifiableMap(latchTimes);}
+    public Map<String,Integer> getCounters(){
+        Map<String,Integer> rtrn = new LinkedHashMap<>();
+        counters.forEach((key,value)->{
+            rtrn.put(key,value.get());
+        });
+        return rtrn;
+    }
 
     public void addObserver(Consumer<String> observer){
         observers.add(observer);
