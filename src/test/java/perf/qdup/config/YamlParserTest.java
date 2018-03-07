@@ -220,6 +220,27 @@ public class YamlParserTest extends SshTestBase {
 
 
     }
+    @Test
+    public void miltilineQuoteMidKey(){
+        YamlParser parser = new YamlParser();
+        parser.load("multiline",stream(""+
+            "key: first \"",
+            "second",
+            "third\" second"
+        ));
+
+        validateParse(parser);
+
+        Json json = parser.getJson("multiline");
+        assertEquals(1,json.size());
+
+        Json first = json.getJson(0);
+        String value = first.getString(VALUE,"");
+
+        assertTrue(value.endsWith("second"));
+
+    }
+
 
     @Test
     public void multilineKey(){
@@ -250,6 +271,26 @@ public class YamlParserTest extends SshTestBase {
     }
 
     @Test
+    public void inlineCommentTrimSpaces(){
+        YamlParser parser = new YamlParser();
+        parser.load("inline",stream(""+
+                "key: \"quoted part\" not quoted          #comment"
+        ));
+        Json json = parser.getJson("inline");
+
+        assertEquals("one entry in json",1,json.size());
+        json = json.getJson(0);
+
+        assertTrue(json.has(KEY));
+        assertTrue(json.has(VALUE));
+        assertTrue(json.has(COMMENT));
+
+        String value = json.getString(VALUE);
+        String expected = "\"quoted part\" not quoted";
+        assertEquals("trimed value should be "+expected,expected.length(),value.length());
+
+    }
+    @Test
     public void multilineQuote(){
         YamlParser parser = new YamlParser();
         parser.load("multiline",stream(""+
@@ -265,6 +306,9 @@ public class YamlParserTest extends SshTestBase {
 
         assertTrue("keep start quote",value.startsWith("\""));
         assertTrue("keep end quote",value.endsWith("\""));
+
+
+        assertEquals("multiple lines in quoted string\n||"+value+"||",3,value.split(System.lineSeparator()).length);
 
         assertFalse(json.getJson(0).has(CHILD));
     }

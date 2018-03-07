@@ -215,6 +215,7 @@ public class YamlParser {
             boolean foldedScalar = false;
             boolean quoted=false;
             boolean finishedMultiLineKey = false;
+            boolean finishedMultiLineValue = false;
             String quotedKey="";
             char quoteClose='"';
             Stack<String> inlineStack = new Stack<>();
@@ -255,6 +256,8 @@ public class YamlParser {
                         quoted=false;
                         if(KEY.equals(quotedKey)){
                             finishedMultiLineKey=true;
+                        }else{
+                            finishedMultiLineValue=true;
                         }
                     }
                     String additionalValue = line.substring(0,i);
@@ -262,13 +265,21 @@ public class YamlParser {
                     if(!quoted){
                         if(KEY.equals(quotedKey) && additionalValue.endsWith(quoteClose+"")){
                             additionalValue = additionalValue.substring(0,additionalValue.length()-1);
+                        }else if (VALUE.endsWith(quotedKey)){
+                            //TODO finish the value parsing for the rest of this line
+                            ////VALUE_PARSING
                         }
                     }
 
                     line = line.substring(i);
                     //TODO do we trim the lines?
-                    //this assumes we are working on value, what if it's a key?
-                    builder.target().set(quotedKey,builder.target().get(quotedKey)+additionalValue);
+                    String existingValue = builder.target().getString(quotedKey,"");
+                    String newValue = (
+                            builder.target().get(quotedKey)+
+                            (existingValue.length()>1?System.lineSeparator():"")+ // check > 1 because of staritng quoteChar
+                            additionalValue
+                        ).replaceAll("\\s+$", "");
+                    builder.target().set(quotedKey,newValue);
                 }
 
                 if(line.isEmpty()){
@@ -552,6 +563,8 @@ public class YamlParser {
                                 } else if (line.startsWith("{")){
 
                                 }else{
+                                    //TODO this is the value parsing that needs to resume after ending quote
+                                    //VALUE_PARSING
                                     int i=0;
                                     boolean stop=false;
 
@@ -621,7 +634,7 @@ public class YamlParser {
                                             }
                                             lineValue="";
                                         }
-                                        builder.target().set(VALUE,lineValue);
+                                        builder.target().set(VALUE,lineValue.replaceAll("\\s+$", ""));
                                         line = line.substring(i).trim();
 
                                     }

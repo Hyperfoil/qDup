@@ -174,11 +174,12 @@ public class RunConfigBuilder {
                 Object yamlObj = yamlJson.get(i);
                 if (yamlObj instanceof Json) {
                     Json yamlEntry = (Json) yamlObj;
-                    String entryKey = yamlEntry.getString(KEY);
+                    String entryKey = yamlEntry.getString(KEY,"");
                     String entryValue = yamlEntry.getString(VALUE);
                     Json entryChildJson = yamlEntry.getJson(CHILD, EMPTY_ARRAY);
                     if (entryKey == null) {
-
+                        System.out.println("nullKey");
+                        System.out.println(yamlEntry.toString(2));
                     }
                     switch (entryKey) {
                         case NAME:
@@ -273,8 +274,8 @@ public class RunConfigBuilder {
                                     Map<String, String> hostMap = yamlChildMap(host);
 
                                     if (hostMap.containsKey("username") && hostMap.containsKey("hostname")) {
-                                        String un = hostMap.get("username").toString();
-                                        String hn = hostMap.get("hostname").toString();
+                                        String un = hostMap.get("username");
+                                        String hn = hostMap.get("hostname");
                                         int port = hostMap.containsKey("port") ? Integer.parseInt(hostMap.get("port")) : Host.DEFAULT_PORT;
                                         hostValue = un+ "@" + hn + ":" + port;
                                     }else{

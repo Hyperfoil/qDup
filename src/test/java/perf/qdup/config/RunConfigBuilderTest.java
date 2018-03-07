@@ -21,6 +21,37 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
 
+
+    @Test
+    public void testRolesWithState(){
+        YamlParser parser = new YamlParser();
+        parser.load("with",stream("",
+            "hosts:",
+            "  local : me@localhost",
+            "roles:",
+            "  wildfly:",
+            "    hosts: [local]",
+            "    setup-scripts:",
+            "      - build-agroal",
+            "         - WITH:",
+            "            GIT_COMMIT : ${{AGROAL_TAG}}",
+            "      - setup-wildfly"
+        ));
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        builder.loadYaml(parser);
+        RunConfig runConfig = builder.buildConfig();
+
+        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+
+        assertEquals("setup hosts",1,runConfig.getSetupHosts().size());
+        Host host = runConfig.getSetupHosts().iterator().next();
+        Cmd setupCmd = runConfig.getSetupCmd(host);
+        assertTrue(setupCmd.hasThens());
+        List<Cmd> thens = setupCmd.getThens();
+        assertEquals("two scripts in setup",2,thens.size());
+    }
+
     @Test
     public void testVariableScriptWithWaitFor(){
         YamlParser parser = new YamlParser();
