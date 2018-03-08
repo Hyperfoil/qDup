@@ -8,14 +8,16 @@ public class InvokeCmd extends Cmd {
     private Cmd command;
     public InvokeCmd(Cmd command){
         this.command = command.deepCopy();
-        //moved here from run to avoid issue where dispatcher has the wrong tail cmd
 
-        injectThen(command,null);//null context so we don't updated tail change
+
+
     }
     public Cmd getCommand(){return command;}
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
+        //move  to constructor to avoid issue where dispatcher has the wrong tail cmd?
+        injectThen(this.command,null);//null context so we don't updated tail change
         result.next(this,input);
     }
 

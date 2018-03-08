@@ -37,7 +37,8 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("regex",Regex.class,"pattern");
         rtrn.addCmdDefinition("repeat-until",RepeatUntilSignal.class,"name");
         rtrn.addCmdDefinition("response",ShResponse.class,"response");
-        rtrn.addCmdDefinition("set-state",SetState.class,"name","VALUE");
+        //rtrn.addCmdDefinition("set-state",SetState.class,"name");
+        rtrn.addCmdDefinition("set-state",SetState.class,"name","value");
         rtrn.addCmdDefinition("sh",Sh.class,"command");
         rtrn.addCmdDefinition("sh",Sh.class,"command","silent");
         rtrn.addCmdDefinition("signal",Signal.class,"name");
@@ -475,7 +476,7 @@ public class CmdBuilder {
                 case '"':
                     if(!quoted){
                         quoted=true;
-                        input.charAt(current);
+                        quoteChar = input.charAt(current);
                         if(current>start){
                             pop=true;
                         }
@@ -488,7 +489,6 @@ public class CmdBuilder {
                                 if (current > start) {
                                     pop = true;
                                 }
-
                             }
                         }else{
                             //this characters was not what started the quote so just in the quote
@@ -511,6 +511,8 @@ public class CmdBuilder {
                 }
                 //don't need to check for tailing " because current is not yet incremented
 
+
+                start = current+1;
                 //drop spaces if not already at end
                 if(current+1<input.length()) {
                     int drop = current + 1;
@@ -524,6 +526,7 @@ public class CmdBuilder {
             }
 
             current++;
+
         }
 
         if(start<current){
@@ -539,7 +542,7 @@ public class CmdBuilder {
         commands = new HashMap<>();
     }
 
-    public Set<String> shortnames(){return commands.keySet();}
+    public Set<String> shortnames(){ return commands.keySet(); }
     public boolean addCmdDefinition(String shortname,Class<? extends Cmd> cmdClass,String...argNames){
 
         if(RESERVED.contains(shortname)){

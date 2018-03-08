@@ -177,10 +177,6 @@ public class RunConfigBuilder {
                     String entryKey = yamlEntry.getString(KEY,"");
                     String entryValue = yamlEntry.getString(VALUE);
                     Json entryChildJson = yamlEntry.getJson(CHILD, EMPTY_ARRAY);
-                    if (entryKey == null) {
-                        System.out.println("nullKey");
-                        System.out.println(yamlEntry.toString(2));
-                    }
                     switch (entryKey) {
                         case NAME:
                             if (entryValue != null && !entryValue.isEmpty()) {

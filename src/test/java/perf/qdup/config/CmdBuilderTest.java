@@ -2,6 +2,7 @@ package perf.qdup.config;
 
 import org.junit.Test;
 import perf.qdup.cmd.Cmd;
+import perf.qdup.cmd.impl.SetState;
 import perf.qdup.cmd.impl.Sh;
 import perf.qdup.cmd.impl.XmlCmd;
 import perf.yaup.json.Json;
@@ -33,6 +34,13 @@ public class CmdBuilderTest {
         assertEquals("split \"foo bar\" should create 2 entries",2,out.size());
     }
     @Test
+    public void splitNotQuoteThenQuote(){
+        CmdBuilder builder = CmdBuilder.getBuilder();
+        List<String> out = builder.split("EXECUTOR \"unzip \"");
+
+        assertEquals("split should create 2 entries",2,out.size());
+    }
+    @Test
     public void shSilent(){
         Json sh = Json.fromString("{\"key\":\"sh\",\"lineNumber\":1,\"child\":[[{\"key\":\"command\",\"lineNumber\":2,\"value\":\"tail -f server.log\"},{\"key\":\"silent\",\"lineNumber\":3,\"value\":\"true\"}]]}");
 
@@ -41,6 +49,23 @@ public class CmdBuilderTest {
 
         assertTrue("command should be sh",Sh.class.equals(command.getClass()));
         assertTrue("command should not be logging",command.isSilent());
+    }
+
+
+
+    @Test
+    public void setStateTwoArgs(){
+        YamlParser foo = new YamlParser();
+        YamlParser parser = new YamlParser();
+        parser.load("setstate",stream(""+
+            "set-state: EXECUTOR \"unzip \""
+        ));
+
+        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("setstate"),null);
+        assertTrue("built "+built.getClass().getName(),built instanceof SetState);
+
     }
 
     @Test

@@ -20,9 +20,12 @@ public class ScriptCmd extends Cmd {
     protected void run(String input, Context context, CommandResult result) {
         Script toCall = context.getScript(this.name,this);
         injectThen(toCall.deepCopy(),context);
-        for(String key : with.keySet()){
-            context.getState().set(key,with.get(key));
-        }
+        //don't push this.WITH into context because it will be found by Cmd.populate...
+//        for(String key : with.keySet()){
+//            context.getState().set(key,with.get(key));
+//        }
+
+
         result.next(this,input);
     }
 

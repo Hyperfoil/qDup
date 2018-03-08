@@ -107,7 +107,7 @@ public abstract class Cmd {
     }
 
     //handles recursive variable references
-    private static String populateVariable(String name, Cmd cmd,State state){
+    protected static String populateVariable(String name, Cmd cmd,State state){
         String rtrn = null;
         String currentName = name;
         do {
@@ -204,10 +204,11 @@ public abstract class Cmd {
     public boolean hasTimers(){return !timers.isEmpty();}
     public void injectThen(Cmd command,Context context){
         thens.addFirst(command);
-        Cmd next = this.next;
-        Cmd skip = this.skip;
+
+        Cmd next = this.getNext();
+        Cmd skip = this.getSkip();
         if(next!=null){
-            command.getTail().next = next;
+            command.getTail().forceNext(next);
         }else{
             //we are potentially changing the getScript tail, need to inform context
             //this should no longer be necessary because CommandDispatcher tracks the head cmd not tail
@@ -215,6 +216,13 @@ public abstract class Cmd {
                 context.notifyTailMod(this,command.getTail());
             }
         }
+        Cmd toForce = command.getTail();
+
+        //make sure that any abnormal exits from the previous script will go to the next command
+        do {
+            toForce.forceSkip(skip);
+            toForce = toForce.getPrevious();
+        }while(toForce!=null && toForce.getSkip()==null);
 
         this.next = command;
         command.parent = this;
@@ -280,6 +288,7 @@ public abstract class Cmd {
     public Cmd getNext(){return next;}
     private void setNext(Cmd next){
         if(this.next == null) {
+
             this.next = next;
         }
     }
@@ -287,7 +296,9 @@ public abstract class Cmd {
     public void forceNext(Cmd next){
         this.next = next;
     }
-
+    public void forceSkip(Cmd skip){
+        this.skip = skip;
+    }
     public Cmd getSkip(){return skip;}
     private void setSkip(Cmd skip){
         this.skip = skip;
@@ -298,9 +309,7 @@ public abstract class Cmd {
     }
 
     public Cmd then(Cmd command){
-        if(next==null){
-            next = command;
-        }
+        setNext(command);
 
         if(!this.thens.isEmpty()){
             Cmd previousThen = this.thens.getLast();
@@ -353,7 +362,7 @@ public abstract class Cmd {
         }
         for(long timeout: this.getTimeouts()){
             for(Cmd timed : this.getTimers(timeout)){
-                clone.addTimer(timeout,timed);
+                clone.addTimer(timeout,timed.deepCopy());
             }
         }
         return clone;

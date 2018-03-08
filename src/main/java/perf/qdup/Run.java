@@ -171,7 +171,7 @@ public class Run implements Runnable {
             toWrite.set("counters",counters);
             toWrite.set("profiles",profiles.getJson());
 
-            out.write(toWrite.toString().getBytes());
+            out.write(toWrite.toString(2).getBytes());
             out.flush();
         } catch (FileNotFoundException e) {
             e.printStackTrace();

@@ -8,6 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
+//doesn't work for prompts because those are not sent to update without a newline
 public class ShErrorObserver implements CommandDispatcher.CommandObserver {
 
     public static ShErrorObserver getObserver(Context context) {
@@ -15,6 +17,7 @@ public class ShErrorObserver implements CommandDispatcher.CommandObserver {
 
         rtrn.addGlobalError("-bash:: Permission denied");
         rtrn.addGlobalError("command not found...");
+        rtrn.addCommandError("unzip","? [y]es, [n]o, [A]ll, [N]one, [r]ename:");
         rtrn.addCommandError("ant","BUILD FAILURE");
         rtrn.addCommandError("ant","Build failed");
         rtrn.addCommandError("grep", "grep: Invalid regular expression");

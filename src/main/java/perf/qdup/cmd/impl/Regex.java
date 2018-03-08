@@ -3,6 +3,7 @@ package perf.qdup.cmd.impl;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
 import perf.qdup.cmd.CommandResult;
+import perf.yaup.StringUtil;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -14,12 +15,11 @@ public class Regex extends Cmd {
 
     private String patternString;
     public Regex(String pattern){
-        this.patternString = pattern;
+        this.patternString = StringUtil.removeQuotes(pattern);
     }
     public String getPattern(){return patternString;}
     @Override
     protected void run(String input, Context context, CommandResult result) {
-
         String populatedPattern = populateStateVariables(patternString,this,context.getState());
         String newPattern = populatedPattern;
 
@@ -37,13 +37,11 @@ public class Regex extends Cmd {
             renames.put(compName,realName);
 
         }
-
         Pattern pattern = Pattern.compile(newPattern,Pattern.DOTALL);
-
         Matcher matcher = pattern.matcher(input);
-        if(matcher.matches()){
+        if(matcher.find()){
             logger.trace("{} match {} ",this,input);
-            fieldMatcher = NAMED_CAPTURE.matcher(patternString);
+            fieldMatcher = NAMED_CAPTURE.matcher(newPattern);
             List<String> names = new LinkedList<>();
             while(fieldMatcher.find()){
                 names.add(fieldMatcher.group(1));
@@ -55,12 +53,9 @@ public class Regex extends Cmd {
                     context.getState().set(realName,capturedValue);
                 }
             }
-            System.out.println("Regex.next "+newPattern);
             result.next(this,input);
         }else{
             logger.trace("{} NOT match {} ",this,input);
-
-            System.out.println("Regex.skip "+newPattern);
             result.skip(this,input);
         }
     }

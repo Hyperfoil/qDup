@@ -24,6 +24,49 @@ public class RunTest extends SshTestBase{
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
+
+    @Test
+    public void testTwoSetupNotSkipSecond(){
+        final StringBuilder first = new StringBuilder();
+        final StringBuilder second = new StringBuilder();
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        Script firstScript = new Script("first");
+        firstScript.then(Cmd.code((input,state)->{
+            first.append(System.currentTimeMillis());
+            return Result.skip(input);
+        }));
+
+
+        Script secondScript = new Script("second");
+        secondScript.then(Cmd.sleep("500"));//to ensure second is > first if called
+        secondScript.then(Cmd.code((input, state) -> {
+            second.append(System.currentTimeMillis());
+            return Result.next(input);
+        }));
+
+        builder.addScript(firstScript);
+        builder.addScript(secondScript);
+
+        builder.addHostAlias("local",getHost().toString());//+testServer.getPort());
+        builder.addHostToRole("role","local");
+        builder.addRoleSetup("role","first",new HashMap<>());
+        builder.addRoleSetup("role","second",new HashMap<>());
+
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run run = new Run("/tmp",config,dispatcher);
+
+        run.run();
+
+        assertFalse("first should be called",first.toString().isEmpty());
+        assertFalse("second should be called",second.toString().isEmpty());
+
+        assertTrue("first should be called before second: first="+first.toString()+" second="+second.toString(),first.toString().compareTo(second.toString()) < 0);
+    }
+
     @Test(timeout=45_000)
     public void testDone(){
         final StringBuilder first = new StringBuilder();
