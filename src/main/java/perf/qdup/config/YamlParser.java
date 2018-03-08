@@ -290,11 +290,15 @@ public class YamlParser {
                                                 prefix = " ";
                                             }
                                         }
+
                                         builder.target().set(VALUE, builder.target().get(VALUE) + prefix + line.trim());
+
                                         line = "";
                                     } else if (line.isEmpty()) {
                                         String prefix = System.lineSeparator();
+
                                         builder.target().set(VALUE, builder.target().get(VALUE) + prefix);
+
                                     } else {
                                         scalar = false;
                                         foldedScalar = false;
@@ -373,7 +377,9 @@ public class YamlParser {
                                             }
                                             lineValue = "";
                                         }
-                                        builder.target().set(VALUE, lineValue.replaceAll("\\s+$", ""));
+
+                                        builder.target().set(VALUE, builder.target().getString(VALUE,"")+lineValue.replaceAll("\\s+$", ""));
+
                                         line = line.substring(i).replaceAll("\\s+$", "");
                                     }
                                 }
@@ -703,6 +709,7 @@ public class YamlParser {
                                 prefix = " ";
                             }
                         }
+
                         builder.target().set(VALUE,builder.target().get(VALUE)+prefix+line.trim());
                         line = "";
                     }else if (line.isEmpty()) {
@@ -1097,7 +1104,8 @@ public class YamlParser {
                                             }
                                             lineValue="";
                                         }
-                                        builder.target().set(VALUE,lineValue.replaceAll("\\s+$", ""));
+
+                                        builder.target().set(VALUE, builder.target().getString(VALUE,"")+lineValue.replaceAll("\\s+$", ""));
                                         line = line.substring(i).trim();
 
                                     }

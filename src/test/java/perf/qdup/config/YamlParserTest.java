@@ -221,6 +221,44 @@ public class YamlParserTest extends SshTestBase {
 
     }
     @Test
+    public void multiLineEcho(){
+        YamlParser parser = new YamlParser();
+        parser.load("echo",stream(""+
+        "sh: echo '",
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<module xmlns=\"urn:jboss:module:1.5\" name=\"io.agroal\">",
+        "    <properties>",
+        "        <property name=\"jboss.api\" value=\"private\"/>",
+        "    </properties>",
+        "    <resources>",
+        "        <resource-root path=\"agroal-api-${{agroalVersion}}.jar\"/>",
+        "        <resource-root path=\"agroal-narayana-${{agroalVersion}}.jar\"/>",
+        "        <resource-root path=\"agroal-pool-${{agroalVersion}}.jar\"/>",
+        "    </resources>",
+        "    <dependencies>",
+        "        <module name=\"javax.api\"/>",
+        "        <module name=\"javax.transaction.api\"/>",
+        "        <module name=\"org.jboss.jboss-transaction-spi\"/>",
+        "    </dependencies>",
+        "</module>' > modules/system/layers/base/io/agroal/main/module.xml"
+        ));
+
+        Json echo = parser.getJson("echo");
+        assertTrue("expect array",echo.isArray());
+        assertEquals("expect 1 entry",1,echo.size());
+
+        Json sh = echo.getJson(0);
+
+        assertTrue(sh.has(VALUE));
+
+        String value = sh.getString(VALUE,"");
+
+        assertTrue("value ends with module.xml",value.endsWith("module.xml"));
+        assertTrue("value starts with echo",value.startsWith("echo"));
+        assertTrue("value contains the xml",value.contains("<resources>"));
+
+    }
+    @Test
     public void miltilineQuoteMidKey(){
         YamlParser parser = new YamlParser();
         parser.load("multiline",stream(""+
