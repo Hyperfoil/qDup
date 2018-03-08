@@ -56,7 +56,7 @@ public class YamlParserTest extends SshTestBase {
                                 }
                             }
                         }else{
-                            fail("CHILD should be an array");
+                            fail("CHILD should be an array\n"+checkMe.toString(2));
                             return false;//CHILD should be an array
                         }
                     }else{
@@ -226,7 +226,7 @@ public class YamlParserTest extends SshTestBase {
         parser.load("multiline",stream(""+
             "key: first \"",
             "second",
-            "third\" second"
+            "third\" second    #comment"
         ));
 
         validateParse(parser);
@@ -237,7 +237,7 @@ public class YamlParserTest extends SshTestBase {
         Json first = json.getJson(0);
         String value = first.getString(VALUE,"");
 
-        assertTrue(value.endsWith("second"));
+        assertTrue("value should contain content after quoted section but was:"+value,value.endsWith("second"));
 
     }
 
@@ -328,14 +328,14 @@ public class YamlParserTest extends SshTestBase {
         validateParse(parser);
         Json scalar = parser.getJson("scalar");
 
-
         assertEquals("two entries",2,scalar.size());
 
         Json first = scalar.getJson(0);
         Json second = scalar.getJson(1);
 
         assertTrue(first.has(VALUE));
-        assertEquals("3 lines for literal scalar",3,first.getString(VALUE,"").split(System.lineSeparator()).length);
+        String value = first.getString(VALUE,"");
+        assertEquals("3 lines for literal scalar:||"+value+"||",3,value.split(System.lineSeparator()).length);
         assertEquals("first lineNumber",1,first.getLong("lineNumber"));
 
         assertEquals("second lineNumber",5,second.getLong("lineNumber"));
@@ -630,18 +630,11 @@ public class YamlParserTest extends SshTestBase {
         YamlParser parser = new YamlParser();
         parser.load("emptyNestLine",stream(""+
                 "top : ",
-                " - ",
-                "   foo : fizz",
-                "   bar : buzz",
                 " - #commented",
                 "   foo : fuzz#commentedToo",
                 "   bar : bizz"
         ));
-
-
         validateParse(parser);
-
-
     }
     @Test
     public void multiLineInlineMap(){
