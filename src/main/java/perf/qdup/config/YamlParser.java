@@ -197,7 +197,7 @@ public class YamlParser {
         int i=start;
         while(i<line.length() && !stop){
             if(target == line.charAt(i)){
-                if('\\'==line.charAt(i-1)){
+                if(i > 0 && '\\'==line.charAt(i-1)){
                 }else{
                     stop=true;
                 }
@@ -462,7 +462,7 @@ public class YamlParser {
                                     line = line.substring(1).trim();
                                     if(!INLINE_LIST.equals(inlineStack.peek())) {
                                         addError(fileName, String.format(
-                                                "Encountered ] but expected } %n%s%[%d]: %s%n",
+                                                "Encountered ] but expected } %n%s[%d]: %s%n",
                                                 fileName,
                                                 lineNumber,
                                                 originalLine
@@ -583,7 +583,7 @@ public class YamlParser {
                                         line = line.substring(1);
                                         int i = charactersUntil(line,quoteClose);
 
-                                        if(!line.isEmpty() && (i<line.length() || (quoteClose==line.charAt(i-1) && '/'!=line.charAt(i-2))) ){
+                                        if(!line.isEmpty() && (i<line.length() || ( (i>1 && quoteClose==line.charAt(i-1)) && ( i>2 && '/'!=line.charAt(i-2)) )) ){
                                             quoted=false;
                                         }
                                         end=i;
@@ -598,7 +598,12 @@ public class YamlParser {
                                     if(keyValue!=null){
                                         if( (keyValue.startsWith("\"") && keyValue.endsWith("\"")) ||
                                             (keyValue.startsWith("'") && keyValue.endsWith("'")) ){
-                                            keyValue = keyValue.substring(1,keyValue.length()-1);
+                                            if(keyValue.length()<=2){
+                                                keyValue="";
+                                                line="";
+                                            }else {
+                                                keyValue = keyValue.substring(1, keyValue.length() - 1);
+                                            }
                                         }
                                         //start the new entry
                                         if (builder.target().isEmpty()){
@@ -633,7 +638,9 @@ public class YamlParser {
                                             builder.target().set(DASHED, true);
                                             nestedDash = false;
                                         }
-                                        line = line.substring(end).trim();
+                                        if(!line.isEmpty()) {
+                                            line = line.substring(end).trim();
+                                        }
                                     }else{
                                         //umm... what?
                                     }
@@ -655,6 +662,7 @@ public class YamlParser {
                                     }
                                 }else{
                                     //umm.... what?
+                                    state = State.ExpectKey;
                                 }
                                 break;
 

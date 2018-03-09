@@ -37,7 +37,7 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("regex",Regex.class,"pattern");
         rtrn.addCmdDefinition("repeat-until",RepeatUntilSignal.class,"name");
         rtrn.addCmdDefinition("response",ShResponse.class,"response");
-        //rtrn.addCmdDefinition("set-state",SetState.class,"name");
+        rtrn.addCmdDefinition("set-state",SetState.class,"name");
         rtrn.addCmdDefinition("set-state",SetState.class,"name","value");
         rtrn.addCmdDefinition("sh",Sh.class,"command");
         rtrn.addCmdDefinition("sh",Sh.class,"command","silent");

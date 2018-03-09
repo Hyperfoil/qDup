@@ -2,7 +2,9 @@ package perf.qdup.cmd;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
+import perf.qdup.cmd.impl.Sh;
 import perf.yaup.AsciiArt;
+import perf.yaup.json.Json;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -296,6 +298,29 @@ public class CommandDispatcher {
     private ScheduledFuture<?> nannyFuture;
     private boolean isStopped;
 
+
+
+    public Json getActiveJson(){
+        Json rtrn = new Json();
+
+        activeCommands.forEach( (cmd,activeCommandInfo) -> {
+            Json entry = new Json();
+            entry.set("name",cmd.toString());
+            entry.set("uid",cmd.getUid());
+            if(cmd instanceof Sh){
+                String output = activeCommandInfo.getContext().getSession().peekOutput();
+                entry.set("output",output);
+            }
+            entry.set("startTime",activeCommandInfo.getStartTime());
+            entry.set("runTime",(System.currentTimeMillis()-activeCommandInfo.getStartTime()));
+            entry.set("lastUpdate",activeCommandInfo.getLastUpdate());
+            entry.set("idleTime",(System.currentTimeMillis()-activeCommandInfo.getLastUpdate()));
+
+            rtrn.add(entry);
+        });
+        return rtrn;
+    }
+
     @Override public String toString(){return "CD";}
 
     public CommandDispatcher(){
@@ -410,13 +435,27 @@ public class CommandDispatcher {
                 if(activeCommands.containsKey(command) /*&& command instanceof Sh*/){
 
                     long lastUpdate = activeCommands.get(command).getLastUpdate();
-                    if(timestamp - lastUpdate > THRESHOLD && !command.isSilent()){
-                        logger.warn("{}:{}:{} idle for {}",
-                                activeCommands.get(command).getContext().getSession().getHostName(),
-                                command.getHead(),
-                                command,
-                                String.format("%5.2f",(1.0*timestamp-lastUpdate)/1_000)
-                        );
+                    if(timestamp - lastUpdate > THRESHOLD ){
+                        if(command instanceof Sh){
+                            String output = activeCommands.get(command).getContext().getSession().peekOutput();
+                            if( output.endsWith("? [y]es, [n]o, [A]ll, [N]one, [r]ename:") || //unzip
+                                (output.endsWith("'?") && output.contains("rm: remove regular file '")) || //root rm
+                                output.endsWith("Is this ok [y/N]: ")
+                            ){
+                                logger.warn("{} appears to be stuck on a prompt: {}",command,output);
+                                //TODO how to handle a prompt blocking a command from going back to PS1
+                            }
+                        }
+
+
+                        if(!command.isSilent()) {
+                            logger.warn("{}:{}:{} idle for {}",
+                                    activeCommands.get(command).getContext().getSession().getHostName(),
+                                    command.getHead(),
+                                    command,
+                                    String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000)
+                            );
+                        }
                     }
                 }
             };

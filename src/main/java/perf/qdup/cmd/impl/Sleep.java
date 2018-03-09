@@ -23,6 +23,8 @@ public class Sleep extends Cmd {
         this.amount = amount;
     }
 
+    public String getAmount(){return amount;}
+
     public static long parseToMs(String amount){
         amount = amount.replaceAll("_","");
         long rtrn = 0;

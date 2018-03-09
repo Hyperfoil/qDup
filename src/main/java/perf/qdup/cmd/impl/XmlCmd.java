@@ -13,12 +13,19 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static perf.yaup.StringUtil.removeQuotes;
 
 public class XmlCmd extends Cmd {
+
+
+    private static final String NAMESPACE_PATTERN = "starts-with(namespace::*[name()=\"%s\"]=\"%s\"";
+    private static final String XMLNS_PATTERN = "@xmlns:?(?<prefix>[^=\\s]*)\\s*=\\s*['\"]?(?<namespace>[^\\s'\\\"\\]]+)['\"]?";
+
     String path;
     List<String> operations;
     //TODO calling remoeQuotes in Cmd just exposes artifacts from yaml parsing, should be done in CmdBuilder
@@ -47,6 +54,24 @@ public class XmlCmd extends Cmd {
         return "xml: {path:"+path+", operations: "+operations+"}";
     }
 
+
+    public static String replaceXmnsAttribute(String pattern){
+        String rtrn = pattern;
+        Matcher xmlnsPattern = Pattern.compile(XMLNS_PATTERN).matcher(pattern);
+
+        while(xmlnsPattern.find()){
+            rtrn = rtrn.replace(
+                    xmlnsPattern.group(),
+                    String.format(
+                            NAMESPACE_PATTERN,
+                            xmlnsPattern.group("prefix"),
+                            xmlnsPattern.group("namespace")
+                    )
+            );
+        }
+        return rtrn;
+    }
+
     @Override
     protected void run(String input, Context context, CommandResult result) {
 
@@ -56,13 +81,21 @@ public class XmlCmd extends Cmd {
         String output = input;
         File tmpDest = null;
         try {
-
-            if(path==null || path.isEmpty()){
+            String remotePath = path;
+            if(remotePath!=null){
+                if(!remotePath.isEmpty() && !remotePath.startsWith("/")){
+                    context.getSession().clearCommand();
+                    context.getSession().sh("pwd");
+                    String pwd = context.getSession().getOutput().trim();
+                    remotePath = pwd+File.separator+path;
+                }
+            }
+            if(remotePath==null || remotePath.isEmpty()){
                 xml = loader.loadXml(input);
             }else{
                 tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
 
-                context.getLocal().download(path,tmpDest.getPath(),context.getSession().getHost());
+                context.getLocal().download(remotePath,tmpDest.getPath(),context.getSession().getHost());
                 xml = loader.loadXml(tmpDest.toPath());
             }
             for(int i=0; i<operations.size(); i++){
@@ -74,32 +107,34 @@ public class XmlCmd extends Cmd {
                 String search = opIndex>-1 ? Cmd.populateStateVariables(operation.substring(0,opIndex),this,context.getState()).trim() : operation;
                 String modification = opIndex>-1 ? Cmd.populateStateVariables(operation.substring(opIndex),this,context.getState()).trim() : "";
 
+
+                search = replaceXmnsAttribute(search);
+
                 List<Xml> found = xml.getAll(search);
+
                 if(found.isEmpty()){
 
                     if(modification.isEmpty()){
                         //we didn't find the xml
-
                         successful = false;
-
                     }else{
                         //TODO check if set operation and create node
                     }
                 } else {
                     if(modification.isEmpty()){
                         output = found.stream().map(Xml::toString).collect(Collectors.joining("\n"));
-
                     }else{
                         found.forEach(x->x.modify(modification));
                     }
                 }
             }
-
-            try(  PrintWriter out = new PrintWriter( tmpDest )  ){
-                out.print(xml.documentString());
-                out.flush();
+            if(remotePath!=null && !remotePath.isEmpty() && tmpDest!=null) {
+                try (PrintWriter out = new PrintWriter(tmpDest)) {
+                    out.print(xml.documentString());
+                    out.flush();
+                }
+                context.getLocal().upload(tmpDest.getPath(), remotePath, context.getSession().getHost());
             }
-            context.getLocal().upload(tmpDest.getPath(),path,context.getSession().getHost());
 
         } catch (IOException e) {
             logger.error("{}@{} failed to create local tmp file",this.toString(),context.getSession().getHostName(),e);

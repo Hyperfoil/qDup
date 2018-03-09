@@ -279,6 +279,9 @@ public class SshSession implements Runnable, Consumer<String>{
             //TODO test shStream reset before and after the command is sent (so sh output does not contain the command)
         }
     }
+    public String peekOutput(){
+        return shStream.toString();
+    }
     public void close(){
         close(true);
     }

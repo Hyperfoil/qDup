@@ -4,6 +4,7 @@ import org.junit.Test;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.impl.SetState;
 import perf.qdup.cmd.impl.Sh;
+import perf.qdup.cmd.impl.Sleep;
 import perf.qdup.cmd.impl.XmlCmd;
 import perf.yaup.json.Json;
 
@@ -52,10 +53,22 @@ public class CmdBuilderTest {
     }
 
 
+    @Test
+    public void sleepCmd(){
+        YamlParser parser = new YamlParser();
+        parser.load("sleep",stream(""+
+                "sleep: 5m"
+        ));
+
+        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("sleep"),null);
+        assertTrue("built "+built.getClass().getName(),built instanceof Sleep);
+        assertEquals("5m",((Sleep)built).getAmount());
+    }
 
     @Test
     public void setStateTwoArgs(){
-        YamlParser foo = new YamlParser();
         YamlParser parser = new YamlParser();
         parser.load("setstate",stream(""+
             "set-state: EXECUTOR \"unzip \""
@@ -77,7 +90,8 @@ public class CmdBuilderTest {
                 "xml: ",
                 "  path: \"xmlPath\"",
                 "  operations: [",
-                "    \"/foo/bar/biz/@attr == buz\"",
+                "    \"/foo/bar/biz/@attr == ",
+                "buz\"",
                 "    \"/foo/bar/biz ++ <fizz/>\"",
                 "  ]",
                 ""
@@ -91,8 +105,8 @@ public class CmdBuilderTest {
         XmlCmd builtXml = (XmlCmd)built;
         assertEquals("xmlPath",builtXml.getPath());
         assertEquals("operation count",2,builtXml.getOperations().size());
-        assertEquals("operation[0]","/foo/bar/biz/@attr == buz",builtXml.getOperations().get(0));
-        assertEquals("operation[1]","/foo/bar/biz ++ <fizz/>",builtXml.getOperations().get(1));
+        assertEquals("operation[0]="+builtXml.getOperations().get(0),"/foo/bar/biz/@attr ==\nbuz",builtXml.getOperations().get(0));
+        assertEquals("operation[1]="+builtXml.getOperations().get(1),"/foo/bar/biz ++ <fizz/>",builtXml.getOperations().get(1));
     }
 
 
