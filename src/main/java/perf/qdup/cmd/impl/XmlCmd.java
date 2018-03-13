@@ -7,6 +7,7 @@ import perf.yaup.StringUtil;
 import perf.yaup.file.FileUtility;
 import perf.yaup.xml.Xml;
 import perf.yaup.xml.XmlLoader;
+import perf.yaup.xml.XmlOperation;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,10 +22,6 @@ import java.util.stream.Stream;
 import static perf.yaup.StringUtil.removeQuotes;
 
 public class XmlCmd extends Cmd {
-
-
-    private static final String NAMESPACE_PATTERN = "starts-with(namespace::*[name()=\"%s\"]=\"%s\"";
-    private static final String XMLNS_PATTERN = "@xmlns:?(?<prefix>[^=\\s]*)\\s*=\\s*['\"]?(?<namespace>[^\\s'\\\"\\]]+)['\"]?";
 
     String path;
     List<String> operations;
@@ -54,24 +51,6 @@ public class XmlCmd extends Cmd {
         return "xml: {path:"+path+", operations: "+operations+"}";
     }
 
-
-    public static String replaceXmnsAttribute(String pattern){
-        String rtrn = pattern;
-        Matcher xmlnsPattern = Pattern.compile(XMLNS_PATTERN).matcher(pattern);
-
-        while(xmlnsPattern.find()){
-            rtrn = rtrn.replace(
-                    xmlnsPattern.group(),
-                    String.format(
-                            NAMESPACE_PATTERN,
-                            xmlnsPattern.group("prefix"),
-                            xmlnsPattern.group("namespace")
-                    )
-            );
-        }
-        return rtrn;
-    }
-
     @Override
     protected void run(String input, Context context, CommandResult result) {
 
@@ -99,34 +78,13 @@ public class XmlCmd extends Cmd {
                 xml = loader.loadXml(tmpDest.toPath());
             }
             for(int i=0; i<operations.size(); i++){
-                String operation = operations.get(i);
-                int opIndex = FileUtility.OPERATIONS.stream().mapToInt(op->{
-                    int rtrn = operation.indexOf(op);
-                    return rtrn;
-                }).max().getAsInt();
-                String search = opIndex>-1 ? Cmd.populateStateVariables(operation.substring(0,opIndex),this,context.getState()).trim() : operation;
-                String modification = opIndex>-1 ? Cmd.populateStateVariables(operation.substring(opIndex),this,context.getState()).trim() : "";
+                XmlOperation xmlOperation = XmlOperation.parse(operations.get(i));
 
-
-                search = replaceXmnsAttribute(search);
-
-                List<Xml> found = xml.getAll(search);
-
-                if(found.isEmpty()){
-
-                    if(modification.isEmpty()){
-                        //we didn't find the xml
-                        successful = false;
-                    }else{
-                        //TODO check if set operation and create node
-                    }
-                } else {
-                    if(modification.isEmpty()){
-                        output = found.stream().map(Xml::toString).collect(Collectors.joining("\n"));
-                    }else{
-                        found.forEach(x->x.modify(modification));
-                    }
+                String response = xmlOperation.apply(xml);
+                if(!response.isEmpty()){
+                    output = response;
                 }
+
             }
             if(remotePath!=null && !remotePath.isEmpty() && tmpDest!=null) {
                 try (PrintWriter out = new PrintWriter(tmpDest)) {

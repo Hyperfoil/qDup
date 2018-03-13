@@ -291,12 +291,13 @@ public class CmdBuilder {
         final List<Object> args = new ArrayList<>();
         Json target = json;
         String shortname=null;
+        Object lineNumber = null;
         int childStartIndex=0;
         if(json.isArray()){
 
             target = json.getJson(0);
             shortname = target.getString(KEY);
-
+            lineNumber = target.get(LINE_NUMBER);
 
 
             if(target.has(VALUE)){
@@ -380,6 +381,7 @@ public class CmdBuilder {
             }
         }else {
             shortname = target.getString(KEY);
+            lineNumber = target.get(LINE_NUMBER);
             if (has(shortname)) {
                 Set<Integer> sizes = sizes(shortname);
                 if (target.has(VALUE)) {//try and build the command from just the VALUE
@@ -431,7 +433,6 @@ public class CmdBuilder {
                 }
             }
         }
-
         rtrn = commands.get(shortname).create(args);
 
         if(target.has(CHILD)){

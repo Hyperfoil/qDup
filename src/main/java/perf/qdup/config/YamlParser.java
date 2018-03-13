@@ -395,12 +395,13 @@ public class YamlParser {
                                     line="";
                                 }else if (lineContent.startsWith("---")){
                                     line="";
-                                }else if(line.startsWith("#")){//use line not lineCotent so we benefit a call to nestMatch
+                                }else if(lineContent.startsWith("#")){//lineContent avoids the nest changes
                                     if(builder.target().isEmpty() || builder.target().isArray()){
                                         Json commentJson = new Json();
                                         commentJson.add(COMMENT,lineContent.substring(1));
                                         builder.target().add(commentJson);
                                     }else{
+
                                         if(!builder.target().has(COMMENT)){
                                             builder.target().set(COMMENT,lineContent.substring(1));
                                         }else{

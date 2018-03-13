@@ -39,7 +39,10 @@ public class Regex extends Cmd {
         }
         Pattern pattern = Pattern.compile(newPattern,Pattern.DOTALL);
         Matcher matcher = pattern.matcher(input);
-        if(matcher.find()){
+
+        //full line matching only if the pattern specifies start of line
+        boolean matches = newPattern.startsWith("^") ? matcher.matches() : matcher.find();
+        if(matches){
             logger.trace("{} match {} ",this,input);
             fieldMatcher = NAMED_CAPTURE.matcher(newPattern);
             List<String> names = new LinkedList<>();

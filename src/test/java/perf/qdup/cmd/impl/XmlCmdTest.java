@@ -10,6 +10,7 @@ import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
 
+import javax.xml.XMLConstants;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,19 +21,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class XmlCmdTest {
-
-
-    @Test
-    public void replaceXmlnsAttribute(){
-        String search = "/foo[@xmlns=urn:foo:bar:biz]/bar[@xmlns:biz=foo:biz:buz]";
-
-        String replaced = XmlCmd.replaceXmnsAttribute(search);
-
-        assertFalse("should not find @xmlns",replaced.contains("@xmlns"));
-        assertEquals("shoudl replace both references",
-                "/foo[starts-with(namespace::*[name()=\"\"]=\"urn:foo:bar:biz\"]/bar[starts-with(namespace::*[name()=\"biz\"]=\"foo:biz:buz\"]",
-                replaced);
-    }
 
     @Test
     public void xpathTest(){

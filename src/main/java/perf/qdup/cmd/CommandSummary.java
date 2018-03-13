@@ -27,7 +27,7 @@ public class CommandSummary {
             addWarning(command+" cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
         }
 
-        if(StringUtil.countOccurances(STATE_PREFIX,toString) != StringUtil.countOccurances(Cmd.STATE_SUFFIX,toString)){
+        if(StringUtil.countOccurances(toString,STATE_PREFIX) != StringUtil.countOccurances(toString,Cmd.STATE_SUFFIX)){
             addWarning(command+" does not have the same number of ${{ and }} for state variable referencing");
         }
 

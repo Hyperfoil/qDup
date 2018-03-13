@@ -47,20 +47,20 @@ public class YamlParserTest extends SshTestBase {
                                             }
                                         }
                                     }else{
-                                        fail("CHILD should only contain arrays");
+                                        fail("CHILD should only contain arrays:\n"+entryJson.toString(2));
                                         return false;//CHILD should only contain arrays
                                     }
                                 }else{
-                                    fail("CHILD should only contain json");
+                                    fail("CHILD should only contain json:\n"+entryObject.toString());
                                     return false;//CHILD should only contain json
                                 }
                             }
                         }else{
-                            fail("CHILD should be an array\n"+checkMe.toString(2));
+                            fail("CHILD should be an array:\n"+checkMe.toString(2));
                             return false;//CHILD should be an array
                         }
                     }else{
-                        fail("CHILD should be a json");
+                        fail("CHILD should be a json\n:"+checkMe.get(CHILD));
                         return false;//CHILD should be a json
                     }
                 }
@@ -96,6 +96,20 @@ public class YamlParserTest extends SshTestBase {
         }
 
 
+    }
+
+    @Test
+    public void testComment_differentNestLength(){
+        YamlParser parser = new YamlParser();
+        parser.load("comment",stream(""+
+            "foo:",
+            "  bar:",
+            "  #comment1",
+            "    - first: arguments #inlineComment1",
+            "  #comment2",
+            "    - second: arguemnts @inlineComment2"
+        ));
+        validateParse(parser);
     }
 
     @Test
