@@ -217,9 +217,8 @@ public class RunConfigBuilder {
                                             if(roleSectionValue.startsWith(HOST_EXPRESSION_PREFIX)) {
                                                 setRoleHostExpession(roleName, roleSection.getString(VALUE, ""));
                                             }else{
-                                                //assume the value is just the only host? This could also just be a syntax error
-                                                //just going with syntax error to simplify the parsing
-                                                addError(roleName+" hosts should either be a host expression (= role [+-] otherRole) or a list of host aliases but was "+roleSectionValue);
+                                                //assume the value is the only host
+                                                addHostToRole(roleName,roleSectionValue);
                                             }
                                         }
                                         eachChildEntry(roleSection, (hostIndex, host) -> {
@@ -282,7 +281,6 @@ public class RunConfigBuilder {
 
                                     addHostAlias(hostName, hostValue);
                                 }
-
                             });
                             break;
                         case STATES:
@@ -294,7 +292,9 @@ public class RunConfigBuilder {
                                 }else {
                                     eachChildEntry(stateJson, (entryIndex, entry) -> {
                                         if (RUN_STATE.equals(stateName)) {
-                                            if (!entry.has(VALUE) && entry.has(CHILD)) {
+                                            if (entry.has(VALUE)){
+                                                setRunState(entry.getString(KEY), entry.getString(VALUE));
+                                            }else if (entry.has(CHILD)){
                                                 String hostName = entry.getString(KEY);
                                                 eachChildEntry(entry, (hostEntryIndex, hostEntry) -> {
                                                     if (!hostEntry.has(VALUE) && hostEntry.has(CHILD)) {
@@ -306,8 +306,10 @@ public class RunConfigBuilder {
                                                         //TODO add host entry
                                                     }
                                                 });
-                                            } else {
-                                                setRunState(entry.getString(KEY), entry.getString(VALUE));
+
+                                            }else{
+                                                logger.trace("setting empty value for state = {}",entry.getString(KEY));
+                                                setRunState(entry.getString(KEY),"");
                                             }
                                         } else {
                                             setHostState(stateName, entry.getString(KEY), entry.getString(VALUE));
