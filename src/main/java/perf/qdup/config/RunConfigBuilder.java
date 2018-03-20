@@ -218,6 +218,7 @@ public class RunConfigBuilder {
                                                 setRoleHostExpession(roleName, roleSection.getString(VALUE, ""));
                                             }else{
                                                 //assume the value is the only host
+                                                //TODO add test for -hosts: hostName
                                                 addHostToRole(roleName,roleSectionValue);
                                             }
                                         }
