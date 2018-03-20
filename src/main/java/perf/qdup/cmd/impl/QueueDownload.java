@@ -35,35 +35,15 @@ public class QueueDownload extends Cmd {
         String resolvedPath = Cmd.populateStateVariables(getPath(),this,context.getState());
         String resolvedDestination = Cmd.populateStateVariables(basePath + File.separator + getDestination(),this,context.getState());
 
-        if(resolvedPath.contains(ENV_PREFIX)){
-            //we need to fetch the variables from the remote machine
-            Matcher m = ENV_PATTERN.matcher(resolvedPath);
-            Map<String,String> replacements = new HashMap<>();
-            while(m.find()){
-                String name = m.group("name");
-                context.getSession().sh("echo ${"+name+"}");
-                String output = context.getSession().getOutput().trim();
-                replacements.put(name,output);
-            }
-            for(String key : replacements.keySet()){
-                resolvedPath= resolvedPath.replaceAll("\\$\\{"+key+"}",replacements.get(key));
-            }
+        //TODO BUG resolvedPath could contain ${ or $ to reference local environment
+        if(resolvedPath.matches("[^\\$]*\\$(?!\\{\\{).*")){
+            context.getSession().sh("echo "+resolvedPath);
+            resolvedPath = context.getSession().getOutput().trim();
         }
-        if(resolvedDestination.contains(ENV_PREFIX)){
-            //we need to fetch the variables from the remote machine
-            Matcher m = ENV_PATTERN.matcher(resolvedDestination);
-            Map<String,String> replacements = new HashMap<>();
-            while(m.find()){
-                String name = m.group("name");
-                context.getSession().sh("echo ${"+name+"}");
-                String output = context.getSession().getOutput().trim();
-                replacements.put(name,output);
-            }
-            for(String key : replacements.keySet()){
-                resolvedDestination= resolvedDestination.replaceAll("\\$\\{"+key+"}",replacements.get(key));
-            }
+        if(resolvedDestination.matches("[^\\$]*\\$(?!\\{\\{).*")){
+            context.getSession().sh("echo "+resolvedDestination);
+            resolvedDestination = context.getSession().getOutput().trim();
         }
-
 
         context.addPendingDownload(resolvedPath,resolvedDestination);
 

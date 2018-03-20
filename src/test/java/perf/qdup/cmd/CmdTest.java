@@ -56,7 +56,6 @@ public class CmdTest {
 
     @Test
     public void testCmdTreePrevious(){
-        //TODO tree to test where commands get their input (previous)
         Cmd A = Cmd.log("A")
         .then(Cmd.log("B")
             .then(Cmd.log("C")

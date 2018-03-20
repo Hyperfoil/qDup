@@ -37,7 +37,7 @@ public class QueueDownloadTest {
         runScript.then(Cmd.sh("export FOO=\"/tmp\""));
         runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
 
-        runScript.then(Cmd.queueDownload("${FOO}/date.txt"));
+        runScript.then(Cmd.queueDownload("$FOO/date.txt"));
 
 
         builder.addScript(runScript);
