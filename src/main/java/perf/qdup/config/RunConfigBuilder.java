@@ -65,7 +65,7 @@ public class RunConfigBuilder {
     private HashedLists<String,ScriptCmd> roleRun;
     private HashedLists<String,ScriptCmd> roleCleanup;
 
-    private HashMap<String,String> hostAlias;
+    private HashMap<String,Host> hostAlias;
 
     private CmdBuilder cmdBuilder;
     private List<String> errors;
@@ -364,8 +364,14 @@ public class RunConfigBuilder {
         roleHosts.put(name,hostReference);
     }
     public void addHostAlias(String alias,String host){
-        hostAlias.put(alias,host);
-        hostAlias.put(host,host);
+        Host newHost = Host.parse(host);
+        if(newHost!=null) {
+            hostAlias.put(alias, newHost);
+            hostAlias.put(host, newHost);
+            hostAlias.put(newHost.toString(), newHost);
+        }else{
+            addError("Failed to parse host "+alias+":"+host);
+        }
     }
 
     public void addRoleSetup(String role, String script, Map<String,String> with){
@@ -432,38 +438,25 @@ public class RunConfigBuilder {
     }
 
     public RunConfig buildConfig(){
-
         Map<String,Host> seenHosts = new HashMap<>();
 
         Map<Host,Cmd> setupCmds = new HashMap<>();
         HashedLists<Host,ScriptCmd> runScripts = new HashedLists<>();
         Map<Host,Cmd> cleanupCmds = new HashMap<>();
 
+        //
         roleHosts.forEach((roleName,hostSet)->{
             for(String hostShortname : hostSet){
-                String fullyQualified = hostAlias.get(hostShortname);
-                if(fullyQualified!=null && !fullyQualified.isEmpty()){
-                    if(seenHosts.containsKey(fullyQualified)){
+                Host resolvedHost = hostAlias.get(hostShortname);
+                if(resolvedHost!=null){
+                    if(seenHosts.containsKey(resolvedHost)){
 
                     }else{
-                        if(fullyQualified.contains("@")){
-                            String username = fullyQualified.substring(0,fullyQualified.indexOf("@"));
-                            String hostname = fullyQualified.substring(fullyQualified.indexOf("@")+1);
-                            int port = Host.DEFAULT_PORT;
-                            if(hostname.contains(":")){
-                                port = Integer.parseInt(hostname.substring(hostname.indexOf(":")+1));
-                                hostname = hostname.substring(0,hostname.indexOf(":"));
-                            }
-                            Host newHost = new Host(username,hostname,port);
-                            seenHosts.put(fullyQualified,newHost);//might omit port
-                            seenHosts.put(hostShortname,newHost);
-                            seenHosts.put(newHost.toString(),newHost);//could duplicate fullyQualified but guarantees to include port
-                        }else{
-                            addError("Host "+hostShortname+" = "+fullyQualified+" needs to match user@hostName but is missing an @");
-                        }
+                        seenHosts.put(hostShortname,resolvedHost);
+                        seenHosts.put(resolvedHost.toString(),resolvedHost);//could duplicate fullyQualified but guarantees to include port
                     }
                 }else{
-                    addError("Host "+hostShortname+" was added without a fully qualified host representation matching user@hostName:port");
+                    addError("Role "+roleName+" Host "+hostShortname+" was added without a fully qualified host representation matching user@hostName:port\n hosts:"+hostAlias);
                     //WTF, how are we missing a host reference?
                 }
             }
@@ -564,7 +557,7 @@ public class RunConfigBuilder {
             }
         }
 
-        //check signal / waitFors
+        //check signal / wait-for
         StageSummary setupStage = new StageSummary();
         StageSummary runStage = new StageSummary();
         StageSummary cleanupStage = new StageSummary();

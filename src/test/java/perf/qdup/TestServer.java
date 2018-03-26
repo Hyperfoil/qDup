@@ -83,7 +83,7 @@ public class TestServer extends ExternalResource{
     public void start(){
         before();
     }
-
+    public void stop(){ after(); }
     protected void before(){
         try {
             server.start();

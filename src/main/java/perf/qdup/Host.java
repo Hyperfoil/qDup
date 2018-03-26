@@ -6,6 +6,21 @@ package perf.qdup;
  */
 public class Host {
 
+
+    public static Host parse(String fullyQualified) {
+        Host rtrn = null;
+        if (fullyQualified.contains("@")) {
+            String username = fullyQualified.substring(0, fullyQualified.indexOf("@"));
+            String hostname = fullyQualified.substring(fullyQualified.indexOf("@") + 1);
+            int port = DEFAULT_PORT;
+            if (hostname.contains(":")) {
+                port = Integer.parseInt(hostname.substring(hostname.indexOf(":") + 1));
+                hostname = hostname.substring(0, hostname.indexOf(":"));
+            }
+            rtrn = new Host(username, hostname, port);
+        }
+        return rtrn;
+    }
     public static final int DEFAULT_PORT = 22;
 
     private String hostName;

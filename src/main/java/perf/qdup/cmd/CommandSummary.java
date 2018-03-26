@@ -19,7 +19,30 @@ import static perf.qdup.cmd.Cmd.STATE_PREFIX;
  */
 public class CommandSummary {
 
-    private void processCommand(Cmd command,Cmd variableRoot,boolean isWatching,RunConfigBuilder config){
+    private class CommandRef {
+        private CommandRef parent;
+        private Cmd command;
+
+        public CommandRef(Cmd command){
+            this.command = command;
+        }
+        public CommandRef add(Cmd command){
+            CommandRef rtrn = new CommandRef(command);
+            rtrn.parent = this;
+            return rtrn;
+        }
+
+        public CommandRef getParent() {
+            return parent;
+        }
+        public boolean hasParent(){return parent!=null;}
+
+        public Cmd getCommand() {
+            return command;
+        }
+    }
+
+    private void processCommand(Cmd command,boolean isWatching,RunConfigBuilder config,CommandRef ref){
         String toString = command.toString();
 
         if(isWatching && command instanceof Sh){
@@ -31,16 +54,31 @@ public class CommandSummary {
         }
 
         if(command instanceof Signal){
-            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),variableRoot,config.getState(),false);
+            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),command,config.getState(),false);
             if(populatedSignal.contains(STATE_PREFIX)){
-                addWarning("signal: "+populatedSignal+" does not have a known value for state variable and cannot calculate expected signal count");
+                CommandRef currentRef = ref;
+                do{
+                    populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),currentRef.getCommand(),config.getState(),false);
+                    currentRef = currentRef.getParent();
+                }while(populatedSignal.contains(STATE_PREFIX) && currentRef!=null);
+
+            }
+            if(populatedSignal.contains(STATE_PREFIX)) {
+                addWarning("signal: " + populatedSignal + " does not have a known value for state variable and cannot calculate expected signal count");
             } else {
                 addSignal(populatedSignal);
             }
         }else if (command instanceof WaitFor){
-            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),variableRoot,config.getState(),false);
+            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),command,config.getState(),false);
             if(populatedWait.contains(STATE_PREFIX)){
-                addWarning("wait-for: "+populatedWait+" does not have a known value for state variable and cannot calculate expected signal count");
+                CommandRef currentRef = ref;
+                do{
+                    populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),currentRef.getCommand(),config.getState(),false);
+                    currentRef = currentRef.getParent();
+                }while(populatedWait.contains(STATE_PREFIX) && currentRef!=null);
+            }
+            if(populatedWait.contains(STATE_PREFIX)) {
+                addWarning("signal: " + populatedWait + " does not have a known value for state variable and cannot calculate expected signal count");
             } else {
                 addWait(populatedWait);
             }
@@ -48,15 +86,14 @@ public class CommandSummary {
             String scriptName = ((ScriptCmd)command).getName();
             Script namedScript = config.getScript(scriptName,command);
             if(namedScript==null){
-                //System.out.println("FAILED TO FIND "+scriptName);
                 //TODO is it an error if a script isn't found?
             }else{
-                processCommand(namedScript,variableRoot,isWatching,config);
+                processCommand(namedScript,isWatching,config,ref.add(command));
             }
 
         }else if (command instanceof InvokeCmd){
             Cmd invokedCmd = ((InvokeCmd)command).getCommand();
-            processCommand(invokedCmd,variableRoot,isWatching,config);
+            processCommand(invokedCmd,isWatching,config,ref.add(command));
         }else if (command instanceof Regex){
             String pattern = ((Regex)command).getPattern();
             Matcher matcher = Cmd.NAMED_CAPTURE.matcher(pattern);
@@ -77,18 +114,18 @@ public class CommandSummary {
 
         if(!command.getWatchers().isEmpty()){
             for(Cmd watcher : command.getWatchers()){
-                processCommand(watcher,variableRoot,true,config);
+                processCommand(watcher,true,config,ref);
             }
         }
         if(!command.getThens().isEmpty()){
             for(Cmd then : command.getThens()){
-                processCommand(then,variableRoot,isWatching,config);
+                processCommand(then,isWatching,config,ref);
             }
         }
         if(command.hasTimers()){
             for(long timeout: command.getTimeouts()){
                 for(Cmd timer : command.getTimers(timeout)){
-                    processCommand(timer,variableRoot,true,config);
+                    processCommand(timer,true,config,ref);
                 }
             }
         }
@@ -110,7 +147,7 @@ public class CommandSummary {
         variables = new HashSet<>();
         regexVariables = new HashSet<>();
 
-        processCommand(command,command,false,config);
+        processCommand(command,false,config,new CommandRef(command));
     }
 
     public String getName(){return name;}

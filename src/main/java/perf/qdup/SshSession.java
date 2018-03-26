@@ -125,7 +125,6 @@ public class SshSession implements Runnable, Consumer<String>{
 
             semaphoreStream = new SemaphoreStream(shellLock,("\n"+prompt).getBytes());
 
-            //channelShell.setOut(semaphoreStream);
             channelShell.setOut(semaphoreStream);
             channelShell.setErr(semaphoreStream);//prompt goes to error stream so have to listen there too
 

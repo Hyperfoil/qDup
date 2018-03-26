@@ -237,27 +237,27 @@ public class Run implements Runnable {
         dispatcher.addObserver(setupObserver);
         for(Host host : config.getSetupHosts()){
 
-                State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
+            State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
 
-                Cmd setupCmd = config.getSetupCmd(host);
+            Cmd setupCmd = config.getSetupCmd(host);
 
-                Profiler profiler = profiles.get(setupCmd.toString());
+            Profiler profiler = profiles.get(setupCmd.toString());
 
-                logger.info("{} connecting {} to {}@{}",this,setupCmd,host.getUserName(),host.getHostName());
-                profiler.start("connect:"+host.toString());
-                SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase());
-                profiler.start("waiting for start");
-                if(!scriptSession.isOpen()){
-                    logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),setupCmd,host.getUserName(),host.getHostName());
-                    abort();
-                    return;
-                }
-                long stop = System.currentTimeMillis();
+            logger.info("{} connecting {} to {}@{}",this,setupCmd,host.getUserName(),host.getHostName());
+            profiler.start("connect:"+host.toString());
+            SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase());
+            profiler.start("waiting for start");
+            if(!scriptSession.isOpen()){
+                logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),setupCmd,host.getUserName(),host.getHostName());
+                abort();
+                return;
+            }
+            long stop = System.currentTimeMillis();
 
-                State scriptState = hostState.getChild(setupCmd.toString());
-                Context context = new Context(scriptSession,scriptState,this,profiler);
+            State scriptState = hostState.getChild(setupCmd.toString());
+            Context context = new Context(scriptSession,scriptState,this,profiler);
 
-                dispatcher.addScript(setupCmd, context);
+            dispatcher.addScript(setupCmd, context);
 
         }
         dispatcher.start();
@@ -267,7 +267,7 @@ public class Run implements Runnable {
     public String toString(){return config.getName()+" -> "+outputPath;}
 
     //TODO separate coordinators for each stage?
-    public boolean initializeCoordinator(){
+    private boolean initializeCoordinator(){
         List<String> noSignal = new ArrayList<>();
         Consumer<StageSummary> setupCoordinator = (stageSummary)->{
             stageSummary.getSignals().forEach((signalName)->{
@@ -309,11 +309,6 @@ public class Run implements Runnable {
 
         if(config.hasErrors()){
             config.getErrors().forEach(logger::error);
-            return;
-        }
-
-        if(!config.hasErrors()){
-            //TODO raise warnings if not validated
             config.getErrors().forEach(runLogger::error);
             timestamps.put("end",System.currentTimeMillis());
             return;

@@ -15,13 +15,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class UploadTest {
 
-    @Rule
-    public final TestServer testServer = new TestServer();
+//    @Rule
+//    public final TestServer testServer = new TestServer();
 
     @Test
     public void uploadFile(){
@@ -49,6 +51,10 @@ public class UploadTest {
             builder.addRoleRun("role","run-upload",new HashMap<>());
 
             RunConfig config = builder.buildConfig();
+
+            assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+
+
             CommandDispatcher dispatcher = new CommandDispatcher();
             Run run = new Run("/tmp",config,dispatcher);
             run.run();

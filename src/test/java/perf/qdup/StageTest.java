@@ -12,16 +12,38 @@ import perf.qdup.config.YamlParser;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class StageTest extends SshTestBase{
 
     private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
 
+    @Test
+    public void variableSignalName_boundInState(){
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 
+        Script signal = new Script("signal");
+        signal.then(Cmd.signal("${{FOO}}"));
 
+        builder.addScript(signal);
+
+        builder.addHostAlias("alpha","guest@alpha");
+
+        builder.addHostToRole("role","alpha");
+
+        builder.addRoleRun("role","signal", Collections.emptyMap());
+
+        RunConfig runConfig;
+
+//        runConfig = builder.buildConfig();
+//        assertTrue("should not be valid to signal an undefined state variable",runConfig.hasErrors());
+
+        builder.setRunState("FOO","foo");
+        runConfig = builder.buildConfig();
+
+        assertFalse("adding state FOO = foo should make the config valid:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertTrue("run should signal foo (state value of FOO):\n"+runConfig.getRunStage().getSignals(),runConfig.getRunStage().getSignals().contains("foo"));
+    }
 
     @Test
     public void variableSignalName_boundInRole(){
@@ -50,6 +72,7 @@ public class StageTest extends SshTestBase{
         RunConfig config = builder.buildConfig();
 
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        assertTrue("should signal foo:\n"+config.getRunStage().getSignals(),config.getRunStage().getSignals().contains("foo"));
         assertEquals("one signal for foo",1,config.getRunStage().getSignalCount("foo"));
         assertTrue("one waiter for foo",config.getRunStage().getWaiters().contains("foo"));
 
@@ -176,29 +199,5 @@ public class StageTest extends SshTestBase{
 
     }
 
-    @Test
-    public void variableSignal(){
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-
-        Script signal = new Script("signal");
-        signal.then(Cmd.signal("${{FOO}}"));
-
-        builder.addScript(signal);
-
-        builder.addHostAlias("alpha","guest@alpha");
-
-        builder.addHostToRole("role","alpha");
-
-        builder.addRoleRun("role","signal", Collections.emptyMap());
-
-        RunConfig runConfig = builder.buildConfig();
-        assertTrue("should not be valid to signal an undefined state variable",runConfig.hasErrors());
-
-
-        builder.setRunState("FOO","foo");
-        runConfig = builder.buildConfig();
-        assertFalse("adding state FOO = foo should make the config valid",runConfig.hasErrors());
-        assertFalse("run should signal foo (state value of FOO)",runConfig.getRunStage().getSignals().contains("foo"));
-    }
 
 }
