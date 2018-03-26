@@ -38,6 +38,7 @@ public class CmdBuilderTest {
 
         assertEquals("split should create 2 entries",2,out.size());
     }
+
     @Test
     public void shSilent(){
         Json sh = Json.fromString("{\"key\":\"sh\",\"lineNumber\":1,\"child\":[[{\"key\":\"command\",\"lineNumber\":2,\"value\":\"tail -f server.log\"},{\"key\":\"silent\",\"lineNumber\":3,\"value\":\"true\"}]]}");
@@ -100,6 +101,20 @@ public class CmdBuilderTest {
         Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("setstate"),null);
         assertTrue("built "+built.getClass().getName(),built instanceof SetState);
 
+    }
+
+    @Test
+    public void sh_echoEnvironmentVariable(){
+        YamlParser parser = new YamlParser();
+        parser.load("echo",stream(""+
+        "sh: echo ${SERVER_PID}"));
+
+        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("echo"),null);
+
+        assertTrue(built instanceof Sh);
+        assertTrue(built.toString().contains("${SERVER_PID}"));
     }
 
     @Test

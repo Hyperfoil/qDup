@@ -1,9 +1,7 @@
 package perf.qdup.cmd.impl;
 
-import org.junit.Rule;
 import org.junit.Test;
 import perf.qdup.Run;
-import perf.qdup.TestServer;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandDispatcher;
 import perf.qdup.cmd.Script;
@@ -17,8 +15,8 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
-import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class UploadTest {
 

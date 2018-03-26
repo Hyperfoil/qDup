@@ -49,7 +49,6 @@ public class RunConfigBuilderTest extends SshTestBase {
         Cmd cmd = fooScript.getNext();//ctrlC
         cmd = cmd.getNext();//sh
 
-        System.out.println(cmd.tree());
 
         assertTrue("sh shoudl have watchers",cmd.hasWatchers());
         cmd = cmd.getWatchers().get(0);
@@ -59,7 +58,6 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertTrue("regex should have a next command",cmd !=null);
         assertTrue("regex next should be ctrlC",cmd instanceof CtrlC);
 
-        System.out.println(cmd);
 
     }
 
@@ -230,6 +228,34 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         assertTrue("the first script definition should be used",script.tree().contains("echo FOO"));
         assertFalse("the second should script not be merged",script.tree().contains("echo BAR"));
+    }
+
+    @Test
+    public void testSh_echoEnvironmentVariable(){
+        YamlParser parser = new YamlParser();
+        parser.load("echo",stream(""+
+            "scripts:",
+            "  foo:",
+            "  - sh: export FOO=$(ps -ef | grep jboss)",
+            "    - sh: echo ${FOO}"
+        ));
+
+
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        builder.loadYaml(parser);
+        RunConfig runConfig = builder.buildConfig();
+
+        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+
+        Script foo = runConfig.getScript("foo");
+
+        Cmd cmd = foo.getNext();
+        assertFalse("foo should have a next command",cmd==null);
+        cmd = cmd.getNext();
+        assertFalse("first command should have a next",cmd==null);
+
+        assertTrue("second command should be sh",cmd instanceof Sh);
+        assertTrue("second command should contain ${FOO}",cmd.toString().contains("${FOO}"));
     }
 
     @Test

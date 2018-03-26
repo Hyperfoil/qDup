@@ -10,6 +10,7 @@ import perf.yaup.HashedLists;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Immutable representation of the Configuration for the Run
@@ -111,6 +112,9 @@ public class RunConfig {
 
 
     public String debug(){
+        if(hasErrors()){
+            return getErrors().stream().collect(Collectors.joining("\n"));
+        }
         StringBuilder  sb = new StringBuilder();
         if(!scripts.isEmpty()){
             sb.append("SCRIPTS\n");

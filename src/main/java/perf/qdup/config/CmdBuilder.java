@@ -388,7 +388,7 @@ public class CmdBuilder {
                 if (target.has(VALUE)) {//try and build the command from just the VALUE
                     //TODO split approach is error prone, should find a more stable solution
                     List<String> split = split(target.getString(VALUE));
-                    if (sizes.contains(split.size())) {
+                    if (sizes.contains(split.size())&& commands.get(shortname).checkArgTypes(split)) {
                         args.addAll(split);
                     } else if (sizes.contains(1)) {
                         args.add(target.getString(VALUE));

@@ -78,7 +78,7 @@ public class CommandSummary {
                 }while(populatedWait.contains(STATE_PREFIX) && currentRef!=null);
             }
             if(populatedWait.contains(STATE_PREFIX)) {
-                addWarning("signal: " + populatedWait + " does not have a known value for state variable and cannot calculate expected signal count");
+                addWarning("wait-for: " + populatedWait + " does not have a known value for state variable and will likely not be signalled");
             } else {
                 addWait(populatedWait);
             }

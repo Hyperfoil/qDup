@@ -150,12 +150,14 @@ public abstract class Cmd {
             String defaultValue = matcher.group("default");
             String value = populateVariable(name,cmd,state);
             if(value == null ){//bad times
-                if(defaultValue.isEmpty()) {
-                    //TODO how to alert the missing state? It could be intentional (e.g. nothing to wait-for)
-                    logger.debug("missing {} state variable for {}", name, command);
-                }
-                if(replaceUndefined){
+                if(!defaultValue.isEmpty()){
                     value = defaultValue;
+                }else if( defaultValue.isEmpty() && ':' == command.charAt(matcher.end("name")) ) {
+                    //TODO how to alert the missing state? It could be intentional (e.g. nothing to wait-for)
+                    value = defaultValue;
+                    //logger.debug("missing {} state variable for {}", name, command);
+                }else if(replaceUndefined){
+                    value = "";
                 }else{
                     value = STATE_PREFIX+name+STATE_SUFFIX;
                 }
