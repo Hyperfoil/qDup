@@ -3,7 +3,6 @@ package perf.qdup.config;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.Host;
-import perf.qdup.RunValidation;
 import perf.qdup.State;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandSummary;
@@ -37,7 +36,7 @@ public class RunConfigBuilder {
     private static final String RUN_SCRIPTS = "run-scripts";
     private static final String CLEANUP_SCRIPTS = "cleanup-scripts";
 
-    private static final String ALL_ROLE = "all";
+    private static final String ALL_ROLE = "ALL";
     private static final String RUN_STATE = "run";
     private static final String SCRIPT_DIR = "ENV.SCRIPT_DIR";
 
@@ -432,57 +431,6 @@ public class RunConfigBuilder {
         return script;
     }
 
-
-    public boolean isValid(){
-        isValid = validate();
-        return isValid;
-    }
-
-    private boolean validate(){
-        boolean rtrn = true;
-        if(errorCount()>0){
-            return false;
-        }else{
-            RunValidation runValidation = runValidation();
-            if(!runValidation.isValid()){
-                return false;
-            }
-        }
-        return true;
-    }
-    public RunValidation runValidation(){
-        return new RunValidation(validate(roleSetup,roleHosts),validate(roleRun,roleHosts),validate(roleCleanup,roleHosts));
-    }
-
-    private StageValidation validate(HashedLists<String,ScriptCmd> stage, HashedSets<String,String> hosts){
-        final StageValidation rtrn = new StageValidation();
-
-        stage.keys().forEach(roleName->{
-
-            stage.get(roleName).forEach(scriptCmd -> {
-                String scriptName = scriptCmd.getName();
-                Script script = getScript(scriptName,scriptCmd);
-                if(script == null){
-                    rtrn.addError(roleName+" missing script "+scriptCmd.getName());
-                }else{
-                    hosts.get(roleName).forEach(host->{
-                        CommandSummary summary = new CommandSummary(script,this);
-                        summary.getWaits().forEach(rtrn::addWait);
-                        summary.getSignals().forEach(rtrn::addSignal);
-                        summary.getWarnings().forEach(rtrn::addError);
-                    });
-                }
-            });
-        });
-        List<String> noSignal = rtrn.getWaiters().stream().filter((waitName)->!rtrn.getSignals().contains(waitName)).collect(Collectors.toList());
-        List<String> noWaiters = rtrn.getSignals().stream().filter((signalName)->!rtrn.getWaiters().contains(signalName)).collect(Collectors.toList());
-        if(!noSignal.isEmpty()){
-            rtrn.addError("missing signals for "+noSignal);
-        }
-        return rtrn;
-
-    }
-
     public RunConfig buildConfig(){
 
         Map<String,Host> seenHosts = new HashMap<>();
@@ -615,6 +563,32 @@ public class RunConfigBuilder {
                 }
             }
         }
+
+        //check signal / waitFors
+        StageSummary setupStage = new StageSummary();
+        StageSummary runStage = new StageSummary();
+        StageSummary cleanupStage = new StageSummary();
+
+        setupCmds.values().forEach(cmd->{
+           CommandSummary summary = new CommandSummary(cmd,this);
+           setupStage.add(summary);
+        });
+        runScripts.forEach((host,scriptList)->{
+            scriptList.forEach(scriptCmd -> {
+                //Script script = getScript(scriptCmd.getName(),scriptCmd);
+                CommandSummary summary = new CommandSummary(scriptCmd,this);
+                runStage.add(summary);
+            });
+        });
+        cleanupCmds.values().forEach(cmd->{
+            CommandSummary summary = new CommandSummary(cmd,this);
+            cleanupStage.add(summary);
+        });
+
+        setupStage.getErrors().forEach(this::addError);
+        runStage.getErrors().forEach(this::addError);
+        cleanupStage.getErrors().forEach(this::addError);
+
         if(errorCount() > 0){
             return new RunConfig(getName(),errors);
         }else {
@@ -625,7 +599,9 @@ public class RunConfigBuilder {
                     setupCmds,
                     runScripts,
                     cleanupCmds,
-                    runValidation(),
+                    setupStage,
+                    runStage,
+                    cleanupStage,
                     getKnownHosts(),
                     getIdentity(),
                     getPassphrase()

@@ -19,8 +19,7 @@ import static perf.qdup.cmd.Cmd.STATE_PREFIX;
  */
 public class CommandSummary {
 
-
-    private void processCommand(Cmd command,boolean isWatching,RunConfigBuilder config){
+    private void processCommand(Cmd command,Cmd variableRoot,boolean isWatching,RunConfigBuilder config){
         String toString = command.toString();
 
         if(isWatching && command instanceof Sh){
@@ -32,14 +31,14 @@ public class CommandSummary {
         }
 
         if(command instanceof Signal){
-            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),command,config.getState(),false);
+            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),variableRoot,config.getState(),false);
             if(populatedSignal.contains(STATE_PREFIX)){
                 addWarning("signal: "+populatedSignal+" does not have a known value for state variable and cannot calculate expected signal count");
             } else {
                 addSignal(populatedSignal);
             }
         }else if (command instanceof WaitFor){
-            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),command,config.getState(),false);
+            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),variableRoot,config.getState(),false);
             if(populatedWait.contains(STATE_PREFIX)){
                 addWarning("wait-for: "+populatedWait+" does not have a known value for state variable and cannot calculate expected signal count");
             } else {
@@ -49,14 +48,15 @@ public class CommandSummary {
             String scriptName = ((ScriptCmd)command).getName();
             Script namedScript = config.getScript(scriptName,command);
             if(namedScript==null){
+                //System.out.println("FAILED TO FIND "+scriptName);
                 //TODO is it an error if a script isn't found?
             }else{
-                processCommand(namedScript,isWatching,config);
+                processCommand(namedScript,variableRoot,isWatching,config);
             }
 
         }else if (command instanceof InvokeCmd){
             Cmd invokedCmd = ((InvokeCmd)command).getCommand();
-            processCommand(invokedCmd,isWatching,config);
+            processCommand(invokedCmd,variableRoot,isWatching,config);
         }else if (command instanceof Regex){
             String pattern = ((Regex)command).getPattern();
             Matcher matcher = Cmd.NAMED_CAPTURE.matcher(pattern);
@@ -77,18 +77,18 @@ public class CommandSummary {
 
         if(!command.getWatchers().isEmpty()){
             for(Cmd watcher : command.getWatchers()){
-                processCommand(watcher,true,config);
+                processCommand(watcher,variableRoot,true,config);
             }
         }
         if(!command.getThens().isEmpty()){
             for(Cmd then : command.getThens()){
-                processCommand(then,isWatching,config);
+                processCommand(then,variableRoot,isWatching,config);
             }
         }
         if(command.hasTimers()){
             for(long timeout: command.getTimeouts()){
                 for(Cmd timer : command.getTimers(timeout)){
-                    processCommand(timer,true,config);
+                    processCommand(timer,variableRoot,true,config);
                 }
             }
         }
@@ -110,7 +110,7 @@ public class CommandSummary {
         variables = new HashSet<>();
         regexVariables = new HashSet<>();
 
-        processCommand(command,false,config);
+        processCommand(command,command,false,config);
     }
 
     public String getName(){return name;}

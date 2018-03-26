@@ -10,14 +10,14 @@ import java.util.function.BiConsumer;
  * @arthur wreicher
  * Stores the results of validating the RunConfig
  */
-public class StageValidation {
+public class StageSummary {
 
     private List<String> errors;
     private Counters<String> signalCounters;
     private HashSet<String> waiters;
     private HashSet<String> signals;
 
-    public StageValidation(){
+    public StageSummary(){
         errors = new LinkedList<>();
         signalCounters = new Counters<>();
         waiters = new HashSet<>();

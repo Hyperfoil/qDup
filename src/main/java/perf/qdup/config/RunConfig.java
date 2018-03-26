@@ -7,7 +7,6 @@ import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Script;
 import perf.qdup.cmd.impl.ScriptCmd;
 import perf.yaup.HashedLists;
-import perf.yaup.json.Json;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -60,10 +59,13 @@ public class RunConfig {
     private HashedLists<Host,ScriptCmd> runScripts;
     private Map<Host,Cmd> cleanupCmds;
 
+
+    private StageSummary setupStage;
+    private StageSummary runStage;
+    private StageSummary cleanupStage;
+
     private Boolean colorTerminal = false;
     private List<String> errors;
-    private RunValidation runValidation;
-
 
 
     protected RunConfig(String name,List<String> errors){
@@ -76,7 +78,9 @@ public class RunConfig {
             Map<Host,Cmd> setupCmds,
             HashedLists<Host,ScriptCmd> runScripts,
             Map<Host,Cmd> cleanupCmds,
-            RunValidation runValidation,
+            StageSummary setupStage,
+            StageSummary runStage,
+            StageSummary cleanupStage,
             String knownHosts,
             String identity,
             String passphrase){
@@ -86,12 +90,25 @@ public class RunConfig {
         this.setupCmds = setupCmds;
         this.runScripts = runScripts;
         this.cleanupCmds = cleanupCmds;
-        this.runValidation = runValidation;
+        this.setupStage = setupStage;
+        this.runStage = runStage;
+        this.cleanupStage = cleanupStage;
         this.knownHosts = knownHosts;
         this.identity = identity;
         this.passphrase = passphrase;
         this.errors = new LinkedList<>();
     }
+
+    public StageSummary getSetupStage() {
+        return setupStage;
+    }
+    public StageSummary getRunStage() {
+        return runStage;
+    }
+    public StageSummary getCleanupStage() {
+        return cleanupStage;
+    }
+
 
     public String debug(){
         StringBuilder  sb = new StringBuilder();
@@ -142,10 +159,6 @@ public class RunConfig {
         sb.append("STATE\n");
         sb.append(state.tree());
         return sb.toString();
-    }
-
-    public RunValidation getRunValidation() {
-        return runValidation;
     }
 
     public boolean hasErrors(){return !errors.isEmpty();}

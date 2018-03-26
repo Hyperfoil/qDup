@@ -13,7 +13,7 @@ import org.slf4j.ext.XLoggerFactory;
 import org.slf4j.profiler.Profiler;
 import perf.qdup.cmd.*;
 import perf.qdup.cmd.impl.ScriptCmd;
-import perf.qdup.config.StageValidation;
+import perf.qdup.config.StageSummary;
 import perf.qdup.config.RunConfig;
 import perf.yaup.json.Json;
 
@@ -266,33 +266,34 @@ public class Run implements Runnable {
     @Override
     public String toString(){return config.getName()+" -> "+outputPath;}
 
+    //TODO separate coordinators for each stage?
     public boolean initializeCoordinator(){
         List<String> noSignal = new ArrayList<>();
-        Consumer<StageValidation> setupCoordinator = (stageValidation)->{
-            stageValidation.getSignals().forEach((signalName)->{
-                int count = stageValidation.getSignalCount(signalName);
+        Consumer<StageSummary> setupCoordinator = (stageSummary)->{
+            stageSummary.getSignals().forEach((signalName)->{
+                int count = stageSummary.getSignalCount(signalName);
                 coordinator.initialize(signalName,count);
             });
-            stageValidation.getWaiters().stream().filter((waitName)->
-                    !stageValidation.getSignals().contains(waitName)
+            stageSummary.getWaiters().stream().filter((waitName)->
+                    !stageSummary.getSignals().contains(waitName)
             ).forEach((notSignaled)->noSignal.add(notSignaled));
         } ;
 
-        setupCoordinator.accept(config.getRunValidation().getSetupStage());
+        setupCoordinator.accept(config.getSetupStage());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} setup scripts missing signal for {}",this,notSignaled);
             });
             return false;
         }
-        setupCoordinator.accept(config.getRunValidation().getRunStage());
+        setupCoordinator.accept(config.getRunStage());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} run scripts missing signal for {}",this,notSignaled);
             });
             return false;
         }
-        setupCoordinator.accept(config.getRunValidation().getCleanupStage());
+        setupCoordinator.accept(config.getCleanupStage());
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} cleanup scripts missing signal for {}",this,notSignaled);
@@ -311,17 +312,9 @@ public class Run implements Runnable {
             return;
         }
 
-        if(!config.getRunValidation().isValid()){
+        if(!config.hasErrors()){
             //TODO raise warnings if not validated
-            if(config.getRunValidation().getSetupStage().hasErrors()){
-                config.getRunValidation().getSetupStage().getErrors().forEach((error->runLogger.error(error)));
-            }
-            if(config.getRunValidation().getRunStage().hasErrors()){
-                config.getRunValidation().getRunStage().getErrors().forEach((error->runLogger.error(error)));
-            }
-            if(config.getRunValidation().getCleanupStage().hasErrors()){
-                config.getRunValidation().getCleanupStage().getErrors().forEach((error->runLogger.error(error)));
-            }
+            config.getErrors().forEach(runLogger::error);
             timestamps.put("end",System.currentTimeMillis());
             return;
         }

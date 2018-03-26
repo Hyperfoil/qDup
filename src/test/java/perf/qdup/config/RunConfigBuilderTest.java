@@ -123,13 +123,13 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
-        Set<String> signalNames = runConfig.getRunValidation().getRunStage().getSignals();
-        Set<String> waitNames = runConfig.getRunValidation().getRunStage().getWaiters();
+        Set<String> signalNames = runConfig.getRunStage().getSignals();
+        Set<String> waitNames = runConfig.getRunStage().getWaiters();
 
         assertTrue("signal: "+signalNames.toString(),signalNames.contains("SERVER_READY"));
         assertTrue("wait-for: "+waitNames.toString(),waitNames.contains("SERVER_READY"));
 
-        int signalCount = runConfig.getRunValidation().getRunStage().getSignalCount("SERVER_READY");
+        int signalCount = runConfig.getRunStage().getSignalCount("SERVER_READY");
 
         assertEquals("signal count for SERVER_READY",2,signalCount);
     }

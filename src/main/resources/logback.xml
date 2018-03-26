@@ -15,7 +15,8 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <logger name="perf.qdup.Local" level="TRACE"/>
+    <logger name="perf.qdup.Local" level="INFO"/>
+    <logger name="perf.qdup.cmd.CommandDispatcher" level="INFO"/>
 
     <root level="info">
         <appender-ref ref="STDOUT" />
