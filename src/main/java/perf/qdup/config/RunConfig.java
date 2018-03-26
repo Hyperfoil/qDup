@@ -7,6 +7,7 @@ import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Script;
 import perf.qdup.cmd.impl.ScriptCmd;
 import perf.yaup.HashedLists;
+import perf.yaup.json.Json;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -63,6 +64,8 @@ public class RunConfig {
     private List<String> errors;
     private RunValidation runValidation;
 
+
+
     protected RunConfig(String name,List<String> errors){
         this.errors = errors;
     }
@@ -93,17 +96,17 @@ public class RunConfig {
     public String debug(){
         StringBuilder  sb = new StringBuilder();
         if(!scripts.isEmpty()){
-            sb.append("scripts\n");
+            sb.append("SCRIPTS\n");
             for(String scriptName : scripts.keySet()){
-                sb.append("  "+scriptName+"\n");
+                sb.append(""+scriptName+"\n");
                 Script script = scripts.get(scriptName);
-                sb.append(script.tree(4,false));
+                sb.append(script.tree(2,false));
             }
         }else{
-            sb.append("no scripts\n");
+            sb.append("NO SCRIPTS\n");
         }
         if(!setupCmds.isEmpty()){
-            sb.append("setup\n");
+            sb.append("SETUP\n");
             for(Host host : setupCmds.keySet()){
                 sb.append("  "+host.toString()+"\n");
                 Cmd cmd = setupCmds.get(host);
@@ -113,30 +116,30 @@ public class RunConfig {
                 });
             }
         }else{
-            sb.append("no setup cmds\n");
+            sb.append("NO SETUP CMDS\n");
         }
         if(!runScripts.isEmpty()){
-            sb.append("run\n");
+            sb.append("RUN\n");
             for(Host host : runScripts.keys()){
                 sb.append("  "+host.toString()+"\n");
                  List<ScriptCmd> scriptCmds = runScripts.get(host);
                  scriptCmds.forEach(c->sb.append("    "+c.getName()+"\n"));
             }
         }else{
-            sb.append("no run scripts\n");
+            sb.append("NO RUN SCRIPTS\n");
         }
         if(!cleanupCmds.isEmpty()){
-            sb.append("cleanup\n");
+            sb.append("CLEANUP\n");
             for(Host host : cleanupCmds.keySet()){
                 sb.append("  "+host.toString()+"\n");
                 Cmd cmd = cleanupCmds.get(host);
                 sb.append("    "+cmd.getThens().toString()+"\n");
             }
         }else{
-            sb.append("no cleanup cmds\n");
+            sb.append("NO CLEANUP CMDS\n");
         }
 
-        sb.append("state:\n");
+        sb.append("STATE\n");
         sb.append(state.tree());
         return sb.toString();
     }

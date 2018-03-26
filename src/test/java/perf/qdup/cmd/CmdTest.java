@@ -3,6 +3,7 @@ package perf.qdup.cmd;
 import org.junit.Assert;
 import org.junit.Test;
 import perf.qdup.Run;
+import perf.qdup.State;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
@@ -14,6 +15,87 @@ import static org.junit.Assert.fail;
 
 public class CmdTest {
 
+    @Test
+    public void populateStateVariables_envVariable(){
+        String populated = Cmd.populateStateVariables("$foo",null,null,false);
+
+        assertEquals("$ env variable reference","$foo",populated);
+
+        populated = Cmd.populateStateVariables("${foo}",null,null,false);
+        assertEquals("${} env variable reference","${foo}",populated);
+    }
+    @Test
+    public void populateStateVariables_foundState(){
+        State state = new State("RUN");
+        state.set("foo","FOO");
+        state.set("bar","BAR");
+
+        String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}",null,state,true);
+
+        assertEquals("all 3 found","FOO.FOO.BAR",populated);
+    }
+    @Test
+    public void populateStateVariables_foundCmd(){
+        Cmd cmd = Cmd.NO_OP();
+        cmd.with("foo","foo");
+
+        State state = new State("RUN");
+        state.set("foo","FOO");
+        state.set("bar","BAR");
+
+        String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}",cmd,state,true);
+
+        assertEquals("cmd override state","foo.foo.BAR",populated);
+    }
+
+    @Test
+    public void populateStateVariables_parentState(){
+        State parent = new State("RUN.");
+        State state = parent.addChild("localhost","HOST.");
+
+        parent.set("FOO","foo");
+
+        String populated;
+        populated = Cmd.populateStateVariables("${{FOO}}",null,state,true);
+        assertEquals("should use parent value","foo",populated);
+
+        state.set("FOO","FOO");
+        populated = Cmd.populateStateVariables("${{FOO}}",null,state,true);
+        assertEquals("should use child value","FOO",populated);
+
+
+    }
+    @Test
+    public void populateStateVariables_prefixState(){
+        State parent = new State("RUN.");
+        State state = parent.addChild("localhost","HOST.");
+
+        parent.set("FOO","foo");
+        state.set("FOO","FOO");
+
+        String populated;
+        populated = Cmd.populateStateVariables("${{RUN.FOO}}",null,state,true);
+        assertEquals("should use parent value due to prefix","foo",populated);
+        populated = Cmd.populateStateVariables("${{HOST.FOO}}",null,state,true);
+        assertEquals("should use parent value due to prefix","FOO",populated);
+
+
+    }
+
+    @Test
+    public void populateStateVariables_notFound(){
+        String populated = Cmd.populateStateVariables("${{FOO}}",null,null,false);
+
+        assertEquals("not replaced","${{FOO}}",populated);
+        populated = Cmd.populateStateVariables("${{FOO}}",null,null,true);
+        assertEquals("replaced","",populated);
+    }
+
+    @Test
+    public void populateStateVariables_defaultValue(){
+        String populated = Cmd.populateStateVariables("${{FOO:foo}}",null,null,true);
+        assertEquals("use default value","foo",populated);
+    }
 
     @Test
     public void testWith(){

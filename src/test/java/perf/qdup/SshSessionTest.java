@@ -3,6 +3,12 @@ package perf.qdup;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -33,8 +39,4 @@ public class SshSessionTest extends SshTestBase{
         assertFalse("SshSession should be closed",sshSession.isOpen());
     }
 
-    @Test @Ignore
-    public void ctrlC(){
-        //TODO the TestServer cannot support ctrlC
-    }
 }

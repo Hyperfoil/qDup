@@ -144,6 +144,9 @@ public class Coordinator {
             }
         }
         if( latches.get(name).get()<=0 ) {
+            if(latches.get(name).get() < 0){
+                logger.error("Latch {} went below zero to {}",name,latches.get(name).get());
+            }
             if(!observers.isEmpty()){
                 for(Consumer<String> observer : observers){
                     observer.accept(name);

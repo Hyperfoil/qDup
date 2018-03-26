@@ -2,10 +2,7 @@ package perf.qdup.config;
 
 import org.junit.Test;
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.impl.SetState;
-import perf.qdup.cmd.impl.Sh;
-import perf.qdup.cmd.impl.Sleep;
-import perf.qdup.cmd.impl.XmlCmd;
+import perf.qdup.cmd.impl.*;
 import perf.yaup.json.Json;
 
 import java.io.ByteArrayInputStream;
@@ -53,6 +50,30 @@ public class CmdBuilderTest {
     }
 
 
+    @Test
+    public void queueDownloadCmd(){
+        YamlParser parser = new YamlParser();
+        parser.load("queueDownload",stream(
+                "queue-download: /tmp/wf.webprofile.console.log"
+        ));
+
+        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("queueDownload"),null);
+        assertTrue("built "+built.getClass().getName(),built instanceof QueueDownload);
+    }
+
+    @Test
+    public void ctrlCCmd(){
+        YamlParser parser = new YamlParser();
+        parser.load("ctrlC",stream("ctrlC:"));
+        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("ctrlC"),null);
+
+        assertTrue("built "+built.getClass().getName(),built instanceof CtrlC);
+
+    }
     @Test
     public void sleepCmd(){
         YamlParser parser = new YamlParser();

@@ -47,7 +47,7 @@ public final class Context {
         run.addPendingDownload(session.getHost(),path,destination);
     }
     public void notifyTailMod(Cmd oldTail,Cmd newTail){
-        run.getDispatcher().onTailMod(oldTail,newTail);
+        //run.getDispatcher().onTailMod(oldTail,newTail);
     }
     public void abort(){
         run.abort();

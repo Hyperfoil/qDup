@@ -31,7 +31,9 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("echo",Echo.class);
         rtrn.addCmdDefinition("invoke",ScriptCmd.class,"name");
         rtrn.addCmdDefinition("script",ScriptCmd.class,"name");
+        rtrn.addCmdDefinition("js",JsCmd.class,"code");
         rtrn.addCmdDefinition("log",Log.class,"message");
+        rtrn.addCmdDefinition("queue-download",QueueDownload.class,"path");
         rtrn.addCmdDefinition("queue-download",QueueDownload.class,"path","destination");
         rtrn.addCmdDefinition("read-state",ReadState.class,"name");
         rtrn.addCmdDefinition("regex",Regex.class,"pattern");
@@ -243,7 +245,6 @@ public class CmdBuilder {
         }
     }
     public void addWatchers(Cmd command,Json json){
-
         String jsonKey = json.getString(KEY);
         if(WATCH.equals(jsonKey)){
             if(json.has(CHILD)){
@@ -440,9 +441,11 @@ public class CmdBuilder {
             for(int i=childStartIndex; i<childList.size();i++){
                 Json childEntryList = childList.getJson(i);
                 for(int c=0; c<childEntryList.size(); c++){
+
                     Json childEntry = childEntryList.getJson(c);
-                    String childKey = childEntry.getString(KEY).toLowerCase();
-                    switch (childKey){
+                    String childKey = childEntry.getString(KEY);
+
+                    switch (childKey.toLowerCase()){
                         case WATCH:
                             addWatchers(rtrn,childEntry);
                             break;

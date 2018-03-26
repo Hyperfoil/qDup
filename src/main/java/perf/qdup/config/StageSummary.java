@@ -1,8 +1,10 @@
 package perf.qdup.config;
 
+import perf.qdup.cmd.CommandSummary;
 import perf.yaup.Counters;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 
 /**
  * @arthur wreicher
@@ -22,6 +24,11 @@ public class StageValidation {
         signals = new HashSet<>();
     }
 
+    public void add(CommandSummary summary){
+        summary.getWarnings().forEach(this::addError);
+        summary.getSignals().forEach(this::addSignal);
+        summary.getWaits().forEach(this::addWait);
+    }
 
     protected void addError(String message){
         errors.add(message);
@@ -50,5 +57,7 @@ public class StageValidation {
         return Collections.unmodifiableSet(waiters);
     }
 
-
+    public void forEach(BiConsumer<String,Integer> consumer){
+        signalCounters.entries().forEach(name->consumer.accept(name,signalCounters.count(name)));
+    }
 }

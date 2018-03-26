@@ -55,7 +55,7 @@ public class CommandDispatcher {
 
         @Override
         public void next(Cmd command, String output) {
-            observers.forEach(o->o.onNext(command,output));
+            //observers.forEach(o->o.onNext(command,output));
             if(command.getNext()!=null){
                 logger.trace("{}:{} using WatcherResult to invoke next={}",command.getUid(),command,command.getNext());
                 command.getNext().doRun(output,this.context,this);
@@ -64,7 +64,7 @@ public class CommandDispatcher {
 
         @Override
         public void skip(Cmd command, String output) {
-            observers.forEach(o->o.onSkip(command,output));
+            //observers.forEach(o->o.onSkip(command,output));
             if(command.getSkip()!=null){
                 logger.trace("{} using WatcherResult to invoke skip={}",command,command.getSkip());
                 command.getSkip().doRun(output,this.context,this);
@@ -91,13 +91,13 @@ public class CommandDispatcher {
             if(command!=null && output!=null){
                 if(command.getPrevious()!=null && !command.isSilent()){
                     if( !output.equals(command.getPrevious().getOutput()) ){
-                        context.getRunLogger().info("{}:{}:{}\n{}",command.getHead(),context.getSession().getHost().toString(),command,output);
+                        context.getRunLogger().info("{}:{}:({}){}\n{}",command.getHead(),context.getSession().getHost().toString(),command.getUid(), command,output);
                     }else{
                         //skip logging the output because we don't want duplicates
                     }
                 }else{
                     if(!command.isSilent()) {
-                        context.getRunLogger().info("{}:{}:{}\n{}", command.getHead(), context.getSession().getHost().toString(), command, output);
+                        context.getRunLogger().info("{}:{}:({}){}\n{}", command.getHead(), context.getSession().getHost().toString(),command.getUid(), command, output);
                     }
                 }
             }
@@ -106,6 +106,11 @@ public class CommandDispatcher {
         @Override
         public void next(Cmd command,String output) {
             //get off the calling thread
+            logger.trace("queueing run-next={}\n  host={}\n  command={}",
+                    command.getNext(),
+                    context.getSession().getHost(),
+                    command
+                    );
             executor.submit(()->{
                 observers.forEach(o->o.onNext(command,output));
                 logCmdOutput(command,output);
@@ -116,6 +121,11 @@ public class CommandDispatcher {
         @Override
         public void skip(Cmd command,String output) {
             //get off the calling thread
+            logger.trace("queueing run-skip={}\n  host={}\n  command={}",
+                    command.getSkip(),
+                    context.getSession().getHost(),
+                    command
+                    );
             executor.submit(()-> {
                 observers.forEach(o -> o.onSkip(command, output));
                 logCmdOutput(command, output);
@@ -272,7 +282,7 @@ public class CommandDispatcher {
         public void run() {
             try {
                 activeThreads.put(command, Thread.currentThread());
-                logger.trace("CommandDispatch.run {}:{}",context.getSession().getHostName(), command);
+                logger.trace("run {}:{}",context.getSession().getHostName(), command);
                 context.getProfiler().start(command.getUid()+":"+command);
 
                 command.doRun(input, context, result);
@@ -284,6 +294,7 @@ public class CommandDispatcher {
         }
     }
 
+    private AtomicInteger activeCommandCount;  // because ConcurrentHashMap.size is not atomic with put / remove operations
     private Map<Cmd,ActiveCommandInfo> activeCommands;
     private Map<Cmd,Thread> activeThreads;
     private HashSet<Integer> pastCommands;
@@ -307,7 +318,9 @@ public class CommandDispatcher {
             Json entry = new Json();
             entry.set("name",cmd.toString());
             entry.set("uid",cmd.getUid());
+            entry.set("script",cmd.getHead().toString());
             if(cmd instanceof Sh){
+                entry.set("host",activeCommandInfo.getContext().getSession().getHost().toString());
                 String output = activeCommandInfo.getContext().getSession().peekOutput();
                 entry.set("output",output);
             }
@@ -345,6 +358,7 @@ public class CommandDispatcher {
         this.executor = executor;
         this.scheduler = scheduler;
 
+        this.activeCommandCount = new AtomicInteger(0);
         this.activeCommands = new ConcurrentHashMap<>();
         this.activeThreads = new ConcurrentHashMap<>();
         this.pastCommands = new HashSet<>();
@@ -358,7 +372,10 @@ public class CommandDispatcher {
     }
 
     private Cmd removeActive(Cmd command){
+        logger.trace("removeActive("+command+") size="+activeCommandCount.get());
         ActiveCommandInfo activeCommandInfo = activeCommands.remove(command);
+        activeCommandCount.decrementAndGet();
+        logger.trace("removeActive("+command+") post.size="+activeCommandCount.get());
         if(activeCommandInfo.getRunWatchers()!=null) {
             try {
                 activeCommandInfo.getRunWatchers().stop();
@@ -393,9 +410,10 @@ public class CommandDispatcher {
         //TODO this deepCopy is probably not needed and may be bad
         //  it might break state references based on UID
         // it definitely breaks Env
-
-
-        //script = script.deepCopy();
+        // need it for running the same script on multiple hosts because script2Result assumes a unique Head.ID for each
+        //   invocation of the script
+        // I forget how it broke env... was CMd.with not being properly converted?
+        script = script.deepCopy();
 
         //Cmd.InvokeCmd can change the tail and cause this to close profiler too soon
         //TODO make this thread safe
@@ -411,19 +429,31 @@ public class CommandDispatcher {
         }
     }
     //TODO this should no longer be needed now that script2Head stores the head cmd not tail
-    public void onTailMod(Cmd previousTail,Cmd nextTail){
-        //TODO make thread safe
-        ScriptResult result = script2Result.get(previousTail);
-        if(result!=null){
-            logger.trace("changing {} tail from {} to {}",result.getScript(),previousTail,nextTail);
-            script2Result.remove(previousTail);
-            script2Result.put(nextTail,result);
-        }
+//    public void onTailMod(Cmd previousTail,Cmd nextTail){
+//        //TODO make thread safe
+//        ScriptResult result = script2Result.get(previousTail);
+//        if(result!=null){
+//            logger.trace("changing {} tail from {} to {}",result.getScript(),previousTail,nextTail);
+//            script2Result.remove(previousTail);
+//            script2Result.put(nextTail,result);
+//        }
+//    }
+    public String debug(){
+        StringBuilder sb = new StringBuilder();
+        script2Result.forEach(((cmd, scriptResult) -> {
+            sb.append(scriptResult.getResult().context.getSession().getHost()+" = "+cmd.getUid()+" "+cmd.toString());
+            sb.append(System.lineSeparator());
+        }));
+        return sb.toString();
     }
+
     public void start(){ //start all the scripts attached to this dispatcher
-        logger.trace("CD.start");
+
+        logger.info(debug());
+
+        logger.trace("start");
         if(!isStopped){//don't try to start an already started dispatcher
-            logger.trace("CD don't start, isStopped={}",isStopped);
+            logger.trace("not starting, isStopped={}",isStopped);
             return;
         }
         isStopped = false;
@@ -431,8 +461,10 @@ public class CommandDispatcher {
         logger.info("starting {} scripts",script2Result.size());
         if(!script2Result.isEmpty()){
             BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
-                logger.trace("nanny checking {}",command);
                 if(activeCommands.containsKey(command) /*&& command instanceof Sh*/){
+                    logger.trace("Nanny checking:\n  host={}\n  command={}",
+                            activeCommands.get(command).getContext().getSession().getHost(),
+                            command);
 
                     long lastUpdate = activeCommands.get(command).getLastUpdate();
                     if(timestamp - lastUpdate > THRESHOLD ){
@@ -442,19 +474,19 @@ public class CommandDispatcher {
                                 (output.endsWith("'?") && output.contains("rm: remove regular file '")) || //root rm
                                 output.endsWith("Is this ok [y/N]: ")
                             ){
-                                logger.warn("{} appears to be stuck on a prompt: {}",command,output);
+                                logger.warn("Nanny found prompt for command={}\n  host={}\n  output={}",
+                                        command,
+                                        activeCommands.get(command).getContext().getSession().getHost(),
+                                        output);
                                 //TODO how to handle a prompt blocking a command from going back to PS1
                             }
                         }
-
-
                         if(!command.isSilent()) {
-                            logger.warn("{}:{}:{} idle for {}",
+                            logger.warn("Nanny found idle command={}\n  host={}\n  script={}\n  idle={}",
+                                    command,
                                     activeCommands.get(command).getContext().getSession().getHostName(),
                                     command.getHead(),
-                                    command,
-                                    String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000)
-                            );
+                                    String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000));
                         }
                     }
                 }
@@ -479,7 +511,9 @@ public class CommandDispatcher {
 
                 scriptObservers.forEach(observer -> observer.onStart(script,result.context));
 
-                logger.info("starting {}:{}",script,result.context.getSession().getHostName());
+                logger.info("starting\n  host={}\n  script={}",
+                        result.context.getSession().getHostName(),
+                        script);
                 dispatch(null,script,"",result.context,result);
             }
         }else{
@@ -511,10 +545,11 @@ public class CommandDispatcher {
             }
         });
         activeCommands.clear();
+        activeCommandCount.set(0);
         observers.forEach(c -> c.onStop());
     }
     public void stop(){
-        logger.debug("CD.stop");
+        logger.debug("stop");
         isStopped=true;
         closeSessions();
         activeCommands.values().forEach((w)->{
@@ -538,7 +573,10 @@ public class CommandDispatcher {
     }
 
     private void execute(Cmd command, String input, Context context, CommandResult result){
-        logger.trace(" execute {} WITH input=[{}]",command,input.length()>120?input.substring(0,120)+ AsciiArt.ELLIPSIS:input);
+        logger.trace("execute command={}\n  host={}\n  input=[{}]",
+                command,
+                context.getSession().getHost(),
+                input.length()>80?input.substring(0,80)+AsciiArt.ELLIPSIS:input);
         if(isStopped){
             return;
         }
@@ -548,7 +586,9 @@ public class CommandDispatcher {
 
             RunWatchers watcherRunnable = new RunWatchers("watch:"+command,command.getWatchers(),context,watcherResult,queue);
             activeCommands.get(command).setRunWatchers(watcherRunnable);
-            logger.trace("queueing {} watchers for {}",command.getWatchers().size(),command);
+            logger.trace("queueing {} watchers\n  host={}\n  command={}",command.getWatchers().size(),
+                    context.getSession().getHost(),
+                    command);
             executor.execute(watcherRunnable);
         }
         if(command.hasTimers()){
@@ -563,10 +603,19 @@ public class CommandDispatcher {
            }
         }
 
+
+
         executor.execute(new RunCommand(command,input,context,result));
 
     }
+
     public void dispatch(Cmd previousCommand, Cmd nextCommand, String input, Context context, CommandResult result){
+        logger.trace("dispatch command={}\n  host={}\n  previous={}",
+                nextCommand,
+                context.getSession().getHost(),
+                previousCommand
+                );
+
         if(isStopped){
             return;
         }
@@ -575,7 +624,6 @@ public class CommandDispatcher {
             for(CommandObserver observer : observers){
                 observer.onStop(previousCommand);
             }
-            //TODO BUG if previousCommand is last command in script but nextCommand references a repeat-until then this pre-maturely ends the script
             if(nextCommand==null){//nextCommand is only null when end of watcher or end of script
                 checkScriptDone(previousCommand,context);
             }
@@ -585,6 +633,8 @@ public class CommandDispatcher {
             observers.forEach(c->c.onStart(nextCommand));
 
             ActiveCommandInfo previous = activeCommands.put(nextCommand,new ActiveCommandInfo(nextCommand.getUid()+" "+nextCommand.toString(),null,context));
+            activeCommandCount.incrementAndGet();
+            logger.trace("addActive("+nextCommand+") size="+activeCommandCount.get());
 
             if(previous!=null){
                 logger.warn("adding {} {} previous = {}",nextCommand.hashCode(),nextCommand,previous.name);
@@ -604,26 +654,28 @@ public class CommandDispatcher {
             }
             execute(nextCommand,input,context,result);
         }else{
-            logger.trace("no next command from {}",previousCommand);
+
+            logger.trace("no next\n  host={}\n  command={}",
+                    context.getSession().getHost(),
+                    previousCommand);
+
         }
         //remove after add to ensure activeCommands is only empty when there isn't a nextCommand
         if(previousCommand!=null) {
             Cmd removed = removeActive(previousCommand);
         }
-        //TODO BUG this needs to run after checkScriptDone Q's onStop
         checkActiveCount();
-
     }
     private boolean checkScriptDone(Cmd command, Context context){
         boolean rtrn = false;
-        if(script2Result.containsKey(command.getHead())){//we finished a getScript
+        if(script2Result.containsKey(command.getHead())){//we finished a script
             context.getProfiler().stop();
             context.getProfiler().setLogger(context.getRunLogger());
             context.getProfiler().log();
             if(context.getRunLogger().isInfoEnabled()){
-                context.getRunLogger().info("{}:{} closing script state:\n{}",
-                        script2Result.get(command.getHead()).getScript(),
+                context.getRunLogger().info("Closing script state:\n  host={}\n  script={}\n{}",
                         context.getSession().getHostName(),
+                        script2Result.get(command.getHead()).getScript(),
                         context.getState().tree());
             }
             rtrn = true;
@@ -634,8 +686,9 @@ public class CommandDispatcher {
         return rtrn;
     }
     private void checkActiveCount(){
-        if(activeCommands.size()==0 && !isStopped){
-            logger.info("activeCommands.count = {}",activeCommands.size());
+        logger.trace("checkActiveCount = "+activeCommandCount.get());
+        if(activeCommandCount.get()==0 && !isStopped){
+            logger.info("activeCommands.count = {}",activeCommandCount.get());
             executor.execute(() -> {
                 closeSessions();
                 observers.forEach(o->o.onStop());
@@ -653,6 +706,6 @@ public class CommandDispatcher {
         script2Result.clear();
         isStopped=true;
     }
-    public boolean isActive(){return activeCommands.size()>0;}
-    public int getActiveCount(){return activeCommands.size();}
+    public boolean isActive(){return activeCommandCount.get()>0;}
+    public int getActiveCount(){return activeCommandCount.get();}
 }

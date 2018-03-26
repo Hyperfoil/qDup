@@ -13,6 +13,7 @@ import perf.qdup.config.RunConfigBuilder;
 import java.io.File;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
@@ -23,6 +24,92 @@ public class RunTest extends SshTestBase{
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
+
+    @Test
+    public void ctrlCTail(){
+
+        StringBuilder tailed = new StringBuilder();
+
+        Script tail = new Script("tail");
+        tail.then(Cmd.sh("echo '' > /tmp/foo.txt"));
+        tail.then(Cmd.sh("tail -f /tmp/foo.txt")
+                .watch(Cmd.regex("bar").then(Cmd.ctrlC()))
+        );
+        tail.then(Cmd.code(((input, state) -> {
+            tailed.append(input);
+            return Result.next(input);
+        })));
+
+        Script send = new Script("send");
+        send.then(Cmd.sh("echo foo >> /tmp/foo.txt"));
+        send.then(Cmd.sleep("1s"));
+        send.then(Cmd.sh("echo bar >> /tmp/foo.txt"));
+        send.then(Cmd.sleep("1s"));
+        send.then(Cmd.sh("echo biz >> /tmp/foo.txt"));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+
+        builder.addHostAlias("local",getHost().toString());
+        builder.addScript(tail);
+        builder.addScript(send);
+
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","tail",new HashMap<>());
+        builder.addRoleRun("role","send",new HashMap<>());
+
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run run = new Run("/tmp",config,dispatcher);
+
+        run.run();
+
+        assertFalse("should stop tail before biz",tailed.toString().contains("biz"));
+    }
+
+
+    @Test
+    public void oneScriptMultipleHosts(){
+
+        TestServer testServer1 = new TestServer();
+        testServer1.start();
+        TestServer testServer2 = new TestServer();
+        testServer2.start();
+
+        System.out.println("testServer1="+testServer1.getHost().toString());
+        System.out.println("testServer2="+testServer2.getHost().toString());
+
+
+        AtomicInteger counter = new AtomicInteger();
+
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+
+        Script oneScript = new Script("one");
+        oneScript.then(Cmd.code(((input, state) -> {
+            return Result.next(""+counter.incrementAndGet());
+        })));
+        oneScript.then(Cmd.echo());
+
+        builder.addScript(oneScript);
+        builder.addHostAlias("first",testServer1.getHost().toString());
+        builder.addHostAlias("second",testServer2.getHost().toString());
+
+        builder.addHostToRole("role","first");
+        builder.addHostToRole("role","second");
+
+        builder.addRoleRun("role","one",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run run = new Run("/tmp",config,dispatcher);
+
+        run.run();
+
+        assertEquals(2,counter.get());
+    }
 
 
     @Test

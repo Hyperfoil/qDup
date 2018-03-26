@@ -37,7 +37,7 @@ public abstract class Cmd {
 
     public static final String STATE_PREFIX = "${{";
     public static final String STATE_SUFFIX = "}}";
-    public static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^}]+)}}");
+    public static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^}:]+):?(?<default>[^}]*)}}");
 
     public static final String ENV_PREFIX = "${";
     public static final String ENV_SUFFIX = "}";
@@ -45,6 +45,7 @@ public abstract class Cmd {
 
     public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
+    public static Cmd js(String code){return new JsCmd(code);}
     public static Cmd done(){return new Done();}
     public static Cmd NO_OP(){return new NO_OP();}
     public static Cmd abort(String message){return new Abort(message);}
@@ -106,6 +107,12 @@ public abstract class Cmd {
         return populateStateVariables(command,cmd,state,true);
     }
 
+    public static Set<String> getVariableNames(String input){
+        Set<String> rtrn = new HashSet<>();
+
+        return rtrn;
+    }
+
     //handles recursive variable references
     protected static String populateVariable(String name, Cmd cmd,State state){
         String rtrn = null;
@@ -120,7 +127,7 @@ public abstract class Cmd {
             }
             if (cmd != null && cmd.hasWith(currentName)) {
                 rtrn = cmd.getWith(currentName);
-            } else {
+            } else if (state!=null){
                 rtrn = state.get(currentName);
             }
         }while (rtrn!=null && (currentName=rtrn).startsWith(STATE_PREFIX));
@@ -140,15 +147,19 @@ public abstract class Cmd {
                 rtrn.append(command.substring(previous,findIndex));
             }
             String name = matcher.group("name");
+            String defaultValue = matcher.group("default");
             String value = populateVariable(name,cmd,state);
             if(value == null ){//bad times
-                logger.debug("missing {} state variable for {}",name,command);
+                if(defaultValue.isEmpty()) {
+                    //TODO how to alert the missing state? It could be intentional (e.g. nothing to wait-for)
+                    logger.debug("missing {} state variable for {}", name, command);
+                }
                 if(replaceUndefined){
-                    value = "";
+                    value = defaultValue;
                 }else{
                     value = STATE_PREFIX+name+STATE_SUFFIX;
                 }
-                //TODO how to alert the missing state
+
             }
             rtrn.append(value);
             previous = matcher.end();
@@ -212,9 +223,9 @@ public abstract class Cmd {
         }else{
             //we are potentially changing the getScript tail, need to inform context
             //this should no longer be necessary because CommandDispatcher tracks the head cmd not tail
-            if(context!=null){
-                context.notifyTailMod(this,command.getTail());
-            }
+            //if(context!=null){
+                //context.notifyTailMod(this,command.getTail());
+            //}
         }
         Cmd toForce = command.getTail();
 
@@ -259,7 +270,7 @@ public abstract class Cmd {
         if(debug) {
             rtrn.append(String.format("%" + correctedIndent + "s%s%s next=%s skp=%s prv=%s%n", "", prefix, this, this.getNext(), this.getSkip(), this.getPrevious()) );
         }else{
-            rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this) );
+            rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this.toString()) );
         }
 
         with.forEach((k,v)->{

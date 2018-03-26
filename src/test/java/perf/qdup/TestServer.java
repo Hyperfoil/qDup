@@ -80,6 +80,10 @@ public class TestServer extends ExternalResource{
         return new Host("fakeUser","localhost",getPort());
     }
 
+    public void start(){
+        before();
+    }
+
     protected void before(){
         try {
             server.start();

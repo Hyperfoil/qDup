@@ -14,18 +14,17 @@ public class ScriptCmd extends Cmd {
 
     public String getName(){return name;}
     @Override
-    public String toString(){return "invoke: "+name;}
+    public String toString(){return "script-invoke: "+name;}
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
         Script toCall = context.getScript(this.name,this);
-        injectThen(toCall.deepCopy(),context);
-        //don't push this.WITH into context because it will be found by Cmd.populate...
-//        for(String key : with.keySet()){
-//            context.getState().set(key,with.get(key));
-//        }
-
-
+        if(toCall == null){
+            logger.debug("could not find script: {}",this.name);
+        }else {
+            Cmd copyCmd = toCall.deepCopy();
+            injectThen(copyCmd, context);
+        }
         result.next(this,input);
     }
 

@@ -99,6 +99,7 @@ public class YamlParserTest extends SshTestBase {
     }
 
     @Test
+    //TODO check that first and second are children of bar
     public void testComment_differentNestLength(){
         YamlParser parser = new YamlParser();
         parser.load("comment",stream(""+
@@ -110,6 +111,21 @@ public class YamlParserTest extends SshTestBase {
             "    - second: arguemnts @inlineComment2"
         ));
         validateParse(parser);
+    }
+    @Test
+    //TODO check that js is the only child of first and is the expect code
+    public void testScalarCode(){
+        YamlParser parser = new YamlParser();
+        parser.load("code",stream(""+
+            "scripts:",
+            "  first:",
+            "    - js: |",
+            "        function(a,b){",
+            "          return 'true';",
+            "        }"
+        ));
+        validateParse(parser);
+        System.out.println(parser.getJson("code").toString(2));
     }
 
     @Test

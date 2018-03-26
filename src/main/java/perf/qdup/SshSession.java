@@ -187,6 +187,7 @@ public class SshSession implements Runnable, Consumer<String>{
         sshConfig = new Properties();
         sshConfig.put("StrictHostKeyChecking", "no");
     }
+    //TODO isOpen should check the actual session is Open?
     public boolean isOpen(){return isOpen;}
     public String getUserName(){return host.getUserName();}
     public String getHostName(){return host.getHostName();}
@@ -206,22 +207,25 @@ public class SshSession implements Runnable, Consumer<String>{
         this.result = result;
     }
     public void ctrlC() {
-        if (!channelShell.isOpen()) {
-            isOpen = false;
-            logger.error("Shell is not connected for ctrlC");
-        } else {
-            try {
-                commandStream.write(3);//works for real qdup, not TestServer
-                commandStream.flush();
+        if(isOpen()) {
+            if (!channelShell.isOpen()) {
+                isOpen = false;
+                logger.error("Shell is not connected for ctrlC");
+            } else {
+                try {
+                    commandStream.write(3);//works for real qdup, not TestServer
+                    commandStream.flush();
 
-            } catch (Exception e) {
-                e.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
+        }else{
+            //TODO abort becuase session isn't open?
         }
     }
     public String getOutput(){
         String rtrn = "";
-        //we are somehow getting the output of the previous command :(
         try {
             synchronized (outputQueue) {
                 rtrn = outputQueue.take();
@@ -245,38 +249,42 @@ public class SshSession implements Runnable, Consumer<String>{
 
         logger.trace("sh: {}, lock: {}",command,acquireLock);
 
-        if(command==null){
-            return;
-        }
-        if(!channelShell.isOpen()){
-            isOpen = false;
-            logger.error("Shell is not connected for "+command);
-        } else {
-            if(acquireLock){
-                try {
-                    shellLock.acquire();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Thread.interrupted();
+        if(isOpen()) {
+            if (command == null) {
+                return;
+            }
+            if (!channelShell.isOpen()) {
+                isOpen = false;
+                logger.error("Shell is not connected for " + command);
+            } else {
+                if (acquireLock) {
+                    try {
+                        shellLock.acquire();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        Thread.interrupted();
+                    }
                 }
-            }
 
-            setCommand(cmd,result);
+                setCommand(cmd, result);
 
-            if(!command.isEmpty()){
-                //filteredStream.addFilter("command",command,AsciiArt.ANSI_RESET+AsciiArt.ANSI_CYAN+command+AsciiArt.ANSI_RESET+AsciiArt.ANSI_MAGENTA);
-                stripStream.addFilter("command",command,"");
-            }
-            synchronized (outputQueue) {
-                outputQueue.clear();
-                shStream.reset();
-            }
+                if (!command.isEmpty()) {
+                    //filteredStream.addFilter("command",command,AsciiArt.ANSI_RESET+AsciiArt.ANSI_CYAN+command+AsciiArt.ANSI_RESET+AsciiArt.ANSI_MAGENTA);
+                    stripStream.addFilter("command", command, "");
+                }
+                synchronized (outputQueue) {
+                    outputQueue.clear();
+                    shStream.reset();
+                }
 
-            commandStream.println(command);
-            commandStream.flush();
-            logger.debug("{}@{} flushed {}",this.command==null?"?":this.command.getUid(),host.getHostName(),command);
-            //BUG this includes the prompt and the output of the command, should filter up to the command
-            //TODO test shStream reset before and after the command is sent (so sh output does not contain the command)
+                commandStream.println(command);
+                commandStream.flush();
+                logger.debug("{}@{} flushed {}", this.command == null ? "?" : this.command.getUid(), host.getHostName(), command);
+                //BUG this includes the prompt and the output of the command, should filter up to the command
+                //TODO test shStream reset before and after the command is sent (so sh output does not contain the command)
+            }
+        }else{
+            //TODO abort run if sh isn't open or try reconnect
         }
     }
     public String peekOutput(){

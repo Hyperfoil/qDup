@@ -7,6 +7,7 @@ import perf.qdup.SshTestBase;
 import perf.qdup.State;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Script;
+import perf.qdup.cmd.impl.CtrlC;
 import perf.qdup.cmd.impl.ScriptCmd;
 import perf.qdup.cmd.impl.Sh;
 
@@ -21,6 +22,46 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
 
+
+    @Test
+    public void testScriptWithCtrlC(){
+        YamlParser parser = new YamlParser();
+        parser.load("ctrlC",stream(""+
+            "scripts:",
+            "  foo:",
+            "    - ctrlC:",
+            "    - sh: tail -f bar.txt",
+            "        watch:",
+            "        - regex: bar",
+            "          - ctrlC:",
+            "    - sh: echo 'yay'"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+
+        builder.loadYaml(parser);
+        RunConfig runConfig = builder.buildConfig();
+
+        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+
+        Script fooScript = runConfig.getScript("foo");
+
+        Cmd cmd = fooScript.getNext();//ctrlC
+        cmd = cmd.getNext();//sh
+
+        System.out.println(cmd.tree());
+
+        assertTrue("sh shoudl have watchers",cmd.hasWatchers());
+        cmd = cmd.getWatchers().get(0);
+
+        cmd = cmd.getNext();
+
+        assertTrue("regex should have a next command",cmd !=null);
+        assertTrue("regex next should be ctrlC",cmd instanceof CtrlC);
+
+        System.out.println(cmd);
+
+    }
 
     @Test
     public void testRolesWithState(){

@@ -306,6 +306,10 @@ public class Run implements Runnable {
     public void run() {
         timestamps.put("run",System.currentTimeMillis());
 
+        if(config.hasErrors()){
+            config.getErrors().forEach(logger::error);
+            return;
+        }
 
         if(!config.getRunValidation().isValid()){
             //TODO raise warnings if not validated
