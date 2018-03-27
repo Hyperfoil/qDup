@@ -22,6 +22,9 @@ public class ShResponse extends Cmd {
     }
 
     @Override
+    public String toString(){return "response: "+response;}
+
+    @Override
     protected Cmd clone() {
         return new ShResponse(this.response).with(this.with);
     }

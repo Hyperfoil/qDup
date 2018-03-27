@@ -380,6 +380,7 @@ public class Run implements Runnable {
 
             for(ScriptCmd scriptCmd : config.getRunCmds(host)){
                 connectSessions.add(()->{
+
                     State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
                     //added a script instance state to allow two scripts on same host
                     State scriptState = hostState.getChild(scriptCmd.getName()).getChild(scriptCmd.getName()+"-"+scriptCmd.getUid());
@@ -424,6 +425,11 @@ public class Run implements Runnable {
                 return rtrn;
             })
             .collect(Collectors.reducing(Boolean::logicalAnd)).orElse(false);
+
+            if(!ok){
+                logger.error("Error: trying to connect shell sessions for run stage");
+                this.abort();
+            }
 
         } catch (InterruptedException e) {
             e.printStackTrace();

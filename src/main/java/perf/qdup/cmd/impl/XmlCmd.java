@@ -5,17 +5,14 @@ import perf.qdup.cmd.CommandResult;
 import perf.qdup.cmd.Context;
 import perf.yaup.StringUtil;
 import perf.yaup.file.FileUtility;
-import perf.yaup.xml.Xml;
-import perf.yaup.xml.XmlLoader;
 import perf.yaup.xml.XmlOperation;
+import perf.yaup.xml.pojo.Xml;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,7 +22,7 @@ public class XmlCmd extends Cmd {
 
     String path;
     List<String> operations;
-    //TODO calling remoeQuotes in Cmd just exposes artifacts from yaml parsing, should be done in CmdBuilder
+    //TODO calling removeQuotes in Cmd just exposes artifacts from yaml parsing, should be done in CmdBuilder
     public XmlCmd(String path){
         this(
             path.substring(0,path.indexOf(FileUtility.SEARCH_KEY)),
@@ -54,14 +51,17 @@ public class XmlCmd extends Cmd {
     @Override
     protected void run(String input, Context context, CommandResult result) {
 
-        XmlLoader loader = new XmlLoader();
+
         Xml xml = null;
         boolean successful = true;
         String output = input;
         File tmpDest = null;
         try {
-            String remotePath = path;
+            String remotePath = Cmd.populateStateVariables(path,this,context.getState(),true);
+
             if(remotePath!=null){
+                remotePath = removeQuotes(remotePath);
+
                 if(!remotePath.isEmpty() && !remotePath.startsWith("/")){
                     context.getSession().clearCommand();
                     context.getSession().sh("pwd");
@@ -70,17 +70,19 @@ public class XmlCmd extends Cmd {
                 }
             }
             if(remotePath==null || remotePath.isEmpty()){
-                xml = loader.loadXml(input);
+                xml = Xml.parse(input);
             }else{
                 tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
 
                 context.getLocal().download(remotePath,tmpDest.getPath(),context.getSession().getHost());
-                xml = loader.loadXml(tmpDest.toPath());
+                xml = Xml.parseFile(tmpDest.getPath());
             }
             for(int i=0; i<operations.size(); i++){
-                XmlOperation xmlOperation = XmlOperation.parse(operations.get(i));
+                String operation = Cmd.populateStateVariables(operations.get(i),this,context.getState(),true);
+                operation = removeQuotes(operation);
+                XmlOperation xmlOperation = XmlOperation.parse(operation);
 
-                String response = xmlOperation.apply(xml);
+                String response = xml.apply(xmlOperation);
                 if(!response.isEmpty()){
                     output = response;
                 }

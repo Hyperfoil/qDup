@@ -22,6 +22,8 @@ import static org.junit.Assert.assertTrue;
 
 public class XmlCmdTest {
 
+    //TODO add a test to ensure State and local variables resolve
+
     @Test
     public void xpathTest(){
         StringBuilder first = new StringBuilder();
@@ -32,7 +34,7 @@ public class XmlCmdTest {
         Script runScript = new Script("run-xml");
         runScript.then(Cmd.sh("echo \\<foo\\>\\<bar value=\\\"one\\\"\\>\\</bar\\>\\<biz\\>buz\\</biz\\>\\</foo\\> > /tmp/foo.xml"));
         runScript.then(
-                Cmd.xml("/tmp/foo.xml>/foo/biz/text()")
+                Cmd.xml("/tmp/foo.xml>/foo/biz")///text()
                         .then(Cmd.code((input,state)->{
                             first.append(input.trim());
                             return Result.next(input);
@@ -42,7 +44,7 @@ public class XmlCmdTest {
                 Cmd.xml("/tmp/foo.xml>/foo/biz == biz")
         );
         runScript.then(
-                Cmd.xml("/tmp/foo.xml>/foo/biz/text()")
+                Cmd.xml("/tmp/foo.xml>/foo/biz")///text()
                         .then(Cmd.code((input,state)->{
                             second.append(input.trim());
                             return Result.next(input);

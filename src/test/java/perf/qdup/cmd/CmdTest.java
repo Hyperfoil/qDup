@@ -108,6 +108,18 @@ public class CmdTest {
         assertEquals("use default value","foo",populated);
     }
     @Test
+    public void populateStateVariables_WithToState(){
+        State state = new State("RUN.");
+        state.set("FOO","foo");
+
+        Cmd cmd = Cmd.NO_OP();
+        cmd.with("BAR","${{FOO}}");
+
+        String populated = Cmd.populateStateVariables("${{BAR}}",cmd,state,true);
+
+        assertEquals("${{BAR}} should resolve to foo","foo",populated);
+    }
+    @Test
     public void populateStateVariables_defaultEmpty_bindState(){
         State state = new State("RUN.");
         state.set("FOO","foo");

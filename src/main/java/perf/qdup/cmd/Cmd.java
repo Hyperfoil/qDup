@@ -136,6 +136,7 @@ public abstract class Cmd {
         String rtrn = null;
         String currentName = name;
         do {
+            rtrn = null;//reset so we check ref or state with each loop
             if(currentName.startsWith(STATE_PREFIX) && currentName.endsWith(STATE_SUFFIX)){
                 currentName = currentName.substring(
                     STATE_PREFIX.length(),

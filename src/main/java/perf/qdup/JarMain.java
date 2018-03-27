@@ -1,11 +1,19 @@
 package perf.qdup;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import org.apache.commons.cli.*;
 import perf.qdup.cmd.CommandDispatcher;
 import perf.qdup.config.*;
 import perf.yaup.StringUtil;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -148,11 +156,31 @@ public class JarMain {
             return;
         }
 
+        String outputPath=null;
+        if(cmd.hasOption("basePath")){
+            DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+            outputPath = cmd.getOptionValue("basePath") + "/" + dt.format(LocalDateTime.now());
+        }else if (cmd.hasOption("fullPath")){
+            outputPath = cmd.getOptionValue("fullPath");
+        }
+
+        File outputFile = new File(outputPath);
+        if(!outputFile.exists()){
+            outputFile.mkdirs();
+        }
+        File yamlJson = new File(new File(outputPath),"yaml.json");
 
         YamlParser yamlParser = new YamlParser();
         for(String yamlPath : yamlPaths){
             System.out.println("loading: "+yamlPath);
             yamlParser.load(yamlPath);
+        }
+
+        try {
+            yamlJson.createNewFile();
+            Files.write(yamlJson.toPath(),yamlParser.getJson().toString(2).getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
@@ -167,7 +195,6 @@ public class JarMain {
         }
 
         runConfigBuilder.loadYaml(yamlParser);
-
 
         if (cmd.hasOption("knownHosts") ){
             runConfigBuilder.setKnownHosts(cmd.getOptionValue("knownHosts"));
@@ -186,14 +213,12 @@ public class JarMain {
             });
         }
 
-
         RunConfig config = runConfigBuilder.buildConfig();
 
         //TODO RunConfig should be immutable and terminal color is probably better stored in Run
         if (cmd.hasOption("colorTerminal") ){
             config.setColorTerminal( true );
         }
-
 
         if(config.hasErrors()){
             for(String error: config.getErrors()){
@@ -214,19 +239,11 @@ public class JarMain {
 
         CommandDispatcher dispatcher = new CommandDispatcher(executor,scheduled);
 
-        String outputPath=null;
-        if(cmd.hasOption("basePath")){
-            DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-            outputPath = cmd.getOptionValue("basePath") + "/" + dt.format(LocalDateTime.now());
-        }else if (cmd.hasOption("fullPath")){
-            outputPath = cmd.getOptionValue("fullPath");
-        }
-        String basePath = cmd.getOptionValue("basePath");
 
 
         final Run run = new Run(outputPath,config,dispatcher);
 
-        System.out.println("Starting WITH output path = "+run.getOutputPath());
+        System.out.println("Starting with output path = "+run.getOutputPath());
 
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
             if(!run.isAborted()) {
@@ -234,6 +251,10 @@ public class JarMain {
                 run.writeRunJson();
             }
         },"shutdown-abort"));
+
+        JsonServer jsonServer = new JsonServer(dispatcher);
+
+        jsonServer.start();
 
         long start = System.currentTimeMillis();
 
@@ -243,6 +264,8 @@ public class JarMain {
         long stop = System.currentTimeMillis();
 
         System.out.println("Finished in "+ StringUtil.durationToString(stop-start)+" at "+run.getOutputPath());
+
+        jsonServer.stop();
 
         dispatcher.shutdown();
         executor.shutdownNow();

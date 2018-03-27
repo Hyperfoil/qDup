@@ -63,9 +63,6 @@ public class SshSession implements Runnable, Consumer<String>{
 
     private LineEmittingStream lineEmittingStream;
 
-    private boolean isOpen = false;
-
-
     private BlockingQueue<String> outputQueue;
 
     private Cmd command;
@@ -73,14 +70,10 @@ public class SshSession implements Runnable, Consumer<String>{
 
     private Host host;
 
-    private int uid;
-
     public SshSession(Host host){
         this(host,DEFAULT_KNOWN_HOSTS,DEFAULT_IDENTITY,DEFAULT_PASSPHRASE);
     }
     public SshSession(Host host,String knownHosts,String identity,String passphrase){
-
-        this.uid = counter.incrementAndGet();
 
         this.host = host;
 
@@ -148,7 +141,6 @@ public class SshSession implements Runnable, Consumer<String>{
             semaphoreStream.setRunnable(this);
 
             channelShell.open();
-            isOpen=true;
 
             sh("unset PROMPT_COMMAND; export PS1='" + prompt + "'");
             sh("pwd");
@@ -174,7 +166,6 @@ public class SshSession implements Runnable, Consumer<String>{
 
             e.printStackTrace();
             logger.error("Exception while connecting to {}@{}",host.getUserName(),host.getHostName());
-            isOpen = false;
 
         } finally {
             logger.debug("{} session.isOpen={} shell.isOpen={}",
@@ -187,7 +178,7 @@ public class SshSession implements Runnable, Consumer<String>{
         sshConfig.put("StrictHostKeyChecking", "no");
     }
     //TODO isOpen should check the actual session is Open?
-    public boolean isOpen(){return isOpen;}
+    public boolean isOpen(){return channelShell!=null && channelShell.isOpen() && clientSession!=null && clientSession.isOpen();}
     public String getUserName(){return host.getUserName();}
     public String getHostName(){return host.getHostName();}
     public Host getHost(){return host;}
@@ -208,7 +199,6 @@ public class SshSession implements Runnable, Consumer<String>{
     public void ctrlC() {
         if(isOpen()) {
             if (!channelShell.isOpen()) {
-                isOpen = false;
                 logger.error("Shell is not connected for ctrlC");
             } else {
                 try {
@@ -220,6 +210,7 @@ public class SshSession implements Runnable, Consumer<String>{
                 }
             }
         }else{
+            logger.error("Shell is not connected for ctrlC");
             //TODO abort becuase session isn't open?
         }
     }
@@ -242,10 +233,6 @@ public class SshSession implements Runnable, Consumer<String>{
     public void response(String command) { sh(command,false,null,null); }
     public void sh(String command, Cmd cmd,CommandResult result){ sh(command,true,cmd,result);}
     private void sh(String command,boolean acquireLock,Cmd cmd, CommandResult result){
-
-
-
-
         logger.trace("sh: {}, lock: {}",command,acquireLock);
 
         if(isOpen()) {
@@ -253,8 +240,9 @@ public class SshSession implements Runnable, Consumer<String>{
                 return;
             }
             if (!channelShell.isOpen()) {
-                isOpen = false;
                 logger.error("Shell is not connected for " + command);
+                //TODO fail the run or reconnect
+
             } else {
                 if (acquireLock) {
                     try {
@@ -284,6 +272,7 @@ public class SshSession implements Runnable, Consumer<String>{
             }
         }else{
             //TODO abort run if sh isn't open or try reconnect
+            logger.error("Shell is not connected for "+command);
         }
     }
     public String peekOutput(){
@@ -293,7 +282,7 @@ public class SshSession implements Runnable, Consumer<String>{
         close(true);
     }
     public void close(boolean wait) {
-        if (this.isOpen) {
+        if (this.isOpen()) {
             try {
                 if (wait) {
                     try {
@@ -318,8 +307,6 @@ public class SshSession implements Runnable, Consumer<String>{
 
                 clientSession.close();
                 sshClient.stop();
-
-                this.isOpen = false;
 
             } catch (IOException e) {
                 e.printStackTrace();
