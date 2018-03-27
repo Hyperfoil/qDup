@@ -23,6 +23,8 @@ public class ShErrorObserver implements CommandDispatcher.CommandObserver {
         rtrn.addCommandError("grep", "grep: Invalid regular expression");
         rtrn.addCommandError("cd", "No such file or directory");
         rtrn.addCommandError("tail", "tail: no files remaining");
+        rtrn.addCommandError("lsof","lsof: illegal process ID:");
+        rtrn.addCommandError("lsof","lsof: no process ID specified");
 
         return rtrn;
     }

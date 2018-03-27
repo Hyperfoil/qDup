@@ -18,6 +18,7 @@ public class StageTest extends SshTestBase{
 
     private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
 
+
     @Test
     public void variableSignalName_boundInState(){
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
@@ -51,7 +52,7 @@ public class StageTest extends SshTestBase{
         parser.load("signal",stream(""+
             "scripts:",
             "  foo:",
-            "    - signal: ${{FOO}}",
+            "    - signal: ${{FOO:}}",
             "  bar:",
             "    - wait-for: ${{BAR}}",
             "hosts:",

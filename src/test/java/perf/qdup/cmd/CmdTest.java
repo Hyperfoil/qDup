@@ -81,6 +81,17 @@ public class CmdTest {
 
 
     }
+    @Test
+    public void populateStateVariables_nestVariable(){
+        State state = new State("RUN.");
+        state.set("FOO","BAR");
+        state.set("BAR","bar");
+
+        String populated;
+        populated = Cmd.populateStateVariables("${{${{FOO}}}}",null,state,true);
+
+        assertEquals("evaluate as two state refernces","bar",populated);
+    }
 
     @Test
     public void populateStateVariables_notFound(){
@@ -95,6 +106,24 @@ public class CmdTest {
     public void populateStateVariables_defaultValue(){
         String populated = Cmd.populateStateVariables("${{FOO:foo}}",null,null,true);
         assertEquals("use default value","foo",populated);
+    }
+    @Test
+    public void populateStateVariables_defaultEmpty_bindState(){
+        State state = new State("RUN.");
+        state.set("FOO","foo");
+        String populated = Cmd.populateStateVariables("${{FOO:}}",null,state,false);
+
+        assertEquals("should populate from state","foo",populated);
+    }
+    @Test
+    public void populateStateVariables_defaultEmpty_bindWith(){
+        State state = new State("RUN.");
+        state.set("FOO","bar");
+        Cmd cmd = Cmd.NO_OP();
+        cmd.with("FOO","foo");
+        String populated = Cmd.populateStateVariables("${{FOO:}}",cmd,state,false);
+
+        assertEquals("should populate from state","foo",populated);
     }
 
     @Test

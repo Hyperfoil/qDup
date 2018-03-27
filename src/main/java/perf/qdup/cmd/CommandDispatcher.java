@@ -283,7 +283,7 @@ public class CommandDispatcher {
             try {
                 activeThreads.put(command, Thread.currentThread());
                 logger.trace("run {}:{}",context.getSession().getHostName(), command);
-                context.getProfiler().start(command.getUid()+":"+command);
+                context.getProfiler().start(command.toString());
 
                 command.doRun(input, context, result);
             }catch(Exception e){
@@ -318,7 +318,7 @@ public class CommandDispatcher {
             Json entry = new Json();
             entry.set("name",cmd.toString());
             entry.set("uid",cmd.getUid());
-            entry.set("script",cmd.getHead().toString());
+            entry.set("script",cmd.getHead().getUid()+":"+cmd.getHead().toString());
             if(cmd instanceof Sh){
                 entry.set("host",activeCommandInfo.getContext().getSession().getHost().toString());
                 String output = activeCommandInfo.getContext().getSession().peekOutput();

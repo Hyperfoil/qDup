@@ -19,30 +19,7 @@ import static perf.qdup.cmd.Cmd.STATE_PREFIX;
  */
 public class CommandSummary {
 
-    private class CommandRef {
-        private CommandRef parent;
-        private Cmd command;
-
-        public CommandRef(Cmd command){
-            this.command = command;
-        }
-        public CommandRef add(Cmd command){
-            CommandRef rtrn = new CommandRef(command);
-            rtrn.parent = this;
-            return rtrn;
-        }
-
-        public CommandRef getParent() {
-            return parent;
-        }
-        public boolean hasParent(){return parent!=null;}
-
-        public Cmd getCommand() {
-            return command;
-        }
-    }
-
-    private void processCommand(Cmd command,boolean isWatching,RunConfigBuilder config,CommandRef ref){
+    private void processCommand(Cmd command,boolean isWatching,RunConfigBuilder config,Cmd.Ref ref){
         String toString = command.toString();
 
         if(isWatching && command instanceof Sh){
@@ -54,29 +31,30 @@ public class CommandSummary {
         }
 
         if(command instanceof Signal){
-            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),command,config.getState(),false);
-            if(populatedSignal.contains(STATE_PREFIX)){
-                CommandRef currentRef = ref;
-                do{
-                    populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),currentRef.getCommand(),config.getState(),false);
-                    currentRef = currentRef.getParent();
-                }while(populatedSignal.contains(STATE_PREFIX) && currentRef!=null);
-
-            }
+            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),command,config.getState(),false, ref);
+//            if(populatedSignal.contains(STATE_PREFIX)){
+//                Cmd.Ref currentRef = ref;
+//                do{
+//                    //TODO Cmd.populateStateVariables should accept the CommandRef argument and use it before returning a defaultValue
+//                    populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),currentRef.getCommand(),config.getState(),false);
+//                    currentRef = currentRef.getParent();
+//                }while((populatedSignal.contains(STATE_PREFIX) || populatedSignal.isEmpty())&& currentRef!=null);
+//
+//            }
             if(populatedSignal.contains(STATE_PREFIX)) {
                 addWarning("signal: " + populatedSignal + " does not have a known value for state variable and cannot calculate expected signal count");
             } else {
                 addSignal(populatedSignal);
             }
         }else if (command instanceof WaitFor){
-            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),command,config.getState(),false);
-            if(populatedWait.contains(STATE_PREFIX)){
-                CommandRef currentRef = ref;
-                do{
-                    populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),currentRef.getCommand(),config.getState(),false);
-                    currentRef = currentRef.getParent();
-                }while(populatedWait.contains(STATE_PREFIX) && currentRef!=null);
-            }
+            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),command,config.getState(),false, ref);
+//            if(populatedWait.contains(STATE_PREFIX)){
+//                Cmd.Ref currentRef = ref;
+//                do{
+//                    populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),currentRef.getCommand(),config.getState(),false);
+//                    currentRef = currentRef.getParent();
+//                }while(populatedWait.contains(STATE_PREFIX) && currentRef!=null);
+//            }
             if(populatedWait.contains(STATE_PREFIX)) {
                 addWarning("wait-for: " + populatedWait + " does not have a known value for state variable and will likely not be signalled");
             } else {
@@ -147,7 +125,7 @@ public class CommandSummary {
         variables = new HashSet<>();
         regexVariables = new HashSet<>();
 
-        processCommand(command,false,config,new CommandRef(command));
+        processCommand(command,false,config,new Cmd.Ref(command));
     }
 
     public String getName(){return name;}
@@ -158,10 +136,14 @@ public class CommandSummary {
     private void addRegexVariable(String name){ regexVariables.add(name); }
     private void addVariable(String name){ variables.add(name); }
     private void addSignal(String name){
-        signals.add(name);
+        if(!name.isEmpty()){
+            signals.add(name);
+        }
     }
     private void addWait(String name){
-        waits.add(name);
+        if(!name.isEmpty()) {
+            waits.add(name);
+        }
     }
     public List<String> getWarnings(){
         return warnings;

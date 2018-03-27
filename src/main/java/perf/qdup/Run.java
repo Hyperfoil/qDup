@@ -15,6 +15,7 @@ import perf.qdup.cmd.*;
 import perf.qdup.cmd.impl.ScriptCmd;
 import perf.qdup.config.StageSummary;
 import perf.qdup.config.RunConfig;
+import perf.yaup.HashedLists;
 import perf.yaup.json.Json;
 
 import java.io.*;
@@ -54,7 +55,7 @@ public class Run implements Runnable {
     private Local local;
 
     private Map<Host,Env.Diff> setupEnv;
-    private Map<Host,List<PendingDownload>> pendingDownloads;
+    private HashedLists<Host,PendingDownload> pendingDownloads;
 
     private CountDownLatch runLatch = new CountDownLatch(1);
     private Logger runLogger;
@@ -109,7 +110,7 @@ public class Run implements Runnable {
         });
 
 
-        this.pendingDownloads = new ConcurrentHashMap<>();
+        this.pendingDownloads = new HashedLists<>();
         this.setupEnv = new ConcurrentHashMap<>();
     }
     public Local getLocal(){return local;}
@@ -117,22 +118,16 @@ public class Run implements Runnable {
     public RunConfig getConfig(){return config;}
     public boolean isAborted(){return aborted;}
     public Logger getRunLogger(){return runLogger;}
-    private List<PendingDownload> ensurePendingDownload(Host host){
-        //TODO not thread safe
-        if(!pendingDownloads.containsKey(host)){
-            pendingDownloads.put(host,new LinkedList<>());
-        }
-        return pendingDownloads.get(host);
-    }
     public void addPendingDownload(Host host,String path,String destination){
-        List<PendingDownload> list = ensurePendingDownload(host);
-        list.add(new PendingDownload(path,destination));
+        pendingDownloads.put(host,new PendingDownload(path,destination));
     }
     public void runPendingDownloads(){
+
+        //TODO synchronize so only one threads tries the downloads (run ending while being aborted?)
         logger.info("{} runPendingDownloads",config.getName());
         if(!pendingDownloads.isEmpty()){
             timestamps.put("downloadStart",System.currentTimeMillis());
-            for(Host host : pendingDownloads.keySet()){
+            for(Host host : pendingDownloads.keys()){
                 List<PendingDownload> downloadList = pendingDownloads.get(host);
                 for(PendingDownload pendingDownload : downloadList){
                     local.download(pendingDownload.getPath(),pendingDownload.getDestination(),host);
@@ -276,7 +271,9 @@ public class Run implements Runnable {
             });
             stageSummary.getWaiters().stream().filter((waitName)->
                     !stageSummary.getSignals().contains(waitName)
-            ).forEach((notSignaled)->noSignal.add(notSignaled));
+            ).forEach((notSignaled)->{
+                noSignal.add(notSignaled);
+            });
         } ;
 
         setupCoordinator.accept(config.getSetupStage());
@@ -287,6 +284,7 @@ public class Run implements Runnable {
             return false;
         }
         setupCoordinator.accept(config.getRunStage());
+
         if(!noSignal.isEmpty()){
             noSignal.forEach((notSignaled)->{
                 runLogger.error("{} run scripts missing signal for {}",this,notSignaled);
@@ -383,9 +381,13 @@ public class Run implements Runnable {
             for(ScriptCmd scriptCmd : config.getRunCmds(host)){
                 connectSessions.add(()->{
                     State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
-                    State scriptState = hostState.getChild(scriptCmd.getName());
+                    //added a script instance state to allow two scripts on same host
+                    State scriptState = hostState.getChild(scriptCmd.getName()).getChild(scriptCmd.getName()+"-"+scriptCmd.getUid());
+
                     long start = System.currentTimeMillis();
-                    Profiler profiler = profiles.get(scriptCmd.getName()+"@"+host);
+
+                    Profiler profiler = profiles.get(scriptCmd.getName()+"-"+scriptCmd.getUid()+"@"+host);
+
                     logger.info("{} connecting {} to {}@{}",this,scriptCmd.getName(),host.getUserName(),host.getHostName());
                     profiler.start("connect:"+host.toString());
                     SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem

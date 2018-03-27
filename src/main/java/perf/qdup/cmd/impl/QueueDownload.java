@@ -35,7 +35,6 @@ public class QueueDownload extends Cmd {
         String resolvedPath = Cmd.populateStateVariables(getPath(),this,context.getState());
         String resolvedDestination = Cmd.populateStateVariables(basePath + File.separator + getDestination(),this,context.getState());
 
-        //TODO BUG resolvedPath could contain ${ or $ to reference local environment
         if(resolvedPath.matches("[^\\$]*\\$(?!\\{\\{).*")){
             context.getSession().sh("echo "+resolvedPath);
             resolvedPath = context.getSession().getOutput().trim();

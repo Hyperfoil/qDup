@@ -18,6 +18,30 @@ import java.util.regex.Pattern;
  */
 public abstract class Cmd {
 
+    public static class Ref {
+        private Ref parent;
+        private Cmd command;
+
+        public Ref(Cmd command){
+            this.command = command;
+        }
+        public Ref add(Cmd command){
+            Ref rtrn = new Ref(command);
+            rtrn.parent = this;
+            return rtrn;
+        }
+
+        public Ref getParent() {
+            return parent;
+        }
+        public boolean hasParent(){return parent!=null;}
+
+        public Cmd getCommand() {
+            return command;
+        }
+    }
+
+
     private static class NO_OP extends Cmd{
         @Override
         protected void run(String input, Context context, CommandResult result) {
@@ -37,7 +61,7 @@ public abstract class Cmd {
 
     public static final String STATE_PREFIX = "${{";
     public static final String STATE_SUFFIX = "}}";
-    public static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^}:]+):?(?<default>[^}]*)}}");
+    public static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^${}:]+):?(?<default>[^}]*)}}");
 
     public static final String ENV_PREFIX = "${";
     public static final String ENV_SUFFIX = "}";
@@ -107,14 +131,8 @@ public abstract class Cmd {
         return populateStateVariables(command,cmd,state,true);
     }
 
-    public static Set<String> getVariableNames(String input){
-        Set<String> rtrn = new HashSet<>();
-
-        return rtrn;
-    }
-
     //handles recursive variable references
-    protected static String populateVariable(String name, Cmd cmd,State state){
+    protected static String populateVariable(String name, Cmd cmd,State state, Ref ref){
         String rtrn = null;
         String currentName = name;
         do {
@@ -127,28 +145,41 @@ public abstract class Cmd {
             }
             if (cmd != null && cmd.hasWith(currentName)) {
                 rtrn = cmd.getWith(currentName);
-            } else if (state!=null){
+            }
+            if(rtrn == null && ref!=null){
+                Ref targeetRef = ref;
+                do {
+                    if(targeetRef.getCommand()!=null && targeetRef.getCommand().hasWith(currentName)){
+                        rtrn = targeetRef.getCommand().getWith(currentName);
+                    }
+
+                }while( (targeetRef=targeetRef.getParent())!=null && rtrn==null);
+            }
+            if (rtrn == null && state!=null){
                 rtrn = state.get(currentName);
             }
         }while (rtrn!=null && (currentName=rtrn).startsWith(STATE_PREFIX));
         return rtrn;
     }
-    public static String populateStateVariables(String command,Cmd cmd, State state,boolean replaceUndefined){
-
+    public static String populateStateVariables(String command,Cmd cmd, State state,boolean replaceUndefined) {
+        return populateStateVariables(command,cmd,state,replaceUndefined,null);
+    }
+    public static String populateStateVariables(String command,Cmd cmd, State state,boolean replaceUndefined,Ref ref){
+        String rtrn = command;
         if(command.indexOf(STATE_PREFIX)<0)
             return command;
 
         int previous = 0;
-        StringBuffer rtrn = new StringBuffer();
-        Matcher matcher = STATE_PATTERN.matcher(command);
+        //StringBuffer rtrn = new StringBuffer();
+        Matcher matcher = STATE_PATTERN.matcher(rtrn);
         while(matcher.find()){
             int findIndex = matcher.start();
-            if(findIndex > previous){
-                rtrn.append(command.substring(previous,findIndex));
-            }
+//            if(findIndex > previous){
+//                rtrn.append(command.substring(previous,findIndex));
+//            }
             String name = matcher.group("name");
             String defaultValue = matcher.group("default");
-            String value = populateVariable(name,cmd,state);
+            String value = populateVariable(name,cmd,state,ref);
             if(value == null ){//bad times
                 if(!defaultValue.isEmpty()){
                     value = defaultValue;
@@ -159,16 +190,20 @@ public abstract class Cmd {
                 }else if(replaceUndefined){
                     value = "";
                 }else{
-                    value = STATE_PREFIX+name+STATE_SUFFIX;
+                    //value = STATE_PREFIX+name+STATE_SUFFIX; // do nothing, it will stay the same
                 }
 
             }
-            rtrn.append(value);
+//            rtrn.append(value);
             previous = matcher.end();
+            if(value!=null){
+                rtrn = rtrn.replace(rtrn.substring(findIndex,previous),value);
+                matcher.reset(rtrn);
+            }
         }
-        if(previous<command.length()){
-            rtrn.append(command.substring(previous));
-        }
+//        if(previous<command.length()){
+//            rtrn.append(command.substring(previous));
+//        }
         return rtrn.toString();
     }
 

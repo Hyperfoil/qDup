@@ -10,6 +10,7 @@ import perf.qdup.cmd.Script;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
+import perf.qdup.config.YamlParser;
 
 import java.io.File;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ public class RunTest extends SshTestBase{
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
+    
     @Test
     public void ctrlCTail(){
 
