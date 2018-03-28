@@ -45,5 +45,5 @@ public class Sh extends Cmd {
         return new Sh(this.command,super.isSilent(),prompt).with(this.with);
     }
 
-    @Override public String toString(){return "sh: "+(isSilent()?"silent=true ":"")+(prompt.isEmpty()?"":"prompts="+prompt+" ")+command;}
+    @Override public String toString(){return "sh: "+command;}
 }
