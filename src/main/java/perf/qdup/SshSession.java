@@ -2,8 +2,12 @@ package perf.qdup;
 
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.auth.UserAuth;
+import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.UserAuthPassword;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.slf4j.ext.XLogger;
@@ -13,16 +17,20 @@ import perf.qdup.cmd.CommandResult;
 import perf.qdup.stream.FilteredStream;
 import perf.qdup.stream.LineEmittingStream;
 import perf.qdup.stream.SemaphoreStream;
+import perf.qdup.stream.SuffixStream;
 
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -60,6 +68,7 @@ public class SshSession implements Runnable, Consumer<String>{
     private SemaphoreStream semaphoreStream;
     private FilteredStream filteredStream;
     private FilteredStream stripStream;
+    private SuffixStream promptStream;
 
     private LineEmittingStream lineEmittingStream;
 
@@ -80,6 +89,7 @@ public class SshSession implements Runnable, Consumer<String>{
         shellLock = new Semaphore(1);
 
         sshClient = SshClient.setUpDefaultClient();
+
         //StrictHostKeyChecking=no
         sshClient.start();
         sshClient.setServerKeyVerifier((clientSession1,remoteAddress,serverKey)->{return true;});
@@ -96,6 +106,8 @@ public class SshSession implements Runnable, Consumer<String>{
             channelShell = clientSession.createShellChannel();
             channelShell.getPtyModes().put(PtyMode.ECHO,1);//need echo for \n from real SH but adds gargage chars for test :(
             channelShell.setPtyType("vt100");
+
+            //channelShell.setPtyType("xterm");
             channelShell.setPtyColumns(1024);
             channelShell.setPtyWidth(1024);
             channelShell.setPtyHeight(80);
@@ -117,6 +129,7 @@ public class SshSession implements Runnable, Consumer<String>{
             stripStream = new FilteredStream();
 
             semaphoreStream = new SemaphoreStream(shellLock,("\n"+prompt).getBytes());
+            promptStream = new SuffixStream();
 
             channelShell.setOut(semaphoreStream);
             channelShell.setErr(semaphoreStream);//prompt goes to error stream so have to listen there too
@@ -132,12 +145,16 @@ public class SshSession implements Runnable, Consumer<String>{
 
             lineEmittingStream = new LineEmittingStream();
             lineEmittingStream.addConsumer(this);
+
             filteredStream.addStream("strip",stripStream); // echo the entire channelSession to sh output
 
             stripStream.addStream("lines",lineEmittingStream);
             stripStream.addStream("sh",shStream);
 
             semaphoreStream.addStream("filtered",filteredStream);
+            //semaphoreStream.addStream("out",System.out);
+            semaphoreStream.addStream("promptMonitor",promptStream);
+
             semaphoreStream.setRunnable(this);
 
             channelShell.open();
@@ -227,12 +244,38 @@ public class SshSession implements Runnable, Consumer<String>{
         }
         return rtrn;
     }
-    public void sh(String command){
-        sh(command,true,null,null);
+
+    public void response(String command) {
+        if(isOpen()) {
+            if (!channelShell.isOpen()) {
+                logger.error("Shell is not connected for response");
+            } else {
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                    commandStream.println((command));
+                    commandStream.flush();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }else{
+            logger.error("Shell is not connected for response");
+            //TODO abort because session isn't open?
+        }
     }
-    public void response(String command) { sh(command,false,null,null); }
-    public void sh(String command, Cmd cmd,CommandResult result){ sh(command,true,cmd,result);}
-    private void sh(String command,boolean acquireLock,Cmd cmd, CommandResult result){
+    public void sh(String command){
+        sh(command,true,null,null,null);
+    }
+    public void sh(String command, Map<String,String> prompt){
+        sh(command,true,null,null,prompt);
+    }
+    public void sh(String command, Cmd cmd,CommandResult result){
+        sh(command,true,cmd,result,null);
+    }
+    public void sh(String command, Cmd cmd,CommandResult result,Map<String,String> prompt){
+        sh(command,true,cmd,result,prompt);
+    }
+    private void sh(String command,boolean acquireLock,Cmd cmd, CommandResult result, Map<String,String> prompt){
         logger.trace("sh: {}, lock: {}",command,acquireLock);
 
         if(isOpen()) {
@@ -251,19 +294,32 @@ public class SshSession implements Runnable, Consumer<String>{
                         e.printStackTrace();
                         Thread.interrupted();
                     }
-                }
+                    setCommand(cmd, result);
 
-                setCommand(cmd, result);
+                    promptStream.clearSuffix();
+                    promptStream.clearConsumers();
+                    if(prompt!=null && !prompt.isEmpty()){
+                        prompt.keySet().forEach(promptStream::addSuffix);
+                        promptStream.addConsumer((name)->{
+                            if(prompt.containsKey(name)){
+                                String response = prompt.get(name);
+                                this.response(response);
+                            }
+                        });
+
+                    }
+                }
 
                 if (!command.isEmpty()) {
                     //filteredStream.addFilter("command",command,AsciiArt.ANSI_RESET+AsciiArt.ANSI_CYAN+command+AsciiArt.ANSI_RESET+AsciiArt.ANSI_MAGENTA);
                     stripStream.addFilter("command", command, "");
                 }
-                synchronized (outputQueue) {
-                    outputQueue.clear();
-                    shStream.reset();
+                if(acquireLock) {
+                    synchronized (outputQueue) {
+                        outputQueue.clear();
+                        shStream.reset();
+                    }
                 }
-
                 commandStream.println(command);
                 commandStream.flush();
                 logger.debug("{}@{} flushed {}", this.command == null ? "?" : this.command.getUid(), host.getHostName(), command);

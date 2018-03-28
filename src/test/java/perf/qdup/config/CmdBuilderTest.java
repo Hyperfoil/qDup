@@ -17,6 +17,7 @@ import static perf.qdup.SshTestBase.stream;
 public class CmdBuilderTest {
 
 
+
     @Test
     public void splitSpaces(){
         CmdBuilder builder = CmdBuilder.getBuilder();
@@ -115,6 +116,25 @@ public class CmdBuilderTest {
 
         assertTrue(built instanceof Sh);
         assertTrue(built.toString().contains("${SERVER_PID}"));
+    }
+    @Test
+    public void sh_Responsemap(){
+        YamlParser parser = new YamlParser();
+        parser.load("response",stream(""+
+            "sh: {",
+            "  silent: true",
+            "  command: su",
+            "  prompt : {",
+            "    \"Password:\" : passwordValue",
+            "  }",
+            "}"
+                ));
+        CmdBuilder builder = CmdBuilder.getBuilder();
+        Cmd built = builder.buildYamlCommand(parser.getJson("response"),null);
+        assertTrue("expect a sh",(built instanceof Sh));
+        Sh sh = (Sh)built;
+        assertFalse("expect sh to have a prompt",sh.getPrompt().isEmpty());
+        assertTrue("expect sh to have Password: prompt",sh.getPrompt().containsKey("Password:"));
     }
 
     @Test

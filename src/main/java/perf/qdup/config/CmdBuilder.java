@@ -17,7 +17,7 @@ import static perf.qdup.config.YamlParser.*;
 
 public class CmdBuilder {
 
-    private static final List supported = Arrays.asList("long","int","java.lang.String","java.lang.String[]","boolean","java.lang.Boolean");
+    private static final List supported = Arrays.asList("long","int","java.lang.String","java.lang.String[]","boolean","java.lang.Boolean","java.util.Map");
 
     public static CmdBuilder getBuilder(){
         CmdBuilder rtrn = new CmdBuilder();
@@ -38,11 +38,11 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("read-state",ReadState.class,"name");
         rtrn.addCmdDefinition("regex",Regex.class,"pattern");
         rtrn.addCmdDefinition("repeat-until",RepeatUntilSignal.class,"name");
-        rtrn.addCmdDefinition("response",ShResponse.class,"response");
         rtrn.addCmdDefinition("set-state",SetState.class,"name");
         rtrn.addCmdDefinition("set-state",SetState.class,"name","value");
         rtrn.addCmdDefinition("sh",Sh.class,"command");
         rtrn.addCmdDefinition("sh",Sh.class,"command","silent");
+        rtrn.addCmdDefinition("sh",Sh.class,"command","silent","prompt");
         rtrn.addCmdDefinition("signal",Signal.class,"name");
         rtrn.addCmdDefinition("sleep",Sleep.class,"ms");
         rtrn.addCmdDefinition("wait-for",WaitFor.class,"name");
@@ -97,6 +97,8 @@ public class CmdBuilder {
                                 break;
                             case "java.lang.String[]":
                                 rtrn = rtrn && (existing.toString().startsWith("[") && existing.toString().endsWith("]") );
+                            case "java.util.Map":
+
                         }
                     }
                 }
@@ -152,7 +154,13 @@ public class CmdBuilder {
                                 args.add(i,"true".equalsIgnoreCase(existing.toString()) || "yes".equalsIgnoreCase(existing.toString()));
                             }
                             break;
-
+                        case "java.util.Map":
+                            if( !(args.get(i) instanceof Map) ){
+                                //WHAT TO DO? inject empty map
+                                args.remove(i);
+                                args.add(i,new HashMap<String,String>());
+                            }
+                            break;
                         default:
                             //TODO how to handle unsupported type?
                     }
@@ -347,19 +355,32 @@ public class CmdBuilder {
                             entries.put(argKey, arg.getString(VALUE));
                         } else if(arg.has(CHILD)){
                             Json argChild = arg.getJson(CHILD);
-                            List<String> entryList = new ArrayList<>();
+
+                            //either a list or a map
                             if(argChild.size()==1){
+
+                                List<String> entryList = new ArrayList<>();
+                                Map<String,String> entryMap = new LinkedHashMap<>();
                                 Json argChildList = argChild.getJson(0);
                                 for(int v=0; v<argChildList.size(); v++){
                                     Json argChildEntry = argChildList.getJson(v);
                                     if(argChildEntry.has(KEY)){
-                                        entryList.add(argChildEntry.getString(KEY));
+                                        if(argChildEntry.has(VALUE)){
+                                            entryMap.put(argChildEntry.getString(KEY),argChildEntry.getString(VALUE));
+                                        }else {
+                                            entryList.add(argChildEntry.getString(KEY));
+                                        }
                                     }
                                 }
+                                if(!entryMap.isEmpty()){
+                                    entries.put(argKey,entryMap);
+                                } else {
+                                    entries.put(argKey, entryList);
+                                }
+
                             }else{
                                 //they used -'s? not sure what goes in the branch (a bit late)
                             }
-                            entries.put(argKey,entryList);
 
                             //tread arg as a list
                         } else {
@@ -380,7 +401,7 @@ public class CmdBuilder {
                 }
 
             }
-        }else {
+        } else {
             shortname = target.getString(KEY);
             lineNumber = target.get(LINE_NUMBER);
             if (has(shortname)) {

@@ -49,6 +49,7 @@ public class FilteredStream extends MultiStream{
     private void superWrite(byte b[], int off, int len) throws IOException {
         super.write(b,off,len);
     }
+
     @Override
     public void write(byte b[]) throws IOException {
         write(b,0,b.length);
@@ -64,7 +65,7 @@ public class FilteredStream extends MultiStream{
                 superWrite(buffered,0, writeIndex);
                 writeIndex = 0;
             }
-            super.write(b,off,len);
+            superWrite(b,off,len);
         }else{
             //if the current position + amount to write would overflow the buffer
             if(writeIndex + len > buffered.length){

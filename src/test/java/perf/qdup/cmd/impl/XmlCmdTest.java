@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -29,10 +30,13 @@ public class XmlCmdTest {
         StringBuilder first = new StringBuilder();
         StringBuilder second = new StringBuilder();
         StringBuilder third = new StringBuilder();
-
+        File fooXml = new File("/tmp/foo.xml");
+        if(fooXml.exists()){
+            fooXml.delete();
+        }
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
         Script runScript = new Script("run-xml");
-        runScript.then(Cmd.sh("echo \\<foo\\>\\<bar value=\\\"one\\\"\\>\\</bar\\>\\<biz\\>buz\\</biz\\>\\</foo\\> > /tmp/foo.xml"));
+        runScript.then(Cmd.sh("echo '<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo><bar value=\"uno\"></bar><biz>buz</biz></foo>' > /tmp/foo.xml"));
         runScript.then(
                 Cmd.xml("/tmp/foo.xml>/foo/biz")///text()
                         .then(Cmd.code((input,state)->{
@@ -69,7 +73,6 @@ public class XmlCmdTest {
         CommandDispatcher dispatcher = new CommandDispatcher();
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
-
         assertEquals("/tmp/foo.xml>/foo/biz/text() should be buz","buz",first.toString());
         assertEquals("/tmp/foo.xml>/foo/biz/text() should be biz after xml","biz",second.toString());
         assertEquals("/tmp/foo.xml>/foo/bar/@value should be two afer xml","two",third.toString());
@@ -77,7 +80,7 @@ public class XmlCmdTest {
 
         try {
             String content = new String(Files.readAllBytes(tmpXml.toPath()));
-            assertFalse("content should not contain one",content.contains("one"));
+            assertFalse("content should not contain uno",content.contains("uno"));
             assertFalse("content should not contain buz",content.contains("buz"));
             assertTrue("content should not contain biz",content.contains("biz"));
         } catch (IOException e) {
