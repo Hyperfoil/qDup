@@ -5,6 +5,7 @@ import perf.qdup.cmd.Context;
 import perf.qdup.cmd.CommandResult;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class Sh extends Cmd {
@@ -41,7 +42,7 @@ public class Sh extends Cmd {
 
     @Override
     protected Cmd clone() {
-        return new Sh(this.command,super.isSilent()).with(this.with);
+        return new Sh(this.command,super.isSilent(),prompt).with(this.with);
     }
 
     @Override public String toString(){return "sh: "+(isSilent()?"silent=true ":"")+(prompt.isEmpty()?"":"prompts="+prompt+" ")+command;}
