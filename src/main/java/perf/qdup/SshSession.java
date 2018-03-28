@@ -210,6 +210,7 @@ public class SshSession implements Runnable, Consumer<String>{
         this.result = null;
     }
     private void setCommand(Cmd command,CommandResult result){
+        logger.trace("{} setCommand={}",host,command);
         this.command = command;
         this.result = result;
     }
@@ -276,7 +277,7 @@ public class SshSession implements Runnable, Consumer<String>{
         sh(command,true,cmd,result,prompt);
     }
     private void sh(String command,boolean acquireLock,Cmd cmd, CommandResult result, Map<String,String> prompt){
-        logger.trace("sh: {}, lock: {}",command,acquireLock);
+        logger.trace("{} sh: {}, lock: {}",host,command,acquireLock);
 
         if(isOpen()) {
             if (command == null) {
@@ -385,6 +386,8 @@ public class SshSession implements Runnable, Consumer<String>{
             this.command = null;
             thisCommand.setOutput(output);
             this.result.next(thisCommand,output);
+        }else{
+            logger.trace("{} cmd = null ",host);
         }
     }
 
