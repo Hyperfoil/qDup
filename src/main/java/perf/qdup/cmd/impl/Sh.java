@@ -35,9 +35,13 @@ public class Sh extends Cmd {
         if(prompt.isEmpty()) {
             context.getSession().sh(commandString, this, result);
         }else{
-            context.getSession().sh(commandString,this, result,prompt);
+            HashMap<String,String> populated = new HashMap<>();
+            prompt.forEach((key,value)->{
+                String populatedValue = Cmd.populateStateVariables(value,this,context.getState(),true);
+                populated.put(key,populatedValue);
+            });
+            context.getSession().sh(commandString,this, result,populated);
         }
-
     }
 
     @Override
