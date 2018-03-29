@@ -89,15 +89,24 @@ public class CommandDispatcher {
 
         private void logCmdOutput(Cmd command,String output){
             if(command!=null && output!=null){
-                if(command.getPrevious()!=null && !command.isSilent()){
-                    if( !output.equals(command.getPrevious().getOutput()) ){
+
+                if(command instanceof Sh){
+                    if(!command.isSilent()){
+                        //include output
                         context.getRunLogger().info("{}:{}:({}){}\n{}",command.getHead(),context.getSession().getHost().toString(),command.getUid(), command,output);
                     }else{
-                        //skip logging the output because we don't want duplicates
+                        //no output
+                        context.getRunLogger().info("{}:{}:({}){}",command.getHead(),context.getSession().getHost().toString(),command.getUid(),command);
                     }
                 }else{
-                    if(!command.isSilent()) {
-                        context.getRunLogger().info("{}:{}:({}){}\n{}", command.getHead(), context.getSession().getHost().toString(),command.getUid(), command, output);
+                    if(command.isSilent()){
+                        context.getRunLogger().info("{}:{}:({}){}",command.getHead(),context.getSession().getHost().toString(),command.getUid(),command);
+                    }else if (command.getPrevious()==null || !output.equals(command.getPrevious().getOutput())){
+                        //include output
+                        context.getRunLogger().info("{}:{}:({}){}\n{}",command.getHead(),context.getSession().getHost().toString(),command.getUid(), command,output);
+                    }else{
+                        //no output
+                        context.getRunLogger().info("{}:{}:({}){}",command.getHead(),context.getSession().getHost().toString(),command.getUid(),command);
                     }
                 }
             }

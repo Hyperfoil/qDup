@@ -1,14 +1,18 @@
 package perf.qdup;
 
 
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.UserAuthPassword;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.io.mina.MinaServiceFactoryFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -87,11 +91,13 @@ public class SshSession implements Runnable, Consumer<String>{
         this.host = host;
 
         shellLock = new Semaphore(1);
-
         sshClient = SshClient.setUpDefaultClient();
 
-        //StrictHostKeyChecking=no
+        PropertyResolverUtils.updateProperty(sshClient,ClientFactoryManager.IDLE_TIMEOUT,Long.MAX_VALUE);
+        PropertyResolverUtils.updateProperty(sshClient,ClientFactoryManager.NIO2_READ_TIMEOUT,Long.MAX_VALUE);
+
         sshClient.start();
+        //StrictHostKeyChecking=no
         sshClient.setServerKeyVerifier((clientSession1,remoteAddress,serverKey)->{return true;});
 
         try {
@@ -101,12 +107,14 @@ public class SshSession implements Runnable, Consumer<String>{
                     Files.newInputStream((new File(identity)).toPath()),
                     (resourceKey)->{return passphrase;}
             ));
+
             clientSession.auth().verify(5_000);
 
+
             channelShell = clientSession.createShellChannel();
+
             channelShell.getPtyModes().put(PtyMode.ECHO,1);//need echo for \n from real SH but adds gargage chars for test :(
             channelShell.setPtyType("vt100");
-
             //channelShell.setPtyType("xterm");
             channelShell.setPtyColumns(1024);
             channelShell.setPtyWidth(1024);
@@ -164,7 +172,7 @@ public class SshSession implements Runnable, Consumer<String>{
 
             sh("");//forces the thread to wait for the previous sh to complete
 
-//is this what is bugging out envTest?
+            //is this what is bugging out envTest?
             try {
                 shellLock.acquire();
                 try{
@@ -245,7 +253,6 @@ public class SshSession implements Runnable, Consumer<String>{
         }
         return rtrn;
     }
-
     public void response(String command) {
         if(isOpen()) {
             if (!channelShell.isOpen()) {
