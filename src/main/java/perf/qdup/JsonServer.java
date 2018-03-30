@@ -2,6 +2,7 @@ package perf.qdup;
 
 import com.sun.net.httpserver.HttpServer;
 import perf.qdup.cmd.CommandDispatcher;
+import perf.yaup.json.Json;
 
 
 import java.io.IOException;
@@ -13,13 +14,15 @@ public class JsonServer {
     private final int port;
     private HttpServer httpServer;
     private final CommandDispatcher dispatcher;
+    private final Coordinator coordinator;
 
 
-    public JsonServer(CommandDispatcher dispatcher){
-        this(dispatcher,31337);
+    public JsonServer(CommandDispatcher dispatcher,Coordinator coordinator){
+        this(dispatcher,coordinator,31337);
     }
-    public JsonServer(CommandDispatcher dispatcher,int port){
+    public JsonServer(CommandDispatcher dispatcher,Coordinator coordinator,int port){
         this.dispatcher = dispatcher;
+        this.coordinator = coordinator;
         this.port = port;
     }
 
@@ -34,6 +37,24 @@ public class JsonServer {
             );
             httpServer.createContext("/active", httpExchange -> {
                 String response = dispatcher.getActiveJson().toString(2);
+                httpExchange.sendResponseHeaders(200,response.length());
+                OutputStream os = httpExchange.getResponseBody();
+                os.write(response.getBytes());
+                os.close();
+            });
+            httpServer.createContext("/latches", httpExchange -> {
+                Json json = new Json();
+                coordinator.getLatchTimes().forEach((key,value)-> json.set(key,value));
+                String response = json.toString(2);
+                httpExchange.sendResponseHeaders(200,response.length());
+                OutputStream os = httpExchange.getResponseBody();
+                os.write(response.getBytes());
+                os.close();
+            });
+            httpServer.createContext("/counters", httpExchange -> {
+                Json json = new Json();
+                coordinator.getCounters().forEach((key,value)->json.set(key,value));
+                String response = json.toString(2);
                 httpExchange.sendResponseHeaders(200,response.length());
                 OutputStream os = httpExchange.getResponseBody();
                 os.write(response.getBytes());
