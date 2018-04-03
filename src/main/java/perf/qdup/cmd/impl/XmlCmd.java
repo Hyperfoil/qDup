@@ -18,7 +18,11 @@ import java.util.stream.Stream;
 
 import static perf.yaup.StringUtil.removeQuotes;
 
+
+
 public class XmlCmd extends Cmd {
+
+    public static final String SET_STATE_KEY = "->";
 
     String path;
     List<String> operations;
@@ -81,10 +85,20 @@ public class XmlCmd extends Cmd {
                 String operation = Cmd.populateStateVariables(operations.get(i),this,context.getState(),true);
                 operation = removeQuotes(operation);
                 XmlOperation xmlOperation = XmlOperation.parse(operation);
+                if(XmlOperation.Operation.None.equals(xmlOperation.getOperation()) &&
+                    xmlOperation.getPath().contains(SET_STATE_KEY) ){
+                    String path = xmlOperation.getPath().substring(0,xmlOperation.getPath().indexOf(SET_STATE_KEY)).trim();
+                    String stateValue = xmlOperation.getPath().substring(xmlOperation.getPath().indexOf(SET_STATE_KEY)+SET_STATE_KEY.length()).trim();
 
-                String response = xml.apply(xmlOperation);
-                if(!response.isEmpty()){
-                    output = response;
+                    stateValue = Cmd.populateStateVariables(stateValue,this,context.getState());
+                    xmlOperation = XmlOperation.parse(path);
+                    String response = xml.apply(xmlOperation);
+                    context.getState().set(stateValue,response);
+                }else {
+                    String response = xml.apply(xmlOperation);
+                    if (!response.isEmpty()) {
+                        output = response;
+                    }
                 }
 
             }

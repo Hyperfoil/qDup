@@ -9,6 +9,7 @@ import perf.qdup.cmd.Script;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
+import perf.yaup.xml.XmlOperation;
 
 import javax.xml.XMLConstants;
 import java.io.File;
@@ -87,5 +88,35 @@ public class XmlCmdTest {
             e.printStackTrace();
         }
         tmpXml.delete();
+    }
+
+
+    @Test
+    public void setState(){
+        StringBuilder first = new StringBuilder();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        Script runScript = new Script("run-xml");
+        runScript.then(Cmd.sh("echo '<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo><bar value=\"uno\"></bar><biz>buz</biz></foo>' > /tmp/foo.xml"));
+        runScript.then(
+                Cmd.xml("/tmp/foo.xml>/foo/biz "+XmlCmd.SET_STATE_KEY+" BIZ")///text()
+                        .then(Cmd.code((input,state)->{
+                            first.append(state.get("BIZ"));
+                            return Result.next(input);
+                        }))
+        );
+        builder.addScript(runScript);
+        builder.addHostAlias("local","wreicher@localhost:22");
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run-xml",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run run = new Run("/tmp",config,dispatcher);
+        run.run();
+        File tmpXml = new File("/tmp/foo.xml");
+
+        tmpXml.delete();
+
+        System.out.println(first.toString());
     }
 }

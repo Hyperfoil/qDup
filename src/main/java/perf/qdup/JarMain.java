@@ -1,19 +1,23 @@
 package perf.qdup;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import perf.qdup.cmd.CommandDispatcher;
-import perf.qdup.config.*;
+import perf.qdup.config.CmdBuilder;
+import perf.qdup.config.RunConfig;
+import perf.qdup.config.RunConfigBuilder;
+import perf.qdup.config.YamlParser;
 import perf.yaup.StringUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -252,7 +256,7 @@ public class JarMain {
             }
         },"shutdown-abort"));
 
-        JsonServer jsonServer = new JsonServer(dispatcher);
+        JsonServer jsonServer = new JsonServer(run.getDispatcher(),run.getCoordinator());
 
         jsonServer.start();
 

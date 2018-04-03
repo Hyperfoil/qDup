@@ -195,7 +195,7 @@ public class SshSession implements Runnable, Consumer<String>{
         } finally {
             logger.debug("{} session.isOpen={} shell.isOpen={}",
                     this.getHostName(),
-                    clientSession.isOpen(),
+                    clientSession==null?"false":clientSession.isOpen(),
                     channelShell==null?"false":channelShell.isOpen()
             );
         }
