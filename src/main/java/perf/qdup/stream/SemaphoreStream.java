@@ -30,6 +30,8 @@ public class SemaphoreStream extends MultiStream {
 
     //TODO checkForPrompt isn't enough to capture all use cases
     //prompt can split between writes
+    //gradle in color mode will randomly inject console controls between the newline and prompt
+    //27 ...
     public boolean checkForPrompt(byte sequence[], int offset, int length){
         boolean found = false;
         if(prompt == null) {
