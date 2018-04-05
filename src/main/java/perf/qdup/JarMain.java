@@ -237,7 +237,17 @@ public class JarMain {
 
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
 
-        ThreadFactory factory = r -> new Thread(r,"command-"+factoryCounter.getAndIncrement());
+        final Thread.UncaughtExceptionHandler uncaughtExceptionHandler = (thread, throwable) ->{
+
+            System.out.println("UNCAUGHT:"+thread.getName()+" "+throwable.getMessage());
+            throwable.printStackTrace(System.out);
+        };
+
+        ThreadFactory factory = r -> {
+            Thread rtrn =new Thread(r,"command-"+factoryCounter.getAndIncrement());
+            rtrn.setUncaughtExceptionHandler(uncaughtExceptionHandler);
+            return rtrn;
+        };
         ThreadPoolExecutor executor = new ThreadPoolExecutor(commandThreads/2,commandThreads,30, TimeUnit.MINUTES,workQueue,factory);
         ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(scheduledThreads, runnable -> new Thread(runnable,"scheduled-"+scheduledCounter.getAndIncrement()));
 

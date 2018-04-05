@@ -392,7 +392,9 @@ public class SshSession implements Runnable, Consumer<String>{
 
             this.command = null;
             thisCommand.setOutput(output);
-            this.result.next(thisCommand,output);
+            if(this.result!=null) {
+                this.result.next(thisCommand, output);
+            }
         }else{
             logger.trace("{} cmd = null ",host);
         }
