@@ -1,6 +1,7 @@
 package perf.qdup;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Env {
 
@@ -18,6 +19,13 @@ public class Env {
         public String get(String key){return data.get(key);}
         public boolean hasUnset(){return !unset.isEmpty();}
         public boolean isEmpty(){return data.isEmpty() && !hasUnset();}
+
+        public String debug(){
+            return "Env.Diff:" +
+                    "\n  set: "+data.keySet().stream().map((key)->{return "    "+key+": "+data.get(key);}).collect(Collectors.joining("\n"))+
+                    "\n  unset: "+unset.stream().collect(Collectors.joining(", "));
+        }
+
     }
 
     private Map<String,String> data;
@@ -33,6 +41,7 @@ public class Env {
     public String get(String key){return data.get(key);}
     public boolean isEmpty(){return data.isEmpty();}
     public int size(){return data.size();}
+
 
     public static Map<String,String> parse(String input){
         Map<String,String> rtrn = new LinkedHashMap<>();

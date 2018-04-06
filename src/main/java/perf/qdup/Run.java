@@ -13,9 +13,9 @@ import org.slf4j.ext.XLoggerFactory;
 import org.slf4j.profiler.Profiler;
 import perf.qdup.cmd.*;
 import perf.qdup.cmd.impl.ScriptCmd;
-import perf.qdup.config.StageSummary;
-import perf.qdup.config.RunConfig;
+import perf.qdup.config.*;
 import perf.yaup.HashedLists;
+import perf.yaup.StringUtil;
 import perf.yaup.json.Json;
 
 import java.io.*;
@@ -204,6 +204,7 @@ public class Run implements Runnable {
                 stop = new Env(context.getSession().getOutput());
 
                 Env.Diff diff = start.diffTo(stop);
+
                 setupEnv.put(context.getSession().getHost(),diff);
                 dispatcher.removeScriptObserver(this);
 
@@ -358,15 +359,19 @@ public class Run implements Runnable {
 
             Env.Diff diff = setupEnv.containsKey(host) ? setupEnv.get(host) : new Env.Diff(Collections.emptyMap(),Collections.emptySet());
 
+
+
             final StringBuilder setEnv = new StringBuilder();
             final StringBuilder unsetEnv = new StringBuilder();
             try {
+
+                //TODO BUG the bug is that we don't escape long env values with spaces, maybe separate each set?
                 diff.keys().forEach(key -> {
                     String keyValue = diff.get(key);
                     if (setEnv.length() > 0) {
                         setEnv.append(" ");
                     }
-                    setEnv.append(" " + key + "=" + keyValue);
+                    setEnv.append(" "+key+"="+StringUtil.quote(keyValue));
                 });
             }catch(Exception e){
                 e.printStackTrace();

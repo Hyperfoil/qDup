@@ -175,6 +175,9 @@ public class RunConfig {
 
     public State getState(){return state;}
 
+
+    public Set<String> getScriptNames(){return scripts.keySet();}
+
     /**
      * get a script using the global state and no command variables
      * @param name

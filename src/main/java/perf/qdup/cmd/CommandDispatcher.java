@@ -29,6 +29,13 @@ import java.util.function.BiConsumer;
  */
 public class CommandDispatcher {
 
+    final static Thread.UncaughtExceptionHandler DefaultUncaughtExceptionHandler = (thread, throwable) ->{
+
+        System.out.println("UNCAUGHT:"+thread.getName()+" "+throwable.getMessage());
+        throwable.printStackTrace(System.out);
+    };
+
+
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     final static long THRESHOLD = 30_000; //30s
@@ -351,7 +358,9 @@ public class CommandDispatcher {
                     AtomicInteger count = new AtomicInteger(0);
                     @Override
                     public Thread newThread(Runnable runnable) {
-                        return new Thread(runnable,"execute-"+count.getAndAdd(1));
+                        Thread rtrn = new Thread(runnable,"execute-"+count.getAndAdd(1));
+                        rtrn.setUncaughtExceptionHandler(DefaultUncaughtExceptionHandler);
+                        return rtrn;
                     }
                 }),
                 new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors()/2,new ThreadFactory() {
