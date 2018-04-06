@@ -23,7 +23,9 @@ public class Upload extends Cmd {
         String destinationPath =  populateStateVariables(destination ,this, context.getState());
 
         //create remote directory
-        context.getSession().sh( "mkdir -p " + destinationPath );
+        if(destinationPath.endsWith("/")) {
+            context.getSession().sh("mkdir -p " + destinationPath);
+        }
         
         context.getLocal().upload(
             localPath,

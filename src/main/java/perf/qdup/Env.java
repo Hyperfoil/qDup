@@ -1,9 +1,14 @@
 package perf.qdup;
 
+import perf.yaup.Sets;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Env {
+
+    public static Set FILTER = Sets.of("XDG_SESSION_ID","SSH_CLIENT","SSH_TTY","SSH_CONNECTION");
+
 
     public static class Diff {
         private Map<String,String> data;
@@ -12,6 +17,11 @@ public class Env {
         public Diff(Map<String,String> data,Set<String> unset){
             this.data = data;
             this.unset = unset;
+
+            FILTER.forEach(rem->{
+                data.remove(rem);
+                unset.remove(rem);
+            });
         }
 
         public Set<String> keys(){return data.keySet();}
@@ -26,6 +36,11 @@ public class Env {
                     "\n  unset: "+unset.stream().collect(Collectors.joining(", "));
         }
 
+    }
+
+
+    public String debug(){
+        return data.toString();
     }
 
     private Map<String,String> data;

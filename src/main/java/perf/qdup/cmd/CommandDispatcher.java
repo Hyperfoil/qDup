@@ -51,6 +51,8 @@ public class CommandDispatcher {
         public default void onNext(Cmd command,String output){}
         public default void onSkip(Cmd command,String output){}
         public default void onUpdate(Cmd command,String output){}
+    }
+    public interface DispatchObserver {
         public default void onStart(){}
         public default void onStop(){}
     }
@@ -62,7 +64,7 @@ public class CommandDispatcher {
 
         @Override
         public void next(Cmd command, String output) {
-            //observers.forEach(o->o.onNext(command,output));
+            //commandObservers.forEach(o->o.onNext(command,output));
             if(command.getNext()!=null){
                 logger.trace("{}:{} using WatcherResult to invoke next={}",command.getUid(),command,command.getNext());
                 command.getNext().doRun(output,this.context,this);
@@ -71,7 +73,7 @@ public class CommandDispatcher {
 
         @Override
         public void skip(Cmd command, String output) {
-            //observers.forEach(o->o.onSkip(command,output));
+            //commandObservers.forEach(o->o.onSkip(command,output));
             if(command.getSkip()!=null){
                 logger.trace("{} using WatcherResult to invoke skip={}",command,command.getSkip());
                 command.getSkip().doRun(output,this.context,this);
@@ -128,7 +130,7 @@ public class CommandDispatcher {
                     command
                     );
             executor.submit(()->{
-                observers.forEach(o->o.onNext(command,output));
+                commandObservers.forEach(o->o.onNext(command,output));
                 logCmdOutput(command,output);
                 dispatch(command,command.getNext(),output,this.context,this);
             });
@@ -143,7 +145,7 @@ public class CommandDispatcher {
                     command
                     );
             executor.submit(()-> {
-                observers.forEach(o -> o.onSkip(command, output));
+                commandObservers.forEach(o -> o.onSkip(command, output));
                 logCmdOutput(command, output);
                 dispatch(command, command.getSkip(), "", this.context, this);
             });
@@ -152,7 +154,7 @@ public class CommandDispatcher {
         @Override
         public void update(Cmd command, String output) {
 
-            observers.forEach(o->o.onUpdate(command,output));
+            commandObservers.forEach(o->o.onUpdate(command,output));
             try {
                 if(activeCommands.containsKey(command)){ // trying to run a missing command
                     activeCommands.get(command).update(output);
@@ -317,8 +319,9 @@ public class CommandDispatcher {
 
     private ConcurrentHashMap<Cmd,ScriptResult> script2Result;
 
-    private List<CommandObserver> observers;
+    private List<CommandObserver> commandObservers;
     private List<ScriptObserver> scriptObservers;
+    private List<DispatchObserver> dispatchObservers;
 
     private ThreadPoolExecutor executor;
     private ScheduledThreadPoolExecutor scheduler;
@@ -382,8 +385,9 @@ public class CommandDispatcher {
         this.pastCommands = new HashSet<>();
         this.script2Result = new ConcurrentHashMap<>();
 
-        this.observers = new LinkedList<>();
+        this.commandObservers = new LinkedList<>();
         this.scriptObservers = new LinkedList<>();
+        this.dispatchObservers = new LinkedList<>();
 
         this.nannyFuture = null;
         this.isStopped = true;
@@ -413,12 +417,14 @@ public class CommandDispatcher {
     public void removeScriptObserver(ScriptObserver observer){
         scriptObservers.remove(observer);
     }
-    public void addObserver(CommandObserver observer){
-        observers.add(observer);
+    public void addCommandObserver(CommandObserver observer){
+        commandObservers.add(observer);
     }
-    public void removeObserver(CommandObserver observer){
-        observers.remove(observer);
+    public void removeCommandObserver(CommandObserver observer){
+        commandObservers.remove(observer);
     }
+    public void addDispatchObserver(DispatchObserver observer){dispatchObservers.add(observer);}
+    public void removeDispatchObserver(DispatchObserver observer){dispatchObservers.remove(observer);}
 
     public ExecutorService getExecutor(){return executor;}
 
@@ -475,7 +481,7 @@ public class CommandDispatcher {
             return;
         }
         isStopped = false;
-        observers.forEach(c->c.onStart());
+        dispatchObservers.forEach(c->c.onStart());
         logger.info("starting {} scripts",script2Result.size());
         if(!script2Result.isEmpty()){
             BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
@@ -564,7 +570,7 @@ public class CommandDispatcher {
         });
         activeCommands.clear();
         activeCommandCount.set(0);
-        observers.forEach(c -> c.onStop());
+        dispatchObservers.forEach(c -> c.onStop());
     }
     public void stop(){
         logger.debug("stop");
@@ -587,7 +593,7 @@ public class CommandDispatcher {
             boolean cancelledFuture= nannyFuture.cancel(true);
             nannyFuture = null;
         }
-        observers.forEach(c -> c.onStop());
+        dispatchObservers.forEach(c -> c.onStop());
     }
 
     private void execute(Cmd command, String input, Context context, CommandResult result){
@@ -639,7 +645,7 @@ public class CommandDispatcher {
         }
         if(previousCommand!=null){
             previousCommand.setOutput(input);
-            for(CommandObserver observer : observers){
+            for(CommandObserver observer : commandObservers){
                 observer.onStop(previousCommand);
             }
             if(nextCommand==null){//nextCommand is only null when end of watcher or end of script
@@ -648,7 +654,7 @@ public class CommandDispatcher {
         }
 
         if(nextCommand!=null){
-            observers.forEach(c->c.onStart(nextCommand));
+            commandObservers.forEach(c->c.onStart(nextCommand));
 
             ActiveCommandInfo previous = activeCommands.put(nextCommand,new ActiveCommandInfo(nextCommand.getUid()+" "+nextCommand.toString(),null,context));
             activeCommandCount.incrementAndGet();
@@ -688,8 +694,8 @@ public class CommandDispatcher {
         boolean rtrn = false;
         if(script2Result.containsKey(command.getHead())){//we finished a script
             context.getProfiler().stop();
-            context.getProfiler().setLogger(context.getRunLogger());
-            context.getProfiler().log();
+//            context.getProfiler().setLogger(context.getRunLogger());
+//            context.getProfiler().log();
             if(context.getRunLogger().isInfoEnabled()){
                 context.getRunLogger().info("Closing script state:\n  host={}\n  script={}\n{}",
                         context.getSession().getHostName(),
@@ -709,7 +715,7 @@ public class CommandDispatcher {
             logger.info("activeCommands.count = {}",activeCommandCount.get());
             executor.execute(() -> {
                 closeSessions();
-                observers.forEach(o->o.onStop());
+                dispatchObservers.forEach(o->o.onStop());
             });
         }
     }
