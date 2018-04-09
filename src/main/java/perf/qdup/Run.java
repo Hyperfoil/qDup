@@ -162,7 +162,7 @@ public class Run implements Runnable {
                 timestamps.set(key,value);
             });
 
-            toWrite.set("timetamps",timestamps);
+            toWrite.set("timestamps",timestamps);
             toWrite.set("latches",latches);
             toWrite.set("counters",counters);
             toWrite.set("profiles",profiles.getJson());

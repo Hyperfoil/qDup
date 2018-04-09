@@ -7,7 +7,20 @@ import java.util.stream.Collectors;
 
 public class Env {
 
-    public static Set FILTER = Sets.of("XDG_SESSION_ID","SSH_CLIENT","SSH_TTY","SSH_CONNECTION");
+    public static Set FILTER = Sets.of(
+        "XDG_SESSION_ID",
+        "SSH_CLIENT",
+        "SSH_TTY",
+        "SSH_CONNECTION",
+        "HOSTNAME",
+        "XDG_SESSION_ID",
+        "PWD",
+        "XDG_RUNTIME_DIR",
+        "SELINUX_LEVEL_REQUESTED",
+        "SELINUX_ROLE_REQUESTED",
+        "SELINUX_USE_CURRENT_RANGE",
+        "HOSTNAME"
+    );
 
 
     public static class Diff {
