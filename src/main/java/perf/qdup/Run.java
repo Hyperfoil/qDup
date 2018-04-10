@@ -307,18 +307,18 @@ public class Run implements Runnable {
 
     @Override
     public void run() {
-        timestamps.put("run",System.currentTimeMillis());
+        timestamps.put("start",System.currentTimeMillis());
 
         if(config.hasErrors()){
             config.getErrors().forEach(logger::error);
             config.getErrors().forEach(runLogger::error);
-            timestamps.put("end",System.currentTimeMillis());
+            timestamps.put("stop",System.currentTimeMillis());
             return;
         }
 
         boolean coordinatorInitialized = initializeCoordinator();
         if(!coordinatorInitialized){
-            timestamps.put("end",System.currentTimeMillis());
+            timestamps.put("stop",System.currentTimeMillis());
             return;
         }
 
@@ -326,8 +326,11 @@ public class Run implements Runnable {
         queueSetupScripts();
         try {
             runLatch.await();
+
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } finally{
+            timestamps.put("stop",System.currentTimeMillis());
         }
         //moved to here because abort would avoid the cleanup in postRun()
         fileAppender.stop();
