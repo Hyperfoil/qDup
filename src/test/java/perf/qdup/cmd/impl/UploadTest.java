@@ -40,7 +40,7 @@ public class UploadTest {
             Files.write(tmpFile.toPath(),timestamp.getBytes());
 
             Script runScript = new Script("run-upload");
-            runScript.then(Cmd.upload(tmpFile.getPath(),"/tmp/destination"));
+            runScript.then(Cmd.upload(tmpFile.getPath(),"/tmp/destination/"));
 
             builder.addScript(runScript);
             builder.addHostAlias("local","wreicher@localhost:22");
