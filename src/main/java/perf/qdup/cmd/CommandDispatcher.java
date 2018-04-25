@@ -16,7 +16,6 @@ import java.util.function.BiConsumer;
  *
  * Created by wreicher
  *
- *
  * CommandDispatch.start put the first command into the executor
  * Executor calls RunCommand.run
  *  RunCommand.run calls Cmd.run(...)
@@ -39,6 +38,7 @@ public class CommandDispatcher {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     final static long THRESHOLD = 30_000; //30s
+
 
     public interface ScriptObserver {
         public default void onStart(Cmd command,Context context){}
@@ -328,7 +328,7 @@ public class CommandDispatcher {
     private ScheduledFuture<?> nannyFuture;
     private boolean isStopped;
 
-
+    private final boolean autoClose;
 
     public Json getActiveJson(){
         Json rtrn = new Json();
@@ -355,6 +355,7 @@ public class CommandDispatcher {
 
     @Override public String toString(){return "CD";}
 
+    //TODO need to pass boolean to know we own the ThreadPools and need to close them in this.shutdown
     public CommandDispatcher(){
         this(
                 new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors()/2, Runtime.getRuntime().availableProcessors(), 30, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactory() {
@@ -372,12 +373,17 @@ public class CommandDispatcher {
                     public Thread newThread(Runnable runnable) {
                         return new Thread(runnable,"schedule-"+count.getAndAdd(1));
                     }
-                })
+                }),
+                true
         );
     }
-    public CommandDispatcher(ThreadPoolExecutor executor,ScheduledThreadPoolExecutor scheduler){
+    public CommandDispatcher(ThreadPoolExecutor executor,ScheduledThreadPoolExecutor scheduler) {
+        this(executor,scheduler,false);
+    }
+    private CommandDispatcher(ThreadPoolExecutor executor,ScheduledThreadPoolExecutor scheduler,boolean autoClose){
         this.executor = executor;
         this.scheduler = scheduler;
+        this.autoClose=autoClose;
 
         this.activeCommandCount = new AtomicInteger(0);
         this.activeCommands = new ConcurrentHashMap<>();
@@ -556,6 +562,10 @@ public class CommandDispatcher {
     }
     public void shutdown(){
         stop();
+        if(autoClose){
+          executor.shutdown();
+          scheduler.shutdown();
+        }
         //scheduler.shutdownNow();
     }
     public void clearActive(){
