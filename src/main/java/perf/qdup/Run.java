@@ -187,16 +187,17 @@ public class Run implements Runnable {
         timestamps.put("setupStart",System.currentTimeMillis());
         CommandDispatcher.ScriptObserver scriptObserver = new CommandDispatcher.ScriptObserver() {
 
-            private Env start;
-            private Env stop;
+            private Map<Host,Env> startEnvs = new ConcurrentHashMap<>();
 
             @Override
             public void onStart(Cmd command, Context context) {
                 context.getSession().clearCommand();
                 context.getSession().sh("env");
-                start = new Env(context.getSession().getOutput());
+                String env = context.getSession().getOutput();
+                Env start = new Env(env);
+                startEnvs.put(context.getSession().getHost(),start);
 
-                logger.info("{} Env.start = {}",context.getSession().getHost(),start.debug());
+                logger.info("{} env = \"{}\" \n Env.start = {}",context.getSession().getHost(),env,start.debug());
             }
 
             @Override
@@ -204,17 +205,21 @@ public class Run implements Runnable {
 
                 context.getSession().clearCommand();
                 context.getSession().sh("env");
-                stop = new Env(context.getSession().getOutput());
+                String env = context.getSession().getOutput();
+                Env stop = new Env(env);
 
-                logger.info("{} Env.stop = {}",context.getSession().getHost(),stop.debug());
+                logger.info("{} env = \"{}\" \n Env.stop = {}",context.getSession().getHost(),env,stop.debug());
 
-                Env.Diff diff = start.diffTo(stop);
+                if(startEnvs.containsKey(context.getSession().getHost())){
+                    Env start = startEnvs.get(context.getSession().getHost());
+                    Env.Diff diff = start.diffTo(stop);
+                    logger.info("{} Env.diff = {}",context.getSession().getHost(),diff.debug());
 
-                logger.info("{} Env.diff = {}",context.getSession().getHost(),diff.debug());
+                    setupEnv.put(context.getSession().getHost(),diff);
 
-                setupEnv.put(context.getSession().getHost(),diff);
-                //dispatcher.removeScriptObserver(this);
-
+                }else{
+                    logger.info("{} does not have Env.start",context.getSession().getHost());
+                }
             }
         };
         CommandDispatcher.DispatchObserver setupObserver = new CommandDispatcher.DispatchObserver() {
