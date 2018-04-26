@@ -1,5 +1,9 @@
 package perf.qdup;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
+import ch.qos.logback.core.util.StatusPrinter;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -8,6 +12,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.slf4j.LoggerFactory;
 import perf.qdup.cmd.CommandDispatcher;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
@@ -122,6 +127,18 @@ public class JarMain {
                 .build()
         );
 
+        //logging
+        options.addOption(
+                Option.builder("l")
+                .longOpt("logback")
+                .argName("path")
+                .hasArg()
+                .desc("logback configuration path")
+                .type(String.class)
+                .build()
+        );
+
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
@@ -152,6 +169,22 @@ public class JarMain {
         int scheduledThreads = Integer.parseInt(cmd.getOptionValue("scheduledPool","4"));
 
         List<String> yamlPaths = cmd.getArgList();
+
+        //load a custom logback configuration
+        if(cmd.hasOption("logback")){
+            String configPath = cmd.getOptionValue("logback");
+            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+
+            try {
+                JoranConfigurator configurator = new JoranConfigurator();
+                configurator.setContext(context);
+                context.reset();
+                configurator.doConfigure(configPath);
+            } catch (JoranException je) {
+                // StatusPrinter will handle this
+            }
+            StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+        }
 
         if(yamlPaths.isEmpty()){
             System.out.println("Missing required yaml file(s)");
