@@ -21,7 +21,7 @@ import static perf.qdup.Host.DEFAULT_PORT;
 // Has a lot of extra code for download queueing and progress updates which are not used at the moment
 public class Local {
 
-    private static final String SSH_PATH = "/usr/bin/qdup";
+    private static final String SSH_PATH = "/usr/bin/ssh";
 
     final static Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -37,7 +37,7 @@ public class Local {
                 this.ssh+="-i "+config.getIdentity()+" ";
             }
             if(config.hasCustomPassphrase()){
-                storePassphrase(config.getIdentity(),config.getPassphrase());
+//                storePassphrase(config.getIdentity(),config.getPassphrase());
             }
         }else{
             this.ssh = null;
@@ -109,7 +109,7 @@ public class Local {
         }else{
             builder.command("/usr/bin/rsync", "-avzI", "-e",sshOpt,path, userName + "@" + hostName + ":" + dest);
         }
-        logger.debug( "Running rsync command: " + builder.command().stream().collect( Collectors.joining(" ")));
+        logger.debug( "Running rsync command    : " + builder.command().stream().collect( Collectors.joining(" ")));
         try {
             Process p =  builder.start();
             final InputStream inputStream = p.getInputStream();
