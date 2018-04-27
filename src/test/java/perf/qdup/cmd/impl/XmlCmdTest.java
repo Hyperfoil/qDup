@@ -2,6 +2,7 @@ package perf.qdup.cmd.impl;
 
 import org.junit.Test;
 import perf.qdup.Run;
+import perf.qdup.SshTestBase;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandDispatcher;
 import perf.qdup.cmd.Result;
@@ -22,7 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class XmlCmdTest {
+public class XmlCmdTest extends SshTestBase {
 
     //TODO add a test to ensure State and local variables resolve
 
@@ -66,7 +67,7 @@ public class XmlCmdTest {
                         }))
         );
         builder.addScript(runScript);
-        builder.addHostAlias("local","wreicher@localhost:22");
+        builder.addHostAlias("local",getHost().toString());
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-xml",new HashMap<>());
 
@@ -105,7 +106,7 @@ public class XmlCmdTest {
                         }))
         );
         builder.addScript(runScript);
-        builder.addHostAlias("local","wreicher@localhost:22");
+        builder.addHostAlias("local",getHost().toString());
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-xml",new HashMap<>());
 

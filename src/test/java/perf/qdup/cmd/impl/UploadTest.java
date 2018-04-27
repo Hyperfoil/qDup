@@ -2,6 +2,7 @@ package perf.qdup.cmd.impl;
 
 import org.junit.Test;
 import perf.qdup.Run;
+import perf.qdup.SshTestBase;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandDispatcher;
 import perf.qdup.cmd.Script;
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class UploadTest {
+public class UploadTest extends SshTestBase {
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
@@ -43,8 +44,7 @@ public class UploadTest {
             runScript.then(Cmd.upload(tmpFile.getPath(),"/tmp/destination/"));
 
             builder.addScript(runScript);
-            builder.addHostAlias("local","wreicher@localhost:22");
-            //builder.addHostAlias("local","wreicher@localhost:"+testServer.getPort());
+            builder.addHostAlias("local",getHost().toString());
             builder.addHostToRole("role","local");
             builder.addRoleRun("role","run-upload",new HashMap<>());
 

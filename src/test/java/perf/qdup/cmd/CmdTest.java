@@ -3,6 +3,7 @@ package perf.qdup.cmd;
 import org.junit.Assert;
 import org.junit.Test;
 import perf.qdup.Run;
+import perf.qdup.SshTestBase;
 import perf.qdup.State;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
@@ -13,7 +14,7 @@ import java.util.HashMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class CmdTest {
+public class CmdTest extends SshTestBase {
 
     @Test
     public void populateStateVariables_envVariable(){
@@ -163,7 +164,7 @@ public class CmdTest {
 
         builder.addScript(runScript);
 
-        builder.addHostAlias("local","wreicher@localhost:22");
+        builder.addHostAlias("local",getHost().toString());
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-with",new HashMap<>());
 

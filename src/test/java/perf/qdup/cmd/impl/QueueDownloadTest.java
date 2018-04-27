@@ -3,6 +3,7 @@ package perf.qdup.cmd.impl;
 import org.junit.Rule;
 import org.junit.Test;
 import perf.qdup.Run;
+import perf.qdup.SshTestBase;
 import perf.qdup.TestServer;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandDispatcher;
@@ -20,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class QueueDownloadTest {
+public class QueueDownloadTest extends SshTestBase {
 
     @Rule
     public final TestServer testServer = new TestServer();
@@ -42,8 +43,7 @@ public class QueueDownloadTest {
 
         builder.addScript(runScript);
 
-        //builder.addHostAlias("local","wreicher@localhost:"+testServer.getPort());
-        builder.addHostAlias("local","wreicher@localhost:22");
+        builder.addHostAlias("local",getHost().toString());
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-queue",new HashMap<>());
 
