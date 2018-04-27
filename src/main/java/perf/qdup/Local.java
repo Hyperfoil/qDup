@@ -68,7 +68,7 @@ public class Local {
                 outputStream.write(passphrase.getBytes());
                 outputStream.flush();
                 int result = p.waitFor();
-                logger.debug("qdup-add.result = {}",result);
+                logger.debug("ssh-add.result = {}",result);
                 String line = null;
                 BufferedReader reader = null;
                 reader = new BufferedReader(new InputStreamReader(errorStream));
