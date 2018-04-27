@@ -37,7 +37,7 @@ public class Local {
                 this.ssh+="-i "+config.getIdentity()+" ";
             }
             if(config.hasCustomPassphrase()){
-//                storePassphrase(config.getIdentity(),config.getPassphrase());
+                storePassphrase(config.getIdentity(),config.getPassphrase());
             }
         }else{
             this.ssh = null;
@@ -58,7 +58,7 @@ public class Local {
     private void storePassphrase(String identity, String passphrase){
         if(passphrase!= RunConfigBuilder.DEFAULT_PASSPHRASE){
             ProcessBuilder builder = new ProcessBuilder();
-            builder.command("/usr/bin/qdup-add", identity);
+            builder.command("/usr/bin/ssh-add", identity);
             try {
                 Process p =  builder.start();
                 final InputStream inputStream = p.getInputStream();
