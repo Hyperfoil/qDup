@@ -38,6 +38,7 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("queue-download",QueueDownload.class,"path");
         rtrn.addCmdDefinition("queue-download",QueueDownload.class,"path","destination");
         rtrn.addCmdDefinition("read-state",ReadState.class,"name");
+        rtrn.addCmdDefinition("reboot",Reboot.class,"timeout","target","password");
         rtrn.addCmdDefinition("regex",Regex.class,"pattern");
         rtrn.addCmdDefinition("repeat-until",RepeatUntilSignal.class,"name");
         rtrn.addCmdDefinition("set-state",SetState.class,"name");
@@ -55,11 +56,6 @@ public class CmdBuilder {
         return rtrn;
     }
 
-    private class Key {
-        private String name;
-        private String type;
-
-    }
     private class CmdEntry {
         private Class entryClass;
         private Set<String> keys;
