@@ -1,0 +1,26 @@
+= qDup User's Guide
+:revnumber: {project-version}
+:example-caption!:
+:sectnums:
+
+
+== Introduction
+
+qDup is an agent-less, automation and coordination tool; used to coordinate tasks across multiple machines without any agents running on the target machines.
+
+qDup allows for the co-ordination of many activities across multiple machines, allowing complex co-ordination of benchmarking steps to be managed and repeatable.
+
+Connections to remote machines are made via ssh, requiring not special agents or languages to be present on the target machines.  The only pre-requisit is the machine running the qdup script should be able to have ssh access to all the target machines without being promted for a password.
+
+qDup scripts are written in a variant of yaml. Multiple scripts can be executed at once and signalling provides co-ordination and allows for script re-use.
+
+IMPORTANT: qDup configuration is not yaml but it looks very similar to yaml so we often call it yaml. The problem is that yaml does not support key value pairs with nested lists or maps and we use those to denote sub-commands.
+
+== Concepts
+
+qDup scripts contain the following sections;
+
+
+
+== Notation
+
