@@ -42,6 +42,8 @@ public class MultiStream extends OutputStream{
         return "bytes="+bytes.toString()+System.lineSeparator()+"chars="+chars.toString();
     }
 
+
+
     private Map<String,OutputStream> streams;
 
     public MultiStream(){
@@ -57,6 +59,7 @@ public class MultiStream extends OutputStream{
             }
         }
     }
+    //TODO add a non-closable stream option for System.out :)
     public void addStream(String key,OutputStream stream){
         streams.put(key,stream);
     }

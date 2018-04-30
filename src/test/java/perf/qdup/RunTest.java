@@ -278,7 +278,7 @@ public class RunTest extends SshTestBase{
 
 
     @Test @Ignore
-    //tesetServer2 isn't working in intellij
+    //testServer2 isn't working in intellij
     public void oneScriptMultipleHosts(){
 
         TestServer testServer1 = new TestServer();
@@ -287,12 +287,9 @@ public class RunTest extends SshTestBase{
         testServer2.start();
 
 
-
         AtomicInteger counter = new AtomicInteger();
 
-
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
 
         Script oneScript = new Script("one");
         oneScript.then(Cmd.code(((input, state) -> {

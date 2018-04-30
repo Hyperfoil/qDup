@@ -111,6 +111,7 @@ public abstract class Cmd {
     public static Cmd queueDownload(String path){return new QueueDownload(path);}
     public static Cmd queueDownload(String path,String destination){return new QueueDownload(path,destination);}
     public static Cmd readState(String name){return new ReadState(name);}
+    public static Cmd reboot(String timeout,String target,String password){return new Reboot(timeout,target,password);}
     public static Cmd regex(String pattern){
         return new Regex(pattern);
     }

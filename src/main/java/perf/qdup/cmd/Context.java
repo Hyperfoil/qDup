@@ -54,4 +54,8 @@ public final class Context {
         run.done();
     }
     public Local getLocal(){return run.getLocal();}
+
+    public void setStartEnv(){
+        run.setStartEnv(this.session);
+    }
 }
