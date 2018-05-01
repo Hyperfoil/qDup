@@ -31,10 +31,10 @@ public class Local {
         if(config!=null && (config.hasCustomIdentity() || config.hasCustomKnownHosts() || config.hasCustomPassphrase())){
             this.ssh=SSH_PATH;
             if(config.hasCustomKnownHosts()){
-                this.ssh+="-o UserKnownHostsFile="+config.getKnownHosts()+" ";
+                this.ssh+=" -o UserKnownHostsFile="+config.getKnownHosts()+" ";
             }
             if(config.hasCustomIdentity()){
-                this.ssh+="-i "+config.getIdentity()+" ";
+                this.ssh+=" -i "+config.getIdentity()+" ";
             }
             if(config.hasCustomPassphrase()){
                 storePassphrase(config.getIdentity(),config.getPassphrase());
