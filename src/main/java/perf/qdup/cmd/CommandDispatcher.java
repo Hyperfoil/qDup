@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -304,6 +305,10 @@ public class CommandDispatcher {
                 context.getProfiler().start(command.toString());
 
                 command.doRun(input, context, result);
+                //thread is no longer active when method exits even if command is active
+                activeThreads.remove(command);
+
+
             }catch(Exception e){
                 logger.error("Exception while running {}@{}. Aborting",command,context.getSession().getHostName(),e);
                 context.abort();
@@ -414,7 +419,7 @@ public class CommandDispatcher {
         if(activeCommandInfo.getScheduledFuture()!=null && !activeCommandInfo.getScheduledFuture().isDone()){
             activeCommandInfo.getScheduledFuture().cancel(true);
         }
-        activeThreads.remove(command);
+
         return activeCommandInfo.getRunWatchers()!=null? command : null;
     }
 
@@ -596,7 +601,10 @@ public class CommandDispatcher {
 
         });
         activeThreads.values().forEach(thread->{
-            logger.info("interrupting {}",thread.getName());
+            logger.info("interrupting {}\n{}",thread.getName(),Arrays.asList(thread.getStackTrace())
+            .stream().map(stackTraceElement -> {
+                return stackTraceElement.getClassName()+"."+stackTraceElement.getMethodName()+"():"+stackTraceElement.getLineNumber();
+            }).collect(Collectors.joining("\n")));
             thread.interrupt();
         });
         if(nannyFuture!=null){
