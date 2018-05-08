@@ -55,9 +55,8 @@ public class Sleep extends Cmd {
 
     @Override
     protected void run(String input, Context context, CommandResult result) {
-
-        long sleepMs = parseToMs(amount);
-
+        String toParse = Cmd.populateStateVariables(amount,this,context.getState());
+        long sleepMs = parseToMs(toParse);
         context.schedule(this,() -> result.next(this,input),sleepMs);
     }
 
