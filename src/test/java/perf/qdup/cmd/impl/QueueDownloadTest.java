@@ -34,7 +34,7 @@ public class QueueDownloadTest extends SshTestBase {
         String timestamp = ""+System.currentTimeMillis();
 
         Script runScript = new Script("run-queue");
-        runScript.then(Cmd.sh("rm -rf /tmp/localhost/"));
+        runScript.then(Cmd.sh("rm -rf /tmp/l"+getHost().getHostName()+"/"));
         runScript.then(Cmd.sh("export FOO=\"/tmp\""));
         runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
 
@@ -52,7 +52,7 @@ public class QueueDownloadTest extends SshTestBase {
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
 
-        File downloadFile = new File("/tmp/localhost/date.txt");
+        File downloadFile = new File("/tmp/"+getHost().getHostName()+"/date.txt");
 
         assertTrue("/tmp/download.txt should exist",downloadFile.exists());
 
