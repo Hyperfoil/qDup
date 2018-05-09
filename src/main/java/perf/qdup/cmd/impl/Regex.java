@@ -15,7 +15,7 @@ public class Regex extends Cmd {
 
     private String patternString;
     public Regex(String pattern){
-        this.patternString = StringUtil.removeQuotes(pattern);
+        this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW])","\\\\");
     }
     public String getPattern(){return patternString;}
     @Override
