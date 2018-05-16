@@ -161,11 +161,18 @@ public class Local {
 
         ProcessBuilder builder = new ProcessBuilder();
 
+        String args = "-avz";
+
+        if(path.contains("/./")){
+            logger.trace("rsync enabling relative mode for {}",path);
+            args = args+"R";//turn on relative mode for rsync
+        }
+
         String sshOpt = prepSshString(port);
         if(sshOpt==null || sshOpt.isEmpty()) {
-            builder.command("/usr/bin/rsync", "-avz", userName + "@" + hostName + ":" + path, dest);
+            builder.command("/usr/bin/rsync", args, userName + "@" + hostName + ":" + path, dest);
         }else{
-            builder.command("/usr/bin/rsync", "-avz", "-e",sshOpt, userName + "@" + hostName + ":" + path, dest);
+            builder.command("/usr/bin/rsync", args, "-e",sshOpt, userName + "@" + hostName + ":" + path, dest);
         }
         try {
             Process p =  builder.start();
