@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class ForEach extends Cmd {
+public class ForEach extends Cmd.LoopCmd {
 
     private String name;
     private String input;
@@ -57,15 +57,6 @@ public class ForEach extends Cmd {
         return new ForEach(this.name,this.input).with(this.with);
     }
 
-    @Override
-    public Cmd then(Cmd command){
-        Cmd commandTail = command.getTail();
-        Cmd currentTail = this.getTail();
-        Cmd rtrn = super.then(command);
-        currentTail.forceNext(command);
-        commandTail.forceNext(this);
-        return rtrn;
-    }
 
     @Override
     public String toString(){

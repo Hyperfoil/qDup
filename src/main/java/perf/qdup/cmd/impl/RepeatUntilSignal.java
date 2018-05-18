@@ -4,7 +4,7 @@ import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
 import perf.qdup.cmd.CommandResult;
 
-public class RepeatUntilSignal extends Cmd {
+public class RepeatUntilSignal extends Cmd.LoopCmd {
     private String name;
     public RepeatUntilSignal(String name){
         this.name = name;
@@ -27,13 +27,9 @@ public class RepeatUntilSignal extends Cmd {
     }
 
     @Override
-    public Cmd then(Cmd command){
-        Cmd commandTail = command.getTail();
-        Cmd currentTail = this.getTail();
-        Cmd rtrn = super.then(command);
-        currentTail.forceNext(command);
-        commandTail.forceNext(this);
-        return rtrn;
+    protected void setSkip(Cmd skip){
+        //prevent propegating skip to last then because it needs to skip to this
+        this.forceSkip(skip);
     }
 
     @Override

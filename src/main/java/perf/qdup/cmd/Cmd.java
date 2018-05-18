@@ -18,6 +18,27 @@ import java.util.regex.Pattern;
  */
 public abstract class Cmd {
 
+    public abstract static class LoopCmd extends Cmd {
+        @Override
+        protected void setSkip(Cmd skip){
+            //prevent propegating skip to last then because it needs to skip to this
+            this.forceSkip(skip);
+        }
+
+        @Override
+        public Cmd then(Cmd command){
+            Cmd commandTail = command.getTail();
+            Cmd currentTail = this.getTail();
+            Cmd rtrn = super.then(command,false);
+            currentTail.forceNext(command);
+            currentTail.forceSkip(command);//if current tail is skipping it's children
+            commandTail.forceNext(this);
+            command.forceSkip(this);
+            return rtrn;
+        }
+
+    }
+
     public static class Ref {
         private Ref parent;
         private Cmd command;
@@ -356,7 +377,7 @@ public abstract class Cmd {
         this.skip = skip;
     }
     public Cmd getSkip(){return skip;}
-    private void setSkip(Cmd skip){
+    protected void setSkip(Cmd skip){
         this.skip = skip;
         if(!this.thens.isEmpty()){
             this.thens.getLast().setNext(skip);
@@ -364,10 +385,12 @@ public abstract class Cmd {
         }
     }
 
-    public Cmd then(Cmd command){
+    public Cmd then(Cmd command) {
+        return then(command,true);
+    }
+    protected Cmd then(Cmd command,boolean setSkip){
         setNext(command);
-
-        if(!this.thens.isEmpty()){
+        if(setSkip && !this.thens.isEmpty()){
             Cmd previousThen = this.thens.getLast();
             previousThen.setSkip(command);
             previousThen.setNext(command);
