@@ -197,7 +197,7 @@ public class Run implements Runnable {
                 Env start = new Env(env);
                 startEnvs.put(context.getSession().getHost(),start);
 
-                logger.info("{} env = \"{}\" \n Env.start = {}",context.getSession().getHost(),env,start.debug());
+                logger.debug("{} env = \"{}\" \n Env.start = {}",context.getSession().getHost(),env,start.debug());
             }
 
             @Override
@@ -208,7 +208,7 @@ public class Run implements Runnable {
                 String env = context.getSession().getOutput();
                 Env stop = new Env(env);
 
-                logger.info("{} env = \"{}\" \n Env.stop = {}",context.getSession().getHost(),env,stop.debug());
+                logger.debug("{} env = \"{}\" \n Env.stop = {}",context.getSession().getHost(),env,stop.debug());
 
                 if(startEnvs.containsKey(context.getSession().getHost())){
                     Env start = startEnvs.get(context.getSession().getHost());
