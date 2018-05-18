@@ -23,6 +23,21 @@ import static perf.qdup.config.YamlParser.*;
 
 public class RunConfigBuilder {
 
+    public static void main(String[] args) {
+        String path = "/home/wreicher/perfWork/labScripts-willr3/core/domain.yaml";
+
+        YamlParser parser = new YamlParser();
+        parser.load(path);
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser);
+        RunConfig config = builder.buildConfig();
+
+        Script script = config.getScript("domain");
+
+        System.out.println(script.tree(2,true));
+    }
+
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     private static final Json EMPTY_ARRAY = new Json();

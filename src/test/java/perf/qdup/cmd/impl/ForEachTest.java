@@ -39,7 +39,13 @@ public class ForEachTest extends SshTestBase {
                 .then(Cmd.sh("1"))
                 .then(Cmd.sh("2")
                     .then(Cmd.sh("2.1"))
-                    .then(Cmd.sh("2.2"))
+                    .then(Cmd.sh("2.2")
+                        .then(Cmd.sh("2.2.1"))
+                        .then(Cmd.sh("2.2.2")
+                            .then(Cmd.sh("2.2.2.1"))
+                            .then(Cmd.sh("2.2.2.2"))
+                        )
+                    )
                 )
         )
         .then(Cmd.sh("3"));
@@ -51,10 +57,13 @@ public class ForEachTest extends SshTestBase {
 
         Cmd twoTail = two.getTail();
 
+        System.out.println(start.tree(2,true));
+
         Assert.assertEquals("2.next should be 2.1",true,two.getNext().toString().contains("2.1"));
-        Assert.assertEquals("2.tail should be 2.2",true,twoTail.toString().contains("2.2"));
+        Assert.assertEquals("2.tail should be 2.2.2.2",true,twoTail.toString().contains("2.2.2.2"));
         //This was the original bug in repeat-until & for-each when their last child was a regex (something that often skips)
         Assert.assertTrue("2.skip should be for-each",two.getSkip().toString().contains("for-each"));
+        //Assert.assertTrue("2.1");
         Assert.assertEquals("for-each.skip should be 3",true,forEach.getSkip().toString().contains("3"));
 
     }

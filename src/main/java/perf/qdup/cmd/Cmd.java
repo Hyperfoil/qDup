@@ -29,11 +29,11 @@ public abstract class Cmd {
         public Cmd then(Cmd command){
             Cmd commandTail = command.getTail();
             Cmd currentTail = this.getTail();
-            Cmd rtrn = super.then(command,false);
+            Cmd rtrn = super.then(command,true);
             currentTail.forceNext(command);
             currentTail.forceSkip(command);//if current tail is skipping it's children
             commandTail.forceNext(this);
-            command.forceSkip(this);
+            command.setSkip(this);
             return rtrn;
         }
 
