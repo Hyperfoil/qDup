@@ -514,7 +514,9 @@ public class RunConfigBuilderTest extends SshTestBase {
                         "     - secondScript",
                         "    run-scripts:",
                         "     - firstScript",
-                        "        - WITH: {FOO:bar,biz:buz}",
+                        "        - with: ",
+                        "            FOO:bar",
+                        "            biz:buz",
                         "     - firstScript",
                         "        - WITH: {FOO:yaba,biz:daba}",
                         "    cleanup-scripts:",
@@ -544,6 +546,9 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertEquals("local should have 2 run scripts",2,localRunCmds.size());
 
         ScriptCmd firstCmd = localRunCmds.get(0);
+
+        System.out.println("fistCmd "+ firstCmd.getWith());
+
         ScriptCmd secondCmd = localRunCmds.get(1);
 
         assertEquals("first should be wih FOO: bar","bar",firstCmd.getWith().get("FOO"));
