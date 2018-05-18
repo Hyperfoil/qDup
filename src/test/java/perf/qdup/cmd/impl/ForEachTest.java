@@ -50,8 +50,10 @@ public class ForEachTest extends SshTestBase {
 
         Cmd one = forEach.getNext();
         Cmd two = one.getNext();
+        Cmd twoTail = two.getTail();
 
-        Assert.assertEquals("2.next should be for-each",true,two.getNext().toString().contains("FOO"));
+        Assert.assertEquals("2.next should be 2.1",true,two.getNext().toString().contains("2.1"));
+        Assert.assertEquals("2.tail should be 2.2",true,twoTail.toString().contains("2.2"));
         Assert.assertEquals("for-each.skip should be 3",true,forEach.getSkip().toString().contains("3"));
 
     }
