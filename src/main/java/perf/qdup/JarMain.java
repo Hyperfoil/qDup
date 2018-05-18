@@ -209,8 +209,23 @@ public class JarMain {
 
         YamlParser yamlParser = new YamlParser();
         for(String yamlPath : yamlPaths){
-            System.out.println("loading: "+yamlPath);
-            yamlParser.load(yamlPath);
+            File yamlFile = new File(yamlPath);
+            if(!yamlFile.exists()){
+                System.out.println("Error: cannot find "+yamlPath);
+                System.exit(1);//return error to shell / jenkins
+            }else{
+                if(yamlFile.isDirectory()){
+                    System.out.println("loading directory: "+yamlPath);
+                    for(File child : yamlFile.listFiles()){
+                        System.out.println("  loading: "+child.getPath());
+                        yamlParser.load(child.getPath());
+                    }
+                }else{
+                    System.out.println("loading: "+yamlPath);
+                    yamlParser.load(yamlPath);
+
+                }
+            }
         }
 
         try {
