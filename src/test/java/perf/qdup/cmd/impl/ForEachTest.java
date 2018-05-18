@@ -18,18 +18,29 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class ForEachTest extends SshTestBase {
 
+    @Test
+    public void getTail_noTail(){
+        Cmd start = Cmd.sh("one");
+        Cmd tail = start.getTail();
+        assertEquals("tail without children is self",start,tail);
+    }
 
     @Test
-    public void then_injects(){
+    public void then_injects_with_children(){
         Cmd start = Cmd.NO_OP();
-        start.then(
+        start
+        .then(
             Cmd.forEach("FOO")
                 .then(Cmd.sh("1"))
-                .then(Cmd.sh("2"))
+                .then(Cmd.sh("2")
+                    .then(Cmd.sh("2.1"))
+                    .then(Cmd.sh("2.2"))
+                )
         )
         .then(Cmd.sh("3"));
 

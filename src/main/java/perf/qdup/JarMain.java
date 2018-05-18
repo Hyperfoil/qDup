@@ -314,7 +314,7 @@ public class JarMain {
             }
         },"shutdown-abort"));
 
-        JsonServer jsonServer = new JsonServer(run.getDispatcher(),run.getCoordinator());
+        JsonServer jsonServer = new JsonServer(run,run.getDispatcher(),run.getCoordinator());
 
         jsonServer.start();
 

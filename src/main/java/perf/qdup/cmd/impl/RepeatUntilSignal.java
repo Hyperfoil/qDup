@@ -28,10 +28,11 @@ public class RepeatUntilSignal extends Cmd {
 
     @Override
     public Cmd then(Cmd command){
+        Cmd commandTail = command.getTail();
         Cmd currentTail = this.getTail();
         Cmd rtrn = super.then(command);
         currentTail.forceNext(command);
-        command.forceNext(this);
+        commandTail.forceNext(this);
         return rtrn;
     }
 
