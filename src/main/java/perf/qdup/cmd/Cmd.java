@@ -176,33 +176,38 @@ public abstract class Cmd {
         //StringBuffer rtrn = new StringBuffer();
         Matcher matcher = STATE_PATTERN.matcher(rtrn);
         while(matcher.find()){
-            int findIndex = matcher.start();
+                int findIndex = matcher.start();
+                int endIndex = matcher.end();
+                int endNameIndex = matcher.end("name");
 //            if(findIndex > previous){
 //                rtrn.append(command.substring(previous,findIndex));
 //            }
-            String name = matcher.group("name");
-            String defaultValue = matcher.group("default");
-            String value = populateVariable(name,cmd,state,ref);
-            if(value == null ){//bad times
-                if(!defaultValue.isEmpty()){
-                    value = defaultValue;
-                }else if( defaultValue.isEmpty() && ':' == command.charAt(matcher.end("name")) ) {
-                    //TODO how to alert the missing state? It could be intentional (e.g. nothing to wait-for)
-                    value = defaultValue;
-                    //logger.debug("missing {} state variable for {}", name, command);
-                }else if(replaceUndefined){
-                    value = "";
-                }else{
-                    //value = STATE_PREFIX+name+STATE_SUFFIX; // do nothing, it will stay the same
+                String name = matcher.group("name");
+                String defaultValue = matcher.group("default");
+                String value = populateVariable(name, cmd, state, ref);
+
+
+                if (value == null) {//bad times
+                    if (!defaultValue.isEmpty()) {
+                        value = defaultValue;
+                    } else if (defaultValue.isEmpty() && ':' == rtrn.charAt(matcher.end("name"))) {
+                        //TODO how to alert the missing state? It could be intentional (e.g. nothing to wait-for)
+                        value = defaultValue;
+                        //logger.debug("missing {} state variable for {}", name, command);
+                    } else if (replaceUndefined) {
+                        value = "";
+                    } else {
+                        //value = STATE_PREFIX+name+STATE_SUFFIX; // do nothing, it will stay the same
+                    }
+
+                }
+//            rtrn.append(value);
+                previous = matcher.end();
+                if (value != null) {
+                    rtrn = rtrn.replace(rtrn.substring(findIndex, previous), value);
+                    matcher.reset(rtrn);
                 }
 
-            }
-//            rtrn.append(value);
-            previous = matcher.end();
-            if(value!=null){
-                rtrn = rtrn.replace(rtrn.substring(findIndex,previous),value);
-                matcher.reset(rtrn);
-            }
         }
 //        if(previous<command.length()){
 //            rtrn.append(command.substring(previous));
