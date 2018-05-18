@@ -114,6 +114,7 @@ public class Run implements Runnable {
         this.pendingDownloads = new HashedLists<>();
         this.setupEnv = new ConcurrentHashMap<>();
     }
+
     public Local getLocal(){return local;}
 
     public RunConfig getConfig(){return config;}
@@ -141,6 +142,21 @@ public class Run implements Runnable {
     public void done(){
         coordinator.clearWaiters();
         dispatcher.clearActive();
+    }
+    public Json pendingDownloadJson(){
+        Json rtrn = new Json();
+        for(Host host : pendingDownloads.keys()){
+            Json hostJson = new Json();
+            rtrn.set(host.toString(),hostJson);
+            List<PendingDownload> pendings = pendingDownloads.get(host);
+            for(PendingDownload pending : pendings){
+                Json pendingJson = new Json();
+                pendingJson.set("path",pending.getPath());
+                pendingJson.set("dest",pending.getDestination());
+                hostJson.add(pendingJson);
+            }
+        }
+        return rtrn;
     }
     public void writeRunJson(){
         try (FileOutputStream out = new FileOutputStream(this.outputPath+File.separator+"run.json")) {

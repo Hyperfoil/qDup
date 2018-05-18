@@ -13,14 +13,16 @@ public class JsonServer {
 
     private final int port;
     private HttpServer httpServer;
+    private final Run run;
     private final CommandDispatcher dispatcher;
     private final Coordinator coordinator;
 
 
-    public JsonServer(CommandDispatcher dispatcher,Coordinator coordinator){
-        this(dispatcher,coordinator,31337);
+    public JsonServer(Run run, CommandDispatcher dispatcher,Coordinator coordinator){
+        this(run,dispatcher,coordinator,31337);
     }
-    public JsonServer(CommandDispatcher dispatcher,Coordinator coordinator,int port){
+    public JsonServer(Run run, CommandDispatcher dispatcher,Coordinator coordinator,int port){
+        this.run = run;
         this.dispatcher = dispatcher;
         this.coordinator = coordinator;
         this.port = port;
@@ -54,6 +56,14 @@ public class JsonServer {
             httpServer.createContext("/counters", httpExchange -> {
                 Json json = new Json();
                 coordinator.getCounters().forEach((key,value)->json.set(key,value));
+                String response = json.toString(2);
+                httpExchange.sendResponseHeaders(200,response.length());
+                OutputStream os = httpExchange.getResponseBody();
+                os.write(response.getBytes());
+                os.close();
+            });
+            httpServer.createContext("/pendingDownloads", httpExchange -> {
+                Json json = run.pendingDownloadJson();
                 String response = json.toString(2);
                 httpExchange.sendResponseHeaders(200,response.length());
                 OutputStream os = httpExchange.getResponseBody();
