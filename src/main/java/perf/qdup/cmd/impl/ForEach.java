@@ -28,7 +28,7 @@ public class ForEach extends Cmd {
     @Override
     protected void run(String input, Context context, CommandResult result) {
         if(split == null){
-            String toSplit = this.input.isEmpty() ? input : Cmd.populateStateVariables(this.input,this,context.getState());
+            String toSplit = this.input.isEmpty() ? input.trim() : Cmd.populateStateVariables(this.input,this,context.getState());
 
             split = Collections.emptyList();
 
