@@ -33,7 +33,7 @@ public class ForEach extends Cmd {
             split = Collections.emptyList();
 
             if(toSplit.contains("\n")){
-                split = Arrays.asList(toSplit.split("\n"));
+                split = Arrays.asList(toSplit.split("\r?\n"));
             }else {
                 //
             }
@@ -43,7 +43,7 @@ public class ForEach extends Cmd {
             String populatedName = Cmd.populateStateVariables(this.name,this,context.getState());
             index++;
             if(index < split.size()){
-                String value = split.get(index);
+                String value = split.get(index).replaceAll("\r|\n","");//defensive against trailing newline characters
                 with(populatedName,value);
                 result.next(this,value);
             }else{
