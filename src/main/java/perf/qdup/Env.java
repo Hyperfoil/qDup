@@ -14,6 +14,7 @@ public class Env {
         "SSH_CONNECTION",
         "HOSTNAME",
         "XDG_SESSION_ID",
+        "OLDPWD",
         "PWD",
         "XDG_RUNTIME_DIR",
         "SELINUX_LEVEL_REQUESTED",
