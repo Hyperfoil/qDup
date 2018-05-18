@@ -94,7 +94,11 @@ public class State {
         //at this point there wasn't a prefix match
         return this.state.put(key,value);
     }
-
+    public void set(Map<String,String> map){
+        for(String key : map.keySet()){
+            set(key,map.get(key));
+        }
+    }
     public boolean has(String key){
         return state.containsKey(key);
     }

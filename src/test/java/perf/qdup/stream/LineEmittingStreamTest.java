@@ -6,8 +6,30 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class LineEmittingStreamTest {
+
+
+    @Test
+    public void write_multiple_lines(){
+        LineEmittingStream stream = new LineEmittingStream();
+        AtomicInteger emitCount = new AtomicInteger(0);
+        stream.addConsumer((line)->{
+            emitCount.incrementAndGet();
+        });
+
+        try {
+            stream.write("1\n2\n3".getBytes());
+            stream.flush();
+            stream.close();//emits the remaining "3"
+            assertEquals("line count",3,emitCount.get());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("Exception: "+e.getMessage());
+        }
+    }
 
     @Test
     public void testBufferShrinks(){

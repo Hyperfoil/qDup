@@ -16,6 +16,7 @@ public class RepeatUntilSignalTest {
         )
         .then(Cmd.sh("3"));
         Cmd repeat = start.getNext();
+
         Cmd one = repeat.getNext();
         Cmd two = one.getNext();
 

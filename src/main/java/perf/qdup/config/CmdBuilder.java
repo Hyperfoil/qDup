@@ -30,6 +30,8 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("upload",Upload.class,"path","destination");
         rtrn.addCmdDefinition("echo",Echo.class);
         rtrn.addCmdDefinition("invoke",ScriptCmd.class,"name");
+        rtrn.addCmdDefinition("for-each",ForEach.class,"name");
+        rtrn.addCmdDefinition("for-each",ForEach.class,"name","input");
         rtrn.addCmdDefinition("script",ScriptCmd.class,"name");
         rtrn.addCmdDefinition("js",JsCmd.class,"code");
         rtrn.addCmdDefinition("log",Log.class,"message");

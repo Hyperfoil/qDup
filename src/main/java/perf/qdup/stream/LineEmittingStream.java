@@ -28,6 +28,17 @@ public class LineEmittingStream extends OutputStream {
 
     public void reset() { index = 0; }
 
+    public void forceEmit(){
+        if(index>0) {
+            emit(buffered, 0, index);
+        }
+    }
+
+    @Override
+    public void close(){
+        forceEmit();
+    }
+
     @Override
     public void write(int i) throws IOException {}
     @Override

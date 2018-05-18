@@ -1,8 +1,17 @@
 package perf.qdup.cmd.impl;
 
+import perf.qdup.State;
 import perf.qdup.cmd.*;
 
 public class CodeCmd extends Cmd {
+
+    private class WithState extends State {
+        public WithState(State parent) {
+            super(parent, "");//empty previs to make parent read only
+            set(getWith());
+        }
+    }
+
     private Code code;
     private String className;
     public CodeCmd(Code code){
@@ -20,7 +29,8 @@ public class CodeCmd extends Cmd {
             try {
                 Object instance = Class.forName(className).newInstance();
                 if(instance instanceof Code){
-                    codeResult = ((Code)instance).run(input, context.getState());
+                    //TODO need a State subclass that uses the with before invoking state
+                    codeResult = ((Code)instance).run(input, new WithState( context.getState() ) );
                 }
 
             } catch (InstantiationException|IllegalAccessException|ClassNotFoundException e) {

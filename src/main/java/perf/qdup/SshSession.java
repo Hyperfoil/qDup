@@ -380,6 +380,7 @@ public class SshSession implements Runnable, Consumer<String>{
     //Called when the semaphore is released
     @Override
     public void run() {
+        lineEmittingStream.forceEmit();
         String output = shStream.toString();
         shStream.reset();
         try {
