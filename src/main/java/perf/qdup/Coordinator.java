@@ -173,7 +173,7 @@ public class Coordinator {
                 logger.info("waitFor {} count = {}, invoking next",name,latches.get(name).get());
                 waiter.next();
             }else {
-                logger.info("waitFor {} count = {}, queueing",name,latches.get(name).get());
+                logger.debug("waitFor {} count = {}, queueing",name,latches.get(name).get());
 
                 ensureWaitFor(name).add(waiter);
             }
