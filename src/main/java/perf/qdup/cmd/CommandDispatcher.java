@@ -2,6 +2,7 @@ package perf.qdup.cmd;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
+import perf.qdup.cmd.impl.Abort;
 import perf.qdup.cmd.impl.Sh;
 import perf.yaup.AsciiArt;
 import perf.yaup.json.Json;
@@ -341,6 +342,7 @@ public class CommandDispatcher {
         activeCommands.forEach( (cmd,activeCommandInfo) -> {
             Json entry = new Json();
             entry.set("name",cmd.toString());
+            entry.set("host",activeCommandInfo.getContext().getSession().getHost().toString());
             entry.set("uid",cmd.getUid());
             entry.set("script",cmd.getHead().getUid()+":"+cmd.getHead().toString());
             if(cmd instanceof Sh){
@@ -600,12 +602,15 @@ public class CommandDispatcher {
             }
 
         });
-        activeThreads.values().forEach(thread->{
-            logger.info("interrupting {}\n{}",thread.getName(),Arrays.asList(thread.getStackTrace())
-            .stream().map(stackTraceElement -> {
-                return stackTraceElement.getClassName()+"."+stackTraceElement.getMethodName()+"():"+stackTraceElement.getLineNumber();
-            }).collect(Collectors.joining("\n")));
-            thread.interrupt();
+        activeThreads.keySet().forEach(command->{
+            Thread thread = activeThreads.get(command);
+            if( !(command instanceof Abort) ){
+                logger.info("interrupting {} running {}\n{}",thread.getName(),command,Arrays.asList(thread.getStackTrace())
+                        .stream().map(stackTraceElement -> {
+                            return stackTraceElement.getClassName()+"."+stackTraceElement.getMethodName()+"():"+stackTraceElement.getLineNumber();
+                        }).collect(Collectors.joining("\n")));
+                thread.interrupt();
+            }
         });
         if(nannyFuture!=null){
             boolean cancelledFuture= nannyFuture.cancel(true);
