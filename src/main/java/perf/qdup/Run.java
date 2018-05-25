@@ -157,6 +157,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
                 if(stageUpdated.compareAndSet(this,Stage.Run,Stage.Cleanup)){
                     queueCleanupScripts();
                     dispatcher.start();
+                }else{
                 }
                 break;
             case Cleanup:
@@ -193,7 +194,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     }
     public void done(){
         coordinator.clearWaiters();
-        dispatcher.clearActive();
+        dispatcher.clearActiveCommands();
     }
     public Json pendingDownloadJson(){
         Json rtrn = new Json();
@@ -244,11 +245,11 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
         }
     }
     public void abort(){
-        //TODO how to interrupt watchers
         this.aborted = true;
+        stageUpdated.set(this,Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.onStop will set it to Cleanup
         dispatcher.stop();//interrupts working threads and stops dispatching next commands
-        runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
-        runLatch.countDown();
+        //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
+        //runLatch.countDown();
     }
     private void queueSetupScripts(){
         logger.debug("{}.setup",this);

@@ -547,7 +547,7 @@ public class CommandDispatcher {
             activeCommands.get(command).setScheduledFuture(future);
         }
     }
-    public void clearActive(){
+    public void clearActiveCommands(){
         closeSshSessions();
         activeCommands.forEach((cmd,activeCommand)->{
             if (!commandObservers.isEmpty()){
@@ -577,16 +577,8 @@ public class CommandDispatcher {
     public void stop(){
         logger.debug("stop");
         isStopped=true;
-        closeSshSessions();
-        activeCommands.values().forEach((w)->{
-            if(w.getRunWatchers()!=null){
-                w.getRunWatchers().stop();
-            }
-            if(w.getScheduledFuture()!=null){
-                w.getScheduledFuture().cancel(true);
-            }
+        clearActiveCommands();
 
-        });
         activeThreads.keySet().forEach(command->{
             Thread thread = activeThreads.get(command);
             if( !(command instanceof Abort) ){
@@ -597,6 +589,7 @@ public class CommandDispatcher {
                 thread.interrupt();
             }
         });
+        activeThreads.clear();//ignore the fact we didn't interrupt the Abort thread, it will finish with the current execution
         if(nannyFuture!=null){
             boolean cancelledFuture= nannyFuture.cancel(true);
             nannyFuture = null;

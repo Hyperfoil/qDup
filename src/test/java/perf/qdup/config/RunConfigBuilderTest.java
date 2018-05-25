@@ -547,7 +547,6 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         ScriptCmd firstCmd = localRunCmds.get(0);
 
-        System.out.println("fistCmd "+ firstCmd.getWith());
 
         ScriptCmd secondCmd = localRunCmds.get(1);
 
