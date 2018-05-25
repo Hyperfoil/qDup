@@ -406,10 +406,10 @@ public class CommandDispatcher {
         this.isStopped = true;
     }
 
-    private Cmd removeActive(Cmd command){
+    private int removeActive(Cmd command){
         logger.trace("removeActive("+command+") size="+activeCommandCount.get());
         ActiveCommandInfo activeCommandInfo = activeCommands.remove(command);
-        activeCommandCount.decrementAndGet();
+        int rtrn = activeCommandCount.decrementAndGet();
         logger.trace("removeActive("+command+") post.size="+activeCommandCount.get());
         if(activeCommandInfo.getRunWatchers()!=null) {
             try {
@@ -422,7 +422,7 @@ public class CommandDispatcher {
             activeCommandInfo.getScheduledFuture().cancel(true);
         }
 
-        return activeCommandInfo.getRunWatchers()!=null? command : null;
+        return rtrn;
     }
 
 
@@ -576,7 +576,7 @@ public class CommandDispatcher {
         //scheduler.shutdownNow();
     }
     public void clearActive(){
-        closeSessions();
+        closeSshSessions();
         activeCommands.forEach((cmd,activeCommand)->{
             if( activeCommand.getRunWatchers()!=null ){
                 activeCommand.getRunWatchers().stop();
@@ -592,7 +592,7 @@ public class CommandDispatcher {
     public void stop(){
         logger.debug("stop");
         isStopped=true;
-        closeSessions();
+        closeSshSessions();
         activeCommands.values().forEach((w)->{
             if(w.getRunWatchers()!=null){
                 w.getRunWatchers().stop();
@@ -675,12 +675,12 @@ public class CommandDispatcher {
                 checkScriptDone(previousCommand,context);
             }
         }
-
+        int activeCount= activeCommandCount.get();
         if(nextCommand!=null){
             commandObservers.forEach(c->c.onStart(nextCommand));
 
             ActiveCommandInfo previous = activeCommands.put(nextCommand,new ActiveCommandInfo(nextCommand.getUid()+" "+nextCommand.toString(),null,context));
-            activeCommandCount.incrementAndGet();
+            activeCount = activeCommandCount.incrementAndGet();
             logger.trace("addActive("+nextCommand+") size="+activeCommandCount.get());
 
             if(previous!=null){
@@ -709,9 +709,11 @@ public class CommandDispatcher {
         }
         //remove after add to ensure activeCommands is only empty when there isn't a nextCommand
         if(previousCommand!=null) {
-            Cmd removed = removeActive(previousCommand);
+            activeCount = removeActive(previousCommand);
         }
-        checkActiveCount();
+        if(activeCount==0) {
+            checkActiveCount();
+        }
     }
     private boolean checkScriptDone(Cmd command, Context context){
         boolean rtrn = false;
@@ -737,14 +739,14 @@ public class CommandDispatcher {
         if(activeCommandCount.get()==0 && !isStopped){
             logger.info("activeCommands.count = {}",activeCommandCount.get());
             executor.execute(() -> {
-                closeSessions();
+                closeSshSessions();
                 dispatchObservers.forEach(o->o.onStop());
             });
         }
     }
-    public void closeSessions(){
+    public void closeSshSessions(){
         //TODO make thread safe
-        logger.debug("{}.closeSessions",this);
+        logger.debug("{}.closeSshSessions",this);
         script2Result.values().forEach(scriptResult -> {
             logger.debug("closing connection to {}",scriptResult.getResult().context.getSession().getHostName());
             //don't wait will force running commands (holding shell lock) to be closed

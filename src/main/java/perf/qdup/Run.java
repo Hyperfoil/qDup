@@ -357,7 +357,7 @@ public class Run implements Runnable {
         fileAppender.stop();
         consoleAppender.stop();
 
-        //dispatcher.closeSessions(); //was racing the close sessions from checkActiveCount
+        //dispatcher.closeSshSessions(); //was racing the close sessions from checkActiveCount
     }
     private void queueRunScripts(){
         timestamps.put("runStart",System.currentTimeMillis());
