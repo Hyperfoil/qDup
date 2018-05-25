@@ -7,7 +7,6 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.FileAppender;
-import org.apache.sshd.server.Command;
 import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -23,6 +22,7 @@ import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -30,9 +30,10 @@ import java.util.stream.Collectors;
  * Created by wreicher
  *
  */
-public class Run implements Runnable {
+public class Run implements Runnable, CommandDispatcher.DispatchObserver {
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    private final static AtomicReferenceFieldUpdater<Run,Stage> stageUpdated = AtomicReferenceFieldUpdater.newUpdater(Run.class,Run.Stage.class,"stage");
 
     class PendingDownload {
         private String path;
@@ -45,7 +46,16 @@ public class Run implements Runnable {
         public String getDestination(){return destination;}
     }
 
+    enum Stage {Setup("setup"),Run("run"),Cleanup("cleanup");
+        String name;
+        Stage(String name){
+            this.name = name;
+        }
+        public String getName(){return name;}
+    }
 
+
+    private volatile Stage stage;
     private Map<String,Long> timestamps;
     private RunConfig config;
     private String outputPath;
@@ -55,7 +65,7 @@ public class Run implements Runnable {
     private Profiles profiles;
     private Local local;
 
-    private Map<Host,Env.Diff> setupEnv;
+    private Map<Host,Env.Diff> setupEnvDiff;
     private HashedLists<Host,PendingDownload> pendingDownloads;
 
     private CountDownLatch runLatch = new CountDownLatch(1);
@@ -65,10 +75,16 @@ public class Run implements Runnable {
 
 
     public Run(String outputPath,RunConfig config,CommandDispatcher dispatcher){
+        if(config==null || dispatcher==null){
+            throw new NullPointerException("Run config and dispatcher cannot be null");
+        }
+
         this.config = config;
 
         this.outputPath = outputPath;
         this.dispatcher = dispatcher;
+        this.dispatcher.addDispatchObserver(this);
+        this.stage = Stage.Setup;
         this.aborted = false;
 
 
@@ -112,8 +128,44 @@ public class Run implements Runnable {
 
 
         this.pendingDownloads = new HashedLists<>();
-        this.setupEnv = new ConcurrentHashMap<>();
+        this.setupEnvDiff = new ConcurrentHashMap<>();
     }
+
+    @Override
+    public void onStart(){
+        timestamps.put(stage.getName()+"Start",System.currentTimeMillis());
+    }
+    @Override
+    public void onStop(){
+        timestamps.put(stage.getName()+"Stop",System.currentTimeMillis());
+        nextStage();
+    }
+    private void nextStage(){
+        switch (stage){
+            case Setup:
+                //if we are able to set the stage to Run
+                if(stageUpdated.compareAndSet(this,Stage.Setup,Stage.Run)){
+                    queueRunScripts();
+                    dispatcher.start();
+                }else{
+                    //TODO another thread already did it?
+                }
+                break;
+            case Run:
+                runPendingDownloads();
+                //if we are able to set the stage to Cleanup
+                if(stageUpdated.compareAndSet(this,Stage.Run,Stage.Cleanup)){
+                    queueCleanupScripts();
+                    dispatcher.start();
+                }
+                break;
+            case Cleanup:
+                postRun();//release any latches blocking a call to run()
+                break;
+            default:
+        }
+    }
+
 
     public Local getLocal(){return local;}
 
@@ -200,7 +252,8 @@ public class Run implements Runnable {
     }
     private void queueSetupScripts(){
         logger.debug("{}.setup",this);
-        timestamps.put("setupStart",System.currentTimeMillis());
+
+        //Observer to set the Env.Diffs
         CommandDispatcher.ScriptObserver scriptObserver = new CommandDispatcher.ScriptObserver() {
 
             private Map<Host,Env> startEnvs = new ConcurrentHashMap<>();
@@ -229,31 +282,16 @@ public class Run implements Runnable {
                 if(startEnvs.containsKey(context.getSession().getHost())){
                     Env start = startEnvs.get(context.getSession().getHost());
                     Env.Diff diff = start.diffTo(stop);
-                    logger.info("{} Env.diff = {}",context.getSession().getHost(),diff.debug());
+                    logger.info("{} {}",context.getSession().getHost(),diff.debug());
 
-                    setupEnv.put(context.getSession().getHost(),diff);
+                    setupEnvDiff.put(context.getSession().getHost(),diff);
 
                 }else{
                     logger.info("{} does not have Env.start",context.getSession().getHost());
                 }
             }
         };
-        CommandDispatcher.DispatchObserver setupObserver = new CommandDispatcher.DispatchObserver() {
-            @Override
-            public void onStart() {}
-
-            @Override
-            public void onStop() {
-                logger.debug("{}.setup stop",this);
-                dispatcher.removeScriptObserver(scriptObserver);
-                dispatcher.removeDispatchObserver(this);
-
-                timestamps.put("setupStop",System.currentTimeMillis());
-                queueRunScripts();
-            }
-        };
         dispatcher.addScriptObserver(scriptObserver);
-        dispatcher.addDispatchObserver(setupObserver);
         for(Host host : config.getSetupHosts()){
 
             State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
@@ -277,9 +315,7 @@ public class Run implements Runnable {
             Context context = new Context(scriptSession,scriptState,this,profiler);
 
             dispatcher.addScript(setupCmd, context);
-
         }
-        dispatcher.start();
     }
 
     @Override
@@ -345,11 +381,12 @@ public class Run implements Runnable {
 
         runLogger.info("{} starting state:\n{}",config.getName(),config.getState().tree());
         queueSetupScripts();
+        dispatcher.start();
         try {
             runLatch.await();
 
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         } finally{
             timestamps.put("stop",System.currentTimeMillis());
         }
@@ -360,25 +397,13 @@ public class Run implements Runnable {
         //dispatcher.closeSshSessions(); //was racing the close sessions from checkActiveCount
     }
     private void queueRunScripts(){
-        timestamps.put("runStart",System.currentTimeMillis());
         logger.debug("{}.queueRunScripts",this);
 
-        CommandDispatcher.DispatchObserver runObserver = new CommandDispatcher.DispatchObserver() {
-            @Override
-            public void onStart() {}
-
-            @Override
-            public void onStop() {
-                dispatcher.removeDispatchObserver(this);
-                timestamps.put("runStop",System.currentTimeMillis());
-                queueCleanupScripts();
-            }
-        };
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
         for(Host host : config.getRunHosts()){
 
-            Env.Diff diff = setupEnv.containsKey(host) ? setupEnv.get(host) : new Env.Diff(Collections.emptyMap(),Collections.emptySet());
+            Env.Diff diff = setupEnvDiff.containsKey(host) ? setupEnvDiff.get(host) : new Env.Diff(Collections.emptyMap(),Collections.emptySet());
 
             final StringBuilder setEnv = new StringBuilder();
             final StringBuilder unsetEnv = new StringBuilder();
@@ -400,7 +425,9 @@ public class Run implements Runnable {
               unsetEnv.append(" "+key);
             });
             String updateEnv = (setEnv.length()>0? "export"+setEnv.toString():"")+(unsetEnv.length()>0?";unset"+unsetEnv.toString():"");
-            logger.info("{} update env from setup {}",host,updateEnv);
+            if(!updateEnv.isEmpty()) {
+                logger.info("{} update env from setup {}", host, updateEnv);
+            }
 
             for(ScriptCmd scriptCmd : config.getRunCmds(host)){
                 connectSessions.add(()->{
@@ -458,28 +485,12 @@ public class Run implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-        dispatcher.addDispatchObserver(runObserver);
-        dispatcher.start();
     }
     private void queueCleanupScripts(){
-        timestamps.put("cleanupStart",System.currentTimeMillis());
         logger.info("{}.queueCleanupScripts",this);
-        CommandDispatcher.DispatchObserver cleanupObserver = new CommandDispatcher.DispatchObserver() {
-            @Override
-            public void onStart() {}
-
-            @Override
-            public void onStop() {
-                timestamps.put("cleanupStop",System.currentTimeMillis());
-                dispatcher.removeDispatchObserver(this);
-                postRun();
-            }
-        };
         //run before cleanup
-        runPendingDownloads();
+//        runPendingDownloads();
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
-
         for(Host host : config.getCleanupHosts()){
             Cmd cleanupCmd = config.getCleanupCmd(host);
             connectSessions.add(()-> {
@@ -522,11 +533,9 @@ public class Run implements Runnable {
                 e.printStackTrace();
             }
         }
-        dispatcher.addDispatchObserver(cleanupObserver);
-        dispatcher.start();
     }
     private void postRun(){
-        logger.info("{}.postRun",this);
+        logger.debug("{}.postRun",this);
         runLogger.info("{} closing state:\n{}",config.getName(),config.getState().tree());
         runLatch.countDown();
     }

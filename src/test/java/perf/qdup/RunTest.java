@@ -25,6 +25,51 @@ public class RunTest extends SshTestBase{
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
+    @Test
+    public void allStagesInvoked(){
+        StringBuilder setup = new StringBuilder();
+        StringBuilder run = new StringBuilder();
+        StringBuilder cleanup = new StringBuilder();
+
+        Script setupScript = new Script("setup");
+        setupScript.then(Cmd.code((input,sate)->{
+            setup.append(System.currentTimeMillis());
+            return Result.next(input);
+        }));
+        Script runScript = new Script("run");
+        runScript.then(Cmd.code((input,state)->{
+            run.append(System.currentTimeMillis());
+            return Result.next(input);
+        }));
+        Script cleanupScript =new Script("cleanup");
+        cleanupScript.then(Cmd.code((input,state)->{
+            cleanup.append(System.currentTimeMillis());
+            return Result.next(input);
+        }));
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+
+        builder.addHostAlias("local",getHost().toString());
+        builder.addScript(setupScript);
+        builder.addScript(runScript);
+        builder.addScript(cleanupScript);
+
+        builder.addHostToRole("role","local");
+        builder.addRoleSetup("role","setup",new HashMap<>());
+        builder.addRoleRun("role","run",new HashMap<>());
+        builder.addRoleCleanup("role","cleanup",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        assertFalse("setup not called",setup.length()==0);
+        assertFalse("run not called",run.length()==0);
+        assertFalse("cleanup not called",cleanup.length()==0);
+
+    }
     
     @Test
     public void ctrlCTail(){

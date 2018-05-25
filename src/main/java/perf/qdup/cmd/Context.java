@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by wreicher
  * The context for executing the command
+ * This is the single API for a Cmd
  * consists of the current session, the coordinator, and the state
  */
 public final class Context {
@@ -27,7 +28,7 @@ public final class Context {
 
     }
     public void schedule(Cmd command,Runnable runnable, long delay){
-        run.getDispatcher().schedule(command,runnable,delay,TimeUnit.MILLISECONDS);
+        schedule(command,runnable,delay,TimeUnit.MILLISECONDS);
     }
     public void schedule(Cmd command,Runnable runnable, long delay, TimeUnit timeUnit){
         run.getDispatcher().schedule(command,runnable,delay,timeUnit);
@@ -45,9 +46,6 @@ public final class Context {
     public State getState(){return state;}
     public void addPendingDownload(String path,String destination){
         run.addPendingDownload(session.getHost(),path,destination);
-    }
-    public void notifyTailMod(Cmd oldTail,Cmd newTail){
-        //run.getDispatcher().onTailMod(oldTail,newTail);
     }
     public void abort(){
         run.abort();

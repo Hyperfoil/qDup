@@ -36,7 +36,6 @@ public class CommandDispatcher {
         throwable.printStackTrace(System.out);
     };
 
-
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     final static long THRESHOLD = 30_000; //30s
@@ -59,7 +58,7 @@ public class CommandDispatcher {
         public default void onStop(){}
     }
 
-
+    //Result called by watchers which will just invoke the next watcher on the current thread
     class WatcherResult implements CommandResult {
         private Context context;
         public WatcherResult(Context context){ this.context = context; }
@@ -90,12 +89,11 @@ public class CommandDispatcher {
     /**
      * Stores the Context inside the CommandResult so that the Dispatcher can be used WITH multiple Host+Script combinations.
      */
-    class ContextedResult implements CommandResult {
+    class ContextResult implements CommandResult {
         private Context context;
 
-        public ContextedResult(Context context){
+        public ContextResult(Context context){
             this.context = context;
-
         }
 
         private void logCmdOutput(Cmd command,String output){
@@ -170,13 +168,13 @@ public class CommandDispatcher {
 
     class ScriptResult {
         private Cmd script;
-        private ContextedResult result;
-        public ScriptResult(Cmd script,ContextedResult result){
+        private ContextResult result;
+        public ScriptResult(Cmd script,ContextResult result){
             this.script = script;
             this.result = result;
         }
         public Cmd getScript(){return script;}
-        public ContextedResult getResult(){return result;}
+        public ContextResult getResult(){return result;}
     }
     class ActiveCommandInfo {
         private String name;
@@ -444,37 +442,19 @@ public class CommandDispatcher {
     public void addScript(Cmd script,Context context){
         logger.trace("add script {} to {}",script,context.getSession().getHostName());
 
-        //TODO this deepCopy is probably not needed and may be bad
-        //  it might break state references based on UID
-        // it definitely breaks Env
-        // need it for running the same script on multiple hosts because script2Result assumes a unique Head.ID for each
-        //   invocation of the script
-        // I forget how it broke env... was CMd.with not being properly converted?
         script = script.deepCopy();
 
-        //Cmd.InvokeCmd can change the tail and cause this to close profiler too soon
-        //TODO make this thread safe
         ScriptResult previous = script2Result.put(
                 script.getHead(),
                 new ScriptResult(
                         script,
-                        new ContextedResult(context)
+                        new ContextResult(context)
                 )
         );
         if(previous!=null){
             logger.error("already have getScript.tail={} mapped to {}@{}",script.getTail().getUid(),script,context.getSession().getHostName());
         }
     }
-    //TODO this should no longer be needed now that script2Head stores the head cmd not tail
-//    public void onTailMod(Cmd previousTail,Cmd nextTail){
-//        //TODO make thread safe
-//        ScriptResult result = script2Result.get(previousTail);
-//        if(result!=null){
-//            logger.trace("changing {} tail from {} to {}",result.getScript(),previousTail,nextTail);
-//            script2Result.remove(previousTail);
-//            script2Result.put(nextTail,result);
-//        }
-//    }
     public String debug(){
         StringBuilder sb = new StringBuilder();
         script2Result.forEach(((cmd, scriptResult) -> {
@@ -544,7 +524,7 @@ public class CommandDispatcher {
             for(ScriptResult scriptResult : script2Result.values()){
                 Cmd script = scriptResult.getScript();
 
-                ContextedResult result = scriptResult.getResult();
+                ContextResult result = scriptResult.getResult();
 
                 scriptObservers.forEach(observer -> observer.onStart(script,result.context));
 
@@ -567,17 +547,14 @@ public class CommandDispatcher {
             activeCommands.get(command).setScheduledFuture(future);
         }
     }
-    public void shutdown(){
-        stop();
-        if(autoClose){
-          executor.shutdown();
-          scheduler.shutdown();
-        }
-        //scheduler.shutdownNow();
-    }
     public void clearActive(){
         closeSshSessions();
         activeCommands.forEach((cmd,activeCommand)->{
+            if (!commandObservers.isEmpty()){
+                for(CommandObserver c : commandObservers){
+                    c.onStop(cmd);
+                }
+            }
             if( activeCommand.getRunWatchers()!=null ){
                 activeCommand.getRunWatchers().stop();
             }
@@ -585,9 +562,17 @@ public class CommandDispatcher {
                 activeCommand.getScheduledFuture().cancel(true);
             }
         });
+        //TODO stop activeThreads?
         activeCommands.clear();
         activeCommandCount.set(0);
         dispatchObservers.forEach(c -> c.onStop());
+    }
+    public void shutdown(){
+        stop();
+        if(autoClose){
+            executor.shutdown();
+            scheduler.shutdown();
+        }
     }
     public void stop(){
         logger.debug("stop");
