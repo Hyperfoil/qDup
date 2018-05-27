@@ -1,6 +1,5 @@
 package perf.qdup;
 
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import perf.qdup.cmd.Cmd;
@@ -10,7 +9,6 @@ import perf.qdup.cmd.Script;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
-import perf.qdup.config.YamlParser;
 
 import java.io.File;
 import java.util.HashMap;

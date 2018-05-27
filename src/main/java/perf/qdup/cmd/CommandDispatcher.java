@@ -24,14 +24,13 @@ import java.util.stream.Collectors;
  *    Cmd.run() calls SshSession.sh(...)
  * SemaphoreStream.write checks checkForPrompt
  *   calls SshSession.run()
- *     calls CommandDispatch.next(output)
+ *     calls CommandResult.next(output)
  *
  *
  */
 public class CommandDispatcher {
 
     final static Thread.UncaughtExceptionHandler DefaultUncaughtExceptionHandler = (thread, throwable) ->{
-
         System.out.println("UNCAUGHT:"+thread.getName()+" "+throwable.getMessage());
         throwable.printStackTrace(System.out);
     };
@@ -39,7 +38,6 @@ public class CommandDispatcher {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     final static long THRESHOLD = 30_000; //30s
-
 
     public interface ScriptObserver {
         public default void onStart(Cmd command,Context context){}
@@ -87,14 +85,19 @@ public class CommandDispatcher {
         }
     }
     /**
-     * Stores the Context inside the CommandResult so that the Dispatcher can be used WITH multiple Host+Script combinations.
+     * Stores the Context inside the CommandResult with the base Cmd (Script) so that the Dispatcher can be used WITH multiple Host+Script combinations.
      */
-    class ContextResult implements CommandResult {
-        private Context context;
+    class ScriptContext implements CommandResult {
+        private final Context context;
+        private final Cmd command;
 
-        public ContextResult(Context context){
+        public ScriptContext(Cmd command, Context context){
+            this.command = command;
             this.context = context;
         }
+
+        public Context getContext(){return context;}
+        public Cmd getCommand(){return command;}
 
         private void logCmdOutput(Cmd command,String output){
             if(command!=null && output!=null){
@@ -166,16 +169,6 @@ public class CommandDispatcher {
         }
     }
 
-    class ScriptResult {
-        private Cmd script;
-        private ContextResult result;
-        public ScriptResult(Cmd script,ContextResult result){
-            this.script = script;
-            this.result = result;
-        }
-        public Cmd getScript(){return script;}
-        public ContextResult getResult(){return result;}
-    }
     class ActiveCommandInfo {
         private String name;
         private ScheduledFuture<?> scheduledFuture;
@@ -321,7 +314,7 @@ public class CommandDispatcher {
     private Map<Cmd,Thread> activeThreads;
     private HashSet<Integer> pastCommands;
 
-    private ConcurrentHashMap<Cmd,ScriptResult> script2Result;
+    private ConcurrentHashMap<Cmd,ScriptContext> commandContexts;
 
     private List<CommandObserver> commandObservers;
     private List<ScriptObserver> scriptObservers;
@@ -394,7 +387,7 @@ public class CommandDispatcher {
         this.activeCommands = new ConcurrentHashMap<>();
         this.activeThreads = new ConcurrentHashMap<>();
         this.pastCommands = new HashSet<>();
-        this.script2Result = new ConcurrentHashMap<>();
+        this.commandContexts = new ConcurrentHashMap<>();
 
         this.commandObservers = new LinkedList<>();
         this.scriptObservers = new LinkedList<>();
@@ -444,11 +437,11 @@ public class CommandDispatcher {
 
         script = script.deepCopy();
 
-        ScriptResult previous = script2Result.put(
+        ScriptContext previous = commandContexts.put(
                 script.getHead(),
-                new ScriptResult(
-                        script,
-                        new ContextResult(context)
+                new ScriptContext(
+                    script,
+                    context
                 )
         );
         if(previous!=null){
@@ -457,8 +450,8 @@ public class CommandDispatcher {
     }
     public String debug(){
         StringBuilder sb = new StringBuilder();
-        script2Result.forEach(((cmd, scriptResult) -> {
-            sb.append(scriptResult.getResult().context.getSession().getHost()+" = "+cmd.getUid()+" "+cmd.toString());
+        commandContexts.forEach(((cmd, scriptResult) -> {
+            sb.append(scriptResult.getContext().getSession().getHost()+" = "+cmd.getUid()+" "+cmd.toString());
             sb.append(System.lineSeparator());
         }));
         return sb.toString();
@@ -475,8 +468,8 @@ public class CommandDispatcher {
         }
         isStopped = false;
         dispatchObservers.forEach(c->c.onStart());
-        logger.info("starting {} scripts",script2Result.size());
-        if(!script2Result.isEmpty()){
+        logger.info("starting {} scripts", commandContexts.size());
+        if(!commandContexts.isEmpty()){
             BiConsumer<Cmd,Long> checkUpdate = (command,timestamp)->{
                 if(activeCommands.containsKey(command) /*&& command instanceof Sh*/){
                     logger.trace("Nanny checking:\n  host={}\n  command={}",
@@ -521,17 +514,15 @@ public class CommandDispatcher {
                     }
                 }, THRESHOLD, THRESHOLD, TimeUnit.MILLISECONDS);
             }
-            for(ScriptResult scriptResult : script2Result.values()){
-                Cmd script = scriptResult.getScript();
+            for(ScriptContext scriptContext : commandContexts.values()){
+                Cmd script = scriptContext.getCommand();
 
-                ContextResult result = scriptResult.getResult();
-
-                scriptObservers.forEach(observer -> observer.onStart(script,result.context));
+                scriptObservers.forEach(observer -> observer.onStart(script, scriptContext.getContext()));
 
                 logger.info("starting\n  host={}\n  script={}",
-                        result.context.getSession().getHostName(),
+                        scriptContext.getContext().getSession().getHostName(),
                         script);
-                dispatch(null,script,"",result.context,result);
+                dispatch(null,script,"", scriptContext.getContext(), scriptContext);
             }
         }else{
             checkActiveCount();
@@ -695,20 +686,20 @@ public class CommandDispatcher {
     }
     private boolean checkScriptDone(Cmd command, Context context){
         boolean rtrn = false;
-        if(script2Result.containsKey(command.getHead())){//we finished a script
+        if(commandContexts.containsKey(command.getHead())){//we finished a script
             context.getProfiler().stop();
 //            context.getProfiler().setLogger(context.getRunLogger());
 //            context.getProfiler().log();
             if(context.getRunLogger().isInfoEnabled()){
                 context.getRunLogger().info("Closing script state:\n  host={}\n  script={}\n{}",
                         context.getSession().getHostName(),
-                        script2Result.get(command.getHead()).getScript(),
+                        commandContexts.get(command.getHead()).getCommand(),
                         context.getState().tree());
             }
             rtrn = true;
                 scriptObservers.forEach(observer -> observer.onStop(command,context));
-                script2Result.get(command.getHead()).getResult().context.getSession().close();
-                script2Result.remove(command.getHead());
+                commandContexts.get(command.getHead()).getContext().getSession().close();
+                commandContexts.remove(command.getHead());
         }
         return rtrn;
     }
@@ -725,12 +716,12 @@ public class CommandDispatcher {
     public void closeSshSessions(){
         //TODO make thread safe
         logger.debug("{}.closeSshSessions",this);
-        script2Result.values().forEach(scriptResult -> {
-            logger.debug("closing connection to {}",scriptResult.getResult().context.getSession().getHostName());
+        commandContexts.values().forEach(scriptResult -> {
+            logger.debug("closing connection to {}",scriptResult.getContext().getSession().getHostName());
             //don't wait will force running commands (holding shell lock) to be closed
-            scriptResult.getResult().context.getSession().close(false);
+            scriptResult.getContext().getSession().close(false);
         });
-        script2Result.clear();
+        commandContexts.clear();
         isStopped=true;
     }
     public boolean isActive(){return activeCommandCount.get()>0;}
