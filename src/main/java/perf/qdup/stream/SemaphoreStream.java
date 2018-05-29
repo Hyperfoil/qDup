@@ -24,6 +24,12 @@ public class SemaphoreStream extends MultiStream {
         this.prompt = bytes;
         this.uid = counter.incrementAndGet();
     }
+
+    @Override
+    public void close() throws IOException{
+        super.close();
+    }
+
     public void setRunnable(Runnable runnable){
         this.runnable = runnable;
     }

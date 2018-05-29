@@ -69,6 +69,9 @@ public class SshSession implements Runnable, Consumer<String>{
 
     private Semaphore shellLock;
 
+    private PipedInputStream pipeIn;
+    private PipedOutputStream pipeOut;
+
     private SemaphoreStream semaphoreStream;
     private FilteredStream filteredStream;
     private FilteredStream stripStream;
@@ -82,6 +85,9 @@ public class SshSession implements Runnable, Consumer<String>{
     private CommandResult result;
 
     private Host host;
+    private String knownHosts;
+    private String identity;
+    private String passphrase;
 
     public SshSession(Host host){
         this(host,DEFAULT_KNOWN_HOSTS,DEFAULT_IDENTITY,DEFAULT_PASSPHRASE);
@@ -89,6 +95,9 @@ public class SshSession implements Runnable, Consumer<String>{
     public SshSession(Host host,String knownHosts,String identity,String passphrase){
 
         this.host = host;
+        this.knownHosts = knownHosts;
+        this.identity = identity;
+        this.passphrase = passphrase;
 
         shellLock = new Semaphore(1);
         sshClient = SshClient.setUpDefaultClient();
@@ -100,8 +109,22 @@ public class SshSession implements Runnable, Consumer<String>{
         //StrictHostKeyChecking=no
         sshClient.setServerKeyVerifier((clientSession1,remoteAddress,serverKey)->{return true;});
 
+
+        connect(-1);
+
+//        sshConfig = new Properties();
+//        sshConfig.put("StrictHostKeyChecking", "no");
+    }
+
+    public boolean connect(long timeoutMillis){
+
+        if(isOpen()){
+            return true;
+        }
+        boolean rtrn = false;
+
         try {
-            clientSession = sshClient.connect(host.getUserName(),host.getHostName(),host.getPort()).verify().getSession();
+            clientSession = sshClient.connect(host.getUserName(),host.getHostName(),host.getPort()).verify(10_000).getSession();
             clientSession.addPublicKeyIdentity(SecurityUtils.loadKeyPairIdentity(
                     identity,
                     Files.newInputStream((new File(identity)).toPath()),
@@ -109,6 +132,44 @@ public class SshSession implements Runnable, Consumer<String>{
             ));
 
             clientSession.auth().verify(5_000);
+
+            //setup all the streams
+                pipeIn = new PipedInputStream();
+                pipeOut = new PipedOutputStream(pipeIn);
+                //the output of the current sh command
+                outputQueue = new LinkedBlockingQueue<>();
+                shStream = new ByteArrayOutputStream();
+
+                commandStream = new PrintStream(pipeOut);
+
+                filteredStream = new FilteredStream();
+                stripStream = new FilteredStream();
+
+                semaphoreStream = new SemaphoreStream(shellLock,("\n"+prompt).getBytes());
+                promptStream = new SuffixStream();
+
+                filteredStream.addFilter("prompt","\n"+prompt, "$:"/*newPrompt*/);//replace the unique string prompt WITH something more user friendly
+                stripStream.addFilter("prompt","$:","");
+
+                stripStream.addFilter("^C",new byte[]{0,0,0,3});
+                stripStream.addFilter("^P",new byte[]{0,0,0,16});
+                stripStream.addFilter("^T",new byte[]{0,0,0,20});
+                stripStream.addFilter("^X",new byte[]{0,0,0,24});
+                stripStream.addFilter("^@",new byte[]{0,0,0});
+
+                lineEmittingStream = new LineEmittingStream();
+                lineEmittingStream.addConsumer(this);
+
+                filteredStream.addStream("strip",stripStream); // echo the entire channelSession to sh output
+
+                stripStream.addStream("lines",lineEmittingStream);
+                stripStream.addStream("sh",shStream);
+
+                semaphoreStream.addStream("filtered",filteredStream);
+                //semaphoreStream.addStream("out",System.out);
+                semaphoreStream.addStream("promptMonitor",promptStream);
+
+                semaphoreStream.setRunnable(this);
 
 
             channelShell = clientSession.createShellChannel();
@@ -122,22 +183,7 @@ public class SshSession implements Runnable, Consumer<String>{
             channelShell.setPtyLines(80);
             channelShell.setUsePty(true);
 
-            PipedInputStream pipeIn = new PipedInputStream();
-            PipedOutputStream pipeOut = new PipedOutputStream(pipeIn);
-
             channelShell.setIn(pipeIn);
-
-            //the output of the current sh command
-            outputQueue = new LinkedBlockingQueue<>();
-            shStream = new ByteArrayOutputStream();
-
-            commandStream = new PrintStream(pipeOut);
-
-            filteredStream = new FilteredStream();
-            stripStream = new FilteredStream();
-
-            semaphoreStream = new SemaphoreStream(shellLock,("\n"+prompt).getBytes());
-            promptStream = new SuffixStream();
 
             channelShell.setOut(semaphoreStream);
             channelShell.setErr(semaphoreStream);//prompt goes to error stream so have to listen there too
@@ -156,16 +202,12 @@ public class SshSession implements Runnable, Consumer<String>{
 
             filteredStream.addStream("strip",stripStream);
 
-            stripStream.addStream("lines",lineEmittingStream);
-            stripStream.addStream("sh",shStream);
+            if(timeoutMillis>0){
+                channelShell.open().verify(timeoutMillis).isOpened();
+            }else{
+                channelShell.open().verify().isOpened();
+            }
 
-            semaphoreStream.addStream("filtered",filteredStream);
-            //semaphoreStream.addStream("out",System.out);
-            semaphoreStream.addStream("promptMonitor",promptStream);
-
-            semaphoreStream.setRunnable(this);
-
-            channelShell.open();
 
             sh("unset PROMPT_COMMAND; export PS1='" + prompt + "'");
             sh("pwd");
@@ -187,7 +229,7 @@ public class SshSession implements Runnable, Consumer<String>{
 
         } catch (GeneralSecurityException | IOException e) {
 
-            e.printStackTrace();
+            //e.printStackTrace();
             logger.error("Exception while connecting to {}@{}",host.getUserName(),host.getHostName());
 
         } finally {
@@ -196,9 +238,10 @@ public class SshSession implements Runnable, Consumer<String>{
                     clientSession==null?"false":clientSession.isOpen(),
                     channelShell==null?"false":channelShell.isOpen()
             );
+            rtrn = isOpen();
         }
-        sshConfig = new Properties();
-        sshConfig.put("StrictHostKeyChecking", "no");
+
+        return rtrn;
     }
     public boolean isOpen(){return channelShell!=null && channelShell.isOpen() && clientSession!=null && clientSession.isOpen();}
     public String getUserName(){return host.getUserName();}
@@ -268,6 +311,10 @@ public class SshSession implements Runnable, Consumer<String>{
             logger.error("Shell is not connected for response");
             //TODO abort because session isn't open?
         }
+    }
+    //has to NOT acquire the lock
+    public void reboot(){
+        sh("reboot",false,null,null,null);
     }
     public void sh(String command){
         sh(command,true,null,null,null);

@@ -67,14 +67,14 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     private Local local;
 
     private CommandDispatcher.ScriptObserver envObserver;
-    private Map<Host,Env.Diff> setupEnvDiff;
+    private final Map<Host,Env.Diff> setupEnvDiff;
+    private final Map<Host,Env> startEnvs;
     private HashedLists<Host,PendingDownload> pendingDownloads;
 
     private CountDownLatch runLatch = new CountDownLatch(1);
     private Logger runLogger;
     private ConsoleAppender<ILoggingEvent> consoleAppender;
     private FileAppender<ILoggingEvent> fileAppender;
-
 
     public Run(String outputPath,RunConfig config,CommandDispatcher dispatcher){
         if(config==null || dispatcher==null){
@@ -128,12 +128,10 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             runLogger.info("{} reached {}",config.getName(),signal_name);
         });
 
-
         this.pendingDownloads = new HashedLists<>();
         this.setupEnvDiff = new ConcurrentHashMap<>();
+        this.startEnvs = new ConcurrentHashMap<>();
         this.envObserver = new CommandDispatcher.ScriptObserver() {
-
-            private Map<Host,Env> startEnvs = new ConcurrentHashMap<>();
 
             @Override
             public void onStart(Cmd command, Context context) {
@@ -178,6 +176,8 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     public void postStop(){
         timestamps.put(stage.getName()+"Stop",System.currentTimeMillis());
         nextStage();
+        this.setupEnvDiff.clear();
+
     }
     private void nextStage(){
         switch (stage){
@@ -228,6 +228,15 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             timestamps.put("downloadStop",System.currentTimeMillis());
             pendingDownloads.clear();
         }
+    }
+    public void setStartEnv(SshSession session){
+        //session.clearCommand();
+        session.sh("env");
+        String env = session.getOutput();
+        Env start = new Env(env);
+        startEnvs.put(session.getHost(),start);
+        logger.info("{} env = \"{}\" \n Env.start = {}",session.getHost(),env,start.debug());
+
     }
     public void done(){
         coordinator.clearWaiters();
@@ -295,6 +304,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
 
         //Observer to set the Env.Diffs
         dispatcher.addScriptObserver(envObserver);
+
         for(Host host : config.getSetupHosts()){
 
             State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
