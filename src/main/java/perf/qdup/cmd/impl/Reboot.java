@@ -130,32 +130,5 @@ public class Reboot extends Cmd {
     public Cmd copy() {
         return new Reboot(this.timeout,this.target,this.password);
     }
-
-
-    public static void main(String[] args) {
-        Script reboot = new Script("reboot");
-        reboot.then(Cmd.sh("uptime"));
-        reboot.then(Cmd.reboot("5m","4.5.5","t3stp4ssw0rd"));
-        reboot.then(Cmd.sh("uptime"));
-        reboot.then(Cmd.sh("uname -r"));
-        reboot.then(Cmd.sh("w"));
-
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        builder.addHostAlias("desk","test@desk:22");
-
-        builder.addScript(reboot);
-
-        builder.addHostToRole("role","desk");
-        builder.addRoleRun("role","reboot",new HashMap<>());
-
-        RunConfig config = builder.buildConfig();
-        CommandDispatcher dispatcher = new CommandDispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
-
-        run.run();
-
-        dispatcher.shutdown();
-
-    }
+    
 }
