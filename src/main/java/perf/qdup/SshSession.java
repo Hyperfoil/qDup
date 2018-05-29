@@ -154,7 +154,7 @@ public class SshSession implements Runnable, Consumer<String>{
             lineEmittingStream = new LineEmittingStream();
             lineEmittingStream.addConsumer(this);
 
-            filteredStream.addStream("strip",stripStream); // echo the entire channelSession to sh output
+            filteredStream.addStream("strip",stripStream);
 
             stripStream.addStream("lines",lineEmittingStream);
             stripStream.addStream("sh",shStream);
@@ -379,7 +379,10 @@ public class SshSession implements Runnable, Consumer<String>{
     @Override
     public void run() {
         lineEmittingStream.forceEmit();
-        String output = shStream.toString();
+        String output = shStream.toString()
+                .replaceAll("^[\r\n]+","")  //replace leading newlines
+                .replaceAll("[\r\n]+$",""); //replace trailing newlines
+
         shStream.reset();
         try {
             outputQueue.put(output);

@@ -23,6 +23,82 @@ public class RunTest extends SshTestBase{
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
+    @Test
+    public void sh_output_trim(){
+        StringBuilder output = new StringBuilder();
+
+        Script runScript = new Script("cmd-output-trim");
+        runScript
+            .then(Cmd.sh("if true; then echo SUCCESS; fi")
+                .then(Cmd.code((input,state)->{
+                    output.append(input);
+                    return Result.next(input);
+                }))
+            );
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.addHostAlias("local",getHost().toString());
+        builder.addScript(runScript);
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","cmd-output-trim",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        boolean hasNewLine = false;
+        for(int i=0; i<output.length();i++){
+            char c = output.charAt(i);
+            hasNewLine = hasNewLine || '\n' == c || '\r' ==c;
+        }
+        assertFalse("output shoult not have \\r or \\n",hasNewLine);
+    }
+
+    @Test
+    public void echo_exitStatus(){
+
+        StringBuilder echoChildInput = new StringBuilder();
+        StringBuilder pwdChildInput = new StringBuilder();
+        StringBuilder pwdSiblingInput = new StringBuilder();
+
+        Script runScript = new Script("run-echo-exitStatus");
+        runScript
+            .then(Cmd.sh("pwd")
+                .then(Cmd.sh("echo $?")
+                    .then(Cmd.code((input,state)->{
+                        echoChildInput.append(input);
+                        return Result.next(input);
+                    }))
+                )
+                .then(Cmd.code((input,state)->{
+                    pwdChildInput.append(input);
+                    return Result.next(input);
+                }))
+            );
+        runScript.then(Cmd.code((input,state)->{
+            pwdSiblingInput.append(input);
+            return Result.next(input);
+        }));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.addHostAlias("local",getHost().toString());
+        builder.addScript(runScript);
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run-echo-exitStatus",new HashMap<>());
+
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        assertEquals("echo child should see echo output","0",echoChildInput.toString());
+        assertEquals("pwd child should see echo output","0",pwdChildInput.toString());
+        assertEquals("pwd sibling should see pwd",System.getProperty("user.home"),pwdSiblingInput.toString());
+    }
 
     @Test(timeout=45_000)
     public void forEach_lastCommand(){

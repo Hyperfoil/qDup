@@ -106,7 +106,7 @@ public class CommandDispatcher {
 
         private void logCmdOutput(Cmd command,String output){
             if(command!=null && output!=null){
-
+                command.setOutput(output);
                 if(command instanceof Sh){
                     if(!command.isSilent()){
                         //include output
@@ -131,15 +131,19 @@ public class CommandDispatcher {
 
         @Override
         public void next(Cmd command,String output) {
+            if(command!=null){
+                command.setOutput(output);
+            }
             //get off the calling thread
-            logger.trace("queueing run-next={}\n  host={}\n  command={}",
+            logger.trace("queueing run-next={}\n  host={}\n  command={} output={}",
                     command.getNext(),
                     context.getSession().getHost(),
-                    command
+                    command,
+                    output
                     );
             executor.submit(()->{
-                commandObservers.forEach(o->o.onNext(command,output));
                 logCmdOutput(command,output);
+                commandObservers.forEach(o->o.onNext(command,output));
                 dispatch(command,command.getNext(),output,this.context,this);
             });
         }
@@ -648,7 +652,7 @@ public class CommandDispatcher {
             return;
         }
         if(previousCommand!=null){
-            previousCommand.setOutput(input);
+            //previousCommand.setOutput(input); why is this done here? should be done in CommandResult
             for(CommandObserver observer : commandObservers){
                 observer.onStop(previousCommand);
             }
