@@ -4,10 +4,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import perf.qdup.Run;
 import perf.qdup.SshTestBase;
-import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.CommandDispatcher;
-import perf.qdup.cmd.Result;
-import perf.qdup.cmd.Script;
+import perf.qdup.State;
+import perf.qdup.cmd.*;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
@@ -20,8 +18,55 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 
 public class ForEachTest extends SshTestBase {
+
+    //created for https://github.com/RedHatPerf/qDup/issues/8
+    @Test
+    public void getSkip_nullWhenLast(){
+        Cmd forEach = Cmd.forEach("FOO")
+            .then(Cmd.sh("1"))
+            .then(Cmd.sh("2"));
+        assertNull("forEach skip should be null\n"+forEach.tree(2,true),forEach.getSkip());
+    }
+    @Test
+    public void getSkip_notNullIfNotLast(){
+        Cmd parent = Cmd.sh("parent");
+        Cmd child = Cmd.sh("child");
+        Cmd forEach = Cmd.forEach("FOO");
+
+        parent
+            .then(
+                forEach
+                .then(Cmd.sh("1"))
+                .then(Cmd.sh("2"))
+            )
+            .then(child);
+
+        assertEquals("for-each skip should be child\n"+forEach.tree(2,true),child,forEach.getSkip());
+    }
+
+    @Test
+    public void run_defined_newlines(){
+        Cmd forEach = Cmd.forEach("FOO","1\n2");
+        Context context = new Context(null,new State(""),null,null);
+        SpyCommandResult result = new SpyCommandResult();
+
+        result.clear();
+        forEach.run("",context,result);
+        assertEquals("next","1",result.getNext());
+        assertNull("skip not called",result.getSkip());
+
+        result.clear();
+        forEach.run("",context,result);
+        assertEquals("next","2",result.getNext());
+        assertNull("skip not called",result.getSkip());
+        result.clear();
+        forEach.run("",context,result);
+        assertNull("next should be null",result.getNext());
+        assertEquals("skip should be empty","",result.getSkip());
+    }
 
     @Test
     public void getTail_noTail(){

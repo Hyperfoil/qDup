@@ -19,7 +19,7 @@ public class Regex extends Cmd {
     }
     public String getPattern(){return patternString;}
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         String populatedPattern = populateStateVariables(patternString,this,context.getState());
         String newPattern = populatedPattern;
 

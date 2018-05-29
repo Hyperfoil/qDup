@@ -15,6 +15,11 @@ public class SpyCommandResult implements CommandResult {
         skip = null;
     }
 
+    public void clear(){
+        next=null;
+        skip=null;
+        updates.clear();
+    }
 
     @Override
     public void next(Cmd command, String output) {

@@ -9,7 +9,7 @@ public class Signal extends Cmd {
     public Signal(String name){ this.name = name;}
     public String getName(){return name;}
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         String populatedName = Cmd.populateStateVariables(name,this,context.getState());
         context.getCoordinator().signal(populatedName);
         result.next(this,input);

@@ -14,7 +14,7 @@ public class Countdown extends Cmd {
 
     }
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         int newCount = context.getCoordinator().decrease(this.name,this.startCount);
         if(newCount <= 0){
             result.next(this,input);

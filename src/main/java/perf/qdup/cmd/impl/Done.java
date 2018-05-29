@@ -6,7 +6,7 @@ import perf.qdup.cmd.Context;
 
 public class Done extends Cmd {
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         context.getRunLogger().info("done");
         context.done();
     }

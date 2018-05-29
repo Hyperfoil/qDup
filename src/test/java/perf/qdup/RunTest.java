@@ -23,7 +23,39 @@ public class RunTest extends SshTestBase{
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
-    //Still failes when running all tests for the class in intellij but individually in intellij and not in terminal
+
+    @Test(timeout=45_000)
+    public void forEach_lastCommand(){
+        AtomicInteger counter = new AtomicInteger(0);
+        Script runScript = new Script("run-for-each");
+        runScript
+            .then(Cmd.code((input,state)->{//force the input for next command
+                return Result.next("1\n2\n3");
+            }))
+            .then(Cmd.forEach("FOO")
+                .then(Cmd.code((input,state)->{
+                    counter.incrementAndGet();
+                    return Result.next(input);
+                }))
+            );
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+
+        builder.addHostAlias("local",getHost().toString());
+        builder.addScript(runScript);
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run-for-each",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        assertEquals("for-each should run 3 times",3,counter.get());
+    }
+
     @Test(timeout=45_000)
     public void abort_callsCleanup(){
         StringBuilder setup = new StringBuilder();
@@ -59,8 +91,6 @@ public class RunTest extends SshTestBase{
         builder.addScript(setupScript);
         builder.addScript(runScript);
         builder.addScript(cleanupScript);
-
-
 
         builder.addHostToRole("role","local");
         builder.addRoleSetup("role","setup-abort",new HashMap<>());

@@ -15,7 +15,7 @@ public class InvokeCmd extends Cmd {
     public Cmd getCommand(){return command;}
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         //move  to constructor to avoid issue where dispatcher has the wrong tail cmd?
         injectThen(this.command,null);//null context so we don't updated tail change
         result.next(this,input);

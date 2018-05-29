@@ -47,7 +47,7 @@ public class JsCmd extends Cmd {
     }
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         if(function!=null){
             try{
                 Object rtrn = this.function.apply(input,context.getState());

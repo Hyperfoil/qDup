@@ -23,7 +23,7 @@ public class CodeCmd extends Cmd {
     public Code getCode(){return code;}
     public String getClassName(){return className;}
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         Result codeResult = Result.skip(input);
         if(className!=null){
             try {

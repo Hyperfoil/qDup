@@ -20,7 +20,7 @@ public class ReadState extends Cmd {
     }
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         //use populateVariable in case it is in WITH or context
         String value = Cmd.populateVariable(key,this,context.getState(),null);
         if(value==null || value.isEmpty()){

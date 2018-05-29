@@ -21,7 +21,7 @@ public abstract class Cmd {
     public abstract static class LoopCmd extends Cmd {
         @Override
         protected void setSkip(Cmd skip){
-            //prevent propegating skip to last then because it needs to skip to this
+            //prevent propagating skip to last then because it needs to skip to this
             this.forceSkip(skip);
         }
 
@@ -31,7 +31,9 @@ public abstract class Cmd {
             Cmd currentTail = this.getTail();
             Cmd rtrn = super.then(command,true);
             currentTail.forceNext(command);
-            currentTail.forceSkip(command);//if current tail is skipping it's children
+            if(!this.equals(currentTail)){
+                currentTail.forceSkip(command);//if current tail is skipping it's children
+            }
             commandTail.forceNext(this);
             command.setSkip(this);
             return rtrn;
@@ -65,7 +67,7 @@ public abstract class Cmd {
 
     private static class NO_OP extends Cmd{
         @Override
-        protected void run(String input, Context context, CommandResult result) {
+        public void run(String input, Context context, CommandResult result) {
             result.next(this,input);
         }
         @Override
@@ -345,7 +347,7 @@ public abstract class Cmd {
         });
         watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watch:",debug);});
         timers.forEach((timeout,cmdList)->{
-            rtrn.append(String.format("%"+(correctedIndent+4)+"stimer: %i%n","",timeout));
+            rtrn.append(String.format("%"+(correctedIndent+4)+"stimer: %d%n","",timeout));
             cmdList.forEach(cmd->{
                 cmd.tree(rtrn,correctedIndent+6,"",debug);
             });
@@ -427,7 +429,7 @@ public abstract class Cmd {
         }
         run(input,context,result);
     }
-    protected abstract void run(String input, Context context, CommandResult result);
+    public abstract void run(String input, Context context, CommandResult result);
 
     protected abstract Cmd clone();
 

@@ -7,7 +7,7 @@ import perf.qdup.cmd.CommandResult;
 public class CtrlC extends Cmd {
     public CtrlC(){}
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         context.getSession().ctrlC();
         result.next(this,input); //now waits for shell to return prompt
     }

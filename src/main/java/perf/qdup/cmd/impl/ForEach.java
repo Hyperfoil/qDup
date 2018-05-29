@@ -20,13 +20,13 @@ public class ForEach extends Cmd.LoopCmd {
     }
     public ForEach(String name,String input){
         this.name = name;
-        this.input = "";
+        this.input = input;
         this.split = null;
         this.index = -1;
     }
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         if(split == null){
             String toSplit = this.input.isEmpty() ? input.trim() : Cmd.populateStateVariables(this.input,this,context.getState());
 
@@ -35,7 +35,10 @@ public class ForEach extends Cmd.LoopCmd {
             if(toSplit.contains("\n")){
                 split = Arrays.asList(toSplit.split("\r?\n"));
             }else {
-                //
+                //TODO [a, b, c]
+                //TODO [a b c]
+                //TODO a, b, c
+                //TODO a b c
             }
         }
 

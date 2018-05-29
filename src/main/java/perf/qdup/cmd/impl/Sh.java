@@ -30,7 +30,7 @@ public class Sh extends Cmd {
     }
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         String commandString = populateStateVariables(command,this,context.getState());
         if(prompt.isEmpty()) {
             context.getSession().sh(commandString, this, result);

@@ -30,7 +30,7 @@ public class QueueDownload extends Cmd {
     public String toString(){return "queue-download: " + path + (destination.isEmpty()?"":(" -> "+destination));}
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHostName();
         String resolvedPath = Cmd.populateStateVariables(getPath(),this,context.getState());
         String resolvedDestination = Cmd.populateStateVariables(basePath + File.separator + getDestination(),this,context.getState());

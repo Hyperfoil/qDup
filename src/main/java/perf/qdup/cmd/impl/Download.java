@@ -19,7 +19,7 @@ public class Download extends Cmd {
     public String getPath(){return path;}
     public String getDestination(){return destination;}
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
 
         String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHostName();
         String userName = context.getSession().getUserName();

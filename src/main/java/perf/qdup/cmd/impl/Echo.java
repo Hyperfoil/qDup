@@ -8,7 +8,7 @@ public class Echo extends Cmd {
     public Echo(){}
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         System.out.println(input); //TODO should echo also go to the run logger?
         result.next(this,input);
     }

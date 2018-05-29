@@ -12,7 +12,7 @@ public class RepeatUntilSignal extends Cmd.LoopCmd {
     public String getName(){return name;}
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         String populatedName = Cmd.populateStateVariables(name,this,context.getState());
 
         if(populatedName==null || populatedName.isEmpty()){

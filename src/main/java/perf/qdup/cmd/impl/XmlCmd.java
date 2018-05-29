@@ -53,7 +53,7 @@ public class XmlCmd extends Cmd {
     }
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
 
 
         Xml xml = null;

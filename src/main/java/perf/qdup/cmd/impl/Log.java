@@ -13,7 +13,7 @@ public class Log extends Cmd {
         }
     }
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         context.getRunLogger().info(Cmd.populateStateVariables(value,this,context.getState()));
         result.next(this,input);
     }

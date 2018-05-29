@@ -27,7 +27,7 @@ public class SetState extends Cmd {
     }
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         String populatedValue = this.value==null ? input.trim() : Cmd.populateStateVariables(this.value,this,context.getState());
         String populatedKey = Cmd.populateStateVariables(this.key,this,context.getState());
         context.getState().set(populatedKey,populatedValue);

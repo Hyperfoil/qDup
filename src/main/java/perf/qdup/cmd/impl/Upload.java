@@ -17,7 +17,7 @@ public class Upload extends Cmd {
     public String getPath(){return path;}
     public String getDestination(){return destination;}
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
 
         String localPath = populateStateVariables(path,this, context.getState());
         String destinationPath =  populateStateVariables(destination ,this, context.getState());

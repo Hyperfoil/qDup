@@ -22,7 +22,7 @@ public class Script extends Cmd {
     }
 
     @Override
-    protected void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context, CommandResult result) {
         result.next(this, input);
     }
 
