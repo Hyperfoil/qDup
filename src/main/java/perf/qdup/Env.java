@@ -20,7 +20,8 @@ public class Env {
         "SELINUX_LEVEL_REQUESTED",
         "SELINUX_ROLE_REQUESTED",
         "SELINUX_USE_CURRENT_RANGE",
-        "HOSTNAME"
+        "HOSTNAME",
+        "HISTCMD"
     );
 
 
