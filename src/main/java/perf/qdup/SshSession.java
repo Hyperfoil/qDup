@@ -174,13 +174,11 @@ public class SshSession implements Runnable, Consumer<String>{
 
             //is this what is bugging out envTest?
             try {
-                shellLock.acquire();
                 try{
+                    shellLock.acquire();//technically should be before try{ for cases where acquire throws the exception
                 }finally{
                     shellLock.release();
                 }
-                //moved release to finally block, check permits to ensure it was acquired
-                //shellLock.release();//reset so the next call to aquire for sh(...) isn't blocked
             } catch (InterruptedException e) {
                 logger.warn("{}@{} interrupted while waiting for initial prompt",host.getUserName(),host.getHostName());
                 e.printStackTrace();
@@ -202,7 +200,6 @@ public class SshSession implements Runnable, Consumer<String>{
         sshConfig = new Properties();
         sshConfig.put("StrictHostKeyChecking", "no");
     }
-    //TODO isOpen should check the actual session is Open?
     public boolean isOpen(){return channelShell!=null && channelShell.isOpen() && clientSession!=null && clientSession.isOpen();}
     public String getUserName(){return host.getUserName();}
     public String getHostName(){return host.getHostName();}
@@ -237,19 +234,20 @@ public class SshSession implements Runnable, Consumer<String>{
             }
         }else{
             logger.error("Shell is not connected for ctrlC");
-            //TODO abort becuase session isn't open?
         }
     }
     public String getOutput(){
         String rtrn = "";
-        try {
-            synchronized (outputQueue) {
-                rtrn = outputQueue.take();
-                outputQueue.put(rtrn);
+        if(isOpen()) {
+            try {
+                synchronized (outputQueue) {
+                    rtrn = outputQueue.take();
+                    outputQueue.put(rtrn);
+                }
+            } catch (InterruptedException e) {
+                //TODO handle interruption of getOutput
+                //e.printStackTrace();
             }
-        } catch (InterruptedException e) {
-            //TODO handle interruption of getOutput
-            //e.printStackTrace();
         }
         return rtrn;
     }

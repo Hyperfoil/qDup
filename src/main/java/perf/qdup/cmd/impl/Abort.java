@@ -15,8 +15,8 @@ public class Abort extends Cmd {
         String populatedMessage = Cmd.populateStateVariables(message,this,context.getState());
         context.getRunLogger().info("abort {}",populatedMessage);
         context.abort();
-        //TODO I don't think it actually has to call result.next
-        result.next(this,input);//abort no longer ends the run but the stage so it has to return
+
+        //result.next(this,input);
     }
 
     public String getMessage(){return message;}

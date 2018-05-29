@@ -20,7 +20,7 @@ public class ScriptCmd extends Cmd {
     protected void run(String input, Context context, CommandResult result) {
         Script toCall = context.getScript(this.name,this);
         if(toCall == null){
-            logger.debug("could not find script: {}",this.name);
+            logger.warn("could not find script: {}",this.name);
         }else {
             Cmd copyCmd = toCall.deepCopy();
             injectThen(copyCmd, context);

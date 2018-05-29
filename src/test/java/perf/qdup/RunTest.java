@@ -23,28 +23,34 @@ public class RunTest extends SshTestBase{
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
-    @Test
+    //Still failes when running all tests for the class in intellij but individually in intellij and not in terminal
+    @Test(timeout=45_000)
     public void abort_callsCleanup(){
         StringBuilder setup = new StringBuilder();
+        StringBuilder postAbort = new StringBuilder();
         StringBuilder run = new StringBuilder();
         StringBuilder cleanup = new StringBuilder();
 
-        Script setupScript = new Script("setup");
+        Script setupScript = new Script("setup-abort");
         setupScript.then(Cmd.code((input,sate)->{
             setup.append(System.currentTimeMillis());
-            return Result.next(input);
+            return Result.next("setup-abort @ "+System.currentTimeMillis());
         }));
-        setupScript.then(Cmd.abort("aborted"));
-
-        Script runScript = new Script("run");
+        setupScript.then(Cmd.abort("abort-aborted"));
+        setupScript.then(Cmd.code((input,sate)->{
+            postAbort.append(System.currentTimeMillis());
+            return Result.next("post-abort called");
+        }));
+        Script runScript = new Script("run-abort");
         runScript.then(Cmd.code((input,state)->{
             run.append(System.currentTimeMillis());
             return Result.next(input);
         }));
-        Script cleanupScript =new Script("cleanup");
+        Script cleanupScript =new Script("cleanup-abort");
+        cleanupScript.then(Cmd.log("fooooooooooo"));
         cleanupScript.then(Cmd.code((input,state)->{
             cleanup.append(System.currentTimeMillis());
-            return Result.next(input);
+            return Result.next("invoked cleanup-abort "+System.currentTimeMillis());
         }));
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
@@ -54,10 +60,12 @@ public class RunTest extends SshTestBase{
         builder.addScript(runScript);
         builder.addScript(cleanupScript);
 
+
+
         builder.addHostToRole("role","local");
-        builder.addRoleSetup("role","setup",new HashMap<>());
-        builder.addRoleRun("role","run",new HashMap<>());
-        builder.addRoleCleanup("role","cleanup",new HashMap<>());
+        builder.addRoleSetup("role","setup-abort",new HashMap<>());
+        builder.addRoleRun("role","run-abort",new HashMap<>());
+        builder.addRoleCleanup("role","cleanup-abort",new HashMap<>());
 
         RunConfig config = builder.buildConfig();
         CommandDispatcher dispatcher = new CommandDispatcher();
@@ -65,9 +73,11 @@ public class RunTest extends SshTestBase{
 
         doit.run();
 
-        assertFalse("setup not called",setup.length()==0);
-        assertTrue("run should not be called",run.length()==0);
-        assertFalse("cleanup not called",cleanup.length()==0);
+
+        assertFalse("setup not called:"+setup.toString()+"||",setup.length()==0);
+        assertTrue("postAbort should not be called:"+postAbort.toString()+"||",postAbort.length()==0);
+        assertTrue("run should not be called:"+run.toString()+"||",run.length()==0);
+        assertFalse("cleanup not called:"+cleanup.toString()+"||",cleanup.length()==0);
 
     }
 
@@ -170,8 +180,6 @@ public class RunTest extends SshTestBase{
         TestServer testServer2 = new TestServer();
         testServer2.start();
 
-        System.out.println("testServer1="+testServer1.getHost().toString());
-        System.out.println("testServer2="+testServer2.getHost().toString());
 
 
         AtomicInteger counter = new AtomicInteger();
@@ -252,9 +260,9 @@ public class RunTest extends SshTestBase{
         final AtomicLong cleanupTimer = new AtomicLong();
         final AtomicBoolean staysFalse = new AtomicBoolean(false);
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-        Script doneScript = new Script("run-done");
+        Script runDone = new Script("run-done");
 
-        doneScript
+        runDone
             .then(Cmd.sh("echo foo > /tmp/foo.txt"))
             .then(Cmd.queueDownload("/tmp/foo.txt"))
             .then(Cmd.sleep("2_000"))
@@ -264,33 +272,39 @@ public class RunTest extends SshTestBase{
                 staysFalse.set(true);
                 return Result.next(input);
             }));
-        Script waitScript = new Script("run-wait");
-        waitScript.then(Cmd.waitFor("NEVER"));
-        Script signalScript = new Script("run-signal");
-        signalScript.then(Cmd.sleep("30s")).then(Cmd.signal("NEVER"));
-        Script cleanupScript = new Script("cleanup");
-        cleanupScript.then(Cmd.code((input,state)->{
+        Script runWait = new Script("run-wait");
+        runWait.then(Cmd.waitFor("NEVER"));
+
+        Script runSignal = new Script("run-signal");
+        runSignal.then(Cmd.sleep("30s")).then(Cmd.signal("NEVER"));
+
+        Script cleanup = new Script("post-run-cleanup");
+        cleanup.then(Cmd.code((input,state)->{
             first.append(System.currentTimeMillis());
             cleanupTimer.set(System.currentTimeMillis());
             return Result.next(input);
         }));
 
-        builder.addScript(doneScript);
-        builder.addScript(waitScript);
-        builder.addScript(signalScript);
-        builder.addScript(cleanupScript);
+        builder.addScript(runDone);
+        builder.addScript(runWait);
+        builder.addScript(runSignal);
+        builder.addScript(cleanup);
+
         builder.addHostAlias("local",getHost().toString());//+testServer.getPort());
         builder.addHostToRole("role","local");
+
         builder.addRoleRun("role","run-done",new HashMap<>());
         builder.addRoleRun("role","run-wait",new HashMap<>());
         builder.addRoleRun("role","run-signal",new HashMap<>());
-        builder.addRoleCleanup("role","cleanup",new HashMap<>());
+
+        builder.addRoleCleanup("role","post-run-cleanup",new HashMap<>());
 
         RunConfig config = builder.buildConfig();
         CommandDispatcher dispatcher = new CommandDispatcher();
         Run run = new Run("/tmp",config,dispatcher);
         long start = System.currentTimeMillis();
         run.run();
+
         assertFalse("script should not invoke beyond a done",staysFalse.get());
         assertTrue("cleanupTimer should be > 0",cleanupTimer.get() > 0);
         assertTrue("done should stop before NEVER is signalled",cleanupTimer.get() - start < 30_000);
@@ -301,7 +315,6 @@ public class RunTest extends SshTestBase{
         File downloaded = new File(outputPath.getAbsolutePath(),"laptop/foo.txt");
 
         assertTrue("queue-download should execute despite done",downloaded.exists());
-
 
         foo.delete();
         downloaded.delete();
@@ -338,7 +351,7 @@ public class RunTest extends SshTestBase{
 
         String firstString = first.toString();
         String secondString = second.toString();
-        assertEquals("first should container the 10000 timeout value","2000",firstString);
+        assertEquals("first should contain the 2000 timeout value","2000",firstString);
         assertEquals("second should not run because the parent command finished","",secondString);
     }
 
@@ -381,7 +394,6 @@ public class RunTest extends SshTestBase{
 
         String runEnv = runEnvBuffer.toString();
 
-        System.out.println(runEnv);
         assertTrue("run-env output should contain FOO=FOO but was\n"+runEnv,runEnv.contains("FOO=FOO"));
         assertTrue("run-env output should contain VERTX_HOME=/tmp",runEnv.contains("VERTX_HOME=/tmp"));
         assertTrue("run-env output should contain JAVA_OPTS",runEnv.contains("JAVA_OPTS"));

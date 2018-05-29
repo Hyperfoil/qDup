@@ -22,6 +22,7 @@ import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -59,12 +60,13 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     private Map<String,Long> timestamps;
     private RunConfig config;
     private String outputPath;
-    private boolean aborted;
+    private AtomicBoolean aborted;
     private Coordinator coordinator;
     private CommandDispatcher dispatcher;
     private Profiles profiles;
     private Local local;
 
+    private CommandDispatcher.ScriptObserver envObserver;
     private Map<Host,Env.Diff> setupEnvDiff;
     private HashedLists<Host,PendingDownload> pendingDownloads;
 
@@ -85,7 +87,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
         this.dispatcher = dispatcher;
         this.dispatcher.addDispatchObserver(this);
         this.stage = Stage.Setup;
-        this.aborted = false;
+        this.aborted = new AtomicBoolean(false);
 
 
         this.timestamps = new LinkedHashMap<>();
@@ -129,14 +131,51 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
 
         this.pendingDownloads = new HashedLists<>();
         this.setupEnvDiff = new ConcurrentHashMap<>();
+        this.envObserver = new CommandDispatcher.ScriptObserver() {
+
+            private Map<Host,Env> startEnvs = new ConcurrentHashMap<>();
+
+            @Override
+            public void onStart(Cmd command, Context context) {
+                context.getSession().clearCommand();
+                context.getSession().sh("env");
+                String env = context.getSession().getOutput();
+                Env start = new Env(env);
+                startEnvs.put(context.getSession().getHost(),start);
+
+                logger.debug("{} env = \"{}\" \n Env.start = {}",context.getSession().getHost(),env,start.debug());
+            }
+
+            @Override
+            public void onStop(Cmd command, Context context) {
+
+                context.getSession().clearCommand();
+                context.getSession().sh("env");
+                String env = context.getSession().getOutput();
+                Env stop = new Env(env);
+
+                logger.debug("{} env = \"{}\" \n Env.stop = {}",context.getSession().getHost(),env,stop.debug());
+
+                if(startEnvs.containsKey(context.getSession().getHost())){
+                    Env start = startEnvs.get(context.getSession().getHost());
+                    Env.Diff diff = start.diffTo(stop);
+                    logger.info("{} {}",context.getSession().getHost(),diff.debug());
+
+                    setupEnvDiff.put(context.getSession().getHost(),diff);
+
+                }else{
+                    logger.info("{} does not have Env.start",context.getSession().getHost());
+                }
+            }
+        };
     }
 
     @Override
-    public void onStart(){
+    public void preStart(){
         timestamps.put(stage.getName()+"Start",System.currentTimeMillis());
     }
     @Override
-    public void onStop(){
+    public void postStop(){
         timestamps.put(stage.getName()+"Stop",System.currentTimeMillis());
         nextStage();
     }
@@ -145,10 +184,9 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             case Setup:
                 //if we are able to set the stage to Run
                 if(stageUpdated.compareAndSet(this,Stage.Setup,Stage.Run)){
+                    dispatcher.removeScriptObserver(envObserver);
                     queueRunScripts();
                     dispatcher.start();
-                }else{
-                    //TODO another thread already did it?
                 }
                 break;
             case Run:
@@ -157,7 +195,6 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
                 if(stageUpdated.compareAndSet(this,Stage.Run,Stage.Cleanup)){
                     queueCleanupScripts();
                     dispatcher.start();
-                }else{
                 }
                 break;
             case Cleanup:
@@ -171,7 +208,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     public Local getLocal(){return local;}
 
     public RunConfig getConfig(){return config;}
-    public boolean isAborted(){return aborted;}
+    public boolean isAborted(){return aborted.get();}
     public Logger getRunLogger(){return runLogger;}
     public void addPendingDownload(Host host,String path,String destination){
         pendingDownloads.put(host,new PendingDownload(path,destination));
@@ -194,7 +231,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     }
     public void done(){
         coordinator.clearWaiters();
-        dispatcher.clearActiveCommands();
+        dispatcher.stop();
     }
     public Json pendingDownloadJson(){
         Json rtrn = new Json();
@@ -245,54 +282,19 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
         }
     }
     public void abort(){
-        this.aborted = true;
-        stageUpdated.set(this,Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.onStop will set it to Cleanup
-        dispatcher.stop();//interrupts working threads and stops dispatching next commands
-        //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
-        //runLatch.countDown();
+        if(aborted.compareAndSet(false,true)){
+            coordinator.clearWaiters();
+            stageUpdated.set(this,Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.postStop will set it to Cleanup
+            dispatcher.stop();//interrupts working threads and stops dispatching next commands
+            //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
+            //runLatch.countDown();
+        }
     }
     private void queueSetupScripts(){
         logger.debug("{}.setup",this);
 
         //Observer to set the Env.Diffs
-        CommandDispatcher.ScriptObserver scriptObserver = new CommandDispatcher.ScriptObserver() {
-
-            private Map<Host,Env> startEnvs = new ConcurrentHashMap<>();
-
-            @Override
-            public void onStart(Cmd command, Context context) {
-                context.getSession().clearCommand();
-                context.getSession().sh("env");
-                String env = context.getSession().getOutput();
-                Env start = new Env(env);
-                startEnvs.put(context.getSession().getHost(),start);
-
-                logger.debug("{} env = \"{}\" \n Env.start = {}",context.getSession().getHost(),env,start.debug());
-            }
-
-            @Override
-            public void onStop(Cmd command, Context context) {
-
-                context.getSession().clearCommand();
-                context.getSession().sh("env");
-                String env = context.getSession().getOutput();
-                Env stop = new Env(env);
-
-                logger.debug("{} env = \"{}\" \n Env.stop = {}",context.getSession().getHost(),env,stop.debug());
-
-                if(startEnvs.containsKey(context.getSession().getHost())){
-                    Env start = startEnvs.get(context.getSession().getHost());
-                    Env.Diff diff = start.diffTo(stop);
-                    logger.info("{} {}",context.getSession().getHost(),diff.debug());
-
-                    setupEnvDiff.put(context.getSession().getHost(),diff);
-
-                }else{
-                    logger.info("{} does not have Env.start",context.getSession().getHost());
-                }
-            }
-        };
-        dispatcher.addScriptObserver(scriptObserver);
+        dispatcher.addScriptObserver(envObserver);
         for(Host host : config.getSetupHosts()){
 
             State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
@@ -333,7 +335,6 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             stageSummary.getWaiters().stream().filter((waitName)->
                     !stageSummary.getSignals().contains(waitName)
             ).forEach((notSignaled)->{
-                System.out.println("notSignaled "+notSignaled);
                 noSignal.add(notSignaled);
             });
         } ;

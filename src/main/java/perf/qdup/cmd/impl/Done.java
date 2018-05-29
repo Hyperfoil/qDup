@@ -15,4 +15,7 @@ public class Done extends Cmd {
     protected Cmd clone() {
         return new Done();
     }
+
+    @Override
+    public String toString(){return "done";}
 }
