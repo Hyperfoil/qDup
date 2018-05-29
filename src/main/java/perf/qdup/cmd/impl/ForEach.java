@@ -56,8 +56,8 @@ public class ForEach extends Cmd.LoopCmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new ForEach(this.name,this.input).with(this.with);
+    public Cmd copy() {
+        return new ForEach(this.name,this.input);
     }
 
 

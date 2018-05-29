@@ -36,8 +36,8 @@ public class Download extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new Download(this.path,this.destination).with(this.with);
+    public Cmd copy() {
+        return new Download(this.path,this.destination);
     }
     @Override
     public String toString(){return "download: "+path+" "+destination;}

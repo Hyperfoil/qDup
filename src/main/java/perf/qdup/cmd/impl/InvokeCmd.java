@@ -22,8 +22,8 @@ public class InvokeCmd extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new InvokeCmd(command.deepCopy()).with(this.with);
+    public Cmd copy() {
+        return new InvokeCmd(command.deepCopy());
     }
     @Override
     public String toString(){return "invoke: "+command.toString();}

@@ -45,8 +45,8 @@ public class Sh extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new Sh(this.command,super.isSilent(),prompt).with(this.with);
+    public Cmd copy() {
+        return new Sh(this.command,super.isSilent(),prompt);
     }
 
     @Override public String toString(){return "sh: "+command;}

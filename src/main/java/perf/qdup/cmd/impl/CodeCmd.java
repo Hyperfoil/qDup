@@ -49,8 +49,8 @@ public class CodeCmd extends Cmd {
         }
     }
     @Override
-    protected Cmd clone() {
-        return new CodeCmd(code).with(this.with);
+    public Cmd copy() {
+        return new CodeCmd(code);
     }
     @Override
     public String toString(){return "code: "+( className==null? code.toString() : className );}

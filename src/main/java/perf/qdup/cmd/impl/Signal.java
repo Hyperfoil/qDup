@@ -16,8 +16,8 @@ public class Signal extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new Signal(this.name).with(this.with);
+    public Cmd copy() {
+        return new Signal(this.name);
     }
 
     @Override public String toString(){return "signal: "+name;}

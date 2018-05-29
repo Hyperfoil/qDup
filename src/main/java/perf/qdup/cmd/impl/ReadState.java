@@ -30,7 +30,7 @@ public class ReadState extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new ReadState(key).with(this.with);
+    public Cmd copy() {
+        return new ReadState(key);
     }
 }

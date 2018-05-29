@@ -23,7 +23,7 @@ public class Countdown extends Cmd {
         }
     }
     @Override
-    protected Cmd clone() { return new Countdown(this.name,this.startCount).with(this.with); }
+    public Cmd copy() { return new Countdown(this.name,this.startCount); }
     @Override
     public String toString(){return "countdown: "+this.name+" "+this.startCount;}
 }

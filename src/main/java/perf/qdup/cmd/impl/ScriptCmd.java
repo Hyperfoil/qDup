@@ -29,7 +29,7 @@ public class ScriptCmd extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new ScriptCmd(name).with(with);
+    public Cmd copy() {
+        return new ScriptCmd(name);
     }
 }

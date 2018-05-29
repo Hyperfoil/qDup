@@ -19,8 +19,8 @@ public class WaitFor extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new WaitFor(this.name).with(this.with);
+    public Cmd copy() {
+        return new WaitFor(this.name);
     }
 
     public String getName(){return name;}

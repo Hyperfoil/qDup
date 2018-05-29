@@ -55,7 +55,7 @@ public class QueueDownload extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new QueueDownload(path,destination).with(this.with);
+    public Cmd copy() {
+        return new QueueDownload(path,destination);
     }
 }

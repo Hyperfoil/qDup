@@ -71,7 +71,7 @@ public abstract class Cmd {
             result.next(this,input);
         }
         @Override
-        protected Cmd clone() {
+        public Cmd copy() {
             return new NO_OP().with(this.with);
         }
         @Override
@@ -431,10 +431,10 @@ public abstract class Cmd {
     }
     public abstract void run(String input, Context context, CommandResult result);
 
-    protected abstract Cmd clone();
+    public abstract Cmd copy();
 
     public Cmd deepCopy(){
-        Cmd clone = this.clone();
+        Cmd clone = this.copy().with(this.getWith());
         for(Cmd watcher : this.getWatchers()){
             clone.watch(watcher.deepCopy());
         }

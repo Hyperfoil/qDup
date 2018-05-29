@@ -66,8 +66,8 @@ public class Regex extends Cmd {
 
 
     @Override
-    protected Cmd clone() {
-        return new Regex(this.patternString).with(this.with);
+    public Cmd copy() {
+        return new Regex(this.patternString);
     }
 
     @Override public String toString(){return "regex: "+replaceEscapes(patternString);}

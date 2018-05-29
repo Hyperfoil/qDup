@@ -22,8 +22,8 @@ public class Abort extends Cmd {
     public String getMessage(){return message;}
 
     @Override
-    protected Cmd clone() {
-        return new Abort(this.message).with(this.with);
+    public Cmd copy() {
+        return new Abort(this.message);
     }
 
     @Override

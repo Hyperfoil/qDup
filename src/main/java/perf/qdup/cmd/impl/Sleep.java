@@ -61,8 +61,8 @@ public class Sleep extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new Sleep(this.amount).with(this.with);
+    public Cmd copy() {
+        return new Sleep(this.amount);
     }
 
     @Override public String toString(){return "sleep: "+amount;}

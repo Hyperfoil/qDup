@@ -18,8 +18,8 @@ public class Log extends Cmd {
         result.next(this,input);
     }
     @Override
-    protected Cmd clone() {
-        return new Log(value).with(this.with);
+    public Cmd copy() {
+        return new Log(value);
     }
     @Override
     public String toString(){return "log: "+this.value;}

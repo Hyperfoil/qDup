@@ -72,7 +72,7 @@ public class JsCmd extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new JsCmd(this.codeString).with(with);
+    public Cmd copy() {
+        return new JsCmd(this.codeString);
     }
 }

@@ -12,7 +12,7 @@ public class Done extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
+    public Cmd copy() {
         return new Done();
     }
 

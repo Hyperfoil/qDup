@@ -14,8 +14,8 @@ public class Echo extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new Echo().with(this.with);
+    public Cmd copy() {
+        return new Echo();
     }
     @Override
     public String toString(){return "echo:";}

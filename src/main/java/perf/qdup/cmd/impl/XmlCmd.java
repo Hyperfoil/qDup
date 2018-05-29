@@ -34,14 +34,12 @@ public class XmlCmd extends Cmd {
             path.substring(
                 path.indexOf(FileUtility.SEARCH_KEY)+FileUtility.SEARCH_KEY.length()
             ).split("\n")
-
         );
     }
     public XmlCmd(String path,String...operations){
         this.path = removeQuotes(path);
         this.operations = Stream.of(operations).map(StringUtil::removeQuotes).collect(Collectors.toList());
     }
-
 
     public String getPath(){return path;}
 
@@ -54,8 +52,6 @@ public class XmlCmd extends Cmd {
 
     @Override
     public void run(String input, Context context, CommandResult result) {
-
-
         Xml xml = null;
         boolean successful = true;
         String output = input;
@@ -100,7 +96,6 @@ public class XmlCmd extends Cmd {
                         output = response;
                     }
                 }
-
             }
             if(remotePath!=null && !remotePath.isEmpty() && tmpDest!=null) {
                 try (PrintWriter out = new PrintWriter(tmpDest)) {
@@ -109,7 +104,6 @@ public class XmlCmd extends Cmd {
                 }
                 context.getLocal().upload(tmpDest.getPath(), remotePath, context.getSession().getHost());
             }
-
         } catch (IOException e) {
             logger.error("{}@{} failed to create local tmp file",this.toString(),context.getSession().getHostName(),e);
             successful = false;
@@ -127,8 +121,8 @@ public class XmlCmd extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new XmlCmd(this.path,this.operations.toArray(new String[]{})).with(this.with);
+    public Cmd copy() {
+        return new XmlCmd(this.path,this.operations.toArray(new String[]{}));
     }
 
 }

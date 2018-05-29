@@ -13,8 +13,8 @@ public class CtrlC extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new CtrlC().with(this.with);
+    public Cmd copy() {
+        return new CtrlC();
     }
 
     @Override public String toString(){return "ctrlC:";}

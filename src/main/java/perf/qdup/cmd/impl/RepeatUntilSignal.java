@@ -33,8 +33,8 @@ public class RepeatUntilSignal extends Cmd.LoopCmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new RepeatUntilSignal(this.name).with(this.with);
+    public Cmd copy() {
+        return new RepeatUntilSignal(this.name);
     }
     @Override
     public String toString(){return "repeat-until: "+name;}
