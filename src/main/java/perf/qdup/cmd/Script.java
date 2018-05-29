@@ -38,8 +38,8 @@ public class Script extends Cmd {
     }
 
     @Override
-    protected Cmd clone() {
-        return new Script(this.name).with(this.with);
+    public Cmd copy() {
+        return new Script(this.name);
     }
 
     @Override
