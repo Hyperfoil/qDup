@@ -103,6 +103,8 @@ public abstract class Cmd {
     public static Cmd download(String path){return new Download(path);}
     public static Cmd download(String path,String destination){return new Download(path,destination);}
     public static Cmd upload(String path,String destination){return new Upload(path,destination);}
+    public static Cmd exitCode(){return new ExitCode("");}
+    public static Cmd exitCode(String expected){return new ExitCode(expected);}
     public static Cmd echo(){ return new Echo(); }
     public static Cmd forEach(String name){ return new ForEach(name);}
     public static Cmd forEach(String name,String input){ return new ForEach(name,input);}

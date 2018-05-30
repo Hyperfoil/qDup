@@ -23,7 +23,7 @@ public class YamlParser {
     public static final String TIMER = "timer";
     public static final String WATCH = "watch";
     public static final String WITH = "with";
-    public static final Set<String> RESERVED = Sets.of(WATCH, WITH);
+    public static final Set<String> RESERVED = Sets.of(WATCH, WITH, TIMER);
 
 
     public static final String CHILD = "child";
@@ -159,9 +159,6 @@ public class YamlParser {
     Builder builder;
 
     Matcher nestMatcher = Pattern.compile("^(?<child>[\\s-]*)").matcher("");
-    Matcher inlineValueMatcher = Pattern.compile("^(?<value>\"(?:[^\"]|\\\")+\"|[^{\\[}\\],#]+)").matcher("");
-    Matcher valueMatcher = Pattern.compile("^(?<value>\"(?:[^\"]|\\\")+\"|(?:[^{\\[{}\\],#]|}}|\\{\\{)*)").matcher("");
-    Matcher inlineKeyMatcher = Pattern.compile("^(?<key>\"(?:[^\"]|\\\")+\"|[^:#,]+)").matcher("");
     Matcher keyMatcher = Pattern.compile("^(?<key>\"(?:[^\"]|\\\")+\"|(?:[^:#,\\s\\[\\]{}]|}}|\\{\\{)+)").matcher("");
 
     private HashedLists<String,String> fileErrors;

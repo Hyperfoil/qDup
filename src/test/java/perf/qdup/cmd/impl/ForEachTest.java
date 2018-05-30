@@ -16,9 +16,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 public class ForEachTest extends SshTestBase {
 
@@ -45,6 +43,26 @@ public class ForEachTest extends SshTestBase {
             .then(child);
 
         assertEquals("for-each skip should be child\n"+forEach.tree(2,true),child,forEach.getSkip());
+    }
+    @Test
+    public void run_defined_spaces(){
+        Cmd forEach = Cmd.forEach("FOO","1 2");
+        Context context = new Context(null,new State(""),null,null);
+        SpyCommandResult result = new SpyCommandResult();
+
+        result.clear();
+        forEach.run("",context,result);
+        assertEquals("next","1",result.getNext());
+        assertNull("skip not called",result.getSkip());
+
+        result.clear();
+        forEach.run("",context,result);
+        assertEquals("next","2",result.getNext());
+        assertNull("skip not called",result.getSkip());
+        result.clear();
+        forEach.run("",context,result);
+        assertNull("next should be null",result.getNext());
+        assertEquals("skip should be empty","",result.getSkip());
     }
 
     @Test
@@ -76,6 +94,36 @@ public class ForEachTest extends SshTestBase {
     }
 
     @Test
+    public void split_newLine(){
+        List<String> split = ForEach.split("1\n2");
+        assertEquals("two entires",2,split.size());
+        assertEquals("1",split.get(0));
+        assertEquals("2",split.get(1));
+    }
+    @Test
+    public void split_space(){
+        List<String> split = ForEach.split("1 2");
+        assertEquals("two entires",2,split.size());
+        assertEquals("1",split.get(0));
+        assertEquals("2",split.get(1));
+    }
+    @Test
+    public void split_commaspace(){
+        List<String> split = ForEach.split("1 , 2");
+        assertEquals("two entires",2,split.size());
+        assertEquals("1",split.get(0));
+        assertEquals("2",split.get(1));
+    }
+    @Test
+    public void split_quoted_commaspace(){
+        List<String> split = ForEach.split("['1,1', 2]");
+        assertEquals("two entires",2,split.size());
+        assertEquals("1,1",split.get(0));
+        assertEquals("2",split.get(1));
+    }
+
+
+    @Test
     public void then_injects_with_children(){
         Cmd start = Cmd.NO_OP();
         start
@@ -102,12 +150,10 @@ public class ForEachTest extends SshTestBase {
 
         Cmd twoTail = two.getTail();
 
-        System.out.println(start.tree(2,true));
-
         Assert.assertEquals("2.next should be 2.1",true,two.getNext().toString().contains("2.1"));
         Assert.assertEquals("2.tail should be 2.2.2.2",true,twoTail.toString().contains("2.2.2.2"));
         //This was the original bug in repeat-until & for-each when their last child was a regex (something that often skips)
-        Assert.assertTrue("2.skip should be for-each",two.getSkip().toString().contains("for-each"));
+        assertTrue("2.skip should be for-each",two.getSkip().toString().contains("for-each"));
         //Assert.assertTrue("2.1");
         Assert.assertEquals("for-each.skip should be 3",true,forEach.getSkip().toString().contains("3"));
 
@@ -117,9 +163,7 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void forEach_loopCount(){
         List<String> lines = new ArrayList<>();
-        List<String> args = new ArrayList<>();
         AtomicBoolean tail = new AtomicBoolean(false);
-        StringBuilder tailInput = new StringBuilder();
         Script runScript = new Script("run");
         runScript
         .then(Cmd.code(((input, state) -> Result.next("one\ntwo\nthree"))))
@@ -132,7 +176,6 @@ public class ForEachTest extends SshTestBase {
         )
         .then(Cmd.code(((input, state) -> {
             tail.set(true);
-            tailInput.append("||"+input+"||");
             return Result.next(input);
         })));
 
@@ -150,8 +193,7 @@ public class ForEachTest extends SshTestBase {
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
 
-        System.out.println("lines: "+lines);
-        System.out.println("tail: "+tail.get());
-        System.out.println("input: "+tailInput.toString());
-    }
+        assertEquals("lines contains 3 entries",3,lines.size());
+        assertTrue("tail should be called",tail.get());
+        }
 }

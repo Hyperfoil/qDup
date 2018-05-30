@@ -3,7 +3,9 @@ package perf.qdup.cmd.impl;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandResult;
 import perf.qdup.cmd.Context;
+import perf.yaup.StringUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -25,23 +27,36 @@ public class ForEach extends Cmd.LoopCmd {
         this.index = -1;
     }
 
+    public static List<String> split(String toSplit){
+        List<String> split = new ArrayList<>();
+        if(toSplit.contains("\n")){
+            split = Arrays.asList(toSplit.split("\r?\n"));
+        }else {
+            if(toSplit.startsWith("[") && toSplit.endsWith("]")){
+                toSplit=toSplit.substring(1,toSplit.length()-1);//remove [ ] around the list
+            }
+            split = new ArrayList<>();
+            String found = "";
+            while( !(found=StringUtil.findNotQuoted(toSplit,", ")).isEmpty() ){
+                found = found.replaceAll("^[,\\s]+","");
+                split.add(StringUtil.removeQuotes(found.trim()));
+                toSplit = toSplit.substring(found.length());
+            }
+            if(!toSplit.isEmpty()){
+                toSplit = toSplit.replaceAll("^[,\\s]+","");
+                split.add(StringUtil.removeQuotes(toSplit.trim()));
+            }
+
+        }
+        return split;
+    }
+
     @Override
     public void run(String input, Context context, CommandResult result) {
         if(split == null){
             String toSplit = this.input.isEmpty() ? input.trim() : Cmd.populateStateVariables(this.input,this,context.getState());
-
-            split = Collections.emptyList();
-
-            if(toSplit.contains("\n")){
-                split = Arrays.asList(toSplit.split("\r?\n"));
-            }else {
-                //TODO [a, b, c]
-                //TODO [a b c]
-                //TODO a, b, c
-                //TODO a b c
-            }
+            split = split(toSplit);
         }
-
         if(split!=null && !split.isEmpty()){
             String populatedName = Cmd.populateStateVariables(this.name,this,context.getState());
             index++;
