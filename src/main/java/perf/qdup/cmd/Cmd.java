@@ -355,7 +355,8 @@ public abstract class Cmd {
                 String name = matcher.group("name");
                 String defaultValue = matcher.group("default");
                 String value = null;
-                if(!StringUtil.findNotQuoted(name,"()/*^+-").isEmpty()){
+
+                if(StringUtil.findAny(name,"()/*^+-") > -1 ){
 //                    JexlStateContext jexlState = new JexlStateContext(state);
 //                    JexlExpression expression = jexl.createExpression(name);
 //                    value = expression.evaluate(jexlState).toString();
