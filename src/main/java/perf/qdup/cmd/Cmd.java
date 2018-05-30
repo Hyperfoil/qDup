@@ -1,11 +1,19 @@
 package perf.qdup.cmd;
 
+import org.apache.commons.jexl3.JexlBuilder;
+import org.apache.commons.jexl3.JexlContext;
+import org.apache.commons.jexl3.JexlEngine;
+import org.apache.commons.jexl3.JexlExpression;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.State;
 import perf.qdup.cmd.impl.*;
 import perf.yaup.HashedLists;
+import perf.yaup.StringUtil;
 
+import javax.script.*;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,7 +25,148 @@ import java.util.regex.Pattern;
  * Base for all the commands than can be added to a Script. Commands are created through the static methods.
  */
 public abstract class Cmd {
+    private static final JexlEngine jexl = new JexlBuilder().cache(512).strict(true).silent(false).create();
+    private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+    static {
+        try {
+            engine.eval("function milliseconds(v){ return Packages.perf.qdup.cmd.impl.Sleep.parseToMs(v)}");
+            engine.eval("function seconds(v){ return Packages.perf.qdup.cmd.impl.Sleep.parseToMs(v)/1000}");
+        } catch (ScriptException e) {
+            e.printStackTrace();
+        }
+    }
+    private static class JexlStateContext implements JexlContext {
 
+        private State state;
+        public JexlStateContext(State state){
+            this.state = state;
+        }
+
+        @Override
+        public Object get(String name) {
+            if(state.has(name)) {
+                String value = state.get(name);
+                if (value.matches("\\d+")) {
+                    return Long.parseLong(value);
+                } else if (value.matches("\\d*\\.\\d+")) {
+                    return Double.parseDouble(value);
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public void set(String name, Object value) {
+
+        }
+
+        @Override
+        public boolean has(String name) {
+            return state.has(name,true);
+        }
+    }
+    private static class NashonStateContext implements ScriptContext{
+
+        private final State state;
+        private final ScriptContext parent;
+
+        private Object fromState(String key){
+            String val = state.get(key);
+            if(val.matches("\\d+")){
+                return Long.parseLong(val);
+            }else if (val.matches("\\d*\\.\\d+")){
+                return Double.parseDouble(val);
+            }else{
+                return val;
+            }
+        }
+
+        public NashonStateContext(State state){
+            this(state,new SimpleScriptContext());
+        }
+        public NashonStateContext(State state,ScriptContext parent){
+            this.state = state;
+            this.parent = parent;
+        }
+
+        @Override
+        public void setBindings(Bindings bindings, int i) {
+            parent.setBindings(bindings,i);
+        }
+
+        @Override
+        public Bindings getBindings(int i) {
+            return parent.getBindings(i);
+        }
+
+        @Override
+        public void setAttribute(String s, Object o, int i) {
+
+            parent.setAttribute(s,o,i);
+        }
+
+        @Override
+        public Object getAttribute(String s, int i) {
+            if(state.has(s,true)){
+                return fromState(s);
+            }else{
+                return parent.getAttribute(s,i);
+            }
+        }
+
+        @Override
+        public Object removeAttribute(String s, int i) {
+            return parent.removeAttribute(s,i);
+        }
+
+        @Override
+        public Object getAttribute(String s) {
+            if(state.has(s,true)){
+                return fromState(s);
+            }
+            return parent.getAttribute(s);
+        }
+
+        @Override
+        public int getAttributesScope(String s) {
+            return 0;
+        }
+
+        @Override
+        public Writer getWriter() {
+            return parent.getWriter();
+        }
+
+        @Override
+        public Writer getErrorWriter() {
+            return parent.getWriter();
+        }
+
+        @Override
+        public void setWriter(Writer writer) {
+            parent.setWriter(writer);
+        }
+
+        @Override
+        public void setErrorWriter(Writer writer) {
+            parent.setErrorWriter(writer);
+        }
+
+        @Override
+        public Reader getReader() {
+            return parent.getReader();
+        }
+
+        @Override
+        public void setReader(Reader reader) {
+            parent.setReader(reader);
+        }
+
+        @Override
+        public List<Integer> getScopes() {
+            return parent.getScopes();
+        }
+    }
     public abstract static class LoopCmd extends Cmd {
         @Override
         protected void setSkip(Cmd skip){
@@ -203,16 +352,25 @@ public abstract class Cmd {
         Matcher matcher = STATE_PATTERN.matcher(rtrn);
         while(matcher.find()){
                 int findIndex = matcher.start();
-                int endIndex = matcher.end();
-                int endNameIndex = matcher.end("name");
-//            if(findIndex > previous){
-//                rtrn.append(command.substring(previous,findIndex));
-//            }
                 String name = matcher.group("name");
                 String defaultValue = matcher.group("default");
-                String value = populateVariable(name, cmd, state, ref);
-
-
+                String value = null;
+                if(!StringUtil.findNotQuoted(name,"()/*^+-").isEmpty()){
+//                    JexlStateContext jexlState = new JexlStateContext(state);
+//                    JexlExpression expression = jexl.createExpression(name);
+//                    value = expression.evaluate(jexlState).toString();
+                    try {
+                        Object nashonVal = engine.eval(name,new NashonStateContext(state,engine.getContext()));
+                        value = nashonVal.toString();
+                        if(value.endsWith(".0")){
+                            value = value.substring(0,value.length()-2);
+                        }
+                    } catch (ScriptException|IllegalArgumentException e) {
+                        //e.printStackTrace();
+                    }
+                }else {
+                    value = populateVariable(name, cmd, state, ref);
+                }
                 if (value == null) {//bad times
                     if (!defaultValue.isEmpty()) {
                         value = defaultValue;

@@ -6,6 +6,7 @@ import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandResult;
 import perf.qdup.cmd.Context;
 
+import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -23,6 +24,17 @@ import java.util.regex.Pattern;
 public class JsCmd extends Cmd {
 
     private ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+    public static Object eval(String input){
+        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+
+        Object rtrn = null;
+        try {
+            rtrn = engine.eval(input);
+        } catch (ScriptException e) {
+            e.printStackTrace();
+        }
+        return rtrn;
+    }
 
     private String codeString;
     private BiFunction<String,State,Object> function;
@@ -40,7 +52,6 @@ public class JsCmd extends Cmd {
         }
 
     }
-
 
     public String getCode(){
         return codeString;
@@ -64,10 +75,12 @@ public class JsCmd extends Cmd {
                     result.next(this,rtrn.toString());
                 }
             }catch (Exception e){
-
+                //TODO log the failure
+                result.skip(this,input);
             }
         }else{
             //TODO log that the function could not be run becuase it failed to create
+            result.skip(this,input);
         }
     }
 

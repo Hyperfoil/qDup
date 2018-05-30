@@ -100,7 +100,16 @@ public class State {
         }
     }
     public boolean has(String key){
-        return state.containsKey(key);
+        return has(key,false);
+    }
+    public boolean has(String key,boolean recursive){
+        boolean rtrn = false;
+        State target = this;
+        while(!rtrn && target!=null){
+            rtrn = target.state.containsKey(key);
+            target = target.parent;
+        }
+        return rtrn;
     }
     public String get(String key){
         State target = this;
@@ -121,7 +130,14 @@ public class State {
         }
         return rtrn;
     }
-
+    public Set<String> allKeys(){
+        Set<String> rtrn = new HashSet<>();
+        rtrn.addAll(getKeys());
+        for(State child : childStates.values()){
+            rtrn.addAll(child.allKeys());
+        }
+        return rtrn;
+    }
     public List<String> getKeys(){
         return Collections.unmodifiableList(
             Arrays.asList(

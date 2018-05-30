@@ -12,9 +12,44 @@ import perf.qdup.config.RunConfigBuilder;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class CmdTest extends SshTestBase {
+
+    @Test
+    public void populateStateVariables_arithmetic(){
+        State state = new State("");
+        state.set("FOO","2");
+        state.set("BAR","2");
+        state.set("BIZ","3");
+
+        String response = Cmd.populateStateVariables("${{FOO * (BAR + BIZ)}}",null,state);
+        assertEquals("expected value","10",response);
+    }
+    @Test
+    public void populateStateVariables_arithmetic_time(){
+        State state = new State("");
+        state.set("FOO","10");
+        state.set("BAR","1m");
+
+        String response = Cmd.populateStateVariables("${{ 2*(seconds(BAR)+FOO) :-1}}",null,state);
+        assertEquals("expected value with seconds()","140",response);
+    }
+    @Test
+    public void populateStateVariables_arithmetic_missing_state(){
+        State state = new State("");
+        state.set("FOO","10");
+        state.set("BAR","1m");
+        String response = Cmd.populateStateVariables("${{ 2*MISSING :-1}}",null,state);
+        assertEquals("expected default value when missing state","-1",response);
+    }
+    @Test
+    public void populateStateVariables_arithmetic_missing_function(){
+        State state = new State("");
+        state.set("FOO","10");
+        state.set("BAR","1m");
+        String response = Cmd.populateStateVariables("${{ 2*doesNotExist(FOO) :-1}}",null,state);
+        assertEquals("expected default value when missing state","-1",response);
+    }
 
     @Test
     public void populateStateVariables_envVariable(){
