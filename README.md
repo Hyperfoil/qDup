@@ -241,11 +241,23 @@ reference state variables by name with `${{name}}` and `regex` can define
 new entries with standard java regex capture groups `(?<name>.*)`
 ```YAML
  - sh: tail -f /tmp/server.log
- - - watch:
+   - watch:
      - regex : ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
-     - - log : eap ${{eapVersion}} started in ${{eapStartTime}}
+       - log : eap ${{eapVersion}} started in ${{eapStartTime}}
        - ctrlC:
 ```
+### State variables
+State variables can be combined within a state reference using either arithmetic operators or string concatenation
+A `:` can also be used to define a default value should any of the state variable names not be defined
+```YAML
+ - sh: tail -f /tmp/server.log
+   - timer: ${{ RAMP_UP + MEASURE + RAMP_DOWN : 100}}
+     - echo : ${{ (RAMP_UP+MEASURE+RAMP_DOWN)+'s'}} have has lapsed
+```
+State references also have built in functions for time conversion
+* `seconds(val)` - converts `val` like `10m 2s` into seconds
+* `milliseconds(val)` - converts `val` like `60s` into milliseconds
+
 ## YAML
 qDup configuration is not yaml but it looks very similar to yaml so we often call it yaml.
 The problem (as mentioned in the Introduction) is that yaml does not support key value pairs
@@ -302,11 +314,9 @@ roles:
 ```
 
 __states__ a nested map of name : value pairs used to inject variables
-into the run configuration. The top level entry must be `run` then the
-children of run are either a name : value pair or the name of a host.
+into the run configuration. Children are either a name : value pair or the name of a host.
 Hosts can have name : value pairs or the name of a script as children.
-Scripts are the lowest level in the state tree and therefore they can
-only have name : value pairs as children
+Scripts are the lowest level in the state tree and therefore they can only have name : value pairs as children
 ```YAML
 states:
   run:
@@ -317,8 +327,6 @@ states:
       scriptName:
         key : otherValue
 ```
-script commands can reference state variables by surrouning the variable
-names with `${{` `}}` (e.g. `${{greeting}}`)
 
 ## Building
 qDup builds to a single executable jar that includes all the dependencies

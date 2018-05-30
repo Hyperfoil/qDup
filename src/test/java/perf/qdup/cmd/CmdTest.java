@@ -50,6 +50,20 @@ public class CmdTest extends SshTestBase {
         String response = Cmd.populateStateVariables("${{ 2*doesNotExist(FOO) :-1}}",null,state);
         assertEquals("expected default value when missing state","-1",response);
     }
+    @Test
+    public void populateStateVariables_arithmetic_strings(){
+        State state = new State("");
+        state.set("FOO","10");
+        String response = Cmd.populateStateVariables("${{ (2*FOO)+'m' :5m}}",null,state);
+        assertEquals("expected string concat after maths","20m",response);
+    }
+    @Test
+    public void populateStateVariables_arithmetic_time_concat(){
+        State state = new State("");
+        state.set("FOO","1");
+        String response = Cmd.populateStateVariables("${{ milliseconds(FOO+'m') :5m}}",null,state);
+        assertEquals("expected string concat after maths","60000",response);
+    }
 
     @Test
     public void populateStateVariables_envVariable(){
