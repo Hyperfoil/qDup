@@ -130,7 +130,8 @@ This is the least ambiguous but most verbose and is rarely necessary.
 
 ### Available commands
 * `abort: <message>`
-Abort the current run and log the message
+Abort the current run and log the message. Aborted runs will still
+downlaod any files from `queue-download` and will still run cleanup scripts
 * `code: <className>`
 create an instance of `className` which implements `Code` using the
 default constructor and execute the `run(...)` method.
@@ -143,20 +144,34 @@ Child commands will be invoked each time after `name` counter reaches 0.
 * `ctrlC:`
 send ctrl+C interrupt to the remote shell. This will kill
 any currently running command (e.g. `sh: tail -f /tmp/server.log`)
+* `done:` signals that the current stage ended
+and any remaining `wait-for` should be cancelled
 * `download: <path> ?<destination>`
 download `path` from the connected host and save the output to the
 run output path + `destination`
-* `upload: <path> <destination>`
-upload a file from the local `path` to `destination` on the remote host
 * `echo:`
 log the input to console
+* `for-each: <variableName> [values]` re-run the children with `variableName`
+set to each entry in `values` or the input from the previous command if `values`
+is not provided
 * `invoke: <name>`
 Invoke the `name` script as part of the current script
+* `js: <javascript (input,state)=>{...}>` invoke javascript function with
+`input` and `state` as inputs. The command will invoke the next command
+if either the function does not have a return value or if it returns a
+value that is truthy (not null and not false, "false")
 * `log: <message>`
 log `message` to the run log
+* `queue-download: <path> ?<destination>`
+queue the download action for after the run finishes. The download will
+occur if the run completes or aborts
+* `reboot: <kernel>` Reboot the server to the target kernel. Kernel can
+either be an index in `/etc/grub2-efi.cfg`
+or a pattern to find in `/etc/grub2-efi.cfg`
 * `read-state: <name>`
 read the current value of the named state variable
-and pass it as input to the next command
+and pass it as input to the next command. Child commands will only be
+called if the state exists and is not empty
 * `regex: <pattern>`
 try to match the input to a regular expression and add any named
 capture groups to the current state at the named scope.
@@ -175,9 +190,8 @@ send one signal for `name`. Runs calculate the expected number of `signals` for 
 `name` and `waitFor` will wait for the expected number of `signal`
 * `sleep: <ms>`
 pause the current script for the given number of milliseconds
-* `queue-download: <path> ?<destination>`
-queue the download action for after the run finishes. The download will
-occur if the run completes or aborts
+* `upload: <path> <destination>`
+upload a file from the local `path` to `destination` on the remote host
 * `waitFor: <name>`
 pause the current script until `name` is fully signaled
 * `xpath: <path>`
@@ -189,6 +203,7 @@ This is an overloaded command that can perform an xpath
    - `file>xpath ++ value` - add value to the xpath matches
    - `file>xpath --` - delete xpath matches from their parents
    - `file>xpath @key=value` - add the key=value attribute to xpath matches
+   - `file>xpath -> stateName` - set stateName to the value found from xpath
 
 ## Monitoring
 ### Watching
@@ -315,3 +330,10 @@ maven repo before qDup will build. Yaup builds with
 Once yaup installs you can build qDup with the jar task
 
 > gradle jar
+
+## Debug
+qDup.jar starts a json server with a few endpoints at hostname:31337
+* `/active` - the active commands and their current output
+* `/latches` - the timestamp each latch was reached
+* `/counters` - the current value for eah counter
+* `/pendingDownloads` - what files are queued for download from which hosts
