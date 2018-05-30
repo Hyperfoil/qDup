@@ -4,12 +4,7 @@ import perf.yaup.HashedLists;
 import perf.yaup.Sets;
 import perf.yaup.json.Json;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -501,7 +496,9 @@ public class YamlParser {
 
                                     if(inlineStack.isEmpty() && !emptyDash) {
 
-                                        if (childLength > contextLength) { // CHILD
+                                        if(builder.size()==1){//if we are on the root builder
+                                            //don't nest on the root element
+                                        }else if (childLength > contextLength) { // CHILD
                                             Json childAry = new Json();
                                             Json newChild = new Json(false);
 
@@ -610,7 +607,7 @@ public class YamlParser {
                                             builder.push(newEntry);
 
                                         }else if (!builder.target().isArray()){
-                                            while(!builder.target().isArray()){
+                                            while(!builder.target().isArray() && builder.size()>1){
                                                 builder.pop();
                                             }
                                             Json newEntry = new Json(false);

@@ -98,6 +98,19 @@ public class YamlParserTest extends SshTestBase {
 
     }
 
+    @Test(timeout = 10_000)
+    public void bug_nestFirstChild(){
+        YamlParser parser = new YamlParser();
+        parser.load("bug",stream(""+
+            "  name: this - name",
+            "scripts:"
+        ));
+
+        validateParse(parser);
+
+
+    }
+
     @Test
     //TODO check that first and second are children of bar
     public void testComment_differentNestLength(){
@@ -125,7 +138,6 @@ public class YamlParserTest extends SshTestBase {
             "        }"
         ));
         validateParse(parser);
-        System.out.println(parser.getJson("code").toString(2));
     }
 
     @Test
