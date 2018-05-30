@@ -337,13 +337,15 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     //TODO separate coordinators for each stage?
     private boolean initializeCoordinator(){
         List<String> noSignal = new ArrayList<>();
+        Set<String> signaled = new HashSet<>();
         Consumer<StageSummary> setupCoordinator = (stageSummary)->{
             stageSummary.getSignals().forEach((signalName)->{
                 int count = stageSummary.getSignalCount(signalName);
                 coordinator.initialize(signalName,count);
+                signaled.add(signalName);
             });
             stageSummary.getWaiters().stream().filter((waitName)->
-                    !stageSummary.getSignals().contains(waitName)
+                    !signaled.contains(waitName)
             ).forEach((notSignaled)->{
                 noSignal.add(notSignaled);
             });

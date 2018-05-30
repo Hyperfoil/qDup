@@ -9,12 +9,14 @@ import perf.qdup.cmd.Script;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
+import perf.qdup.config.YamlParser;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -22,6 +24,55 @@ public class RunTest extends SshTestBase{
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
+
+
+    @Test
+    public void signal_in_previous_stage(){
+        YamlParser parser = new YamlParser();
+        parser.load("signal",stream(""+
+                        "scripts:",
+                "  foo:",
+                "    - signal: FOO",
+                "  bar:",
+                "    - wait-for: FOO",
+                "    - sh: echo bar > /tmp/bar.txt",
+                "    - signal: BAR",
+                "  biz:",
+                "    - wait-for: BAR",
+                "    - sh: echo bar > /tmp/biz.txt",
+                "hosts:",
+                "  local: "+getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    setup-scripts: [foo]",
+                "    run-scripts: [bar]",
+                "    cleanup-scripts: [biz]"
+        ));
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.loadYaml(parser);
+        RunConfig config = builder.buildConfig();
+        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        File bar = new File("/tmp/bar.txt");
+        File biz = new File("/tmp/biz.txt");
+
+        try{
+            assertTrue("bar did not run",bar.exists());
+            assertTrue("biz did not run",biz.exists());
+        }finally {
+            bar.delete();
+            biz.delete();
+        }
+
+
+    }
+
 
     @Test
     public void sh_output_trim(){
@@ -100,6 +151,7 @@ public class RunTest extends SshTestBase{
         assertEquals("pwd sibling should see pwd",System.getProperty("user.home"),pwdSiblingInput.toString());
     }
 
+    //fails the first time it is run after sshd restart?
     @Test(timeout=45_000)
     public void forEach_lastCommand(){
         AtomicInteger counter = new AtomicInteger(0);

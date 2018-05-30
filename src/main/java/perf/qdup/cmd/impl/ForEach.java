@@ -26,7 +26,6 @@ public class ForEach extends Cmd.LoopCmd {
         this.split = null;
         this.index = -1;
     }
-
     public static List<String> split(String toSplit){
         List<String> split = new ArrayList<>();
         if(toSplit.contains("\n")){
@@ -35,7 +34,6 @@ public class ForEach extends Cmd.LoopCmd {
             if(toSplit.startsWith("[") && toSplit.endsWith("]")){
                 toSplit=toSplit.substring(1,toSplit.length()-1);//remove [ ] around the list
             }
-            split = new ArrayList<>();
             String found = "";
             while( !(found=StringUtil.findNotQuoted(toSplit,", ")).isEmpty() ){
                 found = found.replaceAll("^[,\\s]+","");
@@ -46,7 +44,6 @@ public class ForEach extends Cmd.LoopCmd {
                 toSplit = toSplit.replaceAll("^[,\\s]+","");
                 split.add(StringUtil.removeQuotes(toSplit.trim()));
             }
-
         }
         return split;
     }
