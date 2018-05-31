@@ -26,6 +26,7 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("countdown", Countdown.class,"name","initial");
         rtrn.addCmdDefinition("ctrlC",CtrlC.class);
         rtrn.addCmdDefinition("done",Done.class);
+        rtrn.addCmdDefinition("download", Download.class,"path");
         rtrn.addCmdDefinition("download", Download.class,"path","destination");
         rtrn.addCmdDefinition("upload",Upload.class,"path","destination");
         rtrn.addCmdDefinition("echo",Echo.class);

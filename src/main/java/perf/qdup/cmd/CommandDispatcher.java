@@ -447,7 +447,7 @@ public class CommandDispatcher {
             try {
                 activeCommandInfo.getRunWatchers().stop();
             }catch (NullPointerException e){
-                logger.info("NPE add null after {}",command);
+                logger.error("NPE add null after {}",command);
             }
         }
         if(activeCommandInfo.getScheduledFuture()!=null && !activeCommandInfo.getScheduledFuture().isDone()){
@@ -499,7 +499,6 @@ public class CommandDispatcher {
     }
 
     public void start(){ //start all the scripts attached to this dispatcher
-        //logger.info(debug());
         if(isRunning.compareAndSet(false,true)){
             dispatchObservers.forEach(c->c.preStart());
             logger.info("starting {} scripts", loadedScripts.size());
@@ -642,7 +641,7 @@ public class CommandDispatcher {
     }
 
     public void dispatch(Cmd previousCommand, Cmd nextCommand, String input, Context context, CommandResult result){
-        logger.info("dispatch command={}\n  host={}\n  previous={}\n  script={}",
+        logger.debug("dispatch command={}\n  host={}\n  previous={}\n  script={}",
                 nextCommand,
                 context.getSession().getHost(),
                 previousCommand,
@@ -687,7 +686,7 @@ public class CommandDispatcher {
             execute(nextCommand,input,context,result);
         }else{
 
-            logger.info("no next\n  host={}\n  command={}",
+            logger.debug("no next\n  host={}\n  command={}",
                     context.getSession().getHost(),
                     previousCommand);
 
@@ -721,7 +720,7 @@ public class CommandDispatcher {
     private void checkActiveCount(){
         logger.trace("checkActiveCount = "+activeCommandCount.get());
         if(activeCommandCount.get()==0 && isRunning.compareAndSet(true,false)){
-            logger.info("activeCommands.count = {}",activeCommandCount.get());
+            logger.debug("activeCommands.count = {}",activeCommandCount.get());
             executor.execute(() -> {
                 closeSshSessions();
                 dispatchObservers.forEach(o->o.postStop());

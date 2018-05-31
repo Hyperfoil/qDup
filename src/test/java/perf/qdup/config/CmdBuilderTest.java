@@ -1,6 +1,7 @@
 package perf.qdup.config;
 
 import org.junit.Test;
+import perf.qdup.SshTestBase;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.impl.*;
 import perf.yaup.json.Json;
@@ -14,9 +15,28 @@ import static org.junit.Assert.assertTrue;
 import static perf.qdup.SshTestBase.stream;
 
 
-public class CmdBuilderTest {
+public class CmdBuilderTest extends SshTestBase {
 
-
+    @Test
+    public void download_path(){
+        YamlParser parser = new YamlParser();
+        parser.load("download",stream("-download: P"));
+        Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null);
+        assertTrue("cmd should be Download",cmd instanceof Download);
+        Download download = (Download)cmd;
+        assertEquals("unexpected path","P",download.getPath());
+        assertEquals("unexpected destination","",download.getDestination());
+    }
+    @Test
+    public void download_path_destination(){
+        YamlParser parser = new YamlParser();
+        parser.load("download",stream("-download: P D"));
+        Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null);
+        assertTrue("cmd should be Download",cmd instanceof Download);
+        Download download = (Download)cmd;
+        assertEquals("unexpected path","P",download.getPath());
+        assertEquals("unexpected destination","D",download.getDestination());
+    }
 
     @Test
     public void splitSpaces(){
