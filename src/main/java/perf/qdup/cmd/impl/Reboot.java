@@ -110,10 +110,8 @@ public class Reboot extends Cmd {
             } catch (InterruptedException e) {
                 //e.printStackTrace(); //TODO what to do with interrupted Reboot?
             }
-            System.out.println("session.isOpen ? "+session.isOpen());
             logger.info("{} retry @ {} for {}", Instant.now().toString(),interval);
             session.connect(interval);
-            System.out.println("session.isOpen ? "+session.isOpen());
             currentMillis = System.currentTimeMillis();
         } while (!session.isOpen() && currentMillis - startMillis < this.timeout);
         if(!session.isOpen()){

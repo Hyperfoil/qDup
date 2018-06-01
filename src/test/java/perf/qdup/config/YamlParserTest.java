@@ -105,10 +105,7 @@ public class YamlParserTest extends SshTestBase {
             "  name: this - name",
             "scripts:"
         ));
-
         validateParse(parser);
-
-
     }
 
     @Test

@@ -20,7 +20,6 @@ public class YamlParser {
     public static final String WITH = "with";
     public static final Set<String> RESERVED = Sets.of(WATCH, WITH, TIMER);
 
-
     public static final String CHILD = "child";
     public static final String DASHED = "dashed";
     public static final String KEY = "key";

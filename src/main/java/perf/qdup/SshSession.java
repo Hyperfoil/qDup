@@ -57,7 +57,6 @@ public class SshSession implements Runnable, Consumer<String>{
 
     private static final String prompt = "#%@_qdup_!*> "; // a string unlikely to appear in the output of any command
 
-
     private SshClient sshClient;
     private ClientSession clientSession;
     private ChannelShell channelShell;
