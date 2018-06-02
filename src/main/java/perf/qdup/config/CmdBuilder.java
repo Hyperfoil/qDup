@@ -308,11 +308,13 @@ public class CmdBuilder {
             target = json.getJson(0);
             shortname = target.getString(KEY);
             lineNumber = target.get(LINE_NUMBER);
-
+            if(!commands.containsKey(shortname)){
+                return rtrn;
+            }
 
             if(target.has(VALUE)){
                 List<String> split = split(target.getString(VALUE));
-                if(commands.get(shortname).sizes().contains(split.size()) && commands.get(shortname).checkArgTypes(split)){
+                if( commands.get(shortname).sizes().contains(split.size()) && commands.get(shortname).checkArgTypes(split)){
                     args.addAll(split);
                 }else if (commands.get(shortname).sizes().contains(1)){
                     args.add(target.getString(VALUE));
@@ -405,6 +407,9 @@ public class CmdBuilder {
         } else {
             shortname = target.getString(KEY);
             lineNumber = target.get(LINE_NUMBER);
+            if(!commands.containsKey(shortname)){
+                return rtrn;
+            }
             if (has(shortname)) {
                 Set<Integer> sizes = sizes(shortname);
                 if (target.has(VALUE)) {//try and build the command from just the VALUE

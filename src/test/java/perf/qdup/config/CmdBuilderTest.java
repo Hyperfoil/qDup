@@ -18,6 +18,14 @@ import static perf.qdup.SshTestBase.stream;
 public class CmdBuilderTest extends SshTestBase {
 
     @Test
+    public void buildYamlCommand_invalidCommand(){
+        YamlParser parser = new YamlParser();
+        parser.load("download",stream("-wait=for: P"));
+        Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null);
+        assertTrue("cmd should be NO_OP",cmd.toString().contains("NO_OP"));
+    }
+
+    @Test
     public void download_path(){
         YamlParser parser = new YamlParser();
         parser.load("download",stream("-download: P"));
