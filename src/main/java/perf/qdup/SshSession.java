@@ -3,32 +3,22 @@ package perf.qdup;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.auth.UserAuth;
-import org.apache.sshd.client.auth.keyboard.UserInteraction;
-import org.apache.sshd.client.auth.password.UserAuthPassword;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.AttributeStore;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.PtyMode;
-import org.apache.sshd.common.io.mina.MinaServiceFactoryFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandResult;
-import perf.qdup.stream.FilteredStream;
-import perf.qdup.stream.LineEmittingStream;
-import perf.qdup.stream.SemaphoreStream;
-import perf.qdup.stream.SuffixStream;
+import perf.qdup.stream.*;
 
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
@@ -71,6 +61,7 @@ public class SshSession implements Runnable, Consumer<String>{
     private PipedInputStream pipeIn;
     private PipedOutputStream pipeOut;
 
+    private EscapeFilteredStream escapeFilteredStream;
     private SemaphoreStream semaphoreStream;
     private FilteredStream filteredStream;
     private FilteredStream stripStream;
@@ -141,6 +132,7 @@ public class SshSession implements Runnable, Consumer<String>{
 
                 commandStream = new PrintStream(pipeOut);
 
+                escapeFilteredStream = new EscapeFilteredStream();
                 filteredStream = new FilteredStream();
                 stripStream = new FilteredStream();
 
@@ -171,6 +163,10 @@ public class SshSession implements Runnable, Consumer<String>{
                 semaphoreStream.setRunnable(this);
 
 
+            escapeFilteredStream.addStream("semaphore",semaphoreStream);
+
+
+
             channelShell = clientSession.createShellChannel();
 
             channelShell.getPtyModes().put(PtyMode.ECHO,1);//need echo for \n from real SH but adds gargage chars for test :(
@@ -184,8 +180,8 @@ public class SshSession implements Runnable, Consumer<String>{
 
             channelShell.setIn(pipeIn);
 
-            channelShell.setOut(semaphoreStream);
-            channelShell.setErr(semaphoreStream);//prompt goes to error stream so have to listen there too
+            channelShell.setOut(escapeFilteredStream);
+            channelShell.setErr(escapeFilteredStream);//prompt goes to error stream so have to listen there too
 
             filteredStream.addFilter("prompt","\n"+prompt, "$:"/*newPrompt*/);//replace the unique string prompt WITH something more user friendly
             stripStream.addFilter("prompt","$:","");

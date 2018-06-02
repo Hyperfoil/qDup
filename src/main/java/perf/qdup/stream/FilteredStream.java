@@ -2,6 +2,7 @@ package perf.qdup.stream;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -17,7 +18,7 @@ public class FilteredStream extends MultiStream{
     private Map<String,byte[]> replacements;
     public FilteredStream(){
         buffered = new byte[20*1024];//4k was growing with most runs, 20k seems to work better
-        filters = new HashMap<>();
+        filters = new LinkedHashMap<>();//to ensure key order
         replacements = new HashMap<>();
     }
 
@@ -46,7 +47,7 @@ public class FilteredStream extends MultiStream{
         replacements.remove(name);
     }
 
-    private void superWrite(byte b[], int off, int len) throws IOException {
+    protected void superWrite(byte b[], int off, int len) throws IOException {
         super.write(b,off,len);
     }
 
