@@ -2,6 +2,7 @@ package perf.qdup;
 
 import com.sun.net.httpserver.HttpServer;
 import perf.qdup.cmd.CommandDispatcher;
+import perf.yaup.StringUtil;
 import perf.yaup.json.Json;
 
 
@@ -46,7 +47,8 @@ public class JsonServer {
             });
             httpServer.createContext("/latches", httpExchange -> {
                 Json json = new Json();
-                coordinator.getLatchTimes().forEach((key,value)-> json.set(key,value));
+                long now = System.currentTimeMillis();
+                coordinator.getLatchTimes().forEach((key,value)-> json.set(key,StringUtil.durationToString(now-((Long)value))));
                 String response = json.toString(2);
                 httpExchange.sendResponseHeaders(200,response.length());
                 OutputStream os = httpExchange.getResponseBody();
