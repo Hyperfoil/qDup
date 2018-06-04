@@ -222,7 +222,13 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             for(Host host : pendingDownloads.keys()){
                 List<PendingDownload> downloadList = pendingDownloads.get(host);
                 for(PendingDownload pendingDownload : downloadList){
-                    local.download(pendingDownload.getPath(),pendingDownload.getDestination(),host);
+                    String downloadPath = pendingDownload.getPath();
+                    String downloadDestination = pendingDownload.getDestination();
+                    if(downloadDestination == null || downloadPath == null){
+                        logger.error("NULL in queue-download "+downloadPath+" -> "+downloadDestination);
+                    }else {
+                        local.download(pendingDownload.getPath(), pendingDownload.getDestination(), host);
+                    }
                 }
             }
             timestamps.put("downloadStop",System.currentTimeMillis());
