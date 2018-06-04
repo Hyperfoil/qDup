@@ -145,7 +145,7 @@ Child commands will be invoked each time after `name` counter reaches 0.
 send ctrl+C interrupt to the remote shell. This will kill
 any currently running command (e.g. `sh: tail -f /tmp/server.log`)
 * `done:` signals that the current stage ended
-and any remaining `wait-for` should be cancelled
+and any remaining active commands should end (including `wait-for`)
 * `download: <path> ?<destination>`
 download `path` from the connected host and save the output to the
 run output path + `destination`
@@ -221,8 +221,8 @@ condition is met.
        - abort: FATAL error
 ```
 
-Note: `sh`, `waitFor`, and `repeat-until` cannot be used when watching
-a command because they can block the execution of other watchers.
+Note: `sh`, `waitFor`, and `repeat-until` cannot be used in `watch` or `timer`
+because they can block the execution of other watchers.
 
 ### Timers
 Another option for long running commands is to set a timer that will
