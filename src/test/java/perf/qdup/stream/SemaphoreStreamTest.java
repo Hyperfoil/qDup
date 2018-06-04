@@ -37,14 +37,11 @@ public class SemaphoreStreamTest {
         stream.addStream("bao",baos);
         filteredStream.addStream("semaphore",stream);
         try {
-            System.out.println(SemaphoreStream.printByteCharacters("\u001b[0123456789m".getBytes(),0,"\u001b[0123456789m".getBytes().length));
-            System.out.println(SemaphoreStream.printByteCharacters("\033[0;34m".getBytes(),0,"\033[0;34m".getBytes().length));
-            System.out.println(SemaphoreStream.printByteCharacters("\\x1b[0m".getBytes(),0,"\\x1b[0m".getBytes().length));
             filteredStream.write("\n\u001b[0mfoo".getBytes());
             assertEquals("should release semaphore",1,test.availablePermits());
 
-            System.out.println(new String(baos.toByteArray()));
-            System.out.println(SemaphoreStream.printByteCharacters(baos.toByteArray(),0,baos.toByteArray().length));
+            assertEquals("\\nfoo expected","\nfoo",new String(baos.toByteArray()));
+
         } catch (IOException e) {
             e.printStackTrace();
             fail("Exception during write");

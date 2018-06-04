@@ -118,6 +118,7 @@ public class XmlCmdTest extends SshTestBase {
 
         tmpXml.delete();
 
-        System.out.println(first.toString());
+
+        assertEquals("/foo/biz value set to BIZ","buz",first.toString());
     }
 }
