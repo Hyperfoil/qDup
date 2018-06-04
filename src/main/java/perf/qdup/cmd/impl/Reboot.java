@@ -53,8 +53,9 @@ public class Reboot extends Cmd {
                 session.sh("su",prompts);
                 session.getOutput();//to wait for su to finish
             }
-
-            session.sh("awk -F\\' '$1==\"menuentry \" {print $2}' /etc/grub2-efi.cfg");
+            session.sh("ls /etc/grub*.cfg");//get the grub cfg file
+            String grubFile = session.getOutput();
+            session.sh("awk -F\\' '$1==\"menuentry \" {print $2}' "+grubFile);
             List<String> kernels = Arrays.asList(session.getOutput().trim().split("\r?\n"));
             logger.info("{} kernels:\n  {}",session.getHost().getHostName(),
                     IntStream.range(0,kernels.size()).mapToObj(i->{
