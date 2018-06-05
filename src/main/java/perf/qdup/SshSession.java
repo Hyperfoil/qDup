@@ -225,7 +225,7 @@ public class SshSession implements Runnable, Consumer<String>{
         } catch (GeneralSecurityException | IOException e) {
 
             //e.printStackTrace();
-            logger.error("Exception while connecting to {}@{}",host.getUserName(),host.getHostName());
+            logger.error("Exception while connecting to {}@{}\n{}",host.getUserName(),host.getHostName(),e.getMessage());
 
         } finally {
             logger.debug("{} session.isOpen={} shell.isOpen={}",
