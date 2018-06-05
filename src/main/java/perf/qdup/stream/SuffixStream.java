@@ -1,35 +1,41 @@
 package perf.qdup.stream;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class SuffixStream extends MultiStream {
 
-
     private byte[] buffered;
     private int writeIndex = 0;
-    private Map<String,byte[]> suffix;
+    private Map<String,byte[]> suffixes;
+    private Map<String,byte[]> replacements;
     private List<Consumer<String>> consumers;
-
 
     public SuffixStream(){
         buffered = new byte[20*1024];
-        suffix = new HashMap<>();
+        suffixes = new LinkedHashMap<>();
+        replacements = new LinkedHashMap<>();
         consumers = new LinkedList<>();
     }
 
-    public void clearSuffix(){
-        suffix.clear();
+    public void clear(){
+        suffixes.clear();
+        replacements.clear();
     }
     public void addSuffix(String name){
-        suffix.put(name,name.getBytes());
+        addSuffix(name,name);
+    }
+    public void addSuffix(String name,String suffix){
+        suffixes.put(name,suffix.getBytes());
+        replacements.remove(name);
+    }
+    public void addSuffix(String name,String suffix,String replacement){
+        suffixes.put(name,suffix.getBytes());
+        replacements.put(name,replacement.getBytes());
     }
     public boolean hasSuffix(String name){
-        return suffix.containsKey(name);
+        return suffixes.containsKey(name);
     }
     public void addConsumer(Consumer<String> consumer){
         consumers.add(consumer);
@@ -51,10 +57,9 @@ public class SuffixStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-        int flushIndex = 0;
         int trailingSuffixLength = Integer.MIN_VALUE;
 
-        if(suffix.isEmpty()){
+        if(suffixes.isEmpty()){
             if(writeIndex>0) {
                 superWrite(buffered, 0, writeIndex);
                 writeIndex = 0;
@@ -67,32 +72,46 @@ public class SuffixStream extends MultiStream {
                 System.arraycopy(buffered, 0, newBuffer, 0, writeIndex);
                 buffered = newBuffer;
             }
-            //copy hte content to write into the bufferd content
+            //copy the content to write into the buffered content
             System.arraycopy(b,off,buffered, writeIndex,len);
             writeIndex += len;
 
             boolean found = false;
-
-            for(String name : suffix.keySet()){
-                byte[] toFind = suffix.get(name);
+            String foundName = "";
+            for(String name : suffixes.keySet()){
+                byte[] toFind = suffixes.get(name);
                 int suffMatch = suffixLength(buffered,toFind,writeIndex);
                 if(suffMatch==toFind.length){
-                    found = true;
-
-                    //blocking call on the current thread!!
-                    consumers.forEach(c->c.accept(name));
-
-                }else if (suffMatch > trailingSuffixLength){
+                    if(!found || trailingSuffixLength < suffMatch){//pick the longest match
+                        found = true;
+                        foundName = name;
+                        trailingSuffixLength = suffMatch;
+                    }
+                }else if (!found && suffMatch > trailingSuffixLength){
                     trailingSuffixLength = suffMatch;
                 }
             }
-            if(trailingSuffixLength > Integer.MIN_VALUE){
+            if(found){
+                //NOTE blocking call on the current thread!!
+                String acceptName = foundName;
+                if(replacements.containsKey(acceptName)){
+                    byte replacement[] = replacements.get(acceptName);
+                    int trimLength = suffixes.get(acceptName).length;
+                    superWrite(b,0,writeIndex-trimLength);
+                    superWrite(replacement,0,replacement.length);
+                    writeIndex = 0;
+                }else {
+                    superWrite(buffered, 0, writeIndex);
+                    writeIndex = 0;
+                }
+                consumers.forEach(c->c.accept(acceptName));
+
+            }else if(trailingSuffixLength > Integer.MIN_VALUE){
                 superWrite(buffered,0,writeIndex-trailingSuffixLength);
                 System.arraycopy(buffered,writeIndex-trailingSuffixLength,buffered,0,trailingSuffixLength);
                 writeIndex=trailingSuffixLength;
             }
         }
-
     }
     public int suffixLength(byte b[], byte toFind[], int endIndex){
         boolean matching = false;

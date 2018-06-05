@@ -38,14 +38,14 @@ import static perf.qdup.config.RunConfigBuilder.DEFAULT_PASSPHRASE;
  * Needs to be updated WITH the current Cmd, CommandResult before sending a command to the remote host
  */
 
-//Todo separate out the prompt, the command, and the output of the command
+//Todo separate out the PROMPT, the command, and the output of the command
 public class SshSession implements Runnable, Consumer<String>{
 
     private static final AtomicInteger counter = new AtomicInteger();
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-    private static final String prompt = "#%@_qdup_!*> "; // a string unlikely to appear in the output of any command
+    public static final String PROMPT = "<_#%@_qdup_@%#_> "; // a string unlikely to appear in the output of any command
 
     private SshClient sshClient;
     private ClientSession clientSession;
@@ -62,9 +62,9 @@ public class SshSession implements Runnable, Consumer<String>{
     private PipedOutputStream pipeOut;
 
     private EscapeFilteredStream escapeFilteredStream;
-    private SemaphoreStream semaphoreStream;
+    private SuffixStream semaphoreStream;
     private FilteredStream filteredStream;
-    private FilteredStream stripStream;
+    //private FilteredStream stripStream;
     private SuffixStream promptStream;
 
     private LineEmittingStream lineEmittingStream;
@@ -106,6 +106,10 @@ public class SshSession implements Runnable, Consumer<String>{
 //        sshConfig.put("StrictHostKeyChecking", "no");
     }
 
+    public int permits(){
+        return shellLock.availablePermits();
+    }
+
     public boolean connect(long timeoutMillis){
 
         if(isOpen()){
@@ -124,51 +128,45 @@ public class SshSession implements Runnable, Consumer<String>{
             clientSession.auth().verify(5_000);
 
             //setup all the streams
-                pipeIn = new PipedInputStream();
-                pipeOut = new PipedOutputStream(pipeIn);
-                //the output of the current sh command
-                outputQueue = new LinkedBlockingQueue<>();
-                shStream = new ByteArrayOutputStream();
+            pipeIn = new PipedInputStream();
+            pipeOut = new PipedOutputStream(pipeIn);
+            //the output of the current sh command
+            outputQueue = new LinkedBlockingQueue<>();
+            shStream = new ByteArrayOutputStream();
 
-                commandStream = new PrintStream(pipeOut);
+            commandStream = new PrintStream(pipeOut);
 
-                escapeFilteredStream = new EscapeFilteredStream();
-                filteredStream = new FilteredStream();
-                stripStream = new FilteredStream();
+            escapeFilteredStream = new EscapeFilteredStream();
+            filteredStream = new FilteredStream();
 
-                semaphoreStream = new SemaphoreStream(shellLock,("\n"+prompt).getBytes());
-                promptStream = new SuffixStream();
-
-                filteredStream.addFilter("prompt","\n"+prompt, "$:"/*newPrompt*/);//replace the unique string prompt WITH something more user friendly
-                stripStream.addFilter("prompt","$:","");
-
-                stripStream.addFilter("^C",new byte[]{0,0,0,3});
-                stripStream.addFilter("^P",new byte[]{0,0,0,16});
-                stripStream.addFilter("^T",new byte[]{0,0,0,20});
-                stripStream.addFilter("^X",new byte[]{0,0,0,24});
-                stripStream.addFilter("^@",new byte[]{0,0,0});
-
-                lineEmittingStream = new LineEmittingStream();
-                lineEmittingStream.addConsumer(this);
-
-                filteredStream.addStream("strip",stripStream); // echo the entire channelSession to sh output
-
-                stripStream.addStream("lines",lineEmittingStream);
-                stripStream.addStream("sh",shStream);
-
-                semaphoreStream.addStream("filtered",filteredStream);
-                //semaphoreStream.addStream("out",System.out);
-                semaphoreStream.addStream("promptMonitor",promptStream);
-
-                semaphoreStream.setRunnable(this);
-
+            semaphoreStream = new SuffixStream();
+            promptStream = new SuffixStream();
+            lineEmittingStream = new LineEmittingStream();
 
             escapeFilteredStream.addStream("semaphore",semaphoreStream);
 
+            semaphoreStream.addStream("filtered",filteredStream);
+            semaphoreStream.addStream("promptMonitor",promptStream);
 
+            //filteredStream.addStream("strip",stripStream);
+
+            //filteredStream.addStream("lines",lineEmittingStream);
+            filteredStream.addStream("sh",shStream);
+
+            //filteredStream.addFilter("PROMPT","\n"+ PROMPT);
+            filteredStream.addFilter("^C",new byte[]{0,0,0,3});
+            filteredStream.addFilter("^P",new byte[]{0,0,0,16});
+            filteredStream.addFilter("^T",new byte[]{0,0,0,20});
+            filteredStream.addFilter("^X",new byte[]{0,0,0,24});
+            filteredStream.addFilter("^@",new byte[]{0,0,0});
+
+            lineEmittingStream.addConsumer(this);
+
+            semaphoreStream.addSuffix("PROMPT",PROMPT,"");
+            semaphoreStream.addConsumer((name)-> this.run());
+            //semaphoreStream.setRunnable(this);
 
             channelShell = clientSession.createShellChannel();
-
             channelShell.getPtyModes().put(PtyMode.ECHO,1);//need echo for \n from real SH but adds gargage chars for test :(
             channelShell.setPtyType("vt100");
             //channelShell.setPtyType("xterm");
@@ -180,22 +178,10 @@ public class SshSession implements Runnable, Consumer<String>{
 
             channelShell.setIn(pipeIn);
 
-            channelShell.setOut(escapeFilteredStream);
-            channelShell.setErr(escapeFilteredStream);//prompt goes to error stream so have to listen there too
+            channelShell.setOut(escapeFilteredStream);//efs or ss
+            channelShell.setErr(escapeFilteredStream);//PROMPT goes to error stream so have to listen there too
 
-            filteredStream.addFilter("prompt","\n"+prompt, "$:"/*newPrompt*/);//replace the unique string prompt WITH something more user friendly
-            stripStream.addFilter("prompt","$:","");
 
-            stripStream.addFilter("^C",new byte[]{0,0,0,3});
-            stripStream.addFilter("^P",new byte[]{0,0,0,16});
-            stripStream.addFilter("^T",new byte[]{0,0,0,20});
-            stripStream.addFilter("^X",new byte[]{0,0,0,24});
-            stripStream.addFilter("^@",new byte[]{0,0,0});
-
-            lineEmittingStream = new LineEmittingStream();
-            lineEmittingStream.addConsumer(this);
-
-            filteredStream.addStream("strip",stripStream);
 
             if(timeoutMillis>0){
                 channelShell.open().verify(timeoutMillis).isOpened();
@@ -204,7 +190,7 @@ public class SshSession implements Runnable, Consumer<String>{
             }
 
 
-            sh("unset PROMPT_COMMAND; export PS1='" + prompt + "'");
+            sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
             sh("pwd");
 
             sh("");//forces the thread to wait for the previous sh to complete
@@ -217,7 +203,7 @@ public class SshSession implements Runnable, Consumer<String>{
                     shellLock.release();
                 }
             } catch (InterruptedException e) {
-                logger.warn("{}@{} interrupted while waiting for initial prompt",host.getUserName(),host.getHostName());
+                logger.warn("{}@{} interrupted while waiting for initial PROMPT",host.getUserName(),host.getHostName());
                 e.printStackTrace();
                 Thread.interrupted();
             }
@@ -344,7 +330,7 @@ public class SshSession implements Runnable, Consumer<String>{
                     }
                     setCommand(cmd, result);
 
-                    promptStream.clearSuffix();
+                    promptStream.clear();
                     promptStream.clearConsumers();
                     if(prompt!=null && !prompt.isEmpty()){
                         prompt.keySet().forEach(promptStream::addSuffix);
@@ -359,8 +345,7 @@ public class SshSession implements Runnable, Consumer<String>{
                 }
 
                 if (!command.isEmpty()) {
-                    //filteredStream.addFilter("command",command,AsciiArt.ANSI_RESET+AsciiArt.ANSI_CYAN+command+AsciiArt.ANSI_RESET+AsciiArt.ANSI_MAGENTA);
-                    stripStream.addFilter("command", command, "");
+                    filteredStream.addFilter("command", command, "");
                 }
                 if(acquireLock) {
                     synchronized (outputQueue) {
@@ -371,7 +356,7 @@ public class SshSession implements Runnable, Consumer<String>{
                 commandStream.println(command);
                 commandStream.flush();
                 logger.debug("{}@{} flushed {}", this.command == null ? "?" : this.command.getUid(), host.getHostName(), command);
-                //BUG this includes the prompt and the output of the command, should filter up to the command
+                //BUG this includes the PROMPT and the output of the command, should filter up to the command
                 //TODO test shStream reset before and after the command is sent (so sh output does not contain the command)
             }
         }else{
@@ -420,12 +405,17 @@ public class SshSession implements Runnable, Consumer<String>{
     //Called when the semaphore is released
     @Override
     public void run() {
+        System.out.println("SS.run");
         lineEmittingStream.forceEmit();
         String output = shStream.toString()
                 .replaceAll("^[\r\n]+","")  //replace leading newlines
-                .replaceAll("[\r\n]+$",""); //replace trailing newlines
+                .replaceAll("[\r\n]+$","") //replace trailing newlines
+                .replaceAll("\r\n","\n"); //change \r\n to just \n
 
         shStream.reset();
+        if(output.endsWith(PROMPT)){
+            output = output.substring(0,output.length()-PROMPT.length()).replaceAll("[\r\n]+$","");
+        }
         try {
             outputQueue.put(output);
         } catch (InterruptedException e) {
@@ -442,6 +432,7 @@ public class SshSession implements Runnable, Consumer<String>{
         }else{
             logger.trace("{} cmd = null ",host);
         }
+        shellLock.release();
     }
 
     //Called when there is a new line of output

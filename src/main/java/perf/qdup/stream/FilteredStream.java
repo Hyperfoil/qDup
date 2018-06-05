@@ -1,25 +1,45 @@
 package perf.qdup.stream;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * Created by wreicher
  * A MultiStream that filters content before writing to subsequent OutputStreams.
  * TODO tree of filters to speed up filtering content
+ * TODO need to also create a a suffix filter (for PROMPT)
  */
 public class FilteredStream extends MultiStream{
 
     private byte[] buffered;
     private int writeIndex = 0;
-    private Map<String,byte[]> filters;
-    private Map<String,byte[]> replacements;
+    private final Map<String,byte[]> filters;
+    private final Map<String,byte[]> replacements;
+
+    private final List<Consumer<String>> observers;
+
     public FilteredStream(){
         buffered = new byte[20*1024];//4k was growing with most runs, 20k seems to work better
         filters = new LinkedHashMap<>();//to ensure key order
         replacements = new HashMap<>();
+        observers = new LinkedList<>();
+    }
+
+    public void addObserver(Consumer<String> consumer){
+        observers.add(consumer);
+    }
+    public void removeObserver(Consumer<String> consumer){
+        observers.remove(consumer);
+    }
+    public boolean hasObservers(){return !observers.isEmpty();}
+
+    protected void tellObservers(String value){
+        if(hasObservers()){
+            for(Consumer<String> observer : observers){
+                observer.accept(value);
+            }
+        }
     }
 
     public void addFilter(String name,String filter){
@@ -42,7 +62,7 @@ public class FilteredStream extends MultiStream{
     public boolean hasReplacement(String name){
         return replacements.containsKey(name);
     }
-    public void removeFilter(String name){
+    public void remove(String name){
         filters.remove(name);
         replacements.remove(name);
     }
@@ -58,6 +78,8 @@ public class FilteredStream extends MultiStream{
 
     @Override
     public void write(byte b[], int off, int len) throws IOException {
+        System.out.println("FilteredStream "+getClass()+" "+off+" "+len);
+        System.out.println(printByteCharacters(b,off,len));
         int flushIndex = 0;
         int trailingPrefixIndex = Integer.MAX_VALUE;
         if(filters.isEmpty()){
@@ -89,9 +111,7 @@ public class FilteredStream extends MultiStream{
                     for(String name : filters.keySet()){
                         byte[] filter = filters.get(name);
                         int prefixLength = prefixLength(buffered, filter, currentIndex, writeIndex-currentIndex);
-
                         if(prefixLength == filter.length) {//full match
-
                             if(filter.length>dropLength){
                                 dropLength=filter.length;
                                 filtered=true;
@@ -104,10 +124,11 @@ public class FilteredStream extends MultiStream{
                         }
                     }
                     if(filtered){
+                        tellObservers(matchedName);
                         if ( flushIndex < currentIndex) {
                             superWrite(buffered,flushIndex, currentIndex - flushIndex);
                         }
-                        if(replacements.containsKey(matchedName)){
+                        if(hasReplacement(matchedName)){
                             superWrite(replacements.get(matchedName),0,replacements.get(matchedName).length);
                         }
                         currentIndex += filters.get(matchedName).length;
@@ -129,13 +150,9 @@ public class FilteredStream extends MultiStream{
                 flushIndex = writeIndex;//TODO testing if fixes double write
             }
 
-
             //compact the buffer if we haven't flushed everything
-
             if(flushIndex > 0 ) {
-
                 System.arraycopy(buffered, flushIndex, buffered, 0, writeIndex-flushIndex);
-
                 writeIndex=writeIndex-flushIndex;
             }
         }
@@ -143,7 +160,13 @@ public class FilteredStream extends MultiStream{
 
 
     }
-
+    public boolean hasSuffix(byte b[],byte suffix[],int off,int len){
+        boolean rtrn = true;
+        for(int index=0; index < suffix.length && rtrn; index++){
+            rtrn = index < len && suffix[index] == b[off+len-index-1];
+        }
+        return rtrn;
+    }
     public int prefixLength(byte b[],byte prefix[],int off, int len){
 
         boolean matching = true;

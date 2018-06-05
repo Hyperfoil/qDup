@@ -1,18 +1,49 @@
 package perf.qdup.stream;
 
+import perf.yaup.Sets;
+
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * need to return length of full match or length or partial match
  * just return length of match and then check if last char is m
  */
-public class EscapeFilteredStream extends FilteredStream {
+public class EscapeFilteredStream extends MultiStream {
+
+    private static final Set<Character> CONTROL_SUFFIX = Sets.of(
+            'A',//cursor up
+            'B',//cursor down
+            'C',//cursor forward
+            'D',//cursor back
+            'E',//cursor next line
+            'F',//cursor previous line
+            'G',//cursor horizontal absolute
+            'H',//cursor position
+            'J',//erase display
+            'K',//erase in line
+            'S',//scroll up
+            'T',//scroll down
+            'f',//horozontal,vertical position
+            'm',//graphical rendering
+            'i',//aux port on
+            'n',//device status
+            's',//save cursor position
+            'u' //restore cursor position
+            );
 
     private byte[] buffered;
     private int writeIndex = 0;
 
     public EscapeFilteredStream(){
         buffered = new byte[20*1024];
+    }
+    protected void superWrite(byte b[], int off, int len) throws IOException {
+        super.write(b,off,len);
+    }
+    @Override
+    public void write(byte b[]) throws IOException {
+        write(b,0,b.length);
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
@@ -69,7 +100,7 @@ public class EscapeFilteredStream extends FilteredStream {
     }
     //basically just makes sure we have \u001b[...m
     public boolean isEscaped(byte b[],int off,int len){
-        return len>3 && b[off]==27 && b[off+1]=='[' && b[off+len-1]=='m';
+        return len>3 && b[off]==27 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]);
     }
     //return length of match up to len or 0 if match failed
     public int escapeLength(byte b[], int off, int len){
@@ -85,7 +116,7 @@ public class EscapeFilteredStream extends FilteredStream {
                 if(rtrn<len){
                     if( b[off+rtrn]==';'){
                         rtrn++;
-                    }else if (b[off+rtrn]=='m'){
+                    }else if (CONTROL_SUFFIX.contains((char)b[off+rtrn])){
                         rtrn++;//we matched this character too
                         matching=false;//end of match
                     }else{//false alarm, not a valid escape character

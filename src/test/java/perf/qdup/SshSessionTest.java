@@ -1,15 +1,6 @@
 package perf.qdup;
 
-import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,6 +30,28 @@ public class SshSessionTest extends SshTestBase{
         assertEquals("pwd should be the current working directory",userHome,pwdOutput);
         sshSession.close();
         assertFalse("SshSession should be closed",sshSession.isOpen());
+    }
+
+    @Test
+    public void echo_PS1(){
+        SshSession sshSession = new SshSession(getHost());
+        sshSession.sh("echo \""+SshSession.PROMPT+"\"");
+        String out = sshSession.getOutput();
+
+        assertEquals("one permit expected",1,sshSession.permits());
+        assertEquals("output should only be prompt",SshSession.PROMPT,out);
+
+        try {
+            Thread.sleep(1_000);//allow any junk into the output stream that might occur
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        sshSession.sh("echo foo");
+        out = sshSession.getOutput();
+        assertEquals("one permit expected",1,sshSession.permits());
+        assertEquals("output should only be foo","foo",out);
+
+        System.out.println(sshSession.permits());
     }
 
 }

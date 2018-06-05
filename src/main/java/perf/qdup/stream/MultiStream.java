@@ -15,8 +15,10 @@ public class MultiStream extends OutputStream{
         String spaces = "         ";
         StringBuilder bytes = new StringBuilder();
         StringBuilder chars = new StringBuilder();
+        StringBuilder indxs = new StringBuilder();
         bytes.append("[");
         chars.append("[");
+        indxs.append("[");
         if(b!=null && b.length>0){
             int lim = off+len;
             for(int i=off; i<lim; i++){
@@ -34,15 +36,15 @@ public class MultiStream extends OutputStream{
                     chars.append(spaces.substring(0, append.length() - 1));
                     chars.append((char) v);
                 }
+                indxs.append(String.format("%"+append.length()+"d.",i));
                 chars.append(".");
             }
             bytes.append("]");
             chars.append("]");
+            indxs.append("]");
         }
-        return "bytes="+bytes.toString()+System.lineSeparator()+"chars="+chars.toString();
+        return "bytes="+bytes.toString()+System.lineSeparator()+"chars="+chars.toString()+System.lineSeparator()+"indxs="+indxs.toString();
     }
-
-
 
     private Map<String,OutputStream> streams;
 

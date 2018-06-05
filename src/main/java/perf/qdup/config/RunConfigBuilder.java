@@ -23,6 +23,35 @@ import static perf.qdup.config.YamlParser.*;
 
 public class RunConfigBuilder {
 
+
+    public static void main(String[] args) {
+        File baseFile = new File("/home/wreicher/perfWork/labScripts-willr3");
+
+        File qdupFile = new File(baseFile,"qdup.yaml");
+        File coreFolder = new File(baseFile,"core");
+
+        YamlParser parser = new YamlParser();
+        parser.load(qdupFile.toString());
+
+        for(File cores: coreFolder.listFiles()){
+            parser.load(cores.toString());
+        }
+
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.loadYaml(parser);
+
+        RunConfig config = builder.buildConfig();
+
+        System.out.println(config.debug());
+        config.getCleanupHosts().forEach(host->{
+            System.out.println(host);
+            System.out.println(config.getCleanupCmd(host).tree(2,true));
+        });
+
+    }
+
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     private static final Json EMPTY_ARRAY = new Json();

@@ -38,7 +38,12 @@ public class SemaphoreStream extends MultiStream {
     //prompt can split between writes
     //gradle in color mode will randomly inject console controls between the newline and prompt
     //27 ...
+
+    //replace with suffix checking
+
     public boolean checkForPrompt(byte sequence[], int offset, int length){
+        System.out.println("checkForPrompt offset="+offset+" length="+length);
+        System.out.println(printByteCharacters(sequence,offset,length));
         boolean found = false;
         if(prompt == null) {
             return false;
@@ -46,7 +51,8 @@ public class SemaphoreStream extends MultiStream {
 
         int i=0;
         while(i < length && !found){
-            if( promptIndex>= prompt.length) {
+            if( promptIndex>= prompt.length ) {
+                System.out.println("found @ "+i+" before check "+(i+offset));
                 found = true;
             } else {
                 if (prompt[promptIndex] == sequence[offset+i]){
@@ -85,9 +91,12 @@ public class SemaphoreStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
+        System.out.println("SemaphoreStream");
+        System.out.println(printByteCharacters(b,off,len));
         try {
             super.write(b, off, len);
             if (checkForPrompt(b, off, len)) {
+                System.out.println("SS.release");
                 if (this.runnable != null) {
                     this.runnable.run();
                 }

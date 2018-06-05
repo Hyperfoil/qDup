@@ -53,6 +53,7 @@ public class EscapeFilteredStreamTest {
     @Test
     public void filter_head(){
         String input="\u001b[0mm";
+        System.out.println(EscapeFilteredStream.printByteCharacters(input.getBytes(),0,input.getBytes().length));
         assertEquals("header should be filtered","m",filter(input));
     }
     @Test
