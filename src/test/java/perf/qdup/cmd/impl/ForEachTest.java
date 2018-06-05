@@ -20,6 +20,28 @@ import static org.junit.Assert.*;
 
 public class ForEachTest extends SshTestBase {
 
+    @Test
+    public void inject_then(){
+        Script first = new Script("first");
+        first.then(
+            Cmd.forEach("FOO")
+                .then(Cmd.sh("1"))
+                .then(Cmd.sh("2"))
+        );
+        Script second = new Script("second");
+        second.then(Cmd.sh("foo"));
+
+        Cmd copy = first.deepCopy();
+        second.injectThen(copy,null);
+
+        Cmd firstCopy = second.getNext();
+
+        assertTrue("first next should be for-each",firstCopy.getNext().toString().contains("for-each"));
+        assertTrue("first skip is foo",firstCopy.getSkip().toString().contains("foo"));
+        Cmd forEach = firstCopy.getNext();
+        assertTrue("for-each skip is foo",forEach.getSkip().toString().contains("foo"));
+    }
+
     //created for https://github.com/RedHatPerf/qDup/issues/8
     @Test
     public void getSkip_nullWhenLast(){

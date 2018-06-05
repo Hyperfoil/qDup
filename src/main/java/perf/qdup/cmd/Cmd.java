@@ -449,7 +449,13 @@ public abstract class Cmd {
         Cmd next = this.getNext();
         Cmd skip = this.getSkip();
         if(next!=null){
-            command.getTail().forceNext(next);
+            command.setSkip(next);
+            Cmd commandTailNext = command.getTail().getNext();
+            if( commandTailNext==null || !(commandTailNext instanceof LoopCmd) ){
+                command.getTail().forceNext(next);
+            }else{
+
+            }
         }else{
             //we are potentially changing the getScript tail, need to inform context
             //this should no longer be necessary because CommandDispatcher tracks the head cmd not tail
@@ -460,11 +466,12 @@ public abstract class Cmd {
         Cmd toForce = command.getTail();
 
         //make sure that any abnormal exits from the previous script will go to the next command
-        do {
-            toForce.forceSkip(skip);
-            toForce = toForce.getPrevious();
-        }while(toForce!=null && toForce.getSkip()==null);
-
+        if(skip!=null) {
+            do {
+                toForce.forceSkip(skip);
+                toForce = toForce.getPrevious();
+            } while (toForce != null && toForce.getSkip() == null);
+        }
         this.next = command;
         command.parent = this;
         command.prev = this;
