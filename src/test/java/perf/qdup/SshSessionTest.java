@@ -51,7 +51,6 @@ public class SshSessionTest extends SshTestBase{
         assertEquals("one permit expected",1,sshSession.permits());
         assertEquals("output should only be foo","foo",out);
 
-        System.out.println(sshSession.permits());
     }
 
 }

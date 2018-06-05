@@ -98,7 +98,9 @@ public class SuffixStream extends MultiStream {
                     byte replacement[] = replacements.get(acceptName);
                     int trimLength = suffixes.get(acceptName).length;
                     superWrite(b,0,writeIndex-trimLength);
-                    superWrite(replacement,0,replacement.length);
+                    if(replacement.length>0) {
+                        superWrite(replacement, 0, replacement.length);
+                    }
                     writeIndex = 0;
                 }else {
                     superWrite(buffered, 0, writeIndex);

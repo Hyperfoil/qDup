@@ -64,7 +64,6 @@ public class SshSession implements Runnable, Consumer<String>{
     private EscapeFilteredStream escapeFilteredStream;
     private SuffixStream semaphoreStream;
     private FilteredStream filteredStream;
-    //private FilteredStream stripStream;
     private SuffixStream promptStream;
 
     private LineEmittingStream lineEmittingStream;
@@ -148,9 +147,7 @@ public class SshSession implements Runnable, Consumer<String>{
             semaphoreStream.addStream("filtered",filteredStream);
             semaphoreStream.addStream("promptMonitor",promptStream);
 
-            //filteredStream.addStream("strip",stripStream);
-
-            //filteredStream.addStream("lines",lineEmittingStream);
+            filteredStream.addStream("lines",lineEmittingStream);
             filteredStream.addStream("sh",shStream);
 
             //filteredStream.addFilter("PROMPT","\n"+ PROMPT);
@@ -164,7 +161,6 @@ public class SshSession implements Runnable, Consumer<String>{
 
             semaphoreStream.addSuffix("PROMPT",PROMPT,"");
             semaphoreStream.addConsumer((name)-> this.run());
-            //semaphoreStream.setRunnable(this);
 
             channelShell = clientSession.createShellChannel();
             channelShell.getPtyModes().put(PtyMode.ECHO,1);//need echo for \n from real SH but adds gargage chars for test :(
@@ -189,7 +185,6 @@ public class SshSession implements Runnable, Consumer<String>{
                 channelShell.open().verify().isOpened();
             }
 
-
             sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
             sh("pwd");
 
@@ -209,10 +204,7 @@ public class SshSession implements Runnable, Consumer<String>{
             }
 
         } catch (GeneralSecurityException | IOException e) {
-
-            //e.printStackTrace();
             logger.error("Exception while connecting to {}@{}\n{}",host.getUserName(),host.getHostName(),e.getMessage());
-
         } finally {
             logger.debug("{} session.isOpen={} shell.isOpen={}",
                     this.getHostName(),
@@ -356,8 +348,6 @@ public class SshSession implements Runnable, Consumer<String>{
                 commandStream.println(command);
                 commandStream.flush();
                 logger.debug("{}@{} flushed {}", this.command == null ? "?" : this.command.getUid(), host.getHostName(), command);
-                //BUG this includes the PROMPT and the output of the command, should filter up to the command
-                //TODO test shStream reset before and after the command is sent (so sh output does not contain the command)
             }
         }else{
             //TODO abort run if sh isn't open or try reconnect
@@ -389,9 +379,7 @@ public class SshSession implements Runnable, Consumer<String>{
                 }
 
                 channelShell.getIn().close();
-                //channelShell.setIn(null);
                 semaphoreStream.close();
-                //channelShell.setOut(null);
                 channelShell.close();
 
                 clientSession.close();
@@ -405,7 +393,6 @@ public class SshSession implements Runnable, Consumer<String>{
     //Called when the semaphore is released
     @Override
     public void run() {
-        System.out.println("SS.run");
         lineEmittingStream.forceEmit();
         String output = shStream.toString()
                 .replaceAll("^[\r\n]+","")  //replace leading newlines
@@ -413,9 +400,6 @@ public class SshSession implements Runnable, Consumer<String>{
                 .replaceAll("\r\n","\n"); //change \r\n to just \n
 
         shStream.reset();
-        if(output.endsWith(PROMPT)){
-            output = output.substring(0,output.length()-PROMPT.length()).replaceAll("[\r\n]+$","");
-        }
         try {
             outputQueue.put(output);
         } catch (InterruptedException e) {

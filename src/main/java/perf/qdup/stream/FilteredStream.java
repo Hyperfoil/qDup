@@ -78,8 +78,6 @@ public class FilteredStream extends MultiStream{
 
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-        System.out.println("FilteredStream "+getClass()+" "+off+" "+len);
-        System.out.println(printByteCharacters(b,off,len));
         int flushIndex = 0;
         int trailingPrefixIndex = Integer.MAX_VALUE;
         if(filters.isEmpty()){

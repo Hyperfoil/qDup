@@ -39,10 +39,10 @@ public class MultiStream extends OutputStream{
                 indxs.append(String.format("%"+append.length()+"d.",i));
                 chars.append(".");
             }
-            bytes.append("]");
-            chars.append("]");
-            indxs.append("]");
         }
+        bytes.append("]");
+        chars.append("]");
+        indxs.append("]");
         return "bytes="+bytes.toString()+System.lineSeparator()+"chars="+chars.toString()+System.lineSeparator()+"indxs="+indxs.toString();
     }
 
