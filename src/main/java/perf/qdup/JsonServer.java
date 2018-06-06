@@ -8,6 +8,7 @@ import perf.yaup.json.Json;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 
 public class JsonServer {
@@ -72,9 +73,11 @@ public class JsonServer {
                 os.write(response.getBytes());
                 os.close();
             });
-
             httpServer.start();
         } catch (IOException e) {
+            if(e instanceof BindException){
+                //LOG that we failed to bind to 31337
+            }
             e.printStackTrace();
         }
 

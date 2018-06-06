@@ -40,6 +40,16 @@ public class EscapeFilteredStreamTest {
         assertEquals("should only buffer tail","foo",filter(input));
     }
     @Test
+    public void filter_K_noDigit(){
+        String input="foo\u001b[K";
+        assertEquals("should only be foo","foo",filter(input));
+    }
+    @Test
+    public void filter_J_noDigit(){
+        String input="foo\u001b[J";
+        assertEquals("should only be foo","foo",filter(input));
+    }
+    @Test
     public void filter_all(){
         String input="\u001b[0m";
         assertEquals("all input should be filtered","",filter(input));
@@ -53,7 +63,6 @@ public class EscapeFilteredStreamTest {
     @Test
     public void filter_head(){
         String input="\u001b[0mm";
-        System.out.println(EscapeFilteredStream.printByteCharacters(input.getBytes(),0,input.getBytes().length));
         assertEquals("header should be filtered","m",filter(input));
     }
     @Test

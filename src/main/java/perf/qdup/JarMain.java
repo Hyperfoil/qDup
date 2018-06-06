@@ -37,6 +37,12 @@ public class JarMain {
         Options options = new Options();
 
         OptionGroup basePathGroup = new OptionGroup();
+        basePathGroup.addOption(Option.builder("T")
+            .longOpt("test")
+            .required()
+            .desc("test the yaml without running it")
+            .build()
+        );
         basePathGroup.addOption(Option.builder("b")
             .longOpt("basePath")
             .required()
@@ -201,11 +207,6 @@ public class JarMain {
             outputPath = cmd.getOptionValue("fullPath");
         }
 
-        File outputFile = new File(outputPath);
-        if(!outputFile.exists()){
-            outputFile.mkdirs();
-        }
-        File yamlJson = new File(new File(outputPath),"yaml.json");
 
         YamlParser yamlParser = new YamlParser();
         for(String yamlPath : yamlPaths){
@@ -226,13 +227,6 @@ public class JarMain {
 
                 }
             }
-        }
-
-        try {
-            yamlJson.createNewFile();
-            Files.write(yamlJson.toPath(),yamlParser.getJson().toString(2).getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
@@ -266,6 +260,24 @@ public class JarMain {
         }
 
         RunConfig config = runConfigBuilder.buildConfig();
+
+        if(cmd.hasOption("test")){
+            System.out.println(config.debug());
+            System.exit(0);
+        }
+
+        File outputFile = new File(outputPath);
+        if(!outputFile.exists()){
+            outputFile.mkdirs();
+        }
+        File yamlJson = new File(new File(outputPath),"yaml.json");
+        try {
+            yamlJson.createNewFile();
+            Files.write(yamlJson.toPath(),yamlParser.getJson().toString(2).getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
         //TODO RunConfig should be immutable and terminal color is probably better stored in Run
         if (cmd.hasOption("colorTerminal") ){

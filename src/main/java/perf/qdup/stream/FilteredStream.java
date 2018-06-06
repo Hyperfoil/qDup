@@ -1,8 +1,13 @@
 package perf.qdup.stream;
 
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
+
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -11,6 +16,7 @@ import java.util.function.Consumer;
  * TODO need to also create a a suffix filter (for PROMPT)
  */
 public class FilteredStream extends MultiStream{
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     private byte[] buffered;
     private int writeIndex = 0;
@@ -25,6 +31,30 @@ public class FilteredStream extends MultiStream{
         replacements = new HashMap<>();
         observers = new LinkedList<>();
     }
+
+    public void flushBuffer(){
+        if(writeIndex>0){
+            try {
+                superWrite(buffered,0,writeIndex);
+            } catch (IOException e) {
+                //e.printStackTrace();
+            }
+            writeIndex=0;
+        }
+    }
+
+    @Override
+    public void flush()throws IOException {
+        //flushBuffer();
+        super.flush();
+    }
+
+    @Override
+    public void close()throws IOException {
+        flushBuffer();
+        super.close();
+    }
+
 
     public void addObserver(Consumer<String> consumer){
         observers.add(consumer);
@@ -78,6 +108,15 @@ public class FilteredStream extends MultiStream{
 
     @Override
     public void write(byte b[], int off, int len) throws IOException {
+        if(b==null || len < 0 || off + len > b.length){
+            System.out.println(getClass().getName()+".write("+off+","+len+")");
+            System.out.println(MultiStream.printByteCharacters(b,off,Math.min(10,b.length-off)));
+            System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
+            System.exit(-1);
+        }
+        logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
+
+        try{
         int flushIndex = 0;
         int trailingPrefixIndex = Integer.MAX_VALUE;
         if(filters.isEmpty()){
@@ -126,14 +165,23 @@ public class FilteredStream extends MultiStream{
                         if ( flushIndex < currentIndex) {
                             superWrite(buffered,flushIndex, currentIndex - flushIndex);
                         }
-                        if(hasReplacement(matchedName)){
+                        if(hasReplacement(matchedName) && replacements.get(matchedName).length > 0){
                             superWrite(replacements.get(matchedName),0,replacements.get(matchedName).length);
                         }
-                        currentIndex += filters.get(matchedName).length;
+                        int nextIndex = currentIndex + filters.get(matchedName).length;
+                        //trap the potential \r\n if we filtered the entire write / line
+                        //TODO BUG, this can increment currentIndex && flushIndex beyondWriteIndex
+                        if(currentIndex == off && nextIndex < writeIndex && (buffered[nextIndex]=='\n' || buffered[nextIndex]=='\r') ){
+                            nextIndex++;
+                        }
+                        if(currentIndex == off && nextIndex < writeIndex &&  (buffered[nextIndex]=='\n' || buffered[nextIndex]=='\r') ){
+                            nextIndex++;
+                        }
+                        //currentIndex += filters.get(matchedName).length;
+                        currentIndex = nextIndex;
                         flushIndex = currentIndex;
                         trailingPrefixIndex = Integer.MAX_VALUE;
                     }
-
                 }while(filtered);
             }
 
@@ -143,20 +191,21 @@ public class FilteredStream extends MultiStream{
                 }
                 flushIndex = trailingPrefixIndex;
             }else{// no matches and no potential matches, flush everything
-                superWrite(buffered,flushIndex,writeIndex-flushIndex);
-                flushIndex = writeIndex-1;
+                superWrite(buffered,flushIndex,writeIndex-flushIndex);//here is where writeIndex-flushIndex == -2
+                //flushIndex = writeIndex-1;
                 flushIndex = writeIndex;//TODO testing if fixes double write
             }
-
             //compact the buffer if we haven't flushed everything
             if(flushIndex > 0 ) {
                 System.arraycopy(buffered, flushIndex, buffered, 0, writeIndex-flushIndex);
                 writeIndex=writeIndex-flushIndex;
             }
         }
-
-
-
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+            e.printStackTrace(System.out);
+            System.exit(-1);
+        }
     }
     public boolean hasSuffix(byte b[],byte suffix[],int off,int len){
         boolean rtrn = true;

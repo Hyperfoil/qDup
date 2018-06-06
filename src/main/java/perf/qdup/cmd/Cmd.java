@@ -489,10 +489,7 @@ public abstract class Cmd {
     }
     public Map<String,String> getWith(){return Collections.unmodifiableMap(with);}
 
-
-
     public int getUid(){return uid;}
-
 
     public String tree(){
         return tree(0,false);
@@ -509,7 +506,6 @@ public abstract class Cmd {
         }else{
             rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this.toString()) );
         }
-
         with.forEach((k,v)->{
             String value = String.format("%"+(correctedIndent+4)+"swith: %s=%s%n","",k.toString(),v.toString());
             rtrn.append(value);
@@ -536,7 +532,6 @@ public abstract class Cmd {
     public Cmd getNext(){return next;}
     private void setNext(Cmd next){
         if(this.next == null) {
-
             this.next = next;
         }
     }

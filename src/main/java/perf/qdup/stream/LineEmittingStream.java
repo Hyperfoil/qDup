@@ -1,18 +1,25 @@
 package perf.qdup.stream;
 
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
+
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
  * A Stream that emits lines to Consumers
  */
 public class LineEmittingStream extends OutputStream {
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-    int index = 0;
+    int writeIndex = 0;
     byte buffered[] = new byte[4*1024];
 
     private List<Consumer<String>> consumers = new LinkedList<>();
@@ -26,17 +33,26 @@ public class LineEmittingStream extends OutputStream {
         return consumers.remove(consumer);
     }
 
-    public void reset() { index = 0; }
+    public void reset() { writeIndex = 0; }
 
     public void forceEmit(){
-        if(index>0) {
-            emit(buffered, 0, index);
+
+        if(writeIndex >0) {
+            emit(buffered, 0, writeIndex);
+            reset();
         }
     }
 
     @Override
-    public void close(){
+    public void flush() throws IOException {
+        //forceEmit();
+        super.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
         forceEmit();
+        super.close();
     }
 
     @Override
@@ -47,48 +63,57 @@ public class LineEmittingStream extends OutputStream {
     }
     @Override
     public void write(byte b[], int off, int len) {
-        int lineBreak = -1;
-        int next=-1;
-        int lim = off+len;
-
-        //printB(b,off,len);
-        for(int i = off; i<lim; i++){
-            if( b[i] == 10 || b[i]==13 ){ // if CR or LR
-                lineBreak=i;
-                if(index==0){
-                    emit(b,off,lineBreak-off);//because we don't want the char @ lineBreak
-                }else{
-                    if(index+lineBreak-off >= buffered.length){
-                        byte newBuf[] = new byte[buffered.length*2];
-                        System.arraycopy(buffered,0,newBuf,0,index);
-                        buffered = newBuf;
-                    }
-
-                    System.arraycopy(b,off,buffered,index,(lineBreak-off));
-                    index+=(lineBreak-off);
-
-                    emit(buffered,0,index);
-                }
-                if(i+1 < lim && (b[i+1]==10 || b[i+1]==13)){//skip the next CR or LR
-
-                    lineBreak++;
-                    i++;
-                }
-                len-=lineBreak-off+1;//because we don't want the char @ lineBreak
-                off=lineBreak+1;//because we don't want the char @ lineBreak
-                //printB(b,off,len);
-            }
+        if(b==null || len < 0 || off + len > b.length){
+            System.out.println(getClass().getName()+".write("+off+","+len+")");
+            System.out.println(MultiStream.printByteCharacters(b,off,Math.min(10,b.length-off)));
+            System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
+            System.exit(-1);
         }
-        if(len>0){
+        logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
 
-            if(index+len>buffered.length){
-                byte newBuffered[] = new byte[buffered.length*2];
-                System.arraycopy(buffered,0,newBuffered,0,index);
-                buffered = newBuffered;
+        try {
+            int writeFrom = off;
+            //printB(b,off,len);
+            for (int i = 0; i < len; i++) {
+                if (b[off + i] == 10 || b[off + i] == 13) { // if CR or LR
+                    if (writeIndex == 0) {//nothing buffered, can just flush from b
+                        logger.info("LES.emit writeIndex==0 ("+writeFrom+","+(off+i-writeFrom)+")\n"+MultiStream.printByteCharacters(b,writeFrom,off+i-writeFrom));
+                        emit(b, writeFrom, off + i - writeFrom);
+                    } else {//have to add up to off+i to buffered to emit all at once
+                        if (writeIndex + off + i >= buffered.length) {
+                            byte newBuffered[] = new byte[buffered.length * 2];
+                            System.arraycopy(buffered, 0, newBuffered, 0, writeIndex);
+                            buffered = newBuffered;
+                        }
+                        System.arraycopy(b, off, buffered, writeIndex, off + i - writeFrom);
+                        writeIndex = writeIndex + off + i - writeFrom;
+                        logger.info("LES.emit buffered ("+0+","+(writeIndex)+")\n"+MultiStream.printByteCharacters(buffered,0,writeIndex));
+                        emit(buffered, 0, writeIndex);
+                        reset();
+                        logger.info("LES.emit buffered writeIndex="+writeIndex);
+                    }
+                    if (i + 1 < len && (b[off + i + 1] == 10 || b[off + i + 1] == 13)) {//skip the next CR or LR
+                        writeFrom++;//skip over the CR or LR
+                        i++;//same
+                    }
+                    writeFrom = off + i + 1;//+1 to skip over the current CR|LR
+                }
             }
+            if (writeFrom < off + len) {
+                int toBuffer = (off + len - writeFrom);//remaining bytes
+                if (writeIndex + toBuffer > buffered.length) {
+                    byte newBuffered[] = new byte[buffered.length * 2];
+                    System.arraycopy(buffered, 0, newBuffered, 0, writeIndex);
+                    buffered = newBuffered;
+                }
 
-            System.arraycopy(b,off,buffered,index,len);
-            index+=len;
+                System.arraycopy(b, off, buffered, writeIndex, toBuffer);
+                writeIndex += toBuffer;
+            }
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+            e.printStackTrace(System.out);
+            System.exit(-1);
         }
     }
     public int find(byte[] array,byte[] content,int start,int length){
@@ -117,22 +142,20 @@ public class LineEmittingStream extends OutputStream {
         return -1;
     }
     private void emit(byte content[], int start,int length){
-        int lim = start+length;
         //trips out ANSI escape sequences (such as terminal coloring)
-        String toEmit = new String(content,start,length).replaceAll("\u001B\\[[;\\d]*m", "");
+        String toEmit = new String(content,start,length);
         if(!consumers.isEmpty()){
             for(Consumer<String> consumer : consumers){
                 consumer.accept(toEmit);
             }
         }
-        reset();
     }
 
     public int getBufferLength() {
         return buffered.length;
     }
 
-    public int getIndex() {
-        return index;
+    public int getWriteIndex() {
+        return writeIndex;
     }
 }

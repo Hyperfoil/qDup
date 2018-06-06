@@ -1,15 +1,21 @@
 package perf.qdup.stream;
 
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 import perf.yaup.Sets;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * need to return length of full match or length or partial match
  * just return length of match and then check if last char is m
  */
 public class EscapeFilteredStream extends MultiStream {
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     private static final Set<Character> CONTROL_SUFFIX = Sets.of(
             'A',//cursor up
@@ -41,61 +47,93 @@ public class EscapeFilteredStream extends MultiStream {
     protected void superWrite(byte b[], int off, int len) throws IOException {
         super.write(b,off,len);
     }
+
+    public void flushBuffer() throws IOException {
+        if(writeIndex>0){
+            superWrite(buffered,0,writeIndex);
+            writeIndex=0;
+        }
+    }
+
+    @Override
+    public void flush()throws IOException {
+        //flushBuffer();
+    }
+
+    @Override
+    public void close()throws IOException {
+        flushBuffer();
+    }
+
+
     @Override
     public void write(byte b[]) throws IOException {
         write(b,0,b.length);
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-        int flushIndex = 0;
-        int trailingEscapeIndex = Integer.MAX_VALUE;
-        if(writeIndex + len > buffered.length){
-            int needed = writeIndex+len - buffered.length;
-            byte[] newBuffer = new byte[buffered.length+needed];
-            System.arraycopy(buffered,0,newBuffer,0,writeIndex);
-            buffered = newBuffer;
+        if(b==null || len < 0 || off + len > b.length){
+            System.out.println(getClass().getName()+".write("+off+","+len+")");
+            System.out.println(MultiStream.printByteCharacters(b,off,Math.min(10,b.length-off)));
+            System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
+            System.exit(-1);
         }
-        System.arraycopy(b,off,buffered,writeIndex,len);
-        writeIndex+=len;
-
-        for(int currentIndex = 0; currentIndex < writeIndex; currentIndex ++) {
-            boolean filtered = false;
-            do {
-                filtered = false;
-                int escapeLength = escapeLength(buffered, currentIndex, writeIndex - currentIndex);
-                if (isEscaped(buffered, currentIndex, escapeLength)) {//is full match, flush to super
-                    filtered = true;
-                } else if (escapeLength > 0) {//match reached end of buffer
-                    if (trailingEscapeIndex > currentIndex) {
-                        trailingEscapeIndex = currentIndex;
-                    }
-                }
-                if (filtered) {
-                    //broken escape sequences are not supported in terminals
-                    if (flushIndex < currentIndex) {
-                        superWrite(buffered, flushIndex, currentIndex - flushIndex);
-                    }
-                    currentIndex += escapeLength;
-                    flushIndex = currentIndex;
-                    trailingEscapeIndex = Integer.MAX_VALUE;
-                }
-            } while (filtered);
-        }
-        if(trailingEscapeIndex < Integer.MAX_VALUE){//flush from flushIndex to trailingPrefixIndex
-            if(trailingEscapeIndex-flushIndex>0){
-                superWrite(buffered, flushIndex, trailingEscapeIndex - flushIndex);
+        logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
+        try {
+            int flushIndex = 0;
+            int trailingEscapeIndex = Integer.MAX_VALUE;
+            if (writeIndex + len > buffered.length) {
+                int needed = writeIndex + len - buffered.length;
+                byte[] newBuffer = new byte[buffered.length + needed];
+                System.arraycopy(buffered, 0, newBuffer, 0, writeIndex);
+                buffered = newBuffer;
             }
-            flushIndex = trailingEscapeIndex;
-        }else{// no matches and no potential matches, flush everything
-            superWrite(buffered,flushIndex,writeIndex-flushIndex);
-            flushIndex = writeIndex-1;
-            flushIndex = writeIndex;//TODO testing if fixes double write
+            System.arraycopy(b, off, buffered, writeIndex, len);
+            writeIndex += len;
 
-
-            if(flushIndex > 0 ){
-                System.arraycopy(buffered,flushIndex,buffered,0,writeIndex-flushIndex);
-                writeIndex=writeIndex-flushIndex;
+            for (int currentIndex = 0; currentIndex < writeIndex; currentIndex++) {
+                boolean filtered = false;
+                do {
+                    filtered = false;
+                    int escapeLength = escapeLength(buffered, currentIndex, writeIndex - currentIndex);
+                    if (isEscaped(buffered, currentIndex, escapeLength)) {//is full match, flush to super
+                        filtered = true;
+                    } else if (escapeLength > 0) {//match reached end of buffer
+                        if (trailingEscapeIndex > currentIndex) {
+                            trailingEscapeIndex = currentIndex;
+                        }
+                    }
+                    if (filtered) {
+                        //broken escape sequences are not supported in terminals
+                        if (flushIndex < currentIndex) {
+                            superWrite(buffered, flushIndex, currentIndex - flushIndex);
+                        }
+                        currentIndex += escapeLength;
+                        flushIndex = currentIndex;
+                        trailingEscapeIndex = Integer.MAX_VALUE;
+                    }
+                } while (filtered);
             }
+            if (trailingEscapeIndex < Integer.MAX_VALUE) {//flush from flushIndex to trailingPrefixIndex
+                if (trailingEscapeIndex - flushIndex > 0) {
+                    superWrite(buffered, flushIndex, trailingEscapeIndex - flushIndex);
+                }
+                flushIndex = trailingEscapeIndex;
+            } else {// no matches and no potential matches, flush everything
+                superWrite(buffered, flushIndex, writeIndex - flushIndex);
+                flushIndex = writeIndex - 1;
+                flushIndex = writeIndex;//TODO testing if fixes double write
+
+
+                if (flushIndex > 0) {
+                    System.arraycopy(buffered, flushIndex, buffered, 0, writeIndex - flushIndex);
+                    writeIndex = writeIndex - flushIndex;
+                }
+            }
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+            e.printStackTrace(System.out);
+            System.exit(-1);
         }
     }
     //basically just makes sure we have \u001b[...m

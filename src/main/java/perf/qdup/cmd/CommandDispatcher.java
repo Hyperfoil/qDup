@@ -5,6 +5,7 @@ import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.cmd.impl.Abort;
 import perf.qdup.cmd.impl.Done;
 import perf.qdup.cmd.impl.Sh;
+import perf.qdup.stream.MultiStream;
 import perf.yaup.AsciiArt;
 import perf.yaup.json.Json;
 
@@ -107,23 +108,30 @@ public class CommandDispatcher {
         private void logCmdOutput(Cmd command,String output){
             if(command!=null && output!=null){
                 command.setOutput(output);
+                String cmdOutput="";
+                String withOutput="";
+                if(!command.isSilent()) {
+                    //include output
+                    cmdOutput = "\n" + output;
+                }
+                if(!command.getWith().isEmpty()){
+                    StringBuilder sb = new StringBuilder();
+                    command.getWith().forEach((k,v)->{
+                        sb.append(String.format("  %s=%s",k,v));
+                    });
+                    withOutput="\n"+sb.toString();
+                }
                 if(command instanceof Sh){
-                    if(!command.isSilent()){
-                        //include output
-                        context.getRunLogger().info("{}:{}:({}){}\n{}",command.getHead(),context.getSession().getHost().toString(),command.getUid(), command,output);
-                    }else{
-                        //no output
-                        context.getRunLogger().info("{}:{}:({}){}",command.getHead(),context.getSession().getHost().toString(),command.getUid(),command);
-                    }
+                        context.getRunLogger().info("{}:{}:({}){}{}{}",command.getHead(),context.getSession().getHost().toString(),command.getUid(), command,withOutput,cmdOutput);
                 }else{
                     if(command.isSilent()){
-                        context.getRunLogger().info("{}:{}:({}){}",command.getHead(),context.getSession().getHost().toString(),command.getUid(),command);
+                        context.getRunLogger().info("{}:{}:({}){}{}",command.getHead(),context.getSession().getHost().toString(),command.getUid(),command,withOutput);
                     }else if (command.getPrevious()==null || !output.equals(command.getPrevious().getOutput())){
                         //include output
-                        context.getRunLogger().info("{}:{}:({}){}\n{}",command.getHead(),context.getSession().getHost().toString(),command.getUid(), command,output);
+                        context.getRunLogger().info("{}:{}:({}){}{}{}",command.getHead(),context.getSession().getHost().toString(),command.getUid(), command,withOutput,output);
                     }else{
                         //no output
-                        context.getRunLogger().info("{}:{}:({}){}",command.getHead(),context.getSession().getHost().toString(),command.getUid(),command);
+                        context.getRunLogger().info("{}:{}:({}){}{}",command.getHead(),context.getSession().getHost().toString(),command.getUid(),command,withOutput);
                     }
                 }
             }
@@ -210,13 +218,15 @@ public class CommandDispatcher {
         public long getStartTime(){ return startTime; }
     }
     class RunWatchers implements Runnable {
-        String name;
-        BlockingQueue<String> queue;
-        List<Cmd> watchers;
-        Context context;
-        CommandResult result;
+        final String name;
+        final BlockingQueue<String> queue;
+        final List<Cmd> watchers;
+        final Context context;
+        final CommandResult result;
+        final String stopUid = "stop-"+System.currentTimeMillis();
+
         boolean stop = false;
-        String stopUid = "stop-"+System.currentTimeMillis();
+
         public RunWatchers(String name, List<Cmd> watchers, Context context, CommandResult result, BlockingQueue<String> queue){
             this.name = name;
             this.watchers = watchers;
@@ -245,6 +255,8 @@ public class CommandDispatcher {
             String line = null;
             try {
                 while( (line=queue.take())!=stopUid && !stop){
+                    logger.info("{} line={}",this.name,line);
+                    logger.info(MultiStream.printByteCharacters(line.getBytes(),0,line.getBytes().length));
                     if(!stop) {
                         for (Cmd watcher : watchers) {
                             try {
@@ -617,7 +629,7 @@ public class CommandDispatcher {
             WatcherResult watcherResult = new WatcherResult(context);
             BlockingQueue<String> queue = new LinkedBlockingQueue<>();
 
-            RunWatchers watcherRunnable = new RunWatchers("watch:"+command,command.getWatchers(),context,watcherResult,queue);
+            RunWatchers watcherRunnable = new RunWatchers("watch:"+command.getUid(),command.getWatchers(),context,watcherResult,queue);
             activeCommands.get(command).setRunWatchers(watcherRunnable);
             logger.trace("queueing {} watchers\n  host={}\n  command={}",command.getWatchers().size(),
                     context.getSession().getHost(),

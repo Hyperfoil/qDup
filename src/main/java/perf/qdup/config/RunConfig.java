@@ -121,7 +121,7 @@ public class RunConfig {
             for(String scriptName : scripts.keySet()){
                 sb.append(""+scriptName+"\n");
                 Script script = scripts.get(scriptName);
-                sb.append(script.tree(2,false));
+                sb.append(script.tree(2,true));
             }
         }else{
             sb.append("NO SCRIPTS\n");
@@ -131,7 +131,7 @@ public class RunConfig {
             for(Host host : setupCmds.keySet()){
                 sb.append("  "+host.toString()+"\n");
                 Cmd cmd = setupCmds.get(host);
-                sb.append(cmd.tree());
+                sb.append(cmd.tree(2,true));
                 cmd.getThens().forEach(then->{
 
                 });
