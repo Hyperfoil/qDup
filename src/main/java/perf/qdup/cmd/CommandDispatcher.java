@@ -255,8 +255,8 @@ public class CommandDispatcher {
             String line = null;
             try {
                 while( (line=queue.take())!=stopUid && !stop){
-                    logger.info("{} line={}",this.name,line);
-                    logger.info(MultiStream.printByteCharacters(line.getBytes(),0,line.getBytes().length));
+                    //logger.info("{} line={}",this.name,line);
+                    //logger.info(MultiStream.printByteCharacters(line.getBytes(),0,line.getBytes().length));
                     if(!stop) {
                         for (Cmd watcher : watchers) {
                             try {

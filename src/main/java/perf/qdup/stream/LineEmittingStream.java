@@ -69,7 +69,7 @@ public class LineEmittingStream extends OutputStream {
             System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
             System.exit(-1);
         }
-        logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
+        //logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
 
         try {
             int writeFrom = off;
@@ -77,7 +77,7 @@ public class LineEmittingStream extends OutputStream {
             for (int i = 0; i < len; i++) {
                 if (b[off + i] == 10 || b[off + i] == 13) { // if CR or LR
                     if (writeIndex == 0) {//nothing buffered, can just flush from b
-                        logger.info("LES.emit writeIndex==0 ("+writeFrom+","+(off+i-writeFrom)+")\n"+MultiStream.printByteCharacters(b,writeFrom,off+i-writeFrom));
+                        //logger.info("LES.emit writeIndex==0 ("+writeFrom+","+(off+i-writeFrom)+")\n"+MultiStream.printByteCharacters(b,writeFrom,off+i-writeFrom));
                         emit(b, writeFrom, off + i - writeFrom);
                     } else {//have to add up to off+i to buffered to emit all at once
                         if (writeIndex + off + i >= buffered.length) {
@@ -87,10 +87,10 @@ public class LineEmittingStream extends OutputStream {
                         }
                         System.arraycopy(b, off, buffered, writeIndex, off + i - writeFrom);
                         writeIndex = writeIndex + off + i - writeFrom;
-                        logger.info("LES.emit buffered ("+0+","+(writeIndex)+")\n"+MultiStream.printByteCharacters(buffered,0,writeIndex));
+                        //logger.info("LES.emit buffered ("+0+","+(writeIndex)+")\n"+MultiStream.printByteCharacters(buffered,0,writeIndex));
                         emit(buffered, 0, writeIndex);
                         reset();
-                        logger.info("LES.emit buffered writeIndex="+writeIndex);
+                        //logger.info("LES.emit buffered writeIndex="+writeIndex);
                     }
                     if (i + 1 < len && (b[off + i + 1] == 10 || b[off + i + 1] == 13)) {//skip the next CR or LR
                         writeFrom++;//skip over the CR or LR

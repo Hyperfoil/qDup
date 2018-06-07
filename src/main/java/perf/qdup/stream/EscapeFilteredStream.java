@@ -78,7 +78,7 @@ public class EscapeFilteredStream extends MultiStream {
             System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
             System.exit(-1);
         }
-        logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
+        //logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
         try {
             int flushIndex = 0;
             int trailingEscapeIndex = Integer.MAX_VALUE;
@@ -96,7 +96,7 @@ public class EscapeFilteredStream extends MultiStream {
                 do {
                     filtered = false;
                     int escapeLength = escapeLength(buffered, currentIndex, writeIndex - currentIndex);
-                    if (isEscaped(buffered, currentIndex, escapeLength)) {//is full match, flush to super
+                    if (escapeLength > 0 && isEscaped(buffered, currentIndex, escapeLength)) {//is full match, flush to super
                         filtered = true;
                     } else if (escapeLength > 0) {//match reached end of buffer
                         if (trailingEscapeIndex > currentIndex) {
@@ -138,7 +138,7 @@ public class EscapeFilteredStream extends MultiStream {
     }
     //basically just makes sure we have \u001b[...m
     public boolean isEscaped(byte b[],int off,int len){
-        return len>3 && b[off]==27 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]);
+        return len>=3 && b[off]==27 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]);
     }
     //return length of match up to len or 0 if match failed
     public int escapeLength(byte b[], int off, int len){

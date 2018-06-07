@@ -110,12 +110,10 @@ public class SshSession implements Runnable, Consumer<String>{
     }
 
     public boolean connect(long timeoutMillis){
-
         if(isOpen()){
             return true;
         }
         boolean rtrn = false;
-
         try {
             clientSession = sshClient.connect(host.getUserName(),host.getHostName(),host.getPort()).verify(10_000).getSession();
             clientSession.addPublicKeyIdentity(SecurityUtils.loadKeyPairIdentity(
@@ -150,7 +148,6 @@ public class SshSession implements Runnable, Consumer<String>{
             //semaphoreStream.addStream("promptMonitor",promptStream);
 
 
-            //filteredStream.addFilter("PROMPT","\n"+ PROMPT);
             filteredStream.addFilter("^C",new byte[]{0,0,0,3});
             filteredStream.addFilter("echo-^C","^C");
             filteredStream.addFilter("^P",new byte[]{0,0,0,16});

@@ -87,7 +87,7 @@ public class SuffixStream extends MultiStream {
             System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
             System.exit(-1);
         }
-        logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
+        //logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
 
         try {
             int trailingSuffixLength = Integer.MIN_VALUE;
