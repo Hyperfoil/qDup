@@ -145,8 +145,7 @@ public class SshSession implements Runnable, Consumer<String>{
             semaphoreStream.addStream("filtered",filteredStream);
             //
             //TODO removed for debugging, at it back or we break su
-            //semaphoreStream.addStream("promptMonitor",promptStream);
-
+            semaphoreStream.addStream("promptMonitor",promptStream);
 
             filteredStream.addFilter("^C",new byte[]{0,0,0,3});
             filteredStream.addFilter("echo-^C","^C");
