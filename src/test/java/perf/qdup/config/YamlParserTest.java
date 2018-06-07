@@ -98,6 +98,26 @@ public class YamlParserTest extends SshTestBase {
 
     }
 
+    @Test
+    public void doubleSlashQuote_value(){
+        YamlParser parser = new YamlParser();
+        parser.load("slash",stream(""+
+            "- sh: e\"s 'f\\\\\"",
+            "  - for-each: container"
+        ));
+
+        validateParse(parser);
+
+        Json slash = parser.getJson("slash");
+        assertTrue("slash is array[1]",slash.isArray() && slash.size()==1);
+        Json first = slash.getJson(0);
+
+        assertTrue("first has child",first.has(CHILD) && first.getJson(CHILD).isArray());
+        Json firstFirstChild = first.getJson(CHILD).getJson(0).getJson(0);
+        assertEquals("first[0].key:\n"+firstFirstChild.toString(2),"for-each",firstFirstChild.getString(KEY));
+
+    }
+
     @Test(timeout = 10_000)
     public void bug_nestFirstChild(){
         YamlParser parser = new YamlParser();

@@ -301,7 +301,8 @@ public class YamlParser {
                                     boolean stop = false;
                                     boolean inVariable = false;
                                     while (i < line.length() && !stop) {
-                                        switch (line.charAt(i)) {
+                                        char switchMe = line.charAt(i);
+                                        switch (switchMe) {
                                             case ',': //, separating key:value , key:value inline map
                                                 if (!quoted && !inVariable && !inlineStack.isEmpty()) {
                                                     stop = true;
@@ -321,6 +322,11 @@ public class YamlParser {
                                                     state = State.ExpectKey;//expect key captures the comment
                                                 }
                                                 break;
+                                            case '\\':
+                                                if(i+1<line.length()){
+                                                    i++;//skip over the next character
+                                                }
+                                                break;
                                             case '"':
                                             case '\'':
                                                 if (!quoted) {
@@ -328,7 +334,7 @@ public class YamlParser {
                                                     quoteClose = line.charAt(i);
                                                     quotedKey = VALUE;
                                                 } else {
-                                                    if ('\\' == line.charAt(i - 1) || quoteClose != line.charAt(i)) {
+                                                    if (/*'\\' == line.charAt(i - 1) ||*/ quoteClose != line.charAt(i)) {
                                                         //not a close quote
                                                     } else {
                                                         quoted = false;
