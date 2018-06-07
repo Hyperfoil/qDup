@@ -112,6 +112,9 @@ public class RunConfig {
 
 
     public String debug(){
+        return debug(false);
+    }
+    public String debug(boolean full){
         if(hasErrors()){
             return getErrors().stream().collect(Collectors.joining("\n"));
         }
@@ -121,7 +124,7 @@ public class RunConfig {
             for(String scriptName : scripts.keySet()){
                 sb.append(""+scriptName+"\n");
                 Script script = scripts.get(scriptName);
-                sb.append(script.tree(2,true));
+                sb.append(script.tree(2,full));
             }
         }else{
             sb.append("NO SCRIPTS\n");

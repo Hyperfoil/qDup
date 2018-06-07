@@ -362,12 +362,12 @@ public class CommandDispatcher {
                 entry.set("host",activeCommandInfo.getContext().getSession().getHost().toString());
                 String output = activeCommandInfo.getContext().getSession().peekOutput();
                 entry.set("output",output);
+                entry.set("input",cmd.getPrevious()!=null?cmd.getPrevious().getOutput():"");
             }
             entry.set("startTime",activeCommandInfo.getStartTime());
             entry.set("runTime",(System.currentTimeMillis()-activeCommandInfo.getStartTime()));
             entry.set("lastUpdate",activeCommandInfo.getLastUpdate());
             entry.set("idleTime",(System.currentTimeMillis()-activeCommandInfo.getLastUpdate()));
-
             rtrn.add(entry);
         });
         return rtrn;
