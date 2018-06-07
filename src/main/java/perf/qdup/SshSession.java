@@ -110,12 +110,10 @@ public class SshSession implements Runnable, Consumer<String>{
     }
 
     public boolean connect(long timeoutMillis){
-
         if(isOpen()){
             return true;
         }
         boolean rtrn = false;
-
         try {
             clientSession = sshClient.connect(host.getUserName(),host.getHostName(),host.getPort()).verify(10_000).getSession();
             clientSession.addPublicKeyIdentity(SecurityUtils.loadKeyPairIdentity(
@@ -145,13 +143,13 @@ public class SshSession implements Runnable, Consumer<String>{
             escapeFilteredStream.addStream("semaphore",semaphoreStream);
 
             semaphoreStream.addStream("filtered",filteredStream);
-            semaphoreStream.addStream("promptMonitor",promptStream);
+            //
+            //TODO removed for debugging, at it back or we break su
+            //semaphoreStream.addStream("promptMonitor",promptStream);
 
-            filteredStream.addStream("lines",lineEmittingStream);
-            filteredStream.addStream("sh",shStream);
 
-            //filteredStream.addFilter("PROMPT","\n"+ PROMPT);
             filteredStream.addFilter("^C",new byte[]{0,0,0,3});
+            filteredStream.addFilter("echo-^C","^C");
             filteredStream.addFilter("^P",new byte[]{0,0,0,16});
             filteredStream.addFilter("^T",new byte[]{0,0,0,20});
             filteredStream.addFilter("^X",new byte[]{0,0,0,24});
@@ -159,6 +157,7 @@ public class SshSession implements Runnable, Consumer<String>{
 
             lineEmittingStream.addConsumer(this);
 
+            //semaphoreStream.addSuffix("\r\nPROMPT","\r\n"+PROMPT,"");
             semaphoreStream.addSuffix("PROMPT",PROMPT,"");
             semaphoreStream.addConsumer((name)-> this.run());
 
@@ -202,6 +201,9 @@ public class SshSession implements Runnable, Consumer<String>{
                 e.printStackTrace();
                 Thread.interrupted();
             }
+
+            filteredStream.addStream("lines",lineEmittingStream);
+            filteredStream.addStream("sh",shStream);
 
         } catch (GeneralSecurityException | IOException e) {
             logger.error("Exception while connecting to {}@{}\n{}",host.getUserName(),host.getHostName(),e.getMessage());
@@ -303,7 +305,7 @@ public class SshSession implements Runnable, Consumer<String>{
     }
     private void sh(String command,boolean acquireLock,Cmd cmd, CommandResult result, Map<String,String> prompt){
         logger.trace("{} sh: {}, lock: {}",host,command,acquireLock);
-
+        lineEmittingStream.reset();
         if(isOpen()) {
             if (command == null) {
                 return;
@@ -393,6 +395,7 @@ public class SshSession implements Runnable, Consumer<String>{
     //Called when the semaphore is released
     @Override
     public void run() {
+        filteredStream.flushBuffer();
         lineEmittingStream.forceEmit();
         String output = shStream.toString()
                 .replaceAll("^[\r\n]+","")  //replace leading newlines

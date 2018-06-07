@@ -484,7 +484,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             }
         }
         try {
-            boolean ok = dispatcher.getExecutor().invokeAll(connectSessions).stream().map((f) -> {
+            boolean ok = dispatcher.getExecutor().invokeAll(connectSessions,60,TimeUnit.SECONDS).stream().map((f) -> {
                 boolean rtrn = false;
                 try {
                     rtrn = f.get();
@@ -509,7 +509,6 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     private void queueCleanupScripts(){
         logger.info("{}.queueCleanupScripts",this);
         //run before cleanup
-//        runPendingDownloads();
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
         for(Host host : config.getCleanupHosts()){
             Cmd cleanupCmd = config.getCleanupCmd(host);

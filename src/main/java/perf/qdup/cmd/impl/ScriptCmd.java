@@ -32,4 +32,5 @@ public class ScriptCmd extends Cmd {
     public Cmd copy() {
         return new ScriptCmd(name);
     }
+
 }

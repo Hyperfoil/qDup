@@ -25,6 +25,44 @@ public class EscapeFilteredStreamTest {
     }
 
     @Test
+    public void near_miss_mid(){
+        String input = "  \u001b[bar";
+        EscapeFilteredStream fs = new EscapeFilteredStream();
+        ByteArrayOutputStream bao = new ByteArrayOutputStream();
+        fs.addStream("bao",bao);
+
+        try {
+            fs.write(input.getBytes(),0,input.getBytes().length);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        String response = new String(bao.toByteArray());
+
+        assertEquals("expect to remove the escape:","  \u001b[bar",filter(input));
+
+    }
+
+    @Test
+    public void filter_mid(){
+        String input = "  \u001b[Kbar";
+
+        EscapeFilteredStream fs = new EscapeFilteredStream();
+        ByteArrayOutputStream bao = new ByteArrayOutputStream();
+        fs.addStream("bao",bao);
+
+        try {
+            fs.write(input.getBytes(),0,input.getBytes().length);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        String response = new String(bao.toByteArray());
+
+        assertEquals("expect to remove the escape:","  bar",filter(input));
+    }
+
+    @Test
     public void no_filter(){
         String input="foo";
         assertEquals("input should equal output",input,filter(input));
@@ -40,6 +78,16 @@ public class EscapeFilteredStreamTest {
         assertEquals("should only buffer tail","foo",filter(input));
     }
     @Test
+    public void filter_K_noDigit(){
+        String input="foo\u001b[K";
+        assertEquals("should only be foo","foo",filter(input));
+    }
+    @Test
+    public void filter_J_noDigit(){
+        String input="foo\u001b[J";
+        assertEquals("should only be foo","foo",filter(input));
+    }
+    @Test
     public void filter_all(){
         String input="\u001b[0m";
         assertEquals("all input should be filtered","",filter(input));
@@ -53,7 +101,6 @@ public class EscapeFilteredStreamTest {
     @Test
     public void filter_head(){
         String input="\u001b[0mm";
-        System.out.println(EscapeFilteredStream.printByteCharacters(input.getBytes(),0,input.getBytes().length));
         assertEquals("header should be filtered","m",filter(input));
     }
     @Test
@@ -79,6 +126,9 @@ public class EscapeFilteredStreamTest {
         assertEquals("partial match ; digit",5,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[0m";
         assertEquals("full match",4,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
+        input = "\u001b[K";
+        assertEquals("full match",input.getBytes().length,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
+
         input = "x";
         assertEquals("no match",0,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
         input = "\u001bx";
@@ -89,7 +139,6 @@ public class EscapeFilteredStreamTest {
         assertEquals("no match",0,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[0;x";
         assertEquals("no match",0,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
-
     }
 
     @Test

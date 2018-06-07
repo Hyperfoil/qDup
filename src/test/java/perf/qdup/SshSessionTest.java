@@ -35,21 +35,30 @@ public class SshSessionTest extends SshTestBase{
     @Test
     public void echo_PS1(){
         SshSession sshSession = new SshSession(getHost());
+
         sshSession.sh("echo \""+SshSession.PROMPT+"\"");
         String out = sshSession.getOutput();
-
-        assertEquals("one permit expected",1,sshSession.permits());
-        assertEquals("output should only be prompt",SshSession.PROMPT,out);
-
         try {
-            Thread.sleep(1_000);//allow any junk into the output stream that might occur
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        assertEquals("output should only be prompt",SshSession.PROMPT,out);
+        assertEquals("one prompt permit expected",1,sshSession.permits());
+
+
         sshSession.sh("echo foo");
         out = sshSession.getOutput();
-        assertEquals("one permit expected",1,sshSession.permits());
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         assertEquals("output should only be foo","foo",out);
+        assertEquals("one foo permit expected",1,sshSession.permits());
+
 
     }
 
