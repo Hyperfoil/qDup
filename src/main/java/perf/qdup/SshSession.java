@@ -143,12 +143,18 @@ public class SshSession implements Runnable, Consumer<String>{
             escapeFilteredStream.addStream("semaphore",semaphoreStream);
 
             semaphoreStream.addStream("filtered",filteredStream);
-            //
-            //TODO removed for debugging, at it back or we break su
             semaphoreStream.addStream("promptMonitor",promptStream);
+
+            //move before opening connection or sending
+            //was getting a ConcurrentModificationException with this after the setup sh() calls
+            filteredStream.addStream("lines",lineEmittingStream);
+            filteredStream.addStream("sh",shStream);
+
 
             filteredStream.addFilter("^C",new byte[]{0,0,0,3});
             filteredStream.addFilter("echo-^C","^C");
+            filteredStream.addFilter("^D",new byte[]{0,0,0,4});
+            filteredStream.addFilter("echo-^D","^D");
             filteredStream.addFilter("^P",new byte[]{0,0,0,16});
             filteredStream.addFilter("^T",new byte[]{0,0,0,20});
             filteredStream.addFilter("^X",new byte[]{0,0,0,24});
@@ -172,16 +178,16 @@ public class SshSession implements Runnable, Consumer<String>{
 
             channelShell.setIn(pipeIn);
 
+
             channelShell.setOut(escapeFilteredStream);//efs or ss
             channelShell.setErr(escapeFilteredStream);//PROMPT goes to error stream so have to listen there too
-
-
 
             if(timeoutMillis>0){
                 channelShell.open().verify(timeoutMillis).isOpened();
             }else{
                 channelShell.open().verify().isOpened();
             }
+
 
             sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
             sh("pwd");
@@ -201,8 +207,6 @@ public class SshSession implements Runnable, Consumer<String>{
                 Thread.interrupted();
             }
 
-            filteredStream.addStream("lines",lineEmittingStream);
-            filteredStream.addStream("sh",shStream);
 
         } catch (GeneralSecurityException | IOException e) {
             logger.error("Exception while connecting to {}@{}\n{}",host.getUserName(),host.getHostName(),e.getMessage());
