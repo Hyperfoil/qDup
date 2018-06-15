@@ -188,6 +188,34 @@ public class RunTest extends SshTestBase{
         assertEquals("for-each should run 3 times",3,counter.get());
     }
 
+    @Test
+    public void regex_empty(){
+        Script script = new Script("script");
+
+        script.then(
+            Cmd.sh("for line in 0 1 2; do if expr $line \">\" 50 > /dev/null; then echo SIGNIFICANT ; break; fi done;")
+                .then(Cmd.regex("^$")
+            )
+        );
+
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+
+        builder.addHostAlias("local",getHost().toString());
+        builder.addScript(script);
+
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","script",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+    }
+
     @Test(timeout=45_000)
     public void abort_callsCleanup(){
         StringBuilder setup = new StringBuilder();
