@@ -413,8 +413,6 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
         //moved to here because abort would avoid the cleanup in postRun()
         fileAppender.stop();
         consoleAppender.stop();
-
-        //dispatcher.closeSshSessions(); //was racing the close sessions from checkActiveCount
     }
     private void queueRunScripts(){
         logger.debug("{}.queueRunScripts",this);

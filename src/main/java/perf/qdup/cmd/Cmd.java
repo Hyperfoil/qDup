@@ -507,7 +507,7 @@ public abstract class Cmd {
             rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this.toString()) );
         }
         with.forEach((k,v)->{
-            String value = String.format("%"+(correctedIndent+4)+"swith: %s=%s%n","",k.toString(),v.toString());
+            String value = String.format("%"+(correctedIndent+4)+"swith: %s=%s%n","",k,v);
             rtrn.append(value);
         });
         watchers.forEach((w)->{w.tree(rtrn,correctedIndent+4,"watch:",debug);});
