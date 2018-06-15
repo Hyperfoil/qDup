@@ -5,9 +5,7 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class EscapeFilteredStreamTest {
 
@@ -22,6 +20,20 @@ public class EscapeFilteredStreamTest {
             e.printStackTrace();
         }
         return new String(bao.toByteArray());
+    }
+
+    @Test
+    public void single_char_length(){
+        String input = "\u001b";
+        EscapeFilteredStream fs = new EscapeFilteredStream();
+
+        try{
+            int length = fs.escapeLength(input.getBytes(),0,input.getBytes().length);
+
+            assertEquals("length should match ",1,length);
+        }catch(Exception e){
+            fail("Exception trying to get length of single char:"+e.getMessage());
+        }
     }
 
     @Test

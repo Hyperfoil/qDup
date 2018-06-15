@@ -144,25 +144,32 @@ public class EscapeFilteredStream extends MultiStream {
     public int escapeLength(byte b[], int off, int len){
         boolean matching = true;
         int rtrn = 0;
-        if(b[off]==27 && 1<=len && b[off+1]=='['){//\003[
-            rtrn=2;//the initial 2 matched characters
-            while(matching && rtrn<len){
-                while(rtrn < len && b[off+rtrn]>='0' && b[off+rtrn]<='9'){//digit
-                    rtrn++;
-                }
-                //not an integer, if ; continue
-                if(rtrn<len){
-                    if( b[off+rtrn]==';'){
-                        rtrn++;
-                    }else if (CONTROL_SUFFIX.contains((char)b[off+rtrn])){
-                        rtrn++;//we matched this character too
-                        matching=false;//end of match
-                    }else{//false alarm, not a valid escape character
-                        rtrn=0;
-                        matching=false;
+        if( b[off]==27 ) {//\003
+            rtrn=1;
+            if( 2 <= len ){
+                if (b[off+1]=='[' ){
+                    rtrn = 2;//the initial 2 matched characters
+                    while (matching && rtrn < len) {
+                        while (rtrn < len && b[off + rtrn] >= '0' && b[off + rtrn] <= '9') {//digit
+                            rtrn++;
+                        }
+                        //not an integer, if ; continue
+                        if (rtrn < len) {
+                            if (b[off + rtrn] == ';') {
+                                rtrn++;
+                            } else if (CONTROL_SUFFIX.contains((char) b[off + rtrn])) {
+                                rtrn++;//we matched this character too
+                                matching = false;//end of match
+                            } else {//false alarm, not a valid escape character
+                                rtrn = 0;
+                                matching = false;
+                            }
+                        } else {
+                            matching = false;//stop the match at end of len
+                        }
                     }
                 }else{
-                    matching=false;//stop the match at end of len
+                    rtrn = 0;
                 }
             }
         }else{
