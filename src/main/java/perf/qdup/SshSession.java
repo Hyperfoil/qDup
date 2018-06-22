@@ -28,9 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static perf.qdup.config.RunConfigBuilder.DEFAULT_IDENTITY;
-import static perf.qdup.config.RunConfigBuilder.DEFAULT_KNOWN_HOSTS;
-import static perf.qdup.config.RunConfigBuilder.DEFAULT_PASSPHRASE;
+import static perf.qdup.config.RunConfigBuilder.*;
 
 /**
  * Created by wreicher
@@ -77,16 +75,18 @@ public class SshSession implements Runnable, Consumer<String>{
     private String knownHosts;
     private String identity;
     private String passphrase;
+    private int timeout;
 
     public SshSession(Host host){
-        this(host,DEFAULT_KNOWN_HOSTS,DEFAULT_IDENTITY,DEFAULT_PASSPHRASE);
+        this(host,DEFAULT_KNOWN_HOSTS,DEFAULT_IDENTITY,DEFAULT_PASSPHRASE, DEFAULT_SSH_TIMEOUT);
     }
-    public SshSession(Host host,String knownHosts,String identity,String passphrase){
+    public SshSession(Host host,String knownHosts,String identity,String passphrase, int timeout){
 
         this.host = host;
         this.knownHosts = knownHosts;
         this.identity = identity;
         this.passphrase = passphrase;
+        this.timeout = timeout;
 
         shellLock = new Semaphore(1);
         sshClient = SshClient.setUpDefaultClient();
@@ -115,14 +115,14 @@ public class SshSession implements Runnable, Consumer<String>{
         }
         boolean rtrn = false;
         try {
-            clientSession = sshClient.connect(host.getUserName(),host.getHostName(),host.getPort()).verify(10_000).getSession();
+            clientSession = sshClient.connect(host.getUserName(),host.getHostName(),host.getPort()).verify(this.timeout * 2_000).getSession();
             clientSession.addPublicKeyIdentity(SecurityUtils.loadKeyPairIdentity(
                     identity,
                     Files.newInputStream((new File(identity)).toPath()),
                     (resourceKey)->{return passphrase;}
             ));
 
-            clientSession.auth().verify(5_000);
+            clientSession.auth().verify(this.timeout * 1_000);
 
             //setup all the streams
             pipeIn = new PipedInputStream();

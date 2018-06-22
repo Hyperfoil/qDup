@@ -321,7 +321,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
 
             logger.info("{} connecting {} to {}@{}",this,setupCmd,host.getUserName(),host.getHostName());
             profiler.start("connect:"+host.toString());
-            SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase());
+            SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase(), config.getTimeout());
             profiler.start("waiting for start");
             if(!scriptSession.isOpen()){
                 logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),setupCmd,host.getUserName(),host.getHostName());
@@ -460,7 +460,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
 
                     logger.info("{} connecting {} to {}@{}",this,scriptCmd.getName(),host.getUserName(),host.getHostName());
                     profiler.start("connect:"+host.toString());
-                    SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
+                    SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase(), config.getTimeout());
 
                     if(!updateEnv.isEmpty()) {
                         scriptSession.sh(updateEnv);
@@ -517,7 +517,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
                 Profiler profiler = profiles.get(cleanupCmd.toString() + "@" + host);
                 logger.info("{} connecting {} to {}@{}", this, cleanupCmd.toString(), host.getUserName(), host.getHostName());
                 profiler.start("connect:"+host.toString());
-                SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase()); //this can take some time, hopefully it isn't a problem
+                SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase(), config.getTimeout());
                 profiler.start("waiting for start");
                 if(!scriptSession.isOpen()){
                     logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),cleanupCmd.toString(),host.getUserName(),host.getHostName());

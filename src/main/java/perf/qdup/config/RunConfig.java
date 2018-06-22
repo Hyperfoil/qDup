@@ -68,6 +68,7 @@ public class RunConfig {
     private Boolean colorTerminal = false;
     private List<String> errors;
 
+    private int timeout = 5;
 
     protected RunConfig(String name,List<String> errors){
         this.errors = errors;
@@ -84,7 +85,8 @@ public class RunConfig {
             StageSummary cleanupStage,
             String knownHosts,
             String identity,
-            String passphrase){
+            String passphrase,
+            Integer timeout){
         this.name = name;
         this.scripts = scripts;
         this.state = state;
@@ -98,6 +100,8 @@ public class RunConfig {
         this.identity = identity;
         this.passphrase = passphrase;
         this.errors = new LinkedList<>();
+        if ( timeout != null )
+            this.timeout = timeout;
     }
 
     public StageSummary getSetupStage() {
@@ -178,6 +182,9 @@ public class RunConfig {
 
     public State getState(){return state;}
 
+    public int getTimeout() {
+        return timeout;
+    }
 
     public Set<String> getScriptNames(){return scripts.keySet();}
 

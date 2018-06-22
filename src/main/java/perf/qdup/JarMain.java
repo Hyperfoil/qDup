@@ -75,6 +75,16 @@ public class JarMain {
         );
 
         options.addOption(
+            Option.builder("t")
+                .longOpt("timeout")
+                .hasArg()
+                .argName("seconds")
+                .type(Integer.TYPE)
+                .desc("session connection timeout in seconds, default 5s")
+                .build()
+        );
+
+        options.addOption(
             Option.builder("C")
                 .longOpt("colorTerminal")
                 .hasArg(false)
@@ -250,6 +260,10 @@ public class JarMain {
         }
         if (cmd.hasOption("passphrase") && !cmd.getOptionValue("passphrase").equals( RunConfigBuilder.DEFAULT_PASSPHRASE) ){
             runConfigBuilder.setPassphrase(cmd.getOptionValue("passphrase"));
+        }
+
+        if(cmd.hasOption("timeout")){
+            runConfigBuilder.setTimeout(Integer.parseInt(cmd.getOptionValue("timeout")));
         }
 
         Properties stateProps = cmd.getOptionProperties("S");

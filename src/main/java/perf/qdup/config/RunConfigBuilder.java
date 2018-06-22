@@ -43,6 +43,8 @@ public class RunConfigBuilder {
     public static final String DEFAULT_KNOWN_HOSTS = System.getProperty("user.home")+"/.ssh/known_hosts";
     public static final String DEFAULT_IDENTITY = System.getProperty("user.home")+"/.ssh/id_rsa";
     public static final String DEFAULT_PASSPHRASE = null;
+    public static final int DEFAULT_SSH_TIMEOUT = 5;
+
 
     public static final String HOST_EXPRESSION_PREFIX = "=";
     public static final String HOST_EXPRESSING_INCLUDE = "+";
@@ -55,6 +57,8 @@ public class RunConfigBuilder {
 
     private String name = null;
     private State state;
+
+    private int timeout = DEFAULT_SSH_TIMEOUT;
 
     private HashMap<String,Script> scripts;
 
@@ -344,6 +348,14 @@ public class RunConfigBuilder {
 
     public String getName(){return name;}
 
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
     public String getKnownHosts(){return knownHosts;}
     public void setKnownHosts(String knownHosts){
         this.knownHosts = knownHosts;
@@ -597,7 +609,8 @@ public class RunConfigBuilder {
                     cleanupStage,
                     getKnownHosts(),
                     getIdentity(),
-                    getPassphrase()
+                    getPassphrase(),
+                    timeout
             );
         }
     }

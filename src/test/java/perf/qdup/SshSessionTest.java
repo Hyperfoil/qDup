@@ -19,7 +19,8 @@ public class SshSessionTest extends SshTestBase{
                 getHost(),
                 userHome+"/.ssh/known_hosts",
                 userHome+"/.ssh/id_rsa",
-                null
+                null,
+                5
         );
         assertTrue("SshSession should be open after init",sshSession.isOpen());
         sshSession.sh("pwd");
