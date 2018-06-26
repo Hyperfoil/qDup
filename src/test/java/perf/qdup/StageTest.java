@@ -174,6 +174,68 @@ public class StageTest extends SshTestBase{
 
     }
     @Test
+    public void signalMultipleTimesSameScript(){
+        YamlParser parser = new YamlParser();
+        parser.load("signal",stream(""+
+            "scripts:",
+            "  sig:",
+            "    - signal: FOO",
+            "    - signal: FOO",
+            "    - signal: FOO",
+            "    - signal: FOO",
+            "hosts:",
+            "  local: me@localhost",
+            "roles:",
+            "  role:",
+            "    hosts: [local]",
+            "    run-scripts:",
+            "    - sig:"
+        ));
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.loadYaml(parser);
+        RunConfig config = builder.buildConfig();
+        Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
+
+    }
+    @Test
+    public void signalInRepeatedSubScript(){
+        YamlParser parser = new YamlParser();
+        parser.load("signal",stream(""+
+                "scripts:",
+                "  sig:",
+                "    - signal: FOO",
+                "  inv:",
+                "    - invoke: sig",
+                "        with: {BAR: alpha}",
+                "    - invoke: sig",
+                "        with: {BAR: bravo}",
+                "    - invoke: sig",
+                "        with: {BAR: charlie}",
+                "    - invoke: sig",
+                "        with: {BAR: delta}",
+                "  wat:",
+                "    - wait-for: FOO",
+                "    - done:",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - inv:",
+                "    - wat:"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.loadYaml(parser);
+        RunConfig config = builder.buildConfig();
+        Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
+    }
+
+
+    @Test
     public void signalInSubScript(){
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 

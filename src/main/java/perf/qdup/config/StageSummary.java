@@ -39,8 +39,8 @@ public class StageSummary {
     }
     public boolean hasErrors(){return !errors.isEmpty();}
 
-    protected void addSignal(String name){
-        signalCounters.add(name);
+    protected void addSignal(String name,int amount){
+        signalCounters.add(name,amount);
         signals.add(name);
     }
     public Set<String> getSignals(){

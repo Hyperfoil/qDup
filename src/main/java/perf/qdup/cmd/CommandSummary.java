@@ -2,6 +2,7 @@ package perf.qdup.cmd;
 
 import perf.qdup.cmd.impl.*;
 import perf.qdup.config.RunConfigBuilder;
+import perf.yaup.Counters;
 import perf.yaup.StringUtil;
 
 import java.util.HashSet;
@@ -111,7 +112,7 @@ public class CommandSummary {
 
     private String name;
     private List<String> warnings;
-    private Set<String> signals;
+    private Counters<String> signals;
     private Set<String> waits;
     private Set<String> variables;
     private Set<String> regexVariables;
@@ -120,7 +121,7 @@ public class CommandSummary {
         this.name = command.toString();
 
         warnings = new LinkedList<>();
-        signals = new HashSet<>();
+        signals = new Counters<>();
         waits = new HashSet<>();
         variables = new HashSet<>();
         regexVariables = new HashSet<>();
@@ -148,7 +149,7 @@ public class CommandSummary {
     public List<String> getWarnings(){
         return warnings;
     }
-    public Set<String> getSignals(){
+    public Counters<String> getSignals(){
         return signals;
     }
     public Set<String> getWaits(){
