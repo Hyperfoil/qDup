@@ -354,7 +354,7 @@ public class CommandDispatcher {
 
         activeCommands.forEach( (cmd,activeCommandInfo) -> {
             Json entry = new Json();
-            entry.set("name",cmd.toString());
+            entry.set("name",cmd.populateStateVariables(cmd.toString(), cmd, activeCommandInfo.getContext().getState()));
             entry.set("host",activeCommandInfo.getContext().getSession().getHost().toString());
             entry.set("uid",cmd.getUid());
             entry.set("script",cmd.getHead().getUid()+":"+cmd.getHead().toString());
