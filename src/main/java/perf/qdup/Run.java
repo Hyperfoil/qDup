@@ -15,6 +15,7 @@ import perf.qdup.cmd.*;
 import perf.qdup.cmd.impl.ScriptCmd;
 import perf.qdup.config.*;
 import perf.yaup.HashedLists;
+import perf.yaup.HashedSets;
 import perf.yaup.StringUtil;
 import perf.yaup.json.Json;
 
@@ -69,7 +70,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     private CommandDispatcher.ScriptObserver envObserver;
     private final Map<Host,Env.Diff> setupEnvDiff;
     private final Map<Host,Env> startEnvs;
-    private HashedLists<Host,PendingDownload> pendingDownloads;
+    private HashedSets<Host,PendingDownload> pendingDownloads;
 
     private CountDownLatch runLatch = new CountDownLatch(1);
     private Logger runLogger;
@@ -128,7 +129,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             runLogger.info("{} reached {}",config.getName(),signal_name);
         });
 
-        this.pendingDownloads = new HashedLists<>();
+        this.pendingDownloads = new HashedSets<>();
         this.setupEnvDiff = new ConcurrentHashMap<>();
         this.startEnvs = new ConcurrentHashMap<>();
         this.envObserver = new CommandDispatcher.ScriptObserver() {
@@ -220,7 +221,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
         if(!pendingDownloads.isEmpty()){
             timestamps.put("downloadStart",System.currentTimeMillis());
             for(Host host : pendingDownloads.keys()){
-                List<PendingDownload> downloadList = pendingDownloads.get(host);
+                Set<PendingDownload> downloadList = pendingDownloads.get(host);
                 for(PendingDownload pendingDownload : downloadList){
                     String downloadPath = pendingDownload.getPath();
                     String downloadDestination = pendingDownload.getDestination();
@@ -253,7 +254,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
         for(Host host : pendingDownloads.keys()){
             Json hostJson = new Json();
             rtrn.set(host.toString(),hostJson);
-            List<PendingDownload> pendings = pendingDownloads.get(host);
+            Set<PendingDownload> pendings = pendingDownloads.get(host);
             for(PendingDownload pending : pendings){
                 Json pendingJson = new Json();
                 pendingJson.set("path",pending.getPath());
@@ -303,37 +304,6 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             dispatcher.stop();//interrupts working threads and stops dispatching next commands
             //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
             //runLatch.countDown();
-        }
-    }
-    private void queueSetupScripts(){
-        logger.debug("{}.setup",this);
-
-        //Observer to set the Env.Diffs
-        dispatcher.addScriptObserver(envObserver);
-
-        for(Host host : config.getSetupHosts()){
-
-            State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
-
-            Cmd setupCmd = config.getSetupCmd(host);
-
-            Profiler profiler = profiles.get(setupCmd.toString());
-
-            logger.info("{} connecting {} to {}@{}",this,setupCmd,host.getUserName(),host.getHostName());
-            profiler.start("connect:"+host.toString());
-            SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase(), config.getTimeout());
-            profiler.start("waiting for start");
-            if(!scriptSession.isOpen()){
-                logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),setupCmd,host.getUserName(),host.getHostName());
-                abort();
-                return;
-            }
-            long stop = System.currentTimeMillis();
-
-            State scriptState = hostState.getChild(setupCmd.toString());
-            Context context = new Context(scriptSession,scriptState,this,profiler);
-
-            dispatcher.addScript(setupCmd, context);
         }
     }
 
@@ -414,6 +384,35 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
         fileAppender.stop();
         consoleAppender.stop();
     }
+    protected void queueCommand(Cmd command,Host host,State state,String setupEnv){
+        logger.info("{} connecting {} to {}@{}",this,command,host.getUserName(),host.getHostName());
+        Profiler profiler = profiles.get(command.toString());
+        profiler.start("connect:"+host.toString());
+        SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase(),config.getTimeout(),setupEnv);
+        if(!scriptSession.isOpen()){
+            logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),command,host.getUserName(),host.getHostName());
+            abort();
+            return;
+        }
+        Context context = new Context(scriptSession,state,this,profiler);
+        profiler.start("waiting for start");
+        dispatcher.addScript(command,context);
+    }
+
+    private void queueSetupScripts(){
+        logger.debug("{}.setup",this);
+
+        //Observer to set the Env.Diffs
+        dispatcher.addScriptObserver(envObserver);
+        for(Host host : config.getSetupHosts()){
+            Cmd setupCmd = config.getSetupCmd(host);
+
+            State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
+            State scriptState = hostState.getChild(setupCmd.toString());
+            queueCommand(setupCmd,host,scriptState,"");
+        }
+    }
+
     private void queueRunScripts(){
         logger.debug("{}.queueRunScripts",this);
 
@@ -449,59 +448,38 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
 
             for(ScriptCmd scriptCmd : config.getRunCmds(host)){
                 connectSessions.add(()->{
-
                     State hostState = config.getState().addChild(host.getHostName(),State.HOST_PREFIX);
                     //added a script instance state to allow two scripts on same host
                     State scriptState = hostState.getChild(scriptCmd.getName()).getChild(scriptCmd.getName()+"-"+scriptCmd.getUid());
-
-                    long start = System.currentTimeMillis();
-
-                    Profiler profiler = profiles.get(scriptCmd.getName()+"-"+scriptCmd.getUid()+"@"+host);
-
-                    logger.info("{} connecting {} to {}@{}",this,scriptCmd.getName(),host.getUserName(),host.getHostName());
-                    profiler.start("connect:"+host.toString());
-                    SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase(), config.getTimeout());
-
-                    if(!updateEnv.isEmpty()) {
-                        scriptSession.sh(updateEnv);
-                        String output = scriptSession.getOutput();//take output to ensure lock stays @ 1
-                    }
-                    profiler.start("waiting for start");
-                    if(!scriptSession.isOpen()){
-                        logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),scriptCmd.getName(),host.getUserName(),host.getHostName());
-                        abort();
-                        return false;
-                    }
-                    long stop = System.currentTimeMillis();
-                    Context context = new Context(scriptSession,scriptState,this,profiler);
-                    logger.debug("{} connected {}@{} in {}s",this,scriptCmd.getName(),host,((stop-start)/1000));
-                    dispatcher.addScript(scriptCmd, context);
+                    queueCommand(scriptCmd,host,scriptState,updateEnv);
                     return true;
 
                 });
             }
         }
-        try {
-            boolean ok = dispatcher.getExecutor().invokeAll(connectSessions,60,TimeUnit.SECONDS).stream().map((f) -> {
-                boolean rtrn = false;
-                try {
-                    rtrn = f.get();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
+        if(!connectSessions.isEmpty()) {
+            try {
+                boolean ok = dispatcher.getExecutor().invokeAll(connectSessions, 60, TimeUnit.SECONDS).stream().map((f) -> {
+                    boolean rtrn = false;
+                    try {
+                        rtrn = f.get();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                    return rtrn;
+                })
+                        .collect(Collectors.reducing(Boolean::logicalAnd)).orElse(false);
+
+                if (!ok) {
+                    logger.error("Error: trying to connect shell sessions for run stage");
+                    this.abort();
                 }
-                return rtrn;
-            })
-            .collect(Collectors.reducing(Boolean::logicalAnd)).orElse(false);
 
-            if(!ok){
-                logger.error("Error: trying to connect shell sessions for run stage");
-                this.abort();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
     private void queueCleanupScripts(){
@@ -513,21 +491,8 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             connectSessions.add(()-> {
                 State hostState = config.getState().addChild(host.getHostName(), State.HOST_PREFIX);
                 State scriptState = hostState.getChild(cleanupCmd.toString());
-                long start = System.currentTimeMillis();
-                Profiler profiler = profiles.get(cleanupCmd.toString() + "@" + host);
-                logger.info("{} connecting {} to {}@{}", this, cleanupCmd.toString(), host.getUserName(), host.getHostName());
-                profiler.start("connect:"+host.toString());
-                SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase(), config.getTimeout());
-                profiler.start("waiting for start");
-                if(!scriptSession.isOpen()){
-                    logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),cleanupCmd.toString(),host.getUserName(),host.getHostName());
-                    abort();
-                    return false;
-                }
-                long stop = System.currentTimeMillis();
-                Context context = new Context(scriptSession,scriptState,this,profiler);
-                logger.debug("{} connected {}@{} in {}s",this,cleanupCmd.toString(),host,((stop-start)/1000));
-                dispatcher.addScript(cleanupCmd, context);
+
+                queueCommand(cleanupCmd,host,scriptState,"");
                 return true;
             });
         }

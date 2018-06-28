@@ -112,7 +112,7 @@ public class Reboot extends Cmd {
                 //e.printStackTrace(); //TODO what to do with interrupted Reboot?
             }
             logger.info("{} retry @ {} for {}", Instant.now().toString(),interval);
-            session.connect(interval);
+            session.connect(interval,"");//TODO setupEnv
             currentMillis = System.currentTimeMillis();
         } while (!session.isOpen() && currentMillis - startMillis < this.timeout);
         if(!session.isOpen()){

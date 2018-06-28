@@ -267,7 +267,8 @@ public abstract class Cmd {
         return new Regex(pattern);
     }
     public static Cmd repeatUntil(String name){return new RepeatUntilSignal(name);}
-    public static ScriptCmd script(String name){ return new ScriptCmd(name); }
+    public static ScriptCmd script(String name){ return new ScriptCmd(name,false); }
+    public static ScriptCmd script(String name,boolean async){ return new ScriptCmd(name,async); }
     public static Cmd setState(String name){return new SetState(name);}
     public static Cmd setState(String name,String value){return new SetState(name,value);}
     public static Cmd sh(String command){

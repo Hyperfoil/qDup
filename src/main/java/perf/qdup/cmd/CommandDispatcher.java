@@ -488,17 +488,27 @@ public class CommandDispatcher {
     public void addScript(Cmd script,Context context){
         logger.trace("add script {} to {}",script,context.getSession().getHostName());
 
-        script = script.deepCopy();
+        final Cmd scriptCopy = script.deepCopy();
 
         ScriptContext previous = loadedScripts.put(
-                script.getHead(),
+                scriptCopy.getHead(),
                 new ScriptContext(
-                    script,
+                    scriptCopy,
                     context
                 )
         );
         if(previous!=null){
-            logger.error("already have getScript.tail={} mapped to {}@{}",script.getTail().getUid(),script,context.getSession().getHostName());
+            logger.error("already have getScript.tail={} mapped to {}@{}",scriptCopy.getTail().getUid(),scriptCopy,context.getSession().getHostName());
+        }
+        if(isRunning.get()){
+            ScriptContext scriptContext = loadedScripts.get(scriptCopy);
+            scriptObservers.forEach(observer -> observer.onStart(scriptCopy, scriptContext.getContext()));
+
+            logger.info("starting\n  host={}\n  script={}",
+                    scriptContext.getContext().getSession().getHostName(),
+                    scriptCopy);
+            dispatch(null,scriptCopy,"", scriptContext.getContext(), scriptContext);
+
         }
     }
     public String debug(){
