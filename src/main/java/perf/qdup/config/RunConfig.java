@@ -151,7 +151,15 @@ public class RunConfig {
             for(Host host : runScripts.keys()){
                 sb.append("  "+host.toString()+"\n");
                  List<ScriptCmd> scriptCmds = runScripts.get(host);
-                 scriptCmds.forEach(c->sb.append("    "+c.getName()+"\n"));
+                 scriptCmds.forEach(c->{
+                     sb.append("    "+c.getName()+"\n");
+                     if(!c.getWith().isEmpty()){
+                         sb.append("      with:\n");
+                         c.getWith().forEach((k,v)->{
+                             sb.append("        "+k+":"+v+"\n");
+                         });
+                     }
+                 });
             }
         }else{
             sb.append("NO RUN SCRIPTS\n");

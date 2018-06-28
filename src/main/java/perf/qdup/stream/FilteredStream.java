@@ -145,6 +145,7 @@ public class FilteredStream extends MultiStream{
                     filtered = false;
                     int dropLength = 0;
                     String matchedName = "";
+
                     for(String name : filters.keySet()){
                         byte[] filter = filters.get(name);
                         int prefixLength = prefixLength(buffered, filter, currentIndex, writeIndex-currentIndex);

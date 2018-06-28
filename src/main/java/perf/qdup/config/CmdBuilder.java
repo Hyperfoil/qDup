@@ -30,8 +30,9 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("download", Download.class,"path","destination");
         rtrn.addCmdDefinition("upload",Upload.class,"path","destination");
         rtrn.addCmdDefinition("echo",Echo.class);
-        rtrn.addCmdDefinition("exit-code",ExitCode.class);
-        rtrn.addCmdDefinition("exit-code",ExitCode.class,"expected");
+        rtrn.addCmdDefinition("exec",Exec.class,"command");
+//        rtrn.addCmdDefinition("exit-code",ExitCode.class);
+//        rtrn.addCmdDefinition("exit-code",ExitCode.class,"expected");
         rtrn.addCmdDefinition("invoke",ScriptCmd.class,"name");
         rtrn.addCmdDefinition("for-each",ForEach.class,"name");
         rtrn.addCmdDefinition("for-each",ForEach.class,"name","input");
