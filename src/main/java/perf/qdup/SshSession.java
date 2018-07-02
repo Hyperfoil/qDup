@@ -5,9 +5,6 @@ import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.client.channel.ClientChannel;
-import org.apache.sshd.client.channel.ClientChannelEvent;
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
@@ -20,15 +17,15 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandResult;
-import perf.qdup.stream.*;
-import perf.yaup.AsciiArt;
-
+import perf.qdup.stream.EscapeFilteredStream;
+import perf.qdup.stream.FilteredStream;
+import perf.qdup.stream.LineEmittingStream;
+import perf.qdup.stream.SuffixStream;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
@@ -50,21 +47,46 @@ import static perf.qdup.config.RunConfigBuilder.*;
 public class SshSession implements Runnable, Consumer<String>{
 
     public static void main(String[] args) {
-        Host server = new Host("benchuser","benchserver2");
         Host local = new Host("wreicher","laptop");
-        SshSession sshSession = new SshSession(server);
-        sshSession.sh("hostname");
-        String response = sshSession.getOutput();
-        System.out.println("response={{"+response+"}}");
+        SshSession sshSession = new SshSession(local);
+        sshSession.exec("hostname",System.out::println);
         try {
             TimeUnit.SECONDS.sleep(12);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         System.out.println("done sleep");
-
     }
 
+    private static class ExecWatcher implements ChannelListener {
+
+        Consumer<String> callback;
+        ByteArrayOutputStream baos;
+
+        public ExecWatcher(Runnable callback){
+            this.callback = a->callback.run();
+            this.baos = null;
+        }
+        @Override
+        public void channelInitialized(Channel channel) {}
+
+        @Override
+        public void channelOpenSuccess(Channel channel) {}
+
+        @Override
+        public void channelOpenFailure(Channel channel, Throwable reason) {}
+
+        @Override
+        public void channelStateChanged(Channel channel, String hint) {}
+
+        @Override
+        public void channelClosed(Channel channel, Throwable reason) {
+            System.out.println("ChannelListener.channelClosed");
+            String response = baos!=null ? baos.toString() : "";
+            callback.accept(response);
+        }
+
+    }
 
     private static final AtomicInteger counter = new AtomicInteger();
 
@@ -167,8 +189,6 @@ public class SshSession implements Runnable, Consumer<String>{
             promptStream = new SuffixStream();
             lineEmittingStream = new LineEmittingStream();
 
-
-            escapeFilteredStream.addStream("sout",System.err);
             escapeFilteredStream.addStream("semaphore",semaphoreStream);
 
             semaphoreStream.addStream("filtered",filteredStream);
@@ -433,13 +453,13 @@ public class SshSession implements Runnable, Consumer<String>{
 
                     @Override
                     public void channelClosed(Channel channel, Throwable reason) {
-                        System.out.println("ChannelListener.channelClosed");
+                        System.out.println(Thread.currentThread().getName()+" ChannelListener.channelClosed");
                     }
                 });
                 channelExec.addCloseFutureListener(new SshFutureListener<CloseFuture>() {
                     @Override
                     public void operationComplete(CloseFuture future) {
-                        System.out.println("SshFutureListener.operationComplete "+future.isClosed());
+                        System.out.println(Thread.currentThread().getName()+" SshFutureListener.operationComplete "+future.isClosed());
                         try {
                             if(callback!=null){
                                 String response = baos.toString();
