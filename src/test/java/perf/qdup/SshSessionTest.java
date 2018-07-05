@@ -24,8 +24,8 @@ public class SshSessionTest extends SshTestBase{
                 ""
         );
         assertTrue("SshSession should be open after init",sshSession.isOpen());
-        sshSession.sh("pwd");
-        String pwdOutput = sshSession.getOutput().trim();
+        String pwdOutput = sshSession.shSync("pwd");
+
 
         //NOTE: expect userHome when using sshd but expect currentDir if using a TestServer
         //Test server is not working at the moment so we test for userHome
@@ -38,8 +38,7 @@ public class SshSessionTest extends SshTestBase{
     public void echo_PS1(){
         SshSession sshSession = new SshSession(getHost());
 
-        sshSession.sh("echo \""+SshSession.PROMPT+"\"");
-        String out = sshSession.getOutput();
+        String out = sshSession.shSync("echo \""+SshSession.PROMPT+"\"");
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
@@ -50,8 +49,7 @@ public class SshSessionTest extends SshTestBase{
         assertEquals("one prompt permit expected",1,sshSession.permits());
 
 
-        sshSession.sh("echo foo");
-        out = sshSession.getOutput();
+        out = sshSession.shSync("echo foo");
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {

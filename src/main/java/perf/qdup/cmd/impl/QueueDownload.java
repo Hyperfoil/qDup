@@ -36,12 +36,10 @@ public class QueueDownload extends Cmd {
         String resolvedDestination = Cmd.populateStateVariables(basePath + File.separator + getDestination(),this,context.getState());
 
         if(resolvedPath.matches("[^\\$]*\\$(?!\\{\\{).*")){
-            context.getSession().sh("echo "+resolvedPath);
-            resolvedPath = context.getSession().getOutput().trim();
+            resolvedPath = context.getSession().shSync("echo "+resolvedPath);
         }
         if(resolvedDestination.matches("[^\\$]*\\$(?!\\{\\{).*")){
-            context.getSession().sh("echo "+resolvedDestination);
-            resolvedDestination = context.getSession().getOutput().trim();
+            resolvedDestination = context.getSession().shSync("echo "+resolvedDestination);
         }
 
         context.addPendingDownload(resolvedPath,resolvedDestination);

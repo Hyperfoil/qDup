@@ -32,8 +32,7 @@ public class ExitCode extends Cmd {
          }else {//assuming there was a previous Sh at some point
              if(!getPrevious().getWith().containsKey(EXIT_CODE_KEY)){
                  if(context!=null && context.getSession()!=null){
-                     context.getSession().sh("echo $?");
-                     String response = context.getSession().getOutput();
+                     String response = context.getSession().shSync("echo $?");
                      getPrevious().with(EXIT_CODE_KEY,response);
                  }else{
                      //no valid session to get the previous exit code, use the default

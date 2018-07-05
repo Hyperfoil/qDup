@@ -136,21 +136,17 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
 
             @Override
             public void onStart(Cmd command, Context context) {
-                context.getSession().clearCommand();
-                context.getSession().sh("env");
-                String env = context.getSession().getOutput();
+                String env = context.getSession().shSync("env");
                 Env start = new Env(env);
                 startEnvs.put(context.getSession().getHost(),start);
 
                 logger.debug("{} env = \"{}\" \n Env.start = {}",context.getSession().getHost(),env,start.debug());
+
             }
 
             @Override
             public void onStop(Cmd command, Context context) {
-
-                context.getSession().clearCommand();
-                context.getSession().sh("env");
-                String env = context.getSession().getOutput();
+                String env = context.getSession().shSync("env");
                 Env stop = new Env(env);
 
                 logger.debug("{} env = \"{}\" \n Env.stop = {}",context.getSession().getHost(),env,stop.debug());
@@ -165,6 +161,8 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
                 }else{
                     logger.info("{} does not have Env.start",context.getSession().getHost());
                 }
+
+
             }
         };
     }
@@ -238,8 +236,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
     }
     public void setStartEnv(SshSession session){
         //session.clearCommand();
-        session.sh("env");
-        String env = session.getOutput();
+        String env = session.shSync("env");
         Env start = new Env(env);
         startEnvs.put(session.getHost(),start);
         logger.info("{} env = \"{}\" \n Env.start = {}",session.getHost(),env,start.debug());

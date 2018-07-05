@@ -36,27 +36,23 @@ public class Reboot extends Cmd {
     @Override
     public void run(String input, Context context, CommandResult result) {
         SshSession session = context.getSession();
-        session.clearCommand();
-
         if(target!=null && !target.isEmpty()){
 
             //TODO check if reboot is not necessary?
             logger.info("{} reboot to {}",session.getHost().getHostName(),target);
 
             //requires root...
-            session.sh("whoami");
-            String whoami = session.getOutput();
+            String whoami = session.shSync("whoami");
             if(!"root".equals(whoami)){
                 logger.info("{} su ",session.getHost().getHostName());
                 Map<String,String> prompts = new HashMap<>();
                 prompts.put("Password: ",password);
-                session.sh("su",prompts);
-                session.getOutput();//to wait for su to finish
+                session.shSync("su",prompts);
+
             }
-            session.sh("ls /etc/grub*.cfg");//get the grub cfg file
-            String grubFile = session.getOutput();
-            session.sh("awk -F\\' '$1==\"menuentry \" {print $2}' "+grubFile);
-            List<String> kernels = Arrays.asList(session.getOutput().trim().split("\r?\n"));
+            String grubFile = session.shSync("ls /etc/grub*.cfg");//get the grub cfg file
+            String kernelString = session.shSync("awk -F\\' '$1==\"menuentry \" {print $2}' "+grubFile);
+            List<String> kernels = Arrays.asList(kernelString.trim().split("\r?\n"));
             logger.info("{} kernels:\n  {}",session.getHost().getHostName(),
                     IntStream.range(0,kernels.size()).mapToObj(i->{
                         return i+" : "+kernels.get(i);

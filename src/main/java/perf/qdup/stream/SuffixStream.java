@@ -6,11 +6,39 @@ import org.slf4j.ext.XLoggerFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class SuffixStream extends MultiStream {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    private static final long DELAY_MS = 1_000;
+
+    private class FoundRunnable implements Runnable{
+        private int lastIndex;
+        private String name;
+
+        public FoundRunnable(String name,int writeIndex){
+            this.name = name;
+            this.lastIndex = writeIndex;
+        }
+
+        public void reset(String name,int writeIndex){
+            this.name = name;
+            this.lastIndex = writeIndex;
+        }
+        public int getLastIndex(){return lastIndex;}
+        public String getName(){return name;}
+
+        @Override
+        public void run() {
+            if(lastIndex == writeIndex){//if there has not been a subsequent write
+                foundSuffix(name,lastIndex);
+            }
+        }
+    }
 
     private byte[] buffered;
     private int writeIndex = 0;
@@ -18,11 +46,22 @@ public class SuffixStream extends MultiStream {
     private Map<String,byte[]> replacements;
     private List<Consumer<String>> consumers;
 
+    private ScheduledThreadPoolExecutor executor;
+    private ScheduledFuture future;
+    private FoundRunnable foundRunnable;
+
     public SuffixStream(){
+        this(null);
+
+    }
+    public SuffixStream(ScheduledThreadPoolExecutor threadPool){
         buffered = new byte[20*1024];
         suffixes = new LinkedHashMap<>();
         replacements = new LinkedHashMap<>();
         consumers = new LinkedList<>();
+        executor = threadPool;
+        future = null;
+        foundRunnable = new FoundRunnable("",-1);
     }
 
     public void flushBuffer() throws IOException {
@@ -125,21 +164,15 @@ public class SuffixStream extends MultiStream {
                     }
                 }
                 if (found) {
-                    //NOTE blocking call on the current thread!!
-                    String acceptName = foundName;
-                    if (replacements.containsKey(acceptName)) {
-                        byte replacement[] = replacements.get(acceptName);
-                        int trimLength = suffixes.get(acceptName).length;
-                        superWrite(b, 0, writeIndex - trimLength);
-                        if (replacement.length > 0) {
-                            superWrite(replacement, 0, replacement.length);
+                    if(executor!=null){
+                        if(future!=null){
+                            future.cancel(true);
                         }
-                        writeIndex = 0;
-                    } else {
-                        superWrite(buffered, 0, writeIndex);
-                        writeIndex = 0;
+                        foundRunnable.reset(foundName,writeIndex);
+                        future = executor.schedule(foundRunnable, DELAY_MS,TimeUnit.MILLISECONDS);
+                    }else{
+                        foundSuffix(foundName,writeIndex);
                     }
-                    consumers.forEach(c -> c.accept(acceptName));
 
                 } else if (trailingSuffixLength > Integer.MIN_VALUE) {
                     superWrite(buffered, 0, writeIndex - trailingSuffixLength);
@@ -152,6 +185,26 @@ public class SuffixStream extends MultiStream {
             e.printStackTrace(System.out);
             System.exit(-1);
         }
+    }
+    private void foundSuffix(String name,int index){
+        try {
+            if (replacements.containsKey(name)) {
+                byte replacement[] = replacements.get(name);
+                int trimLength = suffixes.get(name).length;
+                superWrite(buffered, 0, writeIndex - trimLength);
+                if (replacement.length > 0) {
+                    superWrite(replacement, 0, replacement.length);
+                }
+                writeIndex = 0;
+            } else {
+                superWrite(buffered, 0, writeIndex);
+                writeIndex = 0;
+            }
+        }catch(IOException e){
+            e.printStackTrace(System.out);
+        }
+        consumers.forEach(c -> c.accept(name));
+
     }
     public int suffixLength(byte b[], byte toFind[], int endIndex){
         boolean matching = false;

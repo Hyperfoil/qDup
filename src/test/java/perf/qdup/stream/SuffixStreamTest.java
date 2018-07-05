@@ -2,7 +2,10 @@ package perf.qdup.stream;
 
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static junit.framework.TestCase.assertEquals;
@@ -62,9 +65,36 @@ public class SuffixStreamTest {
         assertTrue(called.get());
     }
     @Test
+    public void consumer_fullMatch_executor(){
+        ScheduledThreadPoolExecutor sfe = new ScheduledThreadPoolExecutor(2);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        SuffixStream stream = new SuffixStream(sfe);
+        stream.addSuffix("FOO","FOO","");
+        stream.addStream("baos",baos);
+        AtomicBoolean called = new AtomicBoolean(false);
+
+        stream.addConsumer((s)->{called.set(true);});
+
+        try {
+            stream.write("BOOFOO".getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            TimeUnit.SECONDS.sleep(4);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        assertTrue(called.get());
+        assertEquals("baos == BOO","BOO",baos.toString());
+    }
+
+    @Test
     public void consumer_splitMatch(){
         SuffixStream stream = new SuffixStream();
-        byte expected[] = "FOO".getBytes();
         stream.addSuffix("FOO");
         AtomicBoolean called = new AtomicBoolean(false);
 
@@ -79,9 +109,6 @@ public class SuffixStreamTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-
-
     }
+
 }
