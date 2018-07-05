@@ -63,9 +63,7 @@ public class XmlCmd extends Cmd {
                 remotePath = removeQuotes(remotePath);
 
                 if(!remotePath.isEmpty() && !remotePath.startsWith("/")){
-                    context.getSession().clearCommand();
-                    context.getSession().sh("pwd");
-                    String pwd = context.getSession().getOutput().trim();
+                    String pwd = context.getSession().shSync("pwd");
                     remotePath = pwd+File.separator+path;
                 }
             }

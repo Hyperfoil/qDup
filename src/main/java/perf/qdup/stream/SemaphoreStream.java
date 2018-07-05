@@ -14,7 +14,7 @@ public class SemaphoreStream extends MultiStream {
 
     private Semaphore lock;
     private byte prompt[];
-    private int promptIndex=0;
+    private AtomicInteger promptIndex = new AtomicInteger(0);
     private Runnable runnable;
 
     private int uid;
@@ -49,20 +49,20 @@ public class SemaphoreStream extends MultiStream {
 
         int i=0;
         while(i < length && !found){
-            if( promptIndex>= prompt.length ) {
+            if( promptIndex.get()>= prompt.length ) {
                 found = true;
             } else {
-                if (prompt[promptIndex] == sequence[offset+i]){
-                    promptIndex++;
+                if (prompt[promptIndex.get()] == sequence[offset+i]){
+                    promptIndex.incrementAndGet();
                     //chere here in case i==length
-                    if(promptIndex >= prompt.length){
+                    if(promptIndex.get() >= prompt.length){
                         found = true;
                     }
                 }else{
-                    promptIndex=0;
-                    if(prompt[promptIndex] == sequence[offset+i]){
-                        promptIndex++;
-                        if(promptIndex >= prompt.length){//for single character prompts
+                    promptIndex.set(0);
+                    if(prompt[promptIndex.get()] == sequence[offset+i]){
+                        promptIndex.incrementAndGet();
+                        if(promptIndex.get() >= prompt.length){//for single character prompts
                             found = true;
                         }
 
@@ -72,7 +72,7 @@ public class SemaphoreStream extends MultiStream {
             i++;
         }
         if(found){
-            promptIndex=0;
+            promptIndex.set(0);
         }
         return found;
     }
