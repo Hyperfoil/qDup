@@ -74,7 +74,11 @@ public class Coordinator {
 
     public List<Waiter> ensureWaitFor(String name){
         if(!waitFors.containsKey(name)){
-            waitFors.put(name,Collections.synchronizedList(new LinkedList<>()));
+            synchronized (waitFors) {
+                if(!waitFors.containsKey(name)) {
+                    waitFors.put(name, Collections.synchronizedList(new LinkedList<>()));
+                }
+            }
         }
         return waitFors.get(name);
     }
