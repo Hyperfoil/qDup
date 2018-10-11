@@ -55,7 +55,6 @@ public class Env {
                     "\n  set: "+data.keySet().stream().map((key)->{return "    "+key+": "+data.get(key);}).collect(Collectors.joining("\n"))+
                     "\n  unset: "+unset.stream().collect(Collectors.joining(", "));
         }
-
     }
 
 

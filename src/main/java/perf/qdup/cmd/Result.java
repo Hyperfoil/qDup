@@ -6,7 +6,6 @@ package perf.qdup.cmd;
 public class Result {
     public static enum Type {next, skip}
 
-
     private String result;
     private Type type;
 

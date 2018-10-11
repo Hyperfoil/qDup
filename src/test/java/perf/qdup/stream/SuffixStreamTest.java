@@ -14,6 +14,7 @@ import static org.junit.Assert.assertFalse;
 
 public class SuffixStreamTest {
 
+
     @Test
     public void suffixLength_noMatch(){
         SuffixStream stream = new SuffixStream();
@@ -83,7 +84,7 @@ public class SuffixStreamTest {
         }
 
         try {
-            TimeUnit.SECONDS.sleep(4);
+            TimeUnit.SECONDS.sleep(2);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

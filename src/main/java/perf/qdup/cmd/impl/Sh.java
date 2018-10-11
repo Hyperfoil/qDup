@@ -9,6 +9,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Sh extends Cmd {
+
+    private static final String LINE_OBSERVER = "sh_line_observer";
+
     private String command;
     private Map<String,String> prompt;
     public Sh(String command){
@@ -32,6 +35,14 @@ public class Sh extends Cmd {
     @Override
     public void run(String input, Context context, CommandResult result) {
         String commandString = populateStateVariables(command,this,context.getState());
+
+        //TODO do we need to manually remove the lineObserver?
+        context.getSession().removeLineObserver(LINE_OBSERVER);
+        if(this.hasWatchers()) {
+            context.getSession().addLineObserver(LINE_OBSERVER, (line) -> {
+                result.update(this, line);
+            });
+        }
         if(prompt.isEmpty()) {
             context.getSession().sh(commandString, (output)->{
                 result.next(this,output);

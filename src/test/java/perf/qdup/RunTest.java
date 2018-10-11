@@ -382,7 +382,7 @@ public class RunTest extends SshTestBase{
     }
 
 
-    @Test
+    @Test(timeout = 45_000)
     public void ctrlCTail(){
         List<String> lines = new ArrayList<>();
 
@@ -398,6 +398,7 @@ public class RunTest extends SshTestBase{
         tail.then(Cmd.signal("ready"));
         tail.then(Cmd.sh("tail -f /tmp/foo.txt")
                 .watch(Cmd.code((input,state)->{
+                    System.out.println("lines.add");
                     lines.add(input);
                     return Result.next(input);
                 }))

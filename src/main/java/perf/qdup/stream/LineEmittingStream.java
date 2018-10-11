@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
- * A Stream that emits lines to Consumers
+ * A Stream that synchronously emits lines to Consumers
  */
 public class LineEmittingStream extends OutputStream {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
@@ -36,7 +36,6 @@ public class LineEmittingStream extends OutputStream {
     public void reset() { writeIndex = 0; }
 
     public void forceEmit(){
-
         if(writeIndex >0) {
             emit(buffered, 0, writeIndex);
             reset();
@@ -45,7 +44,6 @@ public class LineEmittingStream extends OutputStream {
 
     @Override
     public void flush() throws IOException {
-        //forceEmit();
         super.flush();
     }
 
@@ -63,21 +61,12 @@ public class LineEmittingStream extends OutputStream {
     }
     @Override
     public void write(byte b[], int off, int len) {
-        if(b==null || len < 0 || off + len > b.length){
-            System.out.println(getClass().getName()+".write("+off+","+len+")");
-            System.out.println(MultiStream.printByteCharacters(b,off,Math.min(10,b.length-off)));
-            System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
-            System.exit(-1);
-        }
-        //logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
-
         try {
             int writeFrom = off;
             //printB(b,off,len);
             for (int i = 0; i < len; i++) {
                 if (b[off + i] == 10 || b[off + i] == 13) { // if CR or LR
                     if (writeIndex == 0) {//nothing buffered, can just flush from b
-                        //logger.info("LES.emit writeIndex==0 ("+writeFrom+","+(off+i-writeFrom)+")\n"+MultiStream.printByteCharacters(b,writeFrom,off+i-writeFrom));
                         emit(b, writeFrom, off + i - writeFrom);
                     } else {//have to add up to off+i to buffered to emit all at once
                         if (writeIndex + off + i >= buffered.length) {
@@ -87,10 +76,8 @@ public class LineEmittingStream extends OutputStream {
                         }
                         System.arraycopy(b, off, buffered, writeIndex, off + i - writeFrom);
                         writeIndex = writeIndex + off + i - writeFrom;
-                        //logger.info("LES.emit buffered ("+0+","+(writeIndex)+")\n"+MultiStream.printByteCharacters(buffered,0,writeIndex));
                         emit(buffered, 0, writeIndex);
                         reset();
-                        //logger.info("LES.emit buffered writeIndex="+writeIndex);
                     }
                     if (i + 1 < len && (b[off + i + 1] == 10 || b[off + i + 1] == 13)) {//skip the next CR or LR
                         writeFrom++;//skip over the CR or LR
@@ -137,7 +124,6 @@ public class LineEmittingStream extends OutputStream {
             if( matched == content.length){
                 return a;
             }
-
         }
         return -1;
     }

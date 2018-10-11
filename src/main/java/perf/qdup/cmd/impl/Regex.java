@@ -63,15 +63,12 @@ public class Regex extends Cmd {
         }
     }
 
-
-
     @Override
     public Cmd copy() {
         return new Regex(this.patternString);
     }
 
     @Override public String toString(){return "regex: "+replaceEscapes(patternString);}
-
 
     private String replaceEscapes(String input){
         return input.replace("\n","\\n")
