@@ -9,12 +9,12 @@ import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
- * An OutputStream that can pass writes to multiple other  OutputStreams
+ * An OutputStream synchronously writes to multiple other  OutputStreams
  */
 public class MultiStream extends OutputStream{
 
     public static String printByteCharacters(byte b[], int off, int len){
-        String spaces = "         ";
+        String spaces = "                                                                   ";
         StringBuilder bytes = new StringBuilder();
         StringBuilder chars = new StringBuilder();
         StringBuilder indxs = new StringBuilder();
@@ -28,18 +28,18 @@ public class MultiStream extends OutputStream{
                 String append = v+"";
                 bytes.append(append);
                 bytes.append(".");
-//                if(v == 10){
-//                    chars.append(spaces.substring(0,append.length()-2));
-//                    chars.append("\\n");
-//                }else if (v == 13){
-//                    chars.append(spaces.substring(0,append.length()-2));
-//                    chars.append("\\r");
-//                }else {
-//                    chars.append(spaces.substring(0, append.length() - 1));
-//                    chars.append((char) v);
-//                }
-//                indxs.append(String.format("%"+append.length()+"d.",i));
-//                chars.append(".");
+                if(v == 10){
+                    chars.append(spaces.substring(0,append.length()-2));
+                    chars.append("\\n");
+                }else if (v == 13){
+                    chars.append(spaces.substring(0,append.length()-2));
+                    chars.append("\\r");
+                }else {
+                    chars.append(spaces.substring(0, append.length() - 1));
+                    chars.append((char) v);
+                }
+                indxs.append(String.format("%"+append.length()+"d.",i));
+                chars.append(".");
             }
         }
         bytes.append("]");
@@ -89,13 +89,6 @@ public class MultiStream extends OutputStream{
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-        if(b==null || len < 0 || off + len > b.length){
-            System.out.println(getClass().getName()+".write("+off+","+len+")");
-            System.out.println(MultiStream.printByteCharacters(b,off,Math.min(10,b.length-off)));
-            System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
-            System.exit(-1);
-        }
-
         for (OutputStream s : streams.values()) {
             try {
                 s.write(b, off, len);

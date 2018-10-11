@@ -42,20 +42,6 @@ public class SshSession implements Consumer<String>{
     private static final String SH_CALLBACK = "qdup-sh-callback";
     private static final String SH_BLOCK_CALLBACK = "qdup-sh-block-callback";
 
-    public static void main(String[] args) {
-        Host local = new Host("wreicher","laptop");
-        SshSession sshSession = new SshSession(local);
-        String hostName = sshSession.shSync("hostname");
-        System.out.println("shSync=[["+hostName+"]]");
-        //sshSession.exec("hostname",System.out::println);
-//        try {
-//            TimeUnit.SECONDS.sleep(12);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-        System.out.println("done sleep");
-    }
-
     private static class ExecWatcher implements ChannelListener {
 
         Consumer<String> callback;
@@ -123,13 +109,15 @@ public class SshSession implements Consumer<String>{
     private Consumer<String> semaphoreCallback;
     private Semaphore blockingSemaphore;
     private Consumer<String> blockingConsumer;
+    private StringBuffer blockingResponse;
     private Map<String,Consumer<String>> lineObservers;
     private Map<String,Consumer<String>> shObservers;
+    private ScheduledThreadPoolExecutor executor;
 
     public SshSession(Host host){
-        this(host,DEFAULT_KNOWN_HOSTS,DEFAULT_IDENTITY,DEFAULT_PASSPHRASE, DEFAULT_SSH_TIMEOUT,"");
+        this(host,DEFAULT_KNOWN_HOSTS,DEFAULT_IDENTITY,DEFAULT_PASSPHRASE, DEFAULT_SSH_TIMEOUT,"",null);
     }
-    public SshSession(Host host,String knownHosts,String identity,String passphrase, int timeout,String setupCommand){
+    public SshSession(Host host,String knownHosts,String identity,String passphrase, int timeout,String setupCommand,ScheduledThreadPoolExecutor executor){
 
         this.host = host;
         this.knownHosts = knownHosts;
@@ -150,12 +138,15 @@ public class SshSession implements Consumer<String>{
         lineObservers = new ConcurrentHashMap<>();
         shObservers = new ConcurrentHashMap<>();
 
+        //for shSync
         blockingSemaphore = new Semaphore(0);
+        blockingResponse = new StringBuffer();
         blockingConsumer = (response)->{
-            System.out.println("blockingConsume.release "+peekOutput());
+            blockingResponse.setLength(0);
+            blockingResponse.append(response);
             blockingSemaphore.release();
         };
-
+        this.executor = executor;
         connect(-1,setupCommand);
 
 //        sshConfig = new Properties();
@@ -167,6 +158,9 @@ public class SshSession implements Consumer<String>{
     }
     public void removeLineObserver(String name){
         lineObservers.remove(name);
+    }
+    public void clearLineObservers(){
+        lineObservers.clear();
     }
     public void addShObserver(String name,Consumer<String> consumer){
         shObservers.put(name,consumer);
@@ -214,7 +208,7 @@ public class SshSession implements Consumer<String>{
             escapeFilteredStream = new EscapeFilteredStream();
             filteredStream = new FilteredStream();
 
-            semaphoreStream = new SuffixStream();
+            semaphoreStream = executor==null ? new SuffixStream() : new SuffixStream(executor);
             promptStream = new SuffixStream();
             lineEmittingStream = new LineEmittingStream();
 
@@ -245,14 +239,12 @@ public class SshSession implements Consumer<String>{
                     .replaceAll("^[\r\n]+","")  //replace leading newlines
                     .replaceAll("[\r\n]+$","") //replace trailing newlines
                     .replaceAll("\r\n","\n"); //change \r\n to just \n
-
                 shStream.reset();
                 shConsumers(output);
                 shellLock.release();
             };
             lineEmittingStream.addConsumer(this::lineConsumers);
 
-            //semaphoreStream.addSuffix("\r\nPROMPT","\r\n"+PROMPT,"");
             semaphoreStream.addSuffix("PROMPT",PROMPT,"");
             semaphoreStream.addConsumer(this.semaphoreCallback);
 
@@ -276,15 +268,14 @@ public class SshSession implements Consumer<String>{
                 channelShell.open().verify().isOpened();
             }
 
-            sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
-            sh("pwd");
-            sh("");//forces the thread to wait for the previous sh to complete
+            shSync("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
+            shSync("pwd");
+            //shSync("");//forces the thread to wait for the previous sh to complete
             if(setupCommand!=null && !setupCommand.isEmpty()){
-                sh(setupCommand);
+                shSync(setupCommand);
             }else {
 
             }
-
             //is this what is bugging out envTest?
             try {
                 try{
@@ -297,13 +288,11 @@ public class SshSession implements Consumer<String>{
                 e.printStackTrace();
                 Thread.interrupted();
             }
-
-
         } catch (GeneralSecurityException | IOException e) {
             logger.error("Exception while connecting to {}@{}\n{}",host.getUserName(),host.getHostName(),e.getMessage());
         } finally {
             logger.debug("{} session.isOpen={} shell.isOpen={}",
-                    this.getHostName(),
+                    this.getHost().getHostName(),
                     clientSession==null?"false":clientSession.isOpen(),
                     channelShell==null?"false":channelShell.isOpen()
             );
@@ -313,8 +302,6 @@ public class SshSession implements Consumer<String>{
         return rtrn;
     }
     public boolean isOpen(){return channelShell!=null && channelShell.isOpen() && clientSession!=null && clientSession.isOpen();}
-    public String getUserName(){return host.getUserName();}
-    public String getHostName(){return host.getHostName();}
     public Host getHost(){return host;}
     public void ctrlC() {
         if(isOpen()) {
@@ -359,7 +346,6 @@ public class SshSession implements Consumer<String>{
         return shSync(command,null);
     }
     public String shSync(String command, Map<String,String> prompt){
-        System.out.println("shSync("+command+")");
         addShObserver(SH_BLOCK_CALLBACK,blockingConsumer);
         sh(command,prompt);
         try {
@@ -368,7 +354,7 @@ public class SshSession implements Consumer<String>{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return peekCleanedOutput();
+        return blockingResponse.toString();
     }
     public void sh(String command){
         sh(command,true,null,null);
@@ -383,7 +369,6 @@ public class SshSession implements Consumer<String>{
         sh(command,true,callback,prompt);
     }
     private void sh(String command,boolean acquireLock,Consumer<String> callback, Map<String,String> prompt){
-        System.out.printf("sh(%s)%n",command);
         logger.trace("{} sh: {}, lock: {}",host,command,acquireLock);
         lineEmittingStream.reset();
         if(isOpen()) {
@@ -413,15 +398,12 @@ public class SshSession implements Consumer<String>{
                                 this.response(response);
                             }
                         });
-
                     }
                 }
                 removeShObserver(SH_CALLBACK);
                 if(callback!=null){
-
                     addShObserver(SH_CALLBACK,callback);
                 }
-
                 if (!command.isEmpty()) {
                     filteredStream.addFilter("command", command, "");
                 }
@@ -458,14 +440,13 @@ public class SshSession implements Consumer<String>{
     public String peekOutput(){
         return shStream.toString();
     }
-    public String peekCleanedOutput(){
-        String output = shStream.toString()
-                .replaceAll("^[\r\n]+","")  //replace leading newlines
-                .replaceAll("[\r\n]+$","") //replace trailing newlines
-                .replaceAll("\r\n","\n"); //change \r\n to just \n
-
-        return output;
-    }
+//    public String peekCleanedOutput(){
+//        String output = shStream.toString()
+//                .replaceAll("^[\r\n]+","")  //replace leading newlines
+//                .replaceAll("[\r\n]+$","") //replace trailing newlines
+//                .replaceAll("\r\n","\n"); //change \r\n to just \n
+//        return output;
+//    }
     public void close(){
         close(true);
     }

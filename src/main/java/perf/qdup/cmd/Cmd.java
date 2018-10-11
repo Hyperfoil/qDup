@@ -10,6 +10,7 @@ import perf.qdup.State;
 import perf.qdup.cmd.impl.*;
 import perf.yaup.HashedLists;
 import perf.yaup.StringUtil;
+import perf.yaup.file.WrappedInputStream;
 
 import javax.script.*;
 import java.io.Reader;
@@ -585,7 +586,6 @@ public abstract class Cmd {
 
     protected final void doRun(String input,Context context,CommandResult result){
         if(!with.isEmpty()){
-
             //TODO the is currently being handles by populateStateVariables
             // a good idea might be to create a new context for this and this.then()
 //            for(String key : with.keySet()){

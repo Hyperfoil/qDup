@@ -17,12 +17,9 @@ public class SemaphoreStream extends MultiStream {
     private AtomicInteger promptIndex = new AtomicInteger(0);
     private Runnable runnable;
 
-    private int uid;
-
     public SemaphoreStream(Semaphore lock, byte bytes[]){
         this.lock = lock;
         this.prompt = bytes;
-        this.uid = counter.incrementAndGet();
     }
 
     @Override

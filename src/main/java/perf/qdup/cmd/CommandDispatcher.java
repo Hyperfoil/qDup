@@ -5,7 +5,6 @@ import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.cmd.impl.Abort;
 import perf.qdup.cmd.impl.Done;
 import perf.qdup.cmd.impl.Sh;
-import perf.qdup.stream.MultiStream;
 import perf.yaup.AsciiArt;
 import perf.yaup.json.Json;
 
@@ -15,6 +14,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -87,7 +87,7 @@ public class CommandDispatcher {
 
         @Override
         public void update(Cmd command, String output) {
-            logger.warn("{} trying to update using a WatcherResult",command);
+            logger.warn("{} trying to accept using a WatcherResult",command);
         }
     }
     /**
@@ -177,7 +177,7 @@ public class CommandDispatcher {
             commandObservers.forEach(o->o.onUpdate(command,output));
             try {
                 if(activeCommands.containsKey(command)){ // trying to run a missing command
-                    activeCommands.get(command).update(output);
+                    activeCommands.get(command).accept(output);
                 }
 
             }catch(Exception e){
@@ -186,7 +186,8 @@ public class CommandDispatcher {
         }
     }
 
-    class ActiveCommandInfo {
+    class ActiveCommandInfo implements Consumer<String> {
+        private Cmd command;
         private String name;
         private ScheduledFuture<?> scheduledFuture;
         private RunWatchers runWatchers;
@@ -194,13 +195,15 @@ public class CommandDispatcher {
         private long startTime;
         private long lastUpdate;
 
-        public ActiveCommandInfo(String name,RunWatchers runWatchers,Context context){
+        public ActiveCommandInfo(String name,RunWatchers runWatchers,Context context,Cmd command){
             this.name =name;
             this.runWatchers = runWatchers;
             this.context = context;
             this.startTime = System.currentTimeMillis();
             this.lastUpdate = this.startTime;
+            this.command = command;
         }
+        public Cmd getCommand(){return command;}
         public Context getContext(){return context;}
         public ScheduledFuture<?> getScheduledFuture() {return scheduledFuture;}
         public void setScheduledFuture(ScheduledFuture<?> scheduledFuture){this.scheduledFuture = scheduledFuture;}
@@ -208,16 +211,16 @@ public class CommandDispatcher {
         public void setRunWatchers(RunWatchers runWatchers){
             this.runWatchers = runWatchers;
         }
-        public void update(String update){
+        public void accept(String update){
             lastUpdate = System.currentTimeMillis();
             if(runWatchers!=null){
-                runWatchers.add(update);
+                runWatchers.accept(update);
             }
         }
         public long getLastUpdate(){ return lastUpdate; }
         public long getStartTime(){ return startTime; }
     }
-    class RunWatchers implements Runnable {
+    class RunWatchers implements Runnable, Consumer<String> {
         final String name;
         final BlockingQueue<String> queue;
         final List<Cmd> watchers;
@@ -237,7 +240,8 @@ public class CommandDispatcher {
 
         @Override
         public String toString(){return name+":["+watchers.size()+"]";}
-        public void add(String input){
+        @Override
+        public void accept(String input){
             try {
                 queue.add(input);
             }catch(NullPointerException e){
@@ -292,11 +296,8 @@ public class CommandDispatcher {
         public void run(){
             if(activeCommands.containsKey(observing)){
                 toRun.doRun(""+timeout,context,result);
-            }else{
-
-            }
+            }else{}
         }
-
     }
     class RunCommand implements Runnable {
         Cmd command;
@@ -314,18 +315,14 @@ public class CommandDispatcher {
         public void run() {
             try {
                 activeThreads.put(command, Thread.currentThread());
-                logger.trace("run {}:{}",context.getSession().getHostName(), command);
+                logger.trace("run {}:{}",context.getSession().getHost().getHostName(), command);
                 context.getProfiler().start(command.toString());
-
                 command.doRun(input, context, result);
                 //thread is no longer active when method exits even if command is active
                 activeThreads.remove(command);
-
-
             }catch(Exception e){
-                logger.error("Exception while running {}@{}. Aborting",command,context.getSession().getHostName(),e);
+                logger.error("Exception while running {}@{}. Aborting",command,context.getSession().getHost().getHostName(),e);
                 context.abort();
-
             }
         }
     }
@@ -440,7 +437,7 @@ public class CommandDispatcher {
                     if(!command.isSilent()) {
                         logger.warn("Nanny found idle command={}\n  host={}\n  script={}\n  idle={}",
                                 command,
-                                activeCommands.get(command).getContext().getSession().getHostName(),
+                                activeCommands.get(command).getContext().getSession().getHost().getHostName(),
                                 command.getHead(),
                                 String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000));
                     }
@@ -469,6 +466,7 @@ public class CommandDispatcher {
         return rtrn;
     }
 
+    public ScheduledThreadPoolExecutor getScheduler(){return scheduler;}
 
     public void addScriptObserver(ScriptObserver observer){scriptObservers.add(observer);}
     public void removeScriptObserver(ScriptObserver observer){
@@ -486,7 +484,7 @@ public class CommandDispatcher {
     public ExecutorService getExecutor(){return executor;}
 
     public void addScript(Cmd script,Context context){
-        logger.trace("add script {} to {}",script,context.getSession().getHostName());
+        logger.trace("add script {} to {}",script,context.getSession().getHost().getHostName());
 
         final Cmd scriptCopy = script.deepCopy();
 
@@ -498,14 +496,14 @@ public class CommandDispatcher {
                 )
         );
         if(previous!=null){
-            logger.error("already have getScript.tail={} mapped to {}@{}",scriptCopy.getTail().getUid(),scriptCopy,context.getSession().getHostName());
+            logger.error("already have getScript.tail={} mapped to {}@{}",scriptCopy.getTail().getUid(),scriptCopy,context.getSession().getHost().getHostName());
         }
         if(isRunning.get()){
             ScriptContext scriptContext = loadedScripts.get(scriptCopy);
             scriptObservers.forEach(observer -> observer.onStart(scriptCopy, scriptContext.getContext()));
 
             logger.info("starting\n  host={}\n  script={}",
-                    scriptContext.getContext().getSession().getHostName(),
+                    scriptContext.getContext().getSession().getHost().getHostName(),
                     scriptCopy);
             dispatch(null,scriptCopy,"", scriptContext.getContext(), scriptContext);
 
@@ -544,7 +542,7 @@ public class CommandDispatcher {
                     scriptObservers.forEach(observer -> observer.onStart(script, scriptContext.getContext()));
 
                     logger.info("starting\n  host={}\n  script={}",
-                            scriptContext.getContext().getSession().getHostName(),
+                            scriptContext.getContext().getSession().getHost().getHostName(),
                             script);
                     dispatch(null,script,"", scriptContext.getContext(), scriptContext);
                 }
@@ -648,18 +646,15 @@ public class CommandDispatcher {
         }
         if(command.hasTimers()){
             WatcherResult watcherResult = new WatcherResult(context);
-
             for(long timeout: command.getTimeouts()){
                List<Cmd> timers = command.getTimers(timeout);
                for(Cmd timer : timers){
                    RunTimer runTimer = new RunTimer(timeout,timer,command,context,watcherResult);
                    scheduler.schedule(runTimer,timeout,TimeUnit.MILLISECONDS);
                }
-           }
+            }
         }
-
         executor.execute(new RunCommand(command,input,context,result));
-
     }
 
     public void dispatch(Cmd previousCommand, Cmd nextCommand, String input, Context context, CommandResult result){
@@ -685,7 +680,7 @@ public class CommandDispatcher {
         if(nextCommand!=null){
             commandObservers.forEach(c->c.onStart(nextCommand));
 
-            ActiveCommandInfo previous = activeCommands.put(nextCommand,new ActiveCommandInfo(nextCommand.getUid()+" "+nextCommand.toString(),null,context));
+            ActiveCommandInfo previous = activeCommands.put(nextCommand,new ActiveCommandInfo(nextCommand.getUid()+" "+nextCommand.toString(),null,context,nextCommand));
             activeCount = activeCommandCount.incrementAndGet();
             logger.trace("addActive("+nextCommand+") size="+activeCommandCount.get());
 
@@ -728,7 +723,7 @@ public class CommandDispatcher {
             context.getProfiler().stop();
             if(context.getRunLogger().isInfoEnabled()){
                 context.getRunLogger().info("Closing script state:\n  host={}\n  script={}\n{}",
-                        context.getSession().getHostName(),
+                        context.getSession().getHost().getHostName(),
                         loadedScripts.get(command.getHead()).getCommand(),
                         context.getState().tree());
             }
@@ -755,7 +750,7 @@ public class CommandDispatcher {
         }else{
             logger.debug("{}.closeSshSessions",this);
             loadedScripts.values().forEach(scriptResult -> {
-                logger.debug("closing connection to {}",scriptResult.getContext().getSession().getHostName());
+                logger.debug("closing connection to {}",scriptResult.getContext().getSession().getHost().getHostName());
                 //don't wait will force running commands (holding shell lock) to be closed
                 scriptResult.getContext().getSession().close(false);
             });

@@ -8,8 +8,28 @@ import static org.junit.Assert.assertTrue;
 
 public class SshSessionTest extends SshTestBase{
 
-//    @Rule
-//    public final TestServer testServer = new TestServer();
+    @Test
+    public void setupCommand(){
+        String userHome = System.getProperty("user.home");
+        String currentDir = System.getProperty("user.dir");
+        String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
+        SshSession sshSession = new SshSession(
+                getHost(),
+                userHome+"/.ssh/known_hosts",
+                userHome+"/.ssh/id_rsa",
+                null,
+                5,
+                setupCommand,
+                null
+        );
+        String foo = sshSession.shSync("echo $FOO");
+        String bar = sshSession.shSync("echo $BAR");
+
+        assertEquals("foo",foo);
+        assertEquals("bar",bar);
+    }
+
+
 
     @Test
     public void testConnect(){
@@ -21,11 +41,11 @@ public class SshSessionTest extends SshTestBase{
                 userHome+"/.ssh/id_rsa",
                 null,
                 5,
-                ""
+                "",
+                null
         );
         assertTrue("SshSession should be open after init",sshSession.isOpen());
         String pwdOutput = sshSession.shSync("pwd");
-
 
         //NOTE: expect userHome when using sshd but expect currentDir if using a TestServer
         //Test server is not working at the moment so we test for userHome

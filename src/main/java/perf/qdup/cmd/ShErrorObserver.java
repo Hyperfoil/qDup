@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-//doesn't work for prompts because those are not sent to update without a newline
+//doesn't work for prompts because those are not sent to accept without a newline
 public class ShErrorObserver implements CommandDispatcher.CommandObserver {
 
     public static ShErrorObserver getObserver(Context context) {

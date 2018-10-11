@@ -35,7 +35,7 @@ public class SuffixStream extends MultiStream {
         @Override
         public void run() {
             if(lastIndex == writeIndex){//if there has not been a subsequent write
-                foundSuffix(name,lastIndex);
+                callConsumers(name);
             }
         }
     }
@@ -164,14 +164,15 @@ public class SuffixStream extends MultiStream {
                     }
                 }
                 if (found) {
+                    foundSuffix(foundName,writeIndex);
                     if(executor!=null){
                         if(future!=null){
                             future.cancel(true);
                         }
                         foundRunnable.reset(foundName,writeIndex);
                         future = executor.schedule(foundRunnable, DELAY_MS,TimeUnit.MILLISECONDS);
-                    }else{
-                        foundSuffix(foundName,writeIndex);
+                    } else {
+                        callConsumers(foundName);
                     }
 
                 } else if (trailingSuffixLength > Integer.MIN_VALUE) {
@@ -203,8 +204,9 @@ public class SuffixStream extends MultiStream {
         }catch(IOException e){
             e.printStackTrace(System.out);
         }
+    }
+    private void callConsumers(String name){
         consumers.forEach(c -> c.accept(name));
-
     }
     public int suffixLength(byte b[], byte toFind[], int endIndex){
         boolean matching = false;

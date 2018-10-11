@@ -471,10 +471,7 @@ public class YamlParserTest extends SshTestBase {
         parser.load("comments",stream(""+
                 "KEY:VALUE",
                 "\"ke:y\":VALUE"));
-
         Json json = parser.getJson();
-
-
         validateParse(parser);
 
     }
@@ -493,9 +490,7 @@ public class YamlParserTest extends SshTestBase {
                 "  a.c : a.a #withQuote\"",
                 "  a.d : a.d \\#notComment",
                 "  #aComment2"));
-
         Json json = parser.getJson();
-
         validateParse(parser);
 
     }
@@ -517,14 +512,7 @@ public class YamlParserTest extends SshTestBase {
                 "  a.b : a.b"));
 
         validateParse(parser);
-
         Json json = parser.getJson();
-
-
-
-
-
-
     }
 
     //Demonstrates a difference between how YamlParser and Yaml would parse input
@@ -538,12 +526,7 @@ public class YamlParserTest extends SshTestBase {
                 "  - name: secondName",
                 "    label: secondLabel"));
         validateParse(parser);
-
-
         Json json = parser.getJson();
-
-
-
     }
 
     // Tests for parsing the Yaml
@@ -559,18 +542,9 @@ public class YamlParserTest extends SshTestBase {
         "bar:",
         " - bar.foo : bf",
         "   bar.bar : bb"));
-
-
-
         validateParse(parser);
-
         Json json = parser.getJson();
-
-
-
-
     }
-
 
     @Test
     public void nesting(){

@@ -21,9 +21,9 @@ public class Download extends Cmd {
     @Override
     public void run(String input, Context context, CommandResult result) {
 
-        String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHostName();
-        String userName = context.getSession().getUserName();
-        String hostName = context.getSession().getHostName();
+        String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHost().getHostName();
+        String userName = context.getSession().getHost().getUserName();
+        String hostName = context.getSession().getHost().getHostName();
         String remotePath = populateStateVariables(path,this,context.getState());
         String destinationPath =  populateStateVariables(basePath + File.separator +destination,this,context.getState());
         File destinationFile = new File(destinationPath);

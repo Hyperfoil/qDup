@@ -6,8 +6,6 @@ package perf.qdup.cmd;
  */
 public interface CommandResult {
 
-
-
     public void next(Cmd command,String output);
     public void skip(Cmd command,String output);
     public void update(Cmd command,String output);

@@ -385,7 +385,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
         logger.info("{} connecting {} to {}@{}",this,command,host.getUserName(),host.getHostName());
         Profiler profiler = profiles.get(command.toString());
         profiler.start("connect:"+host.toString());
-        SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase(),config.getTimeout(),setupEnv);
+        SshSession scriptSession = new SshSession(host,config.getKnownHosts(),config.getIdentity(),config.getPassphrase(),config.getTimeout(),setupEnv,dispatcher.getScheduler());
         if(!scriptSession.isOpen()){
             logger.error("{} failed to connect {} to {}@{}. Aborting",config.getName(),command,host.getUserName(),host.getHostName());
             abort();
@@ -440,7 +440,7 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
             });
             String updateEnv = (setEnv.length()>0? "export"+setEnv.toString():"")+(unsetEnv.length()>0?";unset"+unsetEnv.toString():"");
             if(!updateEnv.isEmpty()) {
-                logger.info("{} update env from setup {}", host, updateEnv);
+                logger.info("{} accept env from setup {}", host, updateEnv);
             }
 
             for(ScriptCmd scriptCmd : config.getRunCmds(host)){
@@ -450,7 +450,6 @@ public class Run implements Runnable, CommandDispatcher.DispatchObserver {
                     State scriptState = hostState.getChild(scriptCmd.getName()).getChild(scriptCmd.getName()+"-"+scriptCmd.getUid());
                     queueCommand(scriptCmd,host,scriptState,updateEnv);
                     return true;
-
                 });
             }
         }

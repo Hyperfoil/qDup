@@ -70,7 +70,7 @@ public class XmlCmd extends Cmd {
             if(remotePath==null || remotePath.isEmpty()){
                 xml = Xml.parse(input);
             }else{
-                tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHostName(),"."+System.currentTimeMillis());
+                tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHost().getHostName(),"."+System.currentTimeMillis());
 
                 context.getLocal().download(remotePath,tmpDest.getPath(),context.getSession().getHost());
                 xml = Xml.parseFile(tmpDest.getPath());
@@ -103,7 +103,7 @@ public class XmlCmd extends Cmd {
                 context.getLocal().upload(tmpDest.getPath(), remotePath, context.getSession().getHost());
             }
         } catch (IOException e) {
-            logger.error("{}@{} failed to create local tmp file",this.toString(),context.getSession().getHostName(),e);
+            logger.error("{}@{} failed to create local tmp file",this.toString(),context.getSession().getHost().getHostName(),e);
             successful = false;
             output = "COULD NOT LOAD: "+path;
         } finally {
