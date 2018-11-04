@@ -11,9 +11,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 public class SuffixStreamTest {
-
 
     @Test
     public void suffixLength_noMatch(){
@@ -64,6 +64,31 @@ public class SuffixStreamTest {
         }
 
         assertTrue(called.get());
+    }
+    @Test
+    public void consumer_fullMatch_executor_verifyThread(){
+        ScheduledThreadPoolExecutor sfe = new ScheduledThreadPoolExecutor(2);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        SuffixStream stream = new SuffixStream(sfe);
+        stream.addSuffix("FOO","FOO","");
+        stream.addStream("baos",baos);
+        StringBuilder sb = new StringBuilder();
+
+        stream.addConsumer((s)->{sb.append(Thread.currentThread().getName());});
+        try {
+            stream.write("BOOFOO".getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            TimeUnit.SECONDS.sleep(2);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        assertNotEquals("current thread and consumer thread should not match",Thread.currentThread().getName(),sb.toString());
     }
     @Test
     public void consumer_fullMatch_executor(){

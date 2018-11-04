@@ -4,20 +4,17 @@ import org.junit.Test;
 import perf.qdup.Run;
 import perf.qdup.SshTestBase;
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.CommandDispatcher;
+import perf.qdup.cmd.Dispatcher;
 import perf.qdup.cmd.Result;
 import perf.qdup.cmd.Script;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
-import perf.yaup.xml.XmlOperation;
 
-import javax.xml.XMLConstants;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -72,7 +69,7 @@ public class XmlCmdTest extends SshTestBase {
         builder.addRoleRun("role","run-xml",new HashMap<>());
 
         RunConfig config = builder.buildConfig();
-        CommandDispatcher dispatcher = new CommandDispatcher();
+        Dispatcher dispatcher = new Dispatcher();
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
         assertEquals("/tmp/foo.xml>/foo/biz/text() should be buz","buz",first.toString());
@@ -111,7 +108,7 @@ public class XmlCmdTest extends SshTestBase {
         builder.addRoleRun("role","run-xml",new HashMap<>());
 
         RunConfig config = builder.buildConfig();
-        CommandDispatcher dispatcher = new CommandDispatcher();
+        Dispatcher dispatcher = new Dispatcher();
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
         File tmpXml = new File("/tmp/foo.xml");

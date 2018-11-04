@@ -98,8 +98,7 @@ public class LineEmittingStream extends OutputStream {
                 writeIndex += toBuffer;
             }
         }catch(Exception e){
-            System.out.println(e.getMessage());
-            e.printStackTrace(System.out);
+            logger.error(e.getMessage(),e);
             System.exit(-1);
         }
     }

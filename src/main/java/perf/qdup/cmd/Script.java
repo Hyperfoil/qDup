@@ -22,8 +22,8 @@ public class Script extends Cmd {
     }
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
-        result.next(this, input);
+    public void run(String input, Context context) {
+        context.next(input);
     }
 
 

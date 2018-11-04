@@ -2,7 +2,6 @@ package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
-import perf.qdup.cmd.CommandResult;
 
 public class Log extends Cmd {
     String value;
@@ -13,9 +12,9 @@ public class Log extends Cmd {
         }
     }
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         context.getRunLogger().info(Cmd.populateStateVariables(value,this,context.getState()));
-        result.next(this,input);
+        context.next(input);
     }
     @Override
     public Cmd copy() {

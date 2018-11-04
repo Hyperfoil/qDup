@@ -2,7 +2,6 @@ package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
-import perf.qdup.cmd.CommandResult;
 
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -54,10 +53,10 @@ public class Sleep extends Cmd {
     }
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         String toParse = Cmd.populateStateVariables(amount,this,context.getState());
         long sleepMs = parseToMs(toParse);
-        context.schedule(this,() -> result.next(this,input),sleepMs);
+        context.schedule(() -> context.next(input),sleepMs);
     }
 
     @Override

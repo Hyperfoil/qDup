@@ -72,12 +72,6 @@ public class EscapeFilteredStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-        if(b==null || len < 0 || off + len > b.length){
-            System.out.println(getClass().getName()+".write("+off+","+len+")");
-            System.out.println(MultiStream.printByteCharacters(b,off,Math.min(10,b.length-off)));
-            System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
-            System.exit(-1);
-        }
         //logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
         try {
             int flushIndex = 0;
@@ -131,8 +125,7 @@ public class EscapeFilteredStream extends MultiStream {
                 }
             }
         }catch(Exception e){
-            System.out.println(e.getMessage());
-            e.printStackTrace(System.out);
+            logger.error(e.getMessage(),e);
             System.exit(-1);
         }
     }

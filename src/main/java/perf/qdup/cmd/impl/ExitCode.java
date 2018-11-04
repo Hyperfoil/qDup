@@ -1,7 +1,6 @@
 package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.CommandResult;
 import perf.qdup.cmd.Context;
 
 /**
@@ -25,10 +24,10 @@ public class ExitCode extends Cmd {
     public String getExpected(){return expected;}
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
          if(getPrevious()==null){
              //cannot get exit code if there wasn't a previous command
-             result.skip(this,input);
+             context.skip(input);
          }else {//assuming there was a previous Sh at some point
              if(!getPrevious().getWith().containsKey(EXIT_CODE_KEY)){
                  if(context!=null && context.getSession()!=null){
@@ -43,9 +42,9 @@ public class ExitCode extends Cmd {
              with(EXIT_CODE_KEY,exitCode);
 
              if(expected.equals(exitCode)){
-                 result.next(this,input);
+                 context.next(input);
              }else{
-                 result.skip(this,input);
+                 context.skip(input);
              }
          }
     }

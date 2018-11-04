@@ -8,6 +8,7 @@ import perf.yaup.json.Json;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -21,7 +22,8 @@ public class CmdBuilderTest extends SshTestBase {
     public void buildYamlCommand_invalidCommand(){
         YamlParser parser = new YamlParser();
         parser.load("download",stream("-wait=for: P"));
-        Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null,errors);
         assertTrue("cmd should be NO_OP",cmd.toString().contains("NO_OP"));
     }
 
@@ -29,7 +31,8 @@ public class CmdBuilderTest extends SshTestBase {
     public void download_path(){
         YamlParser parser = new YamlParser();
         parser.load("download",stream("-download: P"));
-        Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null,errors);
         assertTrue("cmd should be Download",cmd instanceof Download);
         Download download = (Download)cmd;
         assertEquals("unexpected path","P",download.getPath());
@@ -39,7 +42,8 @@ public class CmdBuilderTest extends SshTestBase {
     public void download_path_destination(){
         YamlParser parser = new YamlParser();
         parser.load("download",stream("-download: P D"));
-        Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null,errors);
         assertTrue("cmd should be Download",cmd instanceof Download);
         Download download = (Download)cmd;
         assertEquals("unexpected path","P",download.getPath());
@@ -73,7 +77,8 @@ public class CmdBuilderTest extends SshTestBase {
         Json sh = Json.fromString("{\"key\":\"sh\",\"lineNumber\":1,\"child\":[[{\"key\":\"command\",\"lineNumber\":2,\"value\":\"tail -f server.log\"},{\"key\":\"silent\",\"lineNumber\":3,\"value\":\"true\"}]]}");
 
         CmdBuilder builder = CmdBuilder.getBuilder();
-        Cmd command = builder.buildYamlCommand(sh,null);
+        List<String> errors = new ArrayList<>();
+        Cmd command = builder.buildYamlCommand(sh,null,errors);
 
         assertTrue("command should be sh",Sh.class.equals(command.getClass()));
         assertTrue("command should not be logging",command.isSilent());
@@ -88,8 +93,8 @@ public class CmdBuilderTest extends SshTestBase {
         ));
 
         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-
-        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("queueDownload"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("queueDownload"),null,errors);
         assertTrue("built "+built.getClass().getName(),built instanceof QueueDownload);
     }
 
@@ -98,8 +103,8 @@ public class CmdBuilderTest extends SshTestBase {
         YamlParser parser = new YamlParser();
         parser.load("ctrlC",stream("ctrlC:"));
         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-
-        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("ctrlC"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("ctrlC"),null,errors);
 
         assertTrue("built "+built.getClass().getName(),built instanceof CtrlC);
 
@@ -112,8 +117,8 @@ public class CmdBuilderTest extends SshTestBase {
         ));
 
         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-
-        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("sleep"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("sleep"),null,errors);
         assertTrue("built "+built.getClass().getName(),built instanceof Sleep);
         assertEquals("5m",((Sleep)built).getAmount());
     }
@@ -126,8 +131,8 @@ public class CmdBuilderTest extends SshTestBase {
         ));
 
         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-
-        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("setstate"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("setstate"),null,errors);
         assertTrue("built "+built.getClass().getName(),built instanceof SetState);
 
     }
@@ -139,8 +144,8 @@ public class CmdBuilderTest extends SshTestBase {
         "sh: echo ${SERVER_PID}"));
 
         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-
-        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("echo"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("echo"),null,errors);
 
         assertTrue(built instanceof Sh);
         assertTrue(built.toString().contains("${SERVER_PID}"));
@@ -158,7 +163,8 @@ public class CmdBuilderTest extends SshTestBase {
             "}"
                 ));
         CmdBuilder builder = CmdBuilder.getBuilder();
-        Cmd built = builder.buildYamlCommand(parser.getJson("response"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd built = builder.buildYamlCommand(parser.getJson("response"),null,errors);
         assertTrue("expect a sh",(built instanceof Sh));
         Sh sh = (Sh)built;
         assertFalse("expect sh to have a prompt",sh.getPrompt().isEmpty());
@@ -167,8 +173,6 @@ public class CmdBuilderTest extends SshTestBase {
 
     @Test
     public void xmlOperationList(){
-        YamlParser foo = new YamlParser();
-
         YamlParser parser = new YamlParser();
         parser.load("listCommandArgument",stream(""+
                 "xml: ",
@@ -182,8 +186,8 @@ public class CmdBuilderTest extends SshTestBase {
         ));
 
         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-
-        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("listCommandArgument"),null);
+        List<String> errors = new ArrayList<>();
+        Cmd built = cmdBuilder.buildYamlCommand(parser.getJson("listCommandArgument"),null,errors);
 
         assertTrue(built instanceof XmlCmd);
         XmlCmd builtXml = (XmlCmd)built;

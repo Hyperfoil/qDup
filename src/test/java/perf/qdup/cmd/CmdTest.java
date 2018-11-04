@@ -218,7 +218,7 @@ public class CmdTest extends SshTestBase {
         builder.addRoleRun("role","run-with",new HashMap<>());
 
         RunConfig config = builder.buildConfig();
-        CommandDispatcher dispatcher = new CommandDispatcher();
+        Dispatcher dispatcher = new Dispatcher();
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
 

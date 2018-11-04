@@ -2,7 +2,6 @@ package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
-import perf.qdup.cmd.CommandResult;
 
 public class Countdown extends Cmd {
     private String name;
@@ -14,12 +13,12 @@ public class Countdown extends Cmd {
 
     }
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         int newCount = context.getCoordinator().decrease(this.name,this.startCount);
         if(newCount <= 0){
-            result.next(this,input);
+            context.next(input);
         }else{
-            result.skip(this,input);
+            context.skip(input);
         }
     }
     @Override

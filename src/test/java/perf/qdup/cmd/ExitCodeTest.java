@@ -48,7 +48,7 @@ public class ExitCodeTest extends SshTestBase {
         RunConfig config = builder.buildConfig();
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
-        CommandDispatcher dispatcher = new CommandDispatcher();
+        Dispatcher dispatcher = new Dispatcher();
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
 

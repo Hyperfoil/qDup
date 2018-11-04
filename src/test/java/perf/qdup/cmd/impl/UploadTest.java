@@ -4,7 +4,7 @@ import org.junit.Test;
 import perf.qdup.Run;
 import perf.qdup.SshTestBase;
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.CommandDispatcher;
+import perf.qdup.cmd.Dispatcher;
 import perf.qdup.cmd.Script;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
@@ -53,7 +53,7 @@ public class UploadTest extends SshTestBase {
             assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
 
-            CommandDispatcher dispatcher = new CommandDispatcher();
+            Dispatcher dispatcher = new Dispatcher();
             Run run = new Run("/tmp",config,dispatcher);
             run.run();
 

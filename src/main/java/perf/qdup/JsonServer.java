@@ -1,7 +1,7 @@
 package perf.qdup;
 
 import com.sun.net.httpserver.HttpServer;
-import perf.qdup.cmd.CommandDispatcher;
+import perf.qdup.cmd.Dispatcher;
 import perf.yaup.StringUtil;
 import perf.yaup.json.Json;
 
@@ -16,14 +16,14 @@ public class JsonServer {
     private final int port;
     private HttpServer httpServer;
     private final Run run;
-    private final CommandDispatcher dispatcher;
+    private final Dispatcher dispatcher;
     private final Coordinator coordinator;
 
 
-    public JsonServer(Run run, CommandDispatcher dispatcher,Coordinator coordinator){
+    public JsonServer(Run run, Dispatcher dispatcher, Coordinator coordinator){
         this(run,dispatcher,coordinator,31337);
     }
-    public JsonServer(Run run, CommandDispatcher dispatcher,Coordinator coordinator,int port){
+    public JsonServer(Run run, Dispatcher dispatcher, Coordinator coordinator, int port){
         this.run = run;
         this.dispatcher = dispatcher;
         this.coordinator = coordinator;

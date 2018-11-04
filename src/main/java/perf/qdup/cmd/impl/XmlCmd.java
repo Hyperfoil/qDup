@@ -1,7 +1,6 @@
 package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.CommandResult;
 import perf.qdup.cmd.Context;
 import perf.yaup.StringUtil;
 import perf.yaup.file.FileUtility;
@@ -51,7 +50,7 @@ public class XmlCmd extends Cmd {
     }
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         Xml xml = null;
         boolean successful = true;
         String output = input;
@@ -111,9 +110,9 @@ public class XmlCmd extends Cmd {
                 tmpDest.delete();
             }
             if(successful){
-                result.next(this,output);
+                context.next(output);
             }else{
-                result.skip(this,output);
+                context.skip(output);
             }
         }
     }

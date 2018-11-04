@@ -4,7 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertTrue;
 
 public class SshTestBase {
 
@@ -19,6 +22,26 @@ public class SshTestBase {
             e.printStackTrace();
         }
         host = new Host(System.getProperty("user.name"),hostname);
+    }
+
+    public SshSession getSession(){
+        return getSession(null);
+    }
+    public SshSession getSession(ScheduledThreadPoolExecutor executor){
+        String userHome = System.getProperty("user.home");
+        String currentDir = System.getProperty("user.dir");
+        String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
+        SshSession sshSession = new SshSession(
+                getHost(),
+                userHome+"/.ssh/known_hosts",
+                userHome+"/.ssh/id_rsa",
+                null,
+                5,
+                setupCommand,
+                executor
+        );
+        assertTrue("local ssh session failed to connect",sshSession.isOpen());
+        return sshSession;
     }
 
     public Host getHost(){return host;}

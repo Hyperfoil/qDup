@@ -1,16 +1,19 @@
 package perf.qdup.cmd.impl;
 
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.CommandResult;
 import perf.qdup.cmd.Context;
 import perf.yaup.StringUtil;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class ForEach extends Cmd.LoopCmd {
+
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     private String name;
     private String input;
@@ -49,10 +52,12 @@ public class ForEach extends Cmd.LoopCmd {
     }
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
+
         if(split == null){
             String toSplit = this.input.isEmpty() ? input.trim() : Cmd.populateStateVariables(this.input,this,context.getState());
             split = split(toSplit);
+            logger.debug("for-each:{} input={} split={}",name,input,split);
         }
         if(split!=null && !split.isEmpty()){
             String populatedName = Cmd.populateStateVariables(this.name,this,context.getState());
@@ -60,10 +65,12 @@ public class ForEach extends Cmd.LoopCmd {
             if(index < split.size()){
                 String value = split.get(index).replaceAll("\r|\n","");//defensive against trailing newline characters
                 with(populatedName,value);
-                result.next(this,value);
+                context.next(value);
             }else{
-                result.skip(this,input);
+                context.skip(input);
             }
+        }else{
+            context.skip(input);
         }
     }
 

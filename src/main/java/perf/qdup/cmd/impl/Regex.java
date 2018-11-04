@@ -2,7 +2,6 @@ package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
-import perf.qdup.cmd.CommandResult;
 import perf.yaup.StringUtil;
 
 import java.util.LinkedHashMap;
@@ -19,7 +18,7 @@ public class Regex extends Cmd {
     }
     public String getPattern(){return patternString;}
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         String populatedPattern = populateStateVariables(patternString,this,context.getState());
         String newPattern = populatedPattern;
 
@@ -56,10 +55,10 @@ public class Regex extends Cmd {
                     context.getState().set(realName,capturedValue);
                 }
             }
-            result.next(this,input);
+            context.next(input);
         }else{
             logger.trace("{} NOT match {} ",this,input);
-            result.skip(this,input);
+            context.skip(input);
         }
     }
 

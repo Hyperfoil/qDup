@@ -5,7 +5,12 @@ import org.junit.Test;
 import perf.qdup.Run;
 import perf.qdup.SshTestBase;
 import perf.qdup.State;
-import perf.qdup.cmd.*;
+import perf.qdup.cmd.Cmd;
+import perf.qdup.cmd.Dispatcher;
+import perf.qdup.cmd.Result;
+import perf.qdup.cmd.Script;
+import perf.qdup.cmd.ScriptContext;
+import perf.qdup.cmd.SpyCommandResult;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
@@ -69,43 +74,41 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void run_defined_spaces(){
         Cmd forEach = Cmd.forEach("FOO","1 2");
-        Context context = new Context(null,new State(""),null,null);
-        SpyCommandResult result = new SpyCommandResult();
+        SpyCommandResult context = new SpyCommandResult();
 
-        result.clear();
-        forEach.run("",context,result);
-        assertEquals("next","1",result.getNext());
-        assertNull("skip not called",result.getSkip());
+        context.clear();
+        forEach.run("",context);
+        assertEquals("next","1",context.getNext());
+        assertNull("skip not called",context.getSkip());
 
-        result.clear();
-        forEach.run("",context,result);
-        assertEquals("next","2",result.getNext());
-        assertNull("skip not called",result.getSkip());
-        result.clear();
-        forEach.run("",context,result);
-        assertNull("next should be null",result.getNext());
-        assertEquals("skip should be empty","",result.getSkip());
+        context.clear();
+        forEach.run("",context);
+        assertEquals("next","2",context.getNext());
+        assertNull("skip not called",context.getSkip());
+        context.clear();
+        forEach.run("",context);
+        assertNull("next should be null",context.getNext());
+        assertEquals("skip should be empty","",context.getSkip());
     }
 
     @Test
     public void run_defined_newlines(){
         Cmd forEach = Cmd.forEach("FOO","1\n2");
-        Context context = new Context(null,new State(""),null,null);
-        SpyCommandResult result = new SpyCommandResult();
+        SpyCommandResult context = new SpyCommandResult();
 
-        result.clear();
-        forEach.run("",context,result);
-        assertEquals("next","1",result.getNext());
-        assertNull("skip not called",result.getSkip());
+        context.clear();
+        forEach.run("",context);
+        assertEquals("next","1",context.getNext());
+        assertNull("skip not called",context.getSkip());
 
-        result.clear();
-        forEach.run("",context,result);
-        assertEquals("next","2",result.getNext());
-        assertNull("skip not called",result.getSkip());
-        result.clear();
-        forEach.run("",context,result);
-        assertNull("next should be null",result.getNext());
-        assertEquals("skip should be empty","",result.getSkip());
+        context.clear();
+        forEach.run("",context);
+        assertEquals("next","2",context.getNext());
+        assertNull("skip not called",context.getSkip());
+        context.clear();
+        forEach.run("",context);
+        assertNull("next should be null",context.getNext());
+        assertEquals("skip should be empty","",context.getSkip());
     }
 
     @Test
@@ -211,7 +214,7 @@ public class ForEachTest extends SshTestBase {
         RunConfig config = builder.buildConfig();
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
-        CommandDispatcher dispatcher = new CommandDispatcher();
+        Dispatcher dispatcher = new Dispatcher();
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
 

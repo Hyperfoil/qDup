@@ -1,11 +1,7 @@
 package perf.qdup.cmd.impl;
 
-import perf.qdup.Run;
 import perf.qdup.SshSession;
 import perf.qdup.cmd.*;
-import perf.qdup.config.CmdBuilder;
-import perf.qdup.config.RunConfig;
-import perf.qdup.config.RunConfigBuilder;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -34,7 +30,7 @@ public class Reboot extends Cmd {
     }
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         SshSession session = context.getSession();
         if(target!=null && !target.isEmpty()){
 
@@ -116,9 +112,9 @@ public class Reboot extends Cmd {
             context.abort();
         }else {
             logger.info("{} reconnected",session.getHost().getHostName());
-            context.setStartEnv();
+            //TODO context.setStartEnv();
         }
-        result.next(this,input);
+        context.next(input);
     }
 
     @Override

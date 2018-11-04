@@ -80,6 +80,7 @@ public class CommandSummary {
                 String name = matcher.group(1);
                 addRegexVariable(name);
             }
+        }else{
         }
 
         if(toString.indexOf(STATE_PREFIX)>-1) {
