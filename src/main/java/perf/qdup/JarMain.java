@@ -121,7 +121,7 @@ public class JarMain {
         options.addOption(
             Option.builder("k")
                 .longOpt("knownHosts")
-                .desc("qdup known hosts path [~/.qdup/known_hosts]")
+                .desc("qdup known hosts path [~/.ssh/known_hosts]")
                 .hasArg()
                 .argName("path")
                 .type(String.class)
@@ -143,7 +143,7 @@ public class JarMain {
                 .longOpt("identity")
                 .argName("path")
                 .hasArg()
-                .desc("qdup identity path [~/.qdup/id_rsa]")
+                .desc("qdup identity path [~/.ssh/id_rsa]")
                 .type(String.class)
                 .build()
         );
