@@ -307,6 +307,17 @@ public class SshSession {
     public boolean isOpen(){
         boolean rtrn =channelShell!=null && channelShell.isOpen() && clientSession!=null && clientSession.isOpen();
         return rtrn;}
+
+    public boolean usesDelay(){
+        return this.semaphoreStream.usesExecutor();
+    }
+    public int getDelay(){
+        return this.semaphoreStream.getExecutorDelay();
+    }
+    public void setDelay(int delay){
+        this.semaphoreStream.setExecutorDelay(delay);
+    }
+
     public Host getHost(){return host;}
     public void ctrlC() {
         if(isOpen()) {

@@ -14,7 +14,8 @@ import java.util.stream.Collectors;
 
 public class SuffixStream extends MultiStream {
     private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
-    private static final long DELAY_MS = 1_000;
+    public static final int DEFAULT_DELAY = 1_000;
+    public static final int NO_DELAY = -1;
 
     private class FoundRunnable implements Runnable{
         private int lastIndex;
@@ -47,6 +48,7 @@ public class SuffixStream extends MultiStream {
     private List<Consumer<String>> consumers;
 
     private ScheduledThreadPoolExecutor executor;
+    private int executorDelay = DEFAULT_DELAY;
     private ScheduledFuture future;
     private FoundRunnable foundRunnable;
 
@@ -62,6 +64,16 @@ public class SuffixStream extends MultiStream {
         executor = threadPool;
         future = null;
         foundRunnable = new FoundRunnable("",-1);
+    }
+
+    public int getExecutorDelay(){
+        return executorDelay;
+    }
+    public void setExecutorDelay(int executorDelay){
+        this.executorDelay = executorDelay;
+    }
+    public boolean usesExecutor(){
+        return executor != null;
     }
 
     public void flushBuffer() throws IOException {
@@ -163,12 +175,12 @@ public class SuffixStream extends MultiStream {
                 }
                 if (found) {
                     foundSuffix(foundName,writeIndex);
-                    if(executor!=null){
+                    if(executor!=null && executorDelay>=0){
                         if(future!=null){
                             future.cancel(true);
                         }
                         foundRunnable.reset(foundName,writeIndex);
-                        future = executor.schedule(foundRunnable, DELAY_MS,TimeUnit.MILLISECONDS);
+                        future = executor.schedule(foundRunnable, executorDelay,TimeUnit.MILLISECONDS);
                     } else {
                         callConsumers(foundName);
                     }
