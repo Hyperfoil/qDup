@@ -99,6 +99,18 @@ public class YamlParserTest extends SshTestBase {
     }
 
     @Test
+    public void childNotIndented(){
+        YamlParser parser = new YamlParser();
+        parser.load("child",stream(""+
+            "- script: foo",
+            "  with:",
+            "    KEY: \"value\""
+        ));
+
+        //TODO validate the yaml
+    }
+
+    @Test
     public void doubleSlashQuote_value(){
         YamlParser parser = new YamlParser();
         parser.load("slash",stream(""+

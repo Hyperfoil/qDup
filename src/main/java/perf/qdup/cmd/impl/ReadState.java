@@ -2,7 +2,6 @@ package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
-import perf.qdup.cmd.CommandResult;
 
 public class ReadState extends Cmd {
 
@@ -20,13 +19,13 @@ public class ReadState extends Cmd {
     }
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         //use populateVariable in case it is in WITH or context
         String value = Cmd.populateVariable(key,this,context.getState(),null);
         if(value==null || value.isEmpty()){
-            result.skip(this,input);
+            context.skip(input);
         }
-        result.next(this,value);
+        context.next(value);
     }
 
     @Override

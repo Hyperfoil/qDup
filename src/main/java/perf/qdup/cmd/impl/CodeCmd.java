@@ -23,7 +23,7 @@ public class CodeCmd extends Cmd {
     public Code getCode(){return code;}
     public String getClassName(){return className;}
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         Result codeResult = Result.skip(input);
         if(className!=null){
             try {
@@ -42,10 +42,10 @@ public class CodeCmd extends Cmd {
         }
         switch (codeResult.getType()) {
             case skip:
-                result.skip(this, codeResult.getResult());
+                context.skip(codeResult.getResult());
                 break;
             default:
-                result.next(this, codeResult.getResult());
+                context.next(codeResult.getResult());
         }
     }
     @Override

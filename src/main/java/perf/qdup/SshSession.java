@@ -17,6 +17,7 @@ import perf.qdup.stream.EscapeFilteredStream;
 import perf.qdup.stream.FilteredStream;
 import perf.qdup.stream.LineEmittingStream;
 import perf.qdup.stream.SuffixStream;
+import perf.yaup.AsciiArt;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
@@ -37,7 +38,7 @@ import static perf.qdup.config.RunConfigBuilder.*;
  */
 
 //Todo separate out the PROMPT, the command, and the output of the command
-public class SshSession implements Consumer<String>{
+public class SshSession {
 
     private static final String SH_CALLBACK = "qdup-sh-callback";
     private static final String SH_BLOCK_CALLBACK = "qdup-sh-block-callback";
@@ -76,7 +77,7 @@ public class SshSession implements Consumer<String>{
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    private static final XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     public static final String PROMPT = "<_#%@_qdup_@%#_> "; // a string unlikely to appear in the output of any command
 
@@ -147,7 +148,7 @@ public class SshSession implements Consumer<String>{
             blockingSemaphore.release();
         };
         this.executor = executor;
-        connect(-1,setupCommand);
+        boolean ok = connect(-1,setupCommand);
 
 //        sshConfig = new Properties();
 //        sshConfig.put("StrictHostKeyChecking", "no");
@@ -174,9 +175,9 @@ public class SshSession implements Consumer<String>{
         }
     }
     private void shConsumers(String output){
-        for(Consumer<String> consumer: shObservers.values()){
+        shObservers.forEach((name,consumer)->{
             consumer.accept(output);
-        }
+        });
     }
     public int permits(){
         return shellLock.availablePermits();
@@ -235,7 +236,9 @@ public class SshSession implements Consumer<String>{
             semaphoreCallback = (name)->{
                 filteredStream.flushBuffer();
                 lineEmittingStream.forceEmit();
-                String output = shStream.toString()
+                String streamString = shStream.toString();
+
+                String output = streamString
                     .replaceAll("^[\r\n]+","")  //replace leading newlines
                     .replaceAll("[\r\n]+$","") //replace trailing newlines
                     .replaceAll("\r\n","\n"); //change \r\n to just \n
@@ -291,7 +294,7 @@ public class SshSession implements Consumer<String>{
         } catch (GeneralSecurityException | IOException e) {
             logger.error("Exception while connecting to {}@{}\n{}",host.getUserName(),host.getHostName(),e.getMessage());
         } finally {
-            logger.debug("{} session.isOpen={} shell.isOpen={}",
+            logger.trace("{} session.isOpen={} shell.isOpen={}",
                     this.getHost().getHostName(),
                     clientSession==null?"false":clientSession.isOpen(),
                     channelShell==null?"false":channelShell.isOpen()
@@ -301,7 +304,9 @@ public class SshSession implements Consumer<String>{
 
         return rtrn;
     }
-    public boolean isOpen(){return channelShell!=null && channelShell.isOpen() && clientSession!=null && clientSession.isOpen();}
+    public boolean isOpen(){
+        boolean rtrn =channelShell!=null && channelShell.isOpen() && clientSession!=null && clientSession.isOpen();
+        return rtrn;}
     public Host getHost(){return host;}
     public void ctrlC() {
         if(isOpen()) {
@@ -311,6 +316,7 @@ public class SshSession implements Consumer<String>{
                 try {
                     commandStream.write(3);//works for real qdup, not TestServer
                     commandStream.flush();
+
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -370,8 +376,8 @@ public class SshSession implements Consumer<String>{
     }
     private void sh(String command,boolean acquireLock,Consumer<String> callback, Map<String,String> prompt){
         logger.trace("{} sh: {}, lock: {}",host,command,acquireLock);
-        lineEmittingStream.reset();
         if(isOpen()) {
+
             if (command == null) {
                 return;
             }
@@ -400,6 +406,9 @@ public class SshSession implements Consumer<String>{
                         });
                     }
                 }
+                //moved stream reset to after acquiring lock
+                lineEmittingStream.reset();
+                shStream.reset();
                 removeShObserver(SH_CALLBACK);
                 if(callback!=null){
                     addShObserver(SH_CALLBACK,callback);
@@ -456,7 +465,7 @@ public class SshSession implements Consumer<String>{
                 if (wait) {
                     try {
                         if(shellLock.availablePermits()<=0){
-                            logger.info("{} still locked",this.getHost());
+                            logger.info("{} closing but shell still locked",this.getHost());
                         }
                         shellLock.acquire();
 
@@ -479,11 +488,5 @@ public class SshSession implements Consumer<String>{
                 e.printStackTrace();
             }
         }
-    }
-
-    //Called when there is a new line of output
-    @Override
-    public void accept(String s) {
-
     }
 }

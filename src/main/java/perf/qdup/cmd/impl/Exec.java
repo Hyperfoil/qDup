@@ -1,7 +1,6 @@
 package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.CommandResult;
 import perf.qdup.cmd.Context;
 
 public class Exec extends Cmd {
@@ -15,11 +14,11 @@ public class Exec extends Cmd {
     public String getCommand(){return command;}
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         String populatedCommand = Cmd.populateStateVariables(getCommand(),this,context.getState());
 
         context.getSession().exec(populatedCommand,(response)->{
-            result.next(this,response);
+            context.next(response);
         });
 
     }

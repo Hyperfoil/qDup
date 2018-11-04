@@ -2,15 +2,12 @@ package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
-import perf.qdup.cmd.CommandResult;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Sh extends Cmd {
-
-    private static final String LINE_OBSERVER = "sh_line_observer";
 
     private String command;
     private Map<String,String> prompt;
@@ -33,19 +30,14 @@ public class Sh extends Cmd {
     }
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
+
         String commandString = populateStateVariables(command,this,context.getState());
 
         //TODO do we need to manually remove the lineObserver?
-        context.getSession().removeLineObserver(LINE_OBSERVER);
-        if(this.hasWatchers()) {
-            context.getSession().addLineObserver(LINE_OBSERVER, (line) -> {
-                result.update(this, line);
-            });
-        }
         if(prompt.isEmpty()) {
             context.getSession().sh(commandString, (output)->{
-                result.next(this,output);
+                context.next(output);
             });
         }else{
             HashMap<String,String> populated = new HashMap<>();
@@ -54,7 +46,7 @@ public class Sh extends Cmd {
                 populated.put(key,populatedValue);
             });
             context.getSession().sh(commandString,(output)->{
-                result.next(this,output);
+                context.next(output);
             },populated);
         }
     }

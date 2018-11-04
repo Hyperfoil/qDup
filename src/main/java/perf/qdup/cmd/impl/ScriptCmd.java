@@ -2,7 +2,6 @@ package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
-import perf.qdup.cmd.CommandResult;
 import perf.qdup.cmd.Script;
 
 public class ScriptCmd extends Cmd {
@@ -22,7 +21,7 @@ public class ScriptCmd extends Cmd {
     public String toString(){return "script: "+name;}
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         Script toCall = context.getScript(this.name,this);
         if(toCall == null){
             logger.warn("could not find script: {}",this.name);
@@ -37,7 +36,7 @@ public class ScriptCmd extends Cmd {
 
             }
         }
-        result.next(this,input);
+        context.next(input);
     }
 
     @Override

@@ -3,16 +3,19 @@ package perf.qdup.cmd;
 import org.apache.commons.jexl3.JexlBuilder;
 import org.apache.commons.jexl3.JexlContext;
 import org.apache.commons.jexl3.JexlEngine;
-import org.apache.commons.jexl3.JexlExpression;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.State;
 import perf.qdup.cmd.impl.*;
 import perf.yaup.HashedLists;
 import perf.yaup.StringUtil;
-import perf.yaup.file.WrappedInputStream;
 
-import javax.script.*;
+import javax.script.Bindings;
+import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import javax.script.SimpleScriptContext;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -66,7 +69,7 @@ public abstract class Cmd {
             return state.has(name,true);
         }
     }
-    private static class NashonStateContext implements ScriptContext{
+    private static class NashonStateContext implements javax.script.ScriptContext{
 
         private final State state;
         private final ScriptContext parent;
@@ -85,7 +88,7 @@ public abstract class Cmd {
         public NashonStateContext(State state){
             this(state,new SimpleScriptContext());
         }
-        public NashonStateContext(State state,ScriptContext parent){
+        public NashonStateContext(State state,javax.script.ScriptContext parent){
             this.state = state;
             this.parent = parent;
         }
@@ -217,8 +220,8 @@ public abstract class Cmd {
 
     private static class NO_OP extends Cmd{
         @Override
-        public void run(String input, Context context, CommandResult result) {
-            result.next(this,input);
+        public void run(String input, Context context) {
+            context.next(input);
         }
         @Override
         public Cmd copy() {
@@ -460,7 +463,7 @@ public abstract class Cmd {
             }
         }else{
             //we are potentially changing the getScript tail, need to inform context
-            //this should no longer be necessary because CommandDispatcher tracks the head cmd not tail
+            //this should no longer be necessary because Dispatcher tracks the head cmd not tail
             //if(context!=null){
                 //context.notifyTailMod(this,command.getTail());
             //}
@@ -504,7 +507,7 @@ public abstract class Cmd {
     private void tree(StringBuffer rtrn,int indent,String prefix,boolean debug){
         final int correctedIndent = indent == 0 ? 1 : indent;
         if(debug) {
-            rtrn.append(String.format("%" + correctedIndent + "s%s%s next=%s skp=%s prv=%s%n", "", prefix, this, this.getNext(), this.getSkip(), this.getPrevious()) );
+            rtrn.append(String.format("%" + correctedIndent + "s%s%s next=%s skp=%s prv=%s%n", "", prefix, this.getUid()+":"+this, this.getNext(), this.getSkip(), this.getPrevious()) );
         }else{
             rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this.toString()) );
         }
@@ -584,7 +587,7 @@ public abstract class Cmd {
     public List<Cmd> getWatchers(){return Collections.unmodifiableList(this.watchers);}
 
 
-    protected final void doRun(String input,Context context,CommandResult result){
+    protected final void doRun(String input, Context context){
         if(!with.isEmpty()){
             //TODO the is currently being handles by populateStateVariables
             // a good idea might be to create a new context for this and this.then()
@@ -592,9 +595,9 @@ public abstract class Cmd {
 //                context.getState().set(key,with.get(key));
 //            }
         }
-        run(input,context,result);
+        run(input,context);
     }
-    public abstract void run(String input, Context context, CommandResult result);
+    public abstract void run(String input, Context context);
 
     public abstract Cmd copy();
 

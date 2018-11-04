@@ -10,9 +10,9 @@ import java.util.stream.Collectors;
 
 
 //doesn't work for prompts because those are not sent to accept without a newline
-public class ShErrorObserver implements CommandDispatcher.CommandObserver {
+public class ShErrorObserver implements ContextObserver {
 
-    public static ShErrorObserver getObserver(Context context) {
+    public static ShErrorObserver getObserver(ScriptContext context) {
         ShErrorObserver rtrn = new ShErrorObserver(context);
 
         rtrn.addGlobalError("-bash:: Permission denied");
@@ -29,11 +29,11 @@ public class ShErrorObserver implements CommandDispatcher.CommandObserver {
         return rtrn;
     }
 
-    Context context;
+    ScriptContext context;
     List<String> globalErrors;
     HashedLists<String, String> commandErrors;
 
-    public ShErrorObserver(Context context) {
+    public ShErrorObserver(ScriptContext context) {
         this.context = context;
 
         this.globalErrors = new LinkedList<>();
@@ -69,7 +69,6 @@ public class ShErrorObserver implements CommandDispatcher.CommandObserver {
             });
         }
     }
-    @Override
     public void onStop(Cmd command) {
         if (command instanceof Sh) {
             Sh shCommand = (Sh) command;
@@ -79,7 +78,7 @@ public class ShErrorObserver implements CommandDispatcher.CommandObserver {
     }
 
     @Override
-    public void onUpdate(Cmd command, String output) {
+    public void onUpdate(ScriptContext context,Cmd command, String output) {
         checkErrors(command,output);
 
     }

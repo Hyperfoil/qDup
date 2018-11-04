@@ -6,7 +6,7 @@ import perf.qdup.Run;
 import perf.qdup.SshTestBase;
 import perf.qdup.TestServer;
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.CommandDispatcher;
+import perf.qdup.cmd.Dispatcher;
 import perf.qdup.cmd.Script;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
@@ -34,7 +34,7 @@ public class QueueDownloadTest extends SshTestBase {
         String timestamp = ""+System.currentTimeMillis();
 
         Script runScript = new Script("run-queue");
-        runScript.then(Cmd.sh("rm -rf /tmp/l"+getHost().getHostName()+"/"));
+        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getHostName()+"/"));
         runScript.then(Cmd.sh("export FOO=\"/tmp\""));
         runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
 
@@ -48,7 +48,7 @@ public class QueueDownloadTest extends SshTestBase {
         builder.addRoleRun("role","run-queue",new HashMap<>());
 
         RunConfig config = builder.buildConfig();
-        CommandDispatcher dispatcher = new CommandDispatcher();
+        Dispatcher dispatcher = new Dispatcher();
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
 

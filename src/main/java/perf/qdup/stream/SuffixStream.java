@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class SuffixStream extends MultiStream {
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
     private static final long DELAY_MS = 1_000;
 
     private class FoundRunnable implements Runnable{
@@ -121,13 +121,11 @@ public class SuffixStream extends MultiStream {
     @Override
     public void write(byte b[], int off, int len) throws IOException {
         if(b==null || len < 0 || off + len > b.length){
-            System.out.println(getClass().getName()+".write("+off+","+len+")");
-            System.out.println(MultiStream.printByteCharacters(b,off,Math.min(10,b.length-off)));
-            System.out.println(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
+            logger.error(getClass().getName()+".write("+off+","+len+")");
+            logger.error(MultiStream.printByteCharacters(b,off,Math.min(10,b.length-off)));
+            logger.error(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
             System.exit(-1);
         }
-        //logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
-
         try {
             int trailingSuffixLength = Integer.MIN_VALUE;
 
@@ -182,8 +180,7 @@ public class SuffixStream extends MultiStream {
                 }
             }
         }catch(Exception e){
-            System.out.println(e.getMessage());
-            e.printStackTrace(System.out);
+            logger.error(e.getMessage(),e);
             System.exit(-1);
         }
     }
@@ -202,7 +199,7 @@ public class SuffixStream extends MultiStream {
                 writeIndex = 0;
             }
         }catch(IOException e){
-            e.printStackTrace(System.out);
+            logger.error(e.getMessage(),e);
         }
     }
     private void callConsumers(String name){

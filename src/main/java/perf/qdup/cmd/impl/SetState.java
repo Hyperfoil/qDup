@@ -2,7 +2,6 @@ package perf.qdup.cmd.impl;
 
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
-import perf.qdup.cmd.CommandResult;
 
 public class SetState extends Cmd {
 
@@ -27,11 +26,11 @@ public class SetState extends Cmd {
     }
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         String populatedValue = this.value==null ? input.trim() : Cmd.populateStateVariables(this.value,this,context.getState());
         String populatedKey = Cmd.populateStateVariables(this.key,this,context.getState());
         context.getState().set(populatedKey,populatedValue);
-        result.next(this,input);
+        context.next(input);
     }
 
     @Override

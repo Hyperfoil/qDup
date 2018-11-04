@@ -1,18 +1,17 @@
 package perf.qdup.cmd.impl;
 
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.State;
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.CommandResult;
 import perf.qdup.cmd.Context;
 
-import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.lang.invoke.MethodHandles;
 import java.util.function.BiFunction;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Use nashorn to support BiFunctions in javascript:
@@ -22,6 +21,8 @@ import java.util.regex.Pattern;
  * Returning true means invoke the next command, returning false means skip the next command. No return value assumes a return of true
  */
 public class JsCmd extends Cmd {
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+
 
     private ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
     public static Object eval(String input){
@@ -31,7 +32,7 @@ public class JsCmd extends Cmd {
         try {
             rtrn = engine.eval(input);
         } catch (ScriptException e) {
-            e.printStackTrace();
+            logger.warn(JsCmd.class.getSimpleName()+": "+input+" threw "+e.getMessage(),e);
         }
         return rtrn;
     }
@@ -58,7 +59,7 @@ public class JsCmd extends Cmd {
     }
 
     @Override
-    public void run(String input, Context context, CommandResult result) {
+    public void run(String input, Context context) {
         if(function!=null){
             try{
                 Object rtrn = this.function.apply(input,context.getState());
@@ -67,20 +68,20 @@ public class JsCmd extends Cmd {
                     (rtrn instanceof Boolean && !((Boolean)rtrn)) ||
                     (rtrn instanceof String && ((String)rtrn).toUpperCase().equals("FALSE"))
                 ){
-                    result.skip(this,input);
+                    context.skip(input);
                 }else if (ScriptObjectMirror.isUndefined(rtrn) || rtrn instanceof Boolean){
                     //TODO potentially log that the js function should have an explicit return value
-                    result.next(this,input);
+                    context.next(input);
                 }else {
-                    result.next(this,rtrn.toString());
+                    context.next(rtrn.toString());
                 }
             }catch (Exception e){
                 //TODO log the failure
-                result.skip(this,input);
+                context.skip(input);
             }
         }else{
             //TODO log that the function could not be run becuase it failed to create
-            result.skip(this,input);
+            context.skip(input);
         }
     }
 

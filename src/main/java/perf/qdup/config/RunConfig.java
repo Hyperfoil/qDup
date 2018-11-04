@@ -10,6 +10,7 @@ import perf.yaup.HashedLists;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -56,10 +57,7 @@ public class RunConfig {
     private Map<String,Script> scripts;
     private State state;
 
-    private Map<Host,Cmd> setupCmds;
-    private HashedLists<Host,ScriptCmd> runScripts;
-    private Map<Host,Cmd> cleanupCmds;
-
+    private Map<String,Role> roles;
 
     private StageSummary setupStage;
     private StageSummary runStage;
@@ -71,15 +69,14 @@ public class RunConfig {
     private int timeout = 5;
 
     protected RunConfig(String name,List<String> errors){
+        this.name = name;
         this.errors = errors;
     }
     protected RunConfig(
             String name,
             Map<String,Script> scripts,
             State state,
-            Map<Host,Cmd> setupCmds,
-            HashedLists<Host,ScriptCmd> runScripts,
-            Map<Host,Cmd> cleanupCmds,
+            Map<String,Role> roles,
             StageSummary setupStage,
             StageSummary runStage,
             StageSummary cleanupStage,
@@ -90,9 +87,7 @@ public class RunConfig {
         this.name = name;
         this.scripts = scripts;
         this.state = state;
-        this.setupCmds = setupCmds;
-        this.runScripts = runScripts;
-        this.cleanupCmds = cleanupCmds;
+        this.roles = roles;
         this.setupStage = setupStage;
         this.runStage = runStage;
         this.cleanupStage = cleanupStage;
@@ -114,6 +109,10 @@ public class RunConfig {
         return cleanupStage;
     }
 
+    public Set<String> getRoleNames(){return roles.keySet();}
+    public Role getRole(String name){
+        return roles.get(name);
+    }
 
     public String debug(){
         return debug(false);
@@ -123,6 +122,18 @@ public class RunConfig {
             return getErrors().stream().collect(Collectors.joining("\n"));
         }
         StringBuilder  sb = new StringBuilder();
+        BiConsumer<String,List<ScriptCmd>> printScripts = (phase,scripts)->{
+            sb.append(String.format("    %s%n",phase));
+            scripts.forEach(script->{
+                sb.append(String.format("      %s%n",script.getName()));
+                if(!script.getWith().isEmpty()){
+                    sb.append(String.format("        %s%n","WITH"));
+                    script.getWith().forEach((k,v)->{
+                        sb.append(String.format("          %s:%s%n",k,v));
+                    });
+                }
+            });
+        };
         if(!scripts.isEmpty()){
             sb.append("SCRIPTS\n");
             for(String scriptName : scripts.keySet()){
@@ -133,48 +144,24 @@ public class RunConfig {
         }else{
             sb.append("NO SCRIPTS\n");
         }
-        if(!setupCmds.isEmpty()){
-            sb.append("SETUP\n");
-            for(Host host : setupCmds.keySet()){
-                sb.append("  "+host.toString()+"\n");
-                Cmd cmd = setupCmds.get(host);
-                sb.append(cmd.tree(2,true));
-                cmd.getThens().forEach(then->{
-
-                });
+        if(!roles.isEmpty()){
+            sb.append("ROLES\n");
+            for(String roleName : roles.keySet()){
+                sb.append("  "+roleName+"\n");
+                Role role = roles.get(roleName);
+                if(!role.getHosts().isEmpty()){
+                    sb.append("    HOSTS\n");
+                    role.getHosts().forEach(host->{
+                        sb.append("      "+host.toString()+"\n");
+                    });
+                }else{
+                    sb.append("    NO HOSTS\n");
+                }
+                printScripts.accept("SETUP",role.getSetup());
+                printScripts.accept("RUN",role.getRun());
+                printScripts.accept("CLEANUP",role.getCleanup());
             }
-        }else{
-            sb.append("NO SETUP CMDS\n");
         }
-        if(!runScripts.isEmpty()){
-            sb.append("RUN\n");
-            for(Host host : runScripts.keys()){
-                sb.append("  "+host.toString()+"\n");
-                 List<ScriptCmd> scriptCmds = runScripts.get(host);
-                 scriptCmds.forEach(c->{
-                     sb.append("    "+c.getName()+"\n");
-                     if(!c.getWith().isEmpty()){
-                         sb.append("      with:\n");
-                         c.getWith().forEach((k,v)->{
-                             sb.append("        "+k+":"+v+"\n");
-                         });
-                     }
-                 });
-            }
-        }else{
-            sb.append("NO RUN SCRIPTS\n");
-        }
-        if(!cleanupCmds.isEmpty()){
-            sb.append("CLEANUP\n");
-            for(Host host : cleanupCmds.keySet()){
-                sb.append("  "+host.toString()+"\n");
-                Cmd cmd = cleanupCmds.get(host);
-                sb.append("    "+cmd.getThens().toString()+"\n");
-            }
-        }else{
-            sb.append("NO CLEANUP CMDS\n");
-        }
-
         sb.append("STATE\n");
         sb.append(state.tree());
         return sb.toString();
@@ -227,24 +214,5 @@ public class RunConfig {
         String populatedName = Cmd.populateStateVariables(name,command,state);
         return scripts.get(populatedName);
     }
-
-    /**
-     * get the hosts that have setup scripts
-     * @return
-     */
-    public Set<Host> getSetupHosts(){return setupCmds.keySet();}
-
-    /**
-     * get the cmd that will invoke all setup scripts for the host
-     * @param host
-     * @return
-     */
-    public Cmd getSetupCmd(Host host){return setupCmds.get(host);}
-
-    public Set<Host> getRunHosts(){return runScripts.keys();}
-    public List<ScriptCmd> getRunCmds(Host host){return runScripts.get(host);}
-
-    public Set<Host> getCleanupHosts(){return cleanupCmds.keySet();}
-    public Cmd getCleanupCmd(Host host){return cleanupCmds.get(host);}
 
 }

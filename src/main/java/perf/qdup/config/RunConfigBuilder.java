@@ -23,7 +23,7 @@ import static perf.qdup.config.YamlParser.*;
 
 public class RunConfigBuilder {
 
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     private static final Json EMPTY_ARRAY = new Json();
 
@@ -45,10 +45,9 @@ public class RunConfigBuilder {
     public static final String DEFAULT_PASSPHRASE = null;
     public static final int DEFAULT_SSH_TIMEOUT = 5;
 
-
-    public static final String HOST_EXPRESSION_PREFIX = "=";
-    public static final String HOST_EXPRESSING_INCLUDE = "+";
-    public static final String HOST_EXPRESSION_EXCLUDE = "-";
+    private static final String HOST_EXPRESSION_PREFIX = "=";
+    private static final String HOST_EXPRESSING_INCLUDE = "+";
+    private static final String HOST_EXPRESSION_EXCLUDE = "-";
 
 
     private String identity = DEFAULT_IDENTITY;
@@ -63,11 +62,11 @@ public class RunConfigBuilder {
     private HashMap<String,Script> scripts;
 
     private HashedSets<String,String> roleHosts;
-    private HashMap<String,String> roleHostExpression;
-
     private HashedLists<String,ScriptCmd> roleSetup;
     private HashedLists<String,ScriptCmd> roleRun;
     private HashedLists<String,ScriptCmd> roleCleanup;
+
+    private HashMap<String,String> roleHostExpression;
 
     private HashMap<String,Host> hostAlias;
 
@@ -75,27 +74,6 @@ public class RunConfigBuilder {
     private List<String> errors;
 
     private boolean isValid = false;
-
-    public Set<String> getRolesWithScripts(){
-        HashSet<String> rtrn = new HashSet<>();
-        rtrn.addAll(roleSetup.keys());
-        rtrn.addAll(roleRun.keys());
-        rtrn.addAll(roleCleanup.keys());
-        return rtrn;
-    }
-    public Set<String> getRolesWithoutHosts(){
-        Set<String> rtrn = getRolesWithScripts();
-        rtrn.removeAll(roleHostExpression.keySet());
-        rtrn.removeAll(roleHosts.keys());
-        return rtrn;
-    }
-    public Set<String> getRolesWithoutScripts(){
-        Set<String> rtrn = new HashSet<>();
-        rtrn.addAll(roleHosts.keys());
-        rtrn.addAll(roleHostExpression.keySet());
-        rtrn.removeAll(getRolesWithScripts());
-        return rtrn;
-    }
 
     public RunConfigBuilder(CmdBuilder cmdBuilder){
         this("run-"+System.currentTimeMillis(),cmdBuilder);
@@ -106,16 +84,13 @@ public class RunConfigBuilder {
         scripts = new HashMap<>();
         state = new State(null,State.RUN_PREFIX);
         roleHosts = new HashedSets<>();
-        roleHostExpression = new HashMap<>();
-        hostAlias = new HashMap<>();
-
         roleSetup = new HashedLists<>();
         roleRun = new HashedLists<>();
         roleCleanup = new HashedLists<>();
+        roleHostExpression = new HashMap<>();
+        hostAlias = new HashMap<>();
         errors = new LinkedList<>();
     }
-
-
 
     public void eachChildArray(Json target, BiConsumer<Integer,Json> consumer){
 
@@ -187,6 +162,7 @@ public class RunConfigBuilder {
                             }
                             break;
                         case SCRIPTS:
+                            final List<String> scriptErrors = new LinkedList<>();
                             eachChildEntry(yamlEntry, (entryIndex, scriptEntry) -> {
                                 String scriptName = scriptEntry.getString(KEY, "");
 
@@ -199,12 +175,17 @@ public class RunConfigBuilder {
                                     String scriptDir = yamlFile.exists() ? yamlFile.getParent() : yamlPath;
                                     newScript.with(SCRIPT_DIR,scriptDir);
                                     eachChildArray(scriptEntry, (commandIndex, scriptCommand) -> {
-                                        Cmd childCmd = cmdBuilder.buildYamlCommand(scriptCommand, newScript);
+                                        Cmd childCmd = cmdBuilder.buildYamlCommand(scriptCommand, newScript, scriptErrors);
                                         newScript.then(childCmd);
                                     });
                                     addScript(newScript);
                                 }
                             });
+                            if(!scriptErrors.isEmpty()){
+                                scriptErrors.forEach(s->{
+                                    addError(String.format("Error: %s in %s",s,yamlPath));
+                                });
+                            }
                             break;
                         case ROLES:
                             eachChildEntry(yamlEntry, (entryIndex, roleEntry) -> {
@@ -411,7 +392,7 @@ public class RunConfigBuilder {
             state.set(key, value);
         } else {
             //TODO log the error
-
+            addError(String.format("%s already set to %s then tried to set as %s",key,state.get(key),value));
         }
     }
     public void setHostState(String host,String key,String value){
@@ -439,34 +420,24 @@ public class RunConfigBuilder {
     }
     public Script getScript(String name, Cmd command){
         if(name.contains(STATE_PREFIX)){
-            String scriptNameWithVariable = name;
             name = Cmd.populateStateVariables(name,command,state);
-
         }
         Script script = scripts.get(name);
         if(script==null){ // we don't find it
         }
         return script;
     }
-
     public RunConfig buildConfig(){
         Map<String,Host> seenHosts = new HashMap<>();
+        Map<String,Role> roles = new HashMap<>();
 
-        Map<Host,Cmd> setupCmds = new HashMap<>();
-        HashedLists<Host,ScriptCmd> runScripts = new HashedLists<>();
-        Map<Host,Cmd> cleanupCmds = new HashMap<>();
-
-        //
+        //build map of all known hosts
         roleHosts.forEach((roleName,hostSet)->{
             for(String hostShortname : hostSet){
                 Host resolvedHost = hostAlias.get(hostShortname);
                 if(resolvedHost!=null){
-                    if(seenHosts.containsKey(resolvedHost)){
-
-                    }else{
-                        seenHosts.put(hostShortname,resolvedHost);
-                        seenHosts.put(resolvedHost.toString(),resolvedHost);//could duplicate fullyQualified but guarantees to include port
-                    }
+                    seenHosts.putIfAbsent(hostShortname,resolvedHost);
+                    seenHosts.put(resolvedHost.toString(),resolvedHost);//could duplicate fullyQualified but guarantees to include port
                 }else{
                     addError("Role "+roleName+" Host "+hostShortname+" was added without a fully qualified host representation matching user@hostName:port\n hosts:"+hostAlias);
                     //WTF, how are we missing a host reference?
@@ -516,78 +487,73 @@ public class RunConfigBuilder {
             }
         });
 
-        //setup commands
-        for(String roleName : roleSetup.keys()){
-            List<ScriptCmd> cmds = roleSetup.get(roleName);
-            if (!cmds.isEmpty()) {
-                for (String hostShortname : roleHosts.get(roleName)) {
-                    Host h = seenHosts.get(hostShortname);
-                    if (h == null) {
-                        addError(roleName + " is missing a host definition for " + hostShortname+"\n has "+seenHosts.keySet());
-                    } else {
-                        if (!setupCmds.containsKey(h)) {
-                            Cmd hostSetupCmd = new Script("setup:" + h.toString());
+        //unique roles with hosts
+        Set<String> roleNames = new HashSet<>();
+        roleNames.addAll(roleHosts.keys());
+        roleNames.addAll(roleHostExpression.keySet());
 
-                            setupCmds.put(h, hostSetupCmd);
-                        }
-                        //get the cmd from setupCmds because multiple roles can share a host
-                        cmds.forEach(scriptCmd -> setupCmds.get(h).then(scriptCmd.deepCopy()));
-                    }
+        if(roleNames.isEmpty()){
+            addError(String.format("No hosts defined for roles"));
+        }
+        //create roles
+        roleNames.forEach(roleName->{
+            roles.putIfAbsent(roleName,new Role(roleName));
+            roleHosts.get(roleName).forEach(hostRef->{
+                Host host = seenHosts.get(hostRef);
+                if(host!=null){
+                    roles.get(roleName).addHost(host);
+                }else{
+                    //TODO error, missing host definition or assume fully qualified name?
                 }
-            }
 
-        }
-        //cleanup commands
-        for(String roleName : roleCleanup.keys()){
-            List<ScriptCmd> cmds = roleCleanup.get(roleName);
-            for (String hostShortname : roleHosts.get(roleName)) {
-                Host h = seenHosts.get(hostShortname);
-                if (h == null) {
-                    addError(roleName + " is missing a host definition for " + hostShortname+"\n has "+seenHosts.keySet());
-                } else {
-                    if (!cleanupCmds.containsKey(h)) {
-                        Cmd hostSetupCmd = new Script("cleanup:" + h.toString());
-                        cleanupCmds.put(h, hostSetupCmd);
-                    }
-                    //get the cmd from setupCmds because multiple roles can share a host
-                    cmds.forEach(scriptCmd -> cleanupCmds.get(h).then(scriptCmd.deepCopy()));
+            });
+        });
+        roleSetup.forEach((roleName,cmds)->{
+            if(!cmds.isEmpty()){
+                if(!roles.containsKey(roleName)){
+                    //TODO add error if a role has a setup script but not a host
+                }else{
+                    cmds.forEach(cmd->roles.get(roleName).addSetup(cmd));
                 }
             }
-        }
-        //run commands
-        for(String roleName : roleRun.keys()){
-            List<ScriptCmd> cmds = roleRun.get(roleName);
-            for (String hostShortname : roleHosts.get(roleName)) {
-                Host h = seenHosts.get(hostShortname);
-                if (h == null) {
-                    addError(roleName + " is missing a host definition for " + hostShortname+"\n has "+seenHosts.keySet());
-                } else {
-                    cmds.forEach(scriptCmd -> {
-                        runScripts.put(h, scriptCmd);
-                    });
+        });
+        roleRun.forEach((roleName,cmds)->{
+            if(!cmds.isEmpty()){
+                if(!roles.containsKey(roleName)){
+                    //TODO add error if a role has a run script but not a host
+                }else{
+                    cmds.forEach(cmd->roles.get(roleName).addRun(cmd));
                 }
             }
-        }
+        });
+        roleCleanup.forEach((roleName,cmds)->{
+            if(!cmds.isEmpty()){
+                if(!roles.containsKey(roleName)){
+                    //TODO add error if a role has a setup script but not a host
+                }else{
+                    cmds.forEach(cmd->roles.get(roleName).addCleanup(cmd));
+                }
+            }
+        });
 
         //check signal / wait-for
         StageSummary setupStage = new StageSummary();
         StageSummary runStage = new StageSummary();
         StageSummary cleanupStage = new StageSummary();
 
-        setupCmds.values().forEach(cmd->{
-           CommandSummary summary = new CommandSummary(cmd,this);
-           setupStage.add(summary);
-        });
-        runScripts.forEach((host,scriptList)->{
-            scriptList.forEach(scriptCmd -> {
-                //Script script = getScript(scriptCmd.getName(),scriptCmd);
-                CommandSummary summary = new CommandSummary(scriptCmd,this);
-                runStage.add(summary);
-            });
-        });
-        cleanupCmds.values().forEach(cmd->{
+        BiConsumer<StageSummary,Cmd> addCmd = (stage,cmd)->{
             CommandSummary summary = new CommandSummary(cmd,this);
-            cleanupStage.add(summary);
+            stage.add(summary);
+        };
+
+
+        roles.values().forEach(role->{
+            role.getHosts().forEach(host->{
+                role.getSetup().forEach(c->addCmd.accept(setupStage,c));
+                role.getRun().forEach(c->addCmd.accept(runStage,c));
+                role.getCleanup().forEach(c->addCmd.accept(cleanupStage,c));
+            });
+
         });
 
         setupStage.getErrors().forEach(this::addError);
@@ -601,9 +567,7 @@ public class RunConfigBuilder {
                     getName(),
                     scripts,
                     state,
-                    setupCmds,
-                    runScripts,
-                    cleanupCmds,
+                    roles,
                     setupStage,
                     runStage,
                     cleanupStage,

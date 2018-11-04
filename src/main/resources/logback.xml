@@ -16,7 +16,7 @@
         </encoder>
     </appender>
     <logger name="perf.qdup.Local" level="INFO"/>
-    <logger name="perf.qdup.cmd.CommandDispatcher" level="INFO"/>
+    <logger name="perf.qdup.cmd.Dispatcher" level="INFO"/>
 
     <root level="info">
         <appender-ref ref="STDOUT" />

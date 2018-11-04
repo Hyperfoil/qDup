@@ -1,7 +1,11 @@
 package perf.qdup.stream;
 
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
+
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +16,9 @@ import java.util.stream.Collectors;
  * An OutputStream synchronously writes to multiple other  OutputStreams
  */
 public class MultiStream extends OutputStream{
+
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+
 
     public static String printByteCharacters(byte b[], int off, int len){
         String spaces = "                                                                   ";
@@ -63,7 +70,7 @@ public class MultiStream extends OutputStream{
             }
         }
     }
-    //TODO add a non-closable stream option for System.out :)
+    //TODO add a non-closable stream option for System . out :)
     public void addStream(String key,OutputStream stream){
         streams.put(key,stream);
     }
@@ -93,7 +100,7 @@ public class MultiStream extends OutputStream{
             try {
                 s.write(b, off, len);
             } catch (IOException e) {
-                e.printStackTrace(System.out);
+                logger.error(e.getMessage(),e);
             }
         }
     }

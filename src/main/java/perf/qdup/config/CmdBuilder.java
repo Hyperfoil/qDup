@@ -233,7 +233,7 @@ public class CmdBuilder {
     public Set<Set<String>> getOptions(String shortname){
         return has(shortname) ? commands.get(shortname).getOptions() : Sets.of();
     }
-    public void addWith(Cmd command,Json json){
+    public void addWith(Cmd command,Json json,List<String> errors){
         String jsonKey = json.getString(KEY,"");
         if(WITH.equals(jsonKey)){
             if(json.has(CHILD)){
@@ -254,7 +254,7 @@ public class CmdBuilder {
             //TODO alert the error?
         }
     }
-    public void addWatchers(Cmd command,Json json){
+    public void addWatchers(Cmd command,Json json,List<String> errors){
         String jsonKey = json.getString(KEY);
         if(WATCH.equals(jsonKey)){
             if(json.has(CHILD)){
@@ -263,7 +263,7 @@ public class CmdBuilder {
                     Json childEntryList = childArray.getJson(i);
                     for(int c=0;c<childEntryList.size();c++){
                         Json childEntry = childEntryList.getJson(c);
-                        Cmd childCmd = buildYamlCommand(childEntry,null);
+                        Cmd childCmd = buildYamlCommand(childEntry,null,errors);
                         command.watch(childCmd);
                     }
                 }
@@ -273,7 +273,7 @@ public class CmdBuilder {
             //TODO alert the error?
         }
     }
-    public void addTimer(Cmd command,Json json){
+    public void addTimer(Cmd command,Json json,List<String> errors){
         String jsonKey = json.getString(KEY);
         String jsonValue = json.getString(VALUE);
         if(TIMER.equalsIgnoreCase(jsonKey)){
@@ -286,7 +286,7 @@ public class CmdBuilder {
                         Json childEntryList = childArray.getJson(i);
                         for(int c=0; c<childEntryList.size();c++){
                             Json childEntry = childEntryList.getJson(c);
-                            Cmd childCmd = buildYamlCommand(childEntry,timedCmd);
+                            Cmd childCmd = buildYamlCommand(childEntry,timedCmd,errors);
                             timedCmd.then(childCmd);
                         }
                     }
@@ -297,7 +297,7 @@ public class CmdBuilder {
             }
         }
     }
-    public Cmd buildYamlCommand(Json json,Cmd parent){
+    public Cmd buildYamlCommand(Json json,Cmd parent,List<String> errors){
         Cmd rtrn = Cmd.NO_OP();
         final List<Object> args = new ArrayList<>();
         Json target = json;
@@ -460,6 +460,11 @@ public class CmdBuilder {
                         });
                     });
                 }
+            }else{//shortname is not a known command
+                errors.add(String.format("unknown command %s at line [%s]",
+                        shortname,
+                        target.has(LINE_NUMBER) ? target.getString(LINE_NUMBER) : "?"
+                ));
             }
         }
         rtrn = commands.get(shortname).create(args);
@@ -475,19 +480,24 @@ public class CmdBuilder {
 
                     switch (childKey.toLowerCase()){
                         case WATCH:
-                            addWatchers(rtrn,childEntry);
+                            addWatchers(rtrn,childEntry,errors);
                             break;
                         case WITH:
-                            addWith(rtrn.getTail(),childEntry);
+                            addWith(rtrn.getTail(),childEntry,errors);
                             break;
                         case TIMER:
-                            addTimer(rtrn.getTail(),childEntry);
+                            addTimer(rtrn.getTail(),childEntry,errors);
+                            break;
                         default://
                             if(has(childKey)){// a known command
-                                Cmd next = buildYamlCommand(childEntry,rtrn);
+                                Cmd next = buildYamlCommand(childEntry,rtrn,errors);
                                 rtrn.then(next);
                             }else{
                                 //TODO what do we do WITH unknown commands?
+                                errors.add(String.format("unknown command %s at line %s",
+                                        childKey,
+                                        target.has(LINE_NUMBER) ? target.getString(LINE_NUMBER) : "?"
+                                        ));
                             }
                     }
                 }
