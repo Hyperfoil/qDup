@@ -15,6 +15,7 @@ import perf.qdup.cmd.impl.RoleEnv;
 import perf.qdup.config.Role;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.StageSummary;
+import perf.qdup.stream.SuffixStream;
 import perf.yaup.HashedSets;
 import perf.yaup.json.Json;
 
@@ -400,6 +401,8 @@ public class Run implements Runnable, DispatchObserver {
                                config.getPassphrase(),
                                config.getTimeout(),
                                "", getDispatcher().getScheduler());
+                       //TODO configure session delay
+                       session.setDelay(SuffixStream.NO_DELAY);
                        ScriptContext scriptContext = new ScriptContext(
                                session,
                                config.getState(),
