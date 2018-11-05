@@ -48,7 +48,7 @@ public class SuffixStream extends MultiStream {
     private List<Consumer<String>> consumers;
 
     private ScheduledThreadPoolExecutor executor;
-    private int executorDelay = DEFAULT_DELAY;
+    private int executorDelay = NO_DELAY;
     private ScheduledFuture future;
     private FoundRunnable foundRunnable;
 
@@ -69,8 +69,8 @@ public class SuffixStream extends MultiStream {
     public int getExecutorDelay(){
         return executorDelay;
     }
-    public void setExecutorDelay(int executorDelay){
-        this.executorDelay = executorDelay;
+    public void setExecutorDelay(int delay){
+        this.executorDelay = delay;
     }
     public boolean usesExecutor(){
         return executor != null;
@@ -176,6 +176,7 @@ public class SuffixStream extends MultiStream {
                 if (found) {
                     foundSuffix(foundName,writeIndex);
                     if(executor!=null && executorDelay>=0){
+                        System.out.println("using callback executorDelay="+executorDelay);
                         if(future!=null){
                             future.cancel(true);
                         }
