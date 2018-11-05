@@ -579,7 +579,7 @@ public class RunTest extends SshTestBase{
 
         File foo = new File("/tmp/foo.txt");
         File outputPath = new File(run.getOutputPath());
-        File downloaded = new File(outputPath.getAbsolutePath(),"laptop/foo.txt");
+        File downloaded = new File(outputPath.getAbsolutePath(),getHost().getHostName()+"/foo.txt");
 
         assertTrue("queue-download should execute despite done",downloaded.exists());
 
