@@ -370,6 +370,7 @@ public class RunTest extends SshTestBase{
         Run run = new Run("/tmp",config,dispatcher);
 
         run.run();
+        run.writeRunJson();
 
         assertFalse("should stop tail before biz",tailed.toString().contains("biz"));
         //TODO fix the 4th entry is empty that occurs when SuffixStream removes prompt but not preceeding \r\n

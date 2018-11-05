@@ -115,6 +115,9 @@ public class SshSession {
     private Map<String,Consumer<String>> shObservers;
     private ScheduledThreadPoolExecutor executor;
 
+    long shStart = -1;
+    long shStop = -1;
+
     public SshSession(Host host){
         this(host,DEFAULT_KNOWN_HOSTS,DEFAULT_IDENTITY,DEFAULT_PASSPHRASE, DEFAULT_SSH_TIMEOUT,"",null);
     }
@@ -177,9 +180,12 @@ public class SshSession {
         }
     }
     private void shConsumers(String output){
-        shObservers.forEach((name,consumer)->{
+
+        for(Consumer<String> consumer : shObservers.values()){
             consumer.accept(output);
-        });
+        }
+        shStop = System.currentTimeMillis();
+        System.out.println("Ssh["+getHost()+"] shTime="+(shStop-shStart)+"ms");
     }
     public int permits(){
         return shellLock.availablePermits();
@@ -240,6 +246,7 @@ public class SshSession {
             filteredStream.addFilter("^@",new byte[]{0,0,0});
 
             semaphoreCallback = (name)->{
+
                 filteredStream.flushBuffer();
                 lineEmittingStream.forceEmit();
                 String streamString = shStream.toString();
@@ -248,7 +255,7 @@ public class SshSession {
                     .replaceAll("^[\r\n]+","")  //replace leading newlines
                     .replaceAll("[\r\n]+$","") //replace trailing newlines
                     .replaceAll("\r\n","\n"); //change \r\n to just \n
-                shStream.reset();
+                //shStream.reset();
                 shConsumers(output);
                 shellLock.release();
             };
@@ -444,11 +451,12 @@ public class SshSession {
                 if (!command.isEmpty()) {
                     filteredStream.addFilter("command", command, "");
                 }
-                if(acquireLock) {
-                    shStream.reset();
-                }
+//                if(acquireLock) {
+//                    shStream.reset();
+//                }
                 commandStream.println(command);
                 commandStream.flush();
+                shStart = System.currentTimeMillis();
             }
         }else{
             //TODO abort run if sh isn't open or try reconnect
