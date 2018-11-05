@@ -66,7 +66,7 @@ public class RunConfig {
     private Boolean colorTerminal = false;
     private List<String> errors;
 
-    private int timeout = 5;
+    private int timeout = 10;
 
     protected RunConfig(String name,List<String> errors){
         this.name = name;

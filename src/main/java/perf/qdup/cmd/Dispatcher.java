@@ -106,7 +106,7 @@ public class Dispatcher {
 
     public Dispatcher(){
         this(
-                new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors()/2, Runtime.getRuntime().availableProcessors(), 30, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactory() {
+                new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors(), 30, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactory() {
                     AtomicInteger count = new AtomicInteger(0);
                     @Override
                     public Thread newThread(Runnable runnable) {
