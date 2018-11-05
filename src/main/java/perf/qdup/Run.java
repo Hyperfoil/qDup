@@ -407,7 +407,8 @@ public class Run implements Runnable, DispatchObserver {
                                profiles.get(roleName+"-setup@"+host.getHostName()),
                                setup
                        );
-                       getDispatcher().addScriptContext(scriptContext);                                           return session.isOpen();
+                       getDispatcher().addScriptContext(scriptContext);
+                       return session.isOpen();
                    });
                });
             }
@@ -453,6 +454,7 @@ public class Run implements Runnable, DispatchObserver {
                                 config.getTimeout(),
                                 setupCommand,
                                 getDispatcher().getScheduler());
+                            session.setDelay(SuffixStream.NO_DELAY);
                             profiler.start("context:"+host.toString());
                             ScriptContext scriptContext = new ScriptContext(
                                 session,
@@ -532,6 +534,7 @@ public class Run implements Runnable, DispatchObserver {
                                 config.getTimeout(),
                                 setupCommand,
                                 getDispatcher().getScheduler());
+                        session.setDelay(SuffixStream.NO_DELAY);
                         ScriptContext scriptContext = new ScriptContext(
                                 session,
                                 config.getState(),
