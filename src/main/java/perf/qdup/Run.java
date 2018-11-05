@@ -12,6 +12,7 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.cmd.*;
 import perf.qdup.cmd.impl.RoleEnv;
+import perf.qdup.cmd.impl.ScriptCmd;
 import perf.qdup.config.Role;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.StageSummary;
@@ -359,7 +360,7 @@ public class Run implements Runnable, DispatchObserver {
     private boolean connectAll(List<Callable<Boolean>> toCall,int timeout){
         boolean ok = false;
         try {
-            ok = getDispatcher().getExecutor().invokeAll(toCall,timeout, TimeUnit.SECONDS).stream().map((f) -> {
+            ok = getDispatcher().getExecutor().invokeAll(toCall/*,timeout, TimeUnit.SECONDS*/).stream().map((f) -> {
                 boolean rtrn = false;
                 try {
                     rtrn = f.get();
@@ -370,7 +371,7 @@ public class Run implements Runnable, DispatchObserver {
                 }
                 return rtrn;
             })
-                    .collect(Collectors.reducing(Boolean::logicalAnd)).orElse(false);
+                    .collect(Collectors.reducing(Boolean::logicalAnd)).get();
 
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -378,6 +379,7 @@ public class Run implements Runnable, DispatchObserver {
         return ok;
     }
     private boolean queueSetupScripts(){
+        long start = System.currentTimeMillis();
         logger.debug("{}.setup",this);
 
         //Observer to set the Env.Diffs
@@ -414,66 +416,98 @@ public class Run implements Runnable, DispatchObserver {
                    });
                });
             }
+
         });
+        boolean ok = true;
         if(!connectSessions.isEmpty()) {
-            boolean ok = connectAll(connectSessions, 60);
+            ok = connectAll(connectSessions, 60);
             if (!ok) {
                 abort();
             }
-            return ok;
-        }else{
-            return true;
-        }
 
+        }else{
+
+        }
+        long stop = System.currentTimeMillis();
+        System.out.println("setup="+(stop-start)+"ms");
+        return ok;
     }
 
     private boolean queueRunScripts(){
+        long start = System.currentTimeMillis();
         logger.debug("{}.queueRunScripts",this);
 
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
-        config.getRoleNames().forEach(roleName->{
+        for(String roleName : config.getRoleNames()){
             Role role = config.getRole(roleName);
             if(!role.getRun().isEmpty()){
-                role.getRun().forEach(script->{
-                    role.getHosts().forEach(host->{
+                for(ScriptCmd script : role.getRun()){
+                    for(Host host : role.getHosts()){
+                        State hostState = config.getState().getChild(host.getHostName(),State.HOST_PREFIX);
+                        State scriptState = hostState.getChild(script.getName(),"");
                         String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
                         connectSessions.add(()->{
+
                             SshSession session = new SshSession(
-                                    host,
-                                    config.getKnownHosts(),
-                                    config.getIdentity(),
-                                    config.getPassphrase(),
-                                    config.getTimeout(),
-                                    setupCommand,
-                                    getDispatcher().getScheduler());
+                                host,
+                                config.getKnownHosts(),
+                                config.getIdentity(),
+                                config.getPassphrase(),
+                                config.getTimeout(),
+                                setupCommand,
+                                getDispatcher().getScheduler());
                             ScriptContext scriptContext = new ScriptContext(
-                                    session,
-                                    config.getState(),
-                                    this,
-                                    profiles.get(script.getName()+"@"+host.getHostName()),
-                                    script
+                                session,
+                                config.getState(),
+                                this,
+                                profiles.get(script.getName()+"@"+host.getHostName()),
+                                script
                             );
                             getDispatcher().addScriptContext(scriptContext);
                             boolean rtrn = session.isOpen();
                             return rtrn;
                         });
-                    });
-                });
+                    }
+                }
             }
-        });
+        }
+        boolean ok = true;
+
         if(!connectSessions.isEmpty()) {
-            boolean ok = connectAll(connectSessions,60);
+            ok = false; // it better be set by dispatcher then
+//            long connectAllStart = System.currentTimeMillis();
+//            ok = connectAll(connectSessions,60);
+//            long connectAllStop = System.currentTimeMillis();
+//            System.out.println("run.connect="+(connectAllStop-connectAllStart)+"ms");
+            try {
+                ok = getDispatcher().getExecutor().invokeAll(connectSessions).stream().map((f)->{
+                    boolean rtrn = false;
+                    try{
+                        rtrn = f.get();
+                    } catch (InterruptedException e){
+                        e.printStackTrace();
+                    } catch (Exception e ){
+                        e.printStackTrace();
+                    }
+                    return rtrn;
+                }).collect(Collectors.reducing(Boolean::logicalAnd)).get();
+            } catch (InterruptedException e){
+
+            }
             if(!ok){
                 abort();
             }
-            return ok;
-        }else{
-            return true;//everything queued ok even if we didn't queue anything
-        }
 
+        }else{
+
+        }
+        long stop = System.currentTimeMillis();
+        System.out.println("run="+(stop-start)+"ms");
+        return ok;
     }
     private boolean queueCleanupScripts(){
+        long start = System.currentTimeMillis();
         logger.info("{}.queueCleanupScripts",this);
         //run before cleanup
         logger.debug("{}.setup",this);
@@ -506,20 +540,28 @@ public class Run implements Runnable, DispatchObserver {
                                 profiles.get(roleName+"-setup@"+host.getHostName()),
                                 cleanup
                         );
-                        getDispatcher().addScriptContext(scriptContext);                                           return session.isOpen();
+                        getDispatcher().addScriptContext(scriptContext);
+                        return session.isOpen();
                     });
                 });
             }
         });
+        boolean ok = true;
         if(!connectSessions.isEmpty()){
-            boolean ok = connectAll(connectSessions,60);
+            long connectAllStart = System.currentTimeMillis();
+            ok = connectAll(connectSessions,60);
+            long connectAllStop = System.currentTimeMillis();
+            System.out.println("cleanup.connect="+(connectAllStop-connectAllStart)+"ms");
             if(!ok){
                 abort();
             }
-            return ok;
+
         }else{
-            return true;
+
         }
+        long stop = System.currentTimeMillis();
+        System.out.println("cleanup="+(stop-start)+"ms ");
+        return ok;
     }
     private void postRun(){
         logger.debug("{}.postRun",this);

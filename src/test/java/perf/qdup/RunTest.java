@@ -317,6 +317,7 @@ public class RunTest extends SshTestBase{
 
     @Test
     public void watch_invoke_count(){
+
         List<String> lines = new ArrayList<>();
 
         StringBuilder tailed = new StringBuilder();
