@@ -42,6 +42,12 @@ public class Dispatcher {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     final static Thread.UncaughtExceptionHandler DefaultUncaughtExceptionHandler = (thread, throwable) ->{
+        StringBuffer sb = new StringBuffer();
+        sb.append(throwable.getMessage());
+        Arrays.asList(throwable.getStackTrace()).forEach(ste->{
+            sb.append("\n  "+ste);
+        });
+        System.err.println(sb.toString());
         logger.error("UNCAUGHT:"+thread.getName()+" "+throwable.getMessage(),throwable);
     };
 
@@ -72,6 +78,7 @@ public class Dispatcher {
         }
         @Override
         public void onDone(ScriptContext context){
+            System.out.println("Dispatcher.observer.onDone("+context.getRootCmd()+")");
             scriptContexts.remove(context.getRootCmd());
             scriptObservers.forEach(observer -> observer.onStop(context));
             context.getSession().close();
@@ -166,9 +173,6 @@ public class Dispatcher {
 
     public ScheduledThreadPoolExecutor getScheduler(){return scheduler;}
 
-    public BlockingQueue<Runnable> getRunQueue(){
-        return executor.getQueue();
-    }
 
     public void addScriptObserver(ScriptObserver observer){scriptObservers.add(observer);}
     public void removeScriptObserver(ScriptObserver observer){
@@ -177,7 +181,14 @@ public class Dispatcher {
     public void addDispatchObserver(DispatchObserver observer){dispatchObservers.add(observer);}
     public void removeDispatchObserver(DispatchObserver observer){dispatchObservers.remove(observer);}
 
-    public ExecutorService getExecutor(){return executor;}
+    private ExecutorService getExecutor(){return executor;}
+    public void submit(Runnable runnable){
+        getExecutor().submit(runnable);
+    }
+
+    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> toCall) throws InterruptedException{
+        return getExecutor().invokeAll(toCall);
+    }
 
     public void addScriptContext(ScriptContext context){
         logger.trace("add script {} to {}",context.getRootCmd(),context.getSession().getHost().getHostName());
@@ -197,7 +208,8 @@ public class Dispatcher {
             logger.info("queueing\n  host={}\n  script={}",
                     contextResult.getSession().getHost().getHostName(),
                     context.getRootCmd());
-            getRunQueue().add(context);
+            context.getProfiler().start("waiting in run queue");
+            getExecutor().submit(context);
         }
     }
     public String debug(){
@@ -227,7 +239,8 @@ public class Dispatcher {
                     logger.trace("queueing\n  host={}\n  script={}",
                             contextResult.getSession().getHost().getHostName(),
                             script);
-                    getRunQueue().add(contextResult);
+                    contextResult.getProfiler().start("waiting in run queue");
+                    getExecutor().submit(contextResult);
                 }
             }else{
                 checkActiveCount();

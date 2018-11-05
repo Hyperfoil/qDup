@@ -132,12 +132,14 @@ public class ScriptContext implements Context, Runnable{
     }
     private void observerDone(){
         if(observer!=null){
+            System.out.println("SC["+getRootCmd()+"].observerDone");
             observer.onDone(this);
         }
     }
 
     @Override
     public void next(String output) {
+        getProfiler().start("next");
         Cmd cmd = getCurrentCmd();
         observerPreNext(cmd,output);
         if(cmd!=null) {
@@ -148,13 +150,13 @@ public class ScriptContext implements Context, Runnable{
             boolean changed = setCurrentCmd(cmd,cmd.getNext());
             if(changed) {
                 startCurrentCmd();
-            }else{
-            }
+            }else{}
         }
     }
 
     @Override
     public void skip(String output) {
+        getProfiler().start("skip");
         Cmd cmd = getCurrentCmd();
         observerPreSkip(cmd,output);
         if(cmd!=null) {
@@ -165,15 +167,14 @@ public class ScriptContext implements Context, Runnable{
             boolean changed = setCurrentCmd(cmd,cmd.getSkip());
             if(changed) {
                 startCurrentCmd();
-            }else{
-            }
+            }else{}
         }
     }
     protected void startCurrentCmd(){
         Run run = getRun();
         if(run!=null) {
-
-            run.getDispatcher().getExecutor().submit(this);
+            getProfiler().start("waiting in run queue");
+            run.getDispatcher().submit(this);
         }
     }
 
@@ -189,13 +190,14 @@ public class ScriptContext implements Context, Runnable{
     }
     protected boolean setCurrentCmd(Cmd current,Cmd next){
 
-        StringBuffer sb = new StringBuffer();
+
 
 
         currentCmd = next;
         boolean changed = true;//currentCmdUpdater.compareAndSet(this,current,next);
 
         if(logger.isTraceEnabled()) {
+            StringBuffer sb = new StringBuffer();
             sb.append("setCurrent\n  current:" + current + "\n  next:" + next + "\n  changed:" + changed);
             Arrays.asList(Thread.currentThread().getStackTrace()).forEach(ste -> {
                 sb.append("\n    " + ste.toString());
@@ -227,59 +229,65 @@ public class ScriptContext implements Context, Runnable{
 
     @Override
     public void run() {
-        Cmd cmd = getCurrentCmd();
-        if(cmd==null){
-            observerDone();//this context is finished
-        } else {
-            if(!lineQueue.isEmpty()){//clear any unhandled output lines
-                //TODO log that we are clearing orphaned lines
-                lineQueue.clear();
-            }
-            long timestamp = System.currentTimeMillis();
-            setStartTime(timestamp);
-            setUpdateTime(timestamp);
-            String input = cmd!=null && cmd.getPrevious() != null ? cmd.getPrevious().getOutput() : "";
-            if (cmd.hasTimers()) {
-                for (Long timeout : cmd.getTimeouts()) {
-                    List<Cmd> toCall = cmd.getTimers(timeout);
-                    Cmd noOp = Cmd.NO_OP();
-                    toCall.forEach(noOp::then);
-                    addTimer(
+            Cmd cmd = getCurrentCmd();
+            System.out.println("SC[" + getRootCmd() + "].run[" + cmd + "]" + (cmd == null));
+            if (cmd == null) {
+                System.out.println(" SC.run cmd == null");
+                observerDone();//this context is finished
+            } else {
+                getProfiler().start(cmd.toString());
+                if (!lineQueue.isEmpty()) {//clear any unhandled output lines
+                    //TODO log that we are clearing orphaned lines
+                    lineQueue.clear();
+                }
+                long timestamp = System.currentTimeMillis();
+                setStartTime(timestamp);
+                setUpdateTime(timestamp);
+                String input = cmd != null && cmd.getPrevious() != null ? cmd.getPrevious().getOutput() : "";
+                if (cmd.hasTimers()) {
+                    for (Long timeout : cmd.getTimeouts()) {
+                        List<Cmd> toCall = cmd.getTimers(timeout);
+                        Cmd noOp = Cmd.NO_OP();
+                        toCall.forEach(noOp::then);
+                        addTimer(
                             cmd,
                             noOp,
                             timeout
-                    );
+                        );
+                    }
                 }
-            }
-            //TODO doRun on same thread as watchers is a race to clear Q before next is called :( clear Q before starting next cmd?
-            cmd.doRun(input, this);
-            if (cmd.hasWatchers()) {
-                String line = "";
-                try {
-                    SyncContext watcherContext = new SyncContext(
+                long startDoRun = System.currentTimeMillis();
+                cmd.doRun(input, this);
+
+                long stopDoRun = System.currentTimeMillis();
+                System.out.println("cmd["+cmd+"].doRun="+(stopDoRun-startDoRun)+"ms");
+                if (cmd.hasWatchers()) {
+                    getProfiler().start("watch:"+cmd.toString());
+                    String line = "";
+                    try {
+                        SyncContext watcherContext = new SyncContext(
                             this.getSession(),
                             this.getState(),
                             this.getRun(),
                             this.getProfiler(),
                             cmd
-                    );
-                    while (!CLOSE_QUEUE.equals(line = lineQueue.take())) {
-                        for (Cmd watcher : cmd.getWatchers()) {
-                            try {
-                                watcherContext.forceCurrentCmd(watcher);
-                                watcher.doRun(line, watcherContext);
-                            } catch (Exception e) {
-                                logger.warn("Exception from watcher "+ watcher+"\n  curentCmd="+watcherContext.getCurrentCmd(), e);
+                        );
+                        while (!CLOSE_QUEUE.equals(line = lineQueue.take())) {
+                            for (Cmd watcher : cmd.getWatchers()) {
+                                try {
+                                    watcherContext.forceCurrentCmd(watcher);
+                                    watcher.doRun(line, watcherContext);
+                                } catch (Exception e) {
+                                    logger.warn("Exception from watcher " + watcher + "\n  curentCmd=" + watcherContext.getCurrentCmd(), e);
+                                }
                             }
                         }
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
 
+                    }
                 }
             }
-
-        }
     }
 }

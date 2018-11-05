@@ -31,7 +31,7 @@ public class Sh extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-
+        context.getProfiler().start("Sh-invoke:"+command);
         String commandString = populateStateVariables(command,this,context.getState());
 
         //TODO do we need to manually remove the lineObserver?
@@ -45,10 +45,11 @@ public class Sh extends Cmd {
                 String populatedValue = Cmd.populateStateVariables(value,this,context.getState(),true);
                 populated.put(key,populatedValue);
             });
-            context.getSession().sh(commandString,(output)->{
+            context.getSession().sh(commandString,context::next/*(output)->{
                 context.next(output);
-            },populated);
+            }*/,populated);
         }
+        context.getProfiler().start("Sh-await-callback:"+command);
     }
 
     @Override

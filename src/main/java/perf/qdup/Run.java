@@ -10,6 +10,7 @@ import ch.qos.logback.core.FileAppender;
 import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
+import org.slf4j.profiler.Profiler;
 import perf.qdup.cmd.*;
 import perf.qdup.cmd.impl.RoleEnv;
 import perf.qdup.cmd.impl.ScriptCmd;
@@ -25,13 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -360,7 +355,7 @@ public class Run implements Runnable, DispatchObserver {
     private boolean connectAll(List<Callable<Boolean>> toCall,int timeout){
         boolean ok = false;
         try {
-            ok = getDispatcher().getExecutor().invokeAll(toCall/*,timeout, TimeUnit.SECONDS*/).stream().map((f) -> {
+            ok = getDispatcher().invokeAll(toCall/*,timeout, TimeUnit.SECONDS*/).stream().map((f) -> {
                 boolean rtrn = false;
                 try {
                     rtrn = f.get();
@@ -445,10 +440,11 @@ public class Run implements Runnable, DispatchObserver {
                 for(ScriptCmd script : role.getRun()){
                     for(Host host : role.getHosts()){
                         State hostState = config.getState().getChild(host.getHostName(),State.HOST_PREFIX);
-                        State scriptState = hostState.getChild(script.getName(),"");
+                        State scriptState = hostState.getChild(script.getName()).getChild("id="+script.getUid());
+                        Profiler profiler = profiles.get(script.getName()+"-"+script.getUid()+"@"+host);
                         String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
                         connectSessions.add(()->{
-
+                            profiler.start("connect:"+host.toString());
                             SshSession session = new SshSession(
                                 host,
                                 config.getKnownHosts(),
@@ -457,15 +453,18 @@ public class Run implements Runnable, DispatchObserver {
                                 config.getTimeout(),
                                 setupCommand,
                                 getDispatcher().getScheduler());
+                            profiler.start("context:"+host.toString());
                             ScriptContext scriptContext = new ScriptContext(
                                 session,
-                                config.getState(),
+                                scriptState,
                                 this,
-                                profiles.get(script.getName()+"@"+host.getHostName()),
+                                profiler,
                                 script
                             );
+
                             getDispatcher().addScriptContext(scriptContext);
                             boolean rtrn = session.isOpen();
+                            profiler.start("waiting for start");
                             return rtrn;
                         });
                     }
@@ -481,7 +480,7 @@ public class Run implements Runnable, DispatchObserver {
 //            long connectAllStop = System.currentTimeMillis();
 //            System.out.println("run.connect="+(connectAllStop-connectAllStart)+"ms");
             try {
-                ok = getDispatcher().getExecutor().invokeAll(connectSessions).stream().map((f)->{
+                ok = getDispatcher().invokeAll(connectSessions).stream().map((f)->{
                     boolean rtrn = false;
                     try{
                         rtrn = f.get();
