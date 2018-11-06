@@ -132,7 +132,6 @@ public class ScriptContext implements Context, Runnable{
     }
     private void observerDone(){
         if(observer!=null){
-            System.out.println("SC["+getRootCmd()+"].observerDone");
             observer.onDone(this);
         }
     }
@@ -230,9 +229,7 @@ public class ScriptContext implements Context, Runnable{
     @Override
     public void run() {
             Cmd cmd = getCurrentCmd();
-            System.out.println("SC[" + getRootCmd() + "].run[" + cmd + "]" + (cmd == null));
             if (cmd == null) {
-                System.out.println(" SC.run cmd == null");
                 observerDone();//this context is finished
             } else {
                 getProfiler().start(cmd.toString());
@@ -260,7 +257,6 @@ public class ScriptContext implements Context, Runnable{
                 cmd.doRun(input, this);
 
                 long stopDoRun = System.currentTimeMillis();
-                System.out.println("cmd["+cmd+"].doRun="+(stopDoRun-startDoRun)+"ms");
                 if (cmd.hasWatchers()) {
                     getProfiler().start("watch:"+cmd.toString());
                     String line = "";

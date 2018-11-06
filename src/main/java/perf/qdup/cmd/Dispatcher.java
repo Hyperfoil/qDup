@@ -78,7 +78,6 @@ public class Dispatcher {
         }
         @Override
         public void onDone(ScriptContext context){
-            System.out.println("Dispatcher.observer.onDone("+context.getRootCmd()+")");
             scriptContexts.remove(context.getRootCmd());
             scriptObservers.forEach(observer -> observer.onStop(context));
             context.getSession().close();

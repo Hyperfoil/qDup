@@ -374,7 +374,6 @@ public class Run implements Runnable, DispatchObserver {
         return ok;
     }
     private boolean queueSetupScripts(){
-        long start = System.currentTimeMillis();
         logger.debug("{}.setup",this);
 
         //Observer to set the Env.Diffs
@@ -424,13 +423,10 @@ public class Run implements Runnable, DispatchObserver {
         }else{
 
         }
-        long stop = System.currentTimeMillis();
-        System.out.println("setup="+(stop-start)+"ms");
         return ok;
     }
 
     private boolean queueRunScripts(){
-        long start = System.currentTimeMillis();
         logger.debug("{}.queueRunScripts",this);
 
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
@@ -477,10 +473,6 @@ public class Run implements Runnable, DispatchObserver {
 
         if(!connectSessions.isEmpty()) {
             ok = false; // it better be set by dispatcher then
-//            long connectAllStart = System.currentTimeMillis();
-//            ok = connectAll(connectSessions,60);
-//            long connectAllStop = System.currentTimeMillis();
-//            System.out.println("run.connect="+(connectAllStop-connectAllStart)+"ms");
             try {
                 ok = getDispatcher().invokeAll(connectSessions).stream().map((f)->{
                     boolean rtrn = false;
@@ -503,12 +495,9 @@ public class Run implements Runnable, DispatchObserver {
         }else{
 
         }
-        long stop = System.currentTimeMillis();
-        System.out.println("run="+(stop-start)+"ms");
         return ok;
     }
     private boolean queueCleanupScripts(){
-        long start = System.currentTimeMillis();
         logger.info("{}.queueCleanupScripts",this);
         //run before cleanup
         logger.debug("{}.setup",this);
@@ -550,10 +539,7 @@ public class Run implements Runnable, DispatchObserver {
         });
         boolean ok = true;
         if(!connectSessions.isEmpty()){
-            long connectAllStart = System.currentTimeMillis();
             ok = connectAll(connectSessions,60);
-            long connectAllStop = System.currentTimeMillis();
-            System.out.println("cleanup.connect="+(connectAllStop-connectAllStart)+"ms");
             if(!ok){
                 abort();
             }
@@ -561,8 +547,6 @@ public class Run implements Runnable, DispatchObserver {
         }else{
 
         }
-        long stop = System.currentTimeMillis();
-        System.out.println("cleanup="+(stop-start)+"ms ");
         return ok;
     }
     private void postRun(){

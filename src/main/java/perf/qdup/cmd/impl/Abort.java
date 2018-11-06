@@ -12,7 +12,7 @@ public class Abort extends Cmd {
     @Override
     public void run(String input, Context context) {
         String populatedMessage = Cmd.populateStateVariables(message,this,context.getState());
-        context.getRunLogger().info("abort {}",populatedMessage);
+        context.getRunLogger().error("abort {}",populatedMessage);
         context.abort();
 
         //result.next(this,input);

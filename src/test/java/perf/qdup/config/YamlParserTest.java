@@ -99,6 +99,16 @@ public class YamlParserTest extends SshTestBase {
     }
 
     @Test
+    public void noSpaceAfterDash(){
+        YamlParser parser = new YamlParser();
+        parser.load("child",stream(""+
+                "- script: foo",
+                "-script: bar"
+        ));
+
+        //TODO validate the yaml
+    }
+    @Test
     public void childNotIndented(){
         YamlParser parser = new YamlParser();
         parser.load("child",stream(""+

@@ -134,10 +134,7 @@ public class SshSession {
 
         PropertyResolverUtils.updateProperty(sshClient,ClientFactoryManager.IDLE_TIMEOUT,Long.MAX_VALUE);
         PropertyResolverUtils.updateProperty(sshClient,ClientFactoryManager.NIO2_READ_TIMEOUT,Long.MAX_VALUE);
-        long start = System.currentTimeMillis();
         sshClient.start();
-        long stop = System.currentTimeMillis();
-        System.out.println("sshClient.sshCLient.start="+(stop-start)+"ms");
         //StrictHostKeyChecking=no
         sshClient.setServerKeyVerifier((clientSession1,remoteAddress,serverKey)->{return true;});
 
@@ -184,15 +181,12 @@ public class SshSession {
         for(Consumer<String> consumer : shObservers.values()){
             consumer.accept(output);
         }
-        shStop = System.currentTimeMillis();
-        System.out.println("Ssh["+getHost()+"] shTime="+(shStop-shStart)+"ms");
     }
     public int permits(){
         return shellLock.availablePermits();
     }
 
     public boolean connect(long timeoutMillis,String setupCommand){
-        long start = System.currentTimeMillis();
         if(isOpen()){
             return true;
         }
@@ -204,13 +198,9 @@ public class SshSession {
                     Files.newInputStream((new File(identity)).toPath()),
                     (resourceKey)->{return passphrase;}
             ));
-            long authStart = System.currentTimeMillis();
             clientSession.auth().verify(this.timeout * 1_000);
-            long authStop = System.currentTimeMillis();
-            System.out.println("SshSession.clientSession.auth="+(authStop-authStart)+"ms");
             //setup all the streams
 
-            long streamStart = System.currentTimeMillis();
             pipeIn = new PipedInputStream();
             pipeOut = new PipedOutputStream(pipeIn);
             //the output of the current sh command
@@ -264,10 +254,6 @@ public class SshSession {
             semaphoreStream.addSuffix("PROMPT",PROMPT,"");
             semaphoreStream.addConsumer(this.semaphoreCallback);
 
-            long streamStop = System.currentTimeMillis();
-            System.out.println("SshSession.streams="+(streamStop-streamStart)+"ms");
-
-            long channelStart = System.currentTimeMillis();
             channelShell = clientSession.createShellChannel();
             channelShell.getPtyModes().put(PtyMode.ECHO,1);//need echo for \n from real SH but adds gargage chars for test :(
             channelShell.setPtyType("vt100");
@@ -281,17 +267,11 @@ public class SshSession {
             channelShell.setIn(pipeIn);
             channelShell.setOut(escapeFilteredStream);//efs or ss
             channelShell.setErr(escapeFilteredStream);//PROMPT goes to error stream so have to listen there too
-            long channelStop = System.currentTimeMillis();
-            System.out.println("SshSession.channelShell="+(channelStop-channelStart)+"ms");
-            long openStart = System.currentTimeMillis();
             if(timeoutMillis>0){
                 channelShell.open().verify(timeoutMillis).isOpened();
             }else{
                 channelShell.open().verify().isOpened();
             }
-            long openStop = System.currentTimeMillis();
-            System.out.println("SshSession.channelShell.open="+(openStop-openStart)+"ms");
-            long syncStart = System.currentTimeMillis();
             sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
             //shSync("pwd");
             sh("");//forces the thread to wait for the previous sh to complete
@@ -300,8 +280,6 @@ public class SshSession {
             }else {
 
             }
-            long syncStop = System.currentTimeMillis();
-            System.out.println("SshSession.shSync="+(syncStop-syncStart)+"ms");
             //is this what is bugging out envTest?
             try {
                 try{
@@ -324,8 +302,6 @@ public class SshSession {
             );
             rtrn = isOpen();
         }
-        long stop = System.currentTimeMillis();
-        System.out.println("SshSession.connect="+(stop-start)+"ms");
         return rtrn;
     }
     public boolean isOpen(){
@@ -456,7 +432,6 @@ public class SshSession {
 //                }
                 commandStream.println(command);
                 commandStream.flush();
-                shStart = System.currentTimeMillis();
             }
         }else{
             //TODO abort run if sh isn't open or try reconnect
