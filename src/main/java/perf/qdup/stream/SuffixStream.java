@@ -176,7 +176,6 @@ public class SuffixStream extends MultiStream {
                 if (found) {
                     foundSuffix(foundName,writeIndex);
                     if(executor!=null && executorDelay>=0){
-                        System.out.println("using callback executorDelay="+executorDelay);
                         if(future!=null){
                             future.cancel(true);
                         }

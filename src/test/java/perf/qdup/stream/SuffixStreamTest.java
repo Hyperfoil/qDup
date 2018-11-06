@@ -71,6 +71,7 @@ public class SuffixStreamTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         SuffixStream stream = new SuffixStream(sfe);
+        stream.setExecutorDelay(0);
         stream.addSuffix("FOO","FOO","");
         stream.addStream("baos",baos);
         StringBuilder sb = new StringBuilder();

@@ -436,7 +436,7 @@ public class RunTest extends SshTestBase{
 
         assertFalse("should stop tail before biz",tailed.toString().contains("biz"));
         //TODO fix the 4th entry is empty that occurs when SuffixStream removes prompt but not preceeding \r\n
-        assertEquals("lines should have 3+ entries:"+lines,4,lines.size());
+        assertTrue("lines should have 3+ entries:"+lines,lines.size()>=3);
         assertEquals("lines[0] should be !:"+lines,"!",lines.get(0));
         assertEquals("lines[1] should be foo:"+lines,"foo",lines.get(1));
         assertEquals("lines[2] should be bar:"+lines,"bar",lines.get(2));

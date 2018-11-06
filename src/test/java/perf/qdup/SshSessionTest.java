@@ -106,7 +106,6 @@ public class SshSessionTest extends SshTestBase{
         ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(4);
         SshSession session = getSession();
         executor.schedule(()->{
-            System.out.println("ctrlC");
             session.ctrlC();
         },1_000,TimeUnit.MILLISECONDS);
         session.sh("sleep 1h");//
