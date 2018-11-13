@@ -54,14 +54,14 @@ public class YamlParser {
 
         public String debug(){
             StringBuilder sb = new StringBuilder();
-            int w=0;
+            int fixedWidth=0;
             for(int i=0; i<targets.size(); i++){
-                if(contexts.elementAt(contexts.size()-(i+1)).toString().length()>w){
-                    w=contexts.elementAt(contexts.size()-(i+1)).toString().length();
+                if(contexts.elementAt(contexts.size()-(i+1)).toString().length()>fixedWidth){
+                    fixedWidth=contexts.elementAt(contexts.size()-(i+1)).toString().length();
                 }
             }
             for(int i=0; i<targets.size(); i++){
-                sb.append(String.format("[%2d] %"+w+"s : %s%n",
+                sb.append(String.format("[%2d] %"+fixedWidth+"s : %s%n",
                         i,
                         contexts.elementAt(contexts.size()-(i+1)).toString(),
                         targets.elementAt(targets.size()-(i+1)).toString())
@@ -390,8 +390,6 @@ public class YamlParser {
                                 String lineContent = line.replaceAll("^\\s*","");
                                 if(lineContent.startsWith("---")){
                                     line="";
-                                }else if (lineContent.startsWith("---")){
-                                    line="";
                                 }else if(lineContent.startsWith("#")){//lineContent avoids the nest changes
                                     if(builder.target().isEmpty() || builder.target().isArray()){
                                         Json commentJson = new Json();
@@ -440,7 +438,6 @@ public class YamlParser {
 
                                     Json childArray = new Json();
                                     Json firstEntry = new Json();
-
                                     childArray.add(firstEntry);
 
                                     if (builder.target().isArray()) {
@@ -498,10 +495,10 @@ public class YamlParser {
                                     String childValue = nestMatcher.group(CHILD);
                                     int childLength = childValue.length();
                                     int contextLength = builder.getInt(CHILD_LENGTH,true);
-
                                     if(inlineStack.isEmpty() && !emptyDash) {
 
                                         if(builder.size()==1){//if we are on the root builder
+
                                             //don't nest on the root element
                                         }else if (childLength > contextLength) { // CHILD
                                             Json childAry = new Json();
@@ -632,6 +629,9 @@ public class YamlParser {
                                                             originalLine));
                                         }else{
                                             builder.target().set(KEY,keyValue);
+                                            if(!inlineStack.isEmpty()){
+                                                builder.target().set("INLINE",true);
+                                            }
                                             builder.target().set(LINE_NUMBER,lineNumber);
                                         }
                                         if(nestedDash){
@@ -1020,6 +1020,9 @@ public class YamlParser {
                                 } else {
                                     builder.target().set(KEY, keyValue);
                                     builder.target().set(LINE_NUMBER, lineNumber);
+                                    if(!inlineStack.isEmpty()){
+                                        builder.target().set("INLINE",true);
+                                    }
                                 }
 
 
