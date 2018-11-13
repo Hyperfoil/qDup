@@ -598,8 +598,14 @@ public abstract class Cmd {
         run(input,context);
     }
     public abstract void run(String input, Context context);
-
     public abstract Cmd copy();
+    public void logOutput(String output,Context context){
+        if (output == null || isSilent() || (getPrevious()!=null && output.equals(getPrevious().getOutput()))){
+            context.getRunLogger().info("{}",this);
+        }else{
+            context.getRunLogger().info("{}\n{}",this,output);
+        }
+    }
 
     public Cmd deepCopy(){
         Cmd clone = this.copy().with(this.getWith());

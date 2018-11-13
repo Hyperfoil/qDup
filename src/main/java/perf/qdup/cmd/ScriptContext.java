@@ -5,6 +5,7 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import org.slf4j.profiler.Profiler;
 import perf.qdup.*;
+import perf.qdup.cmd.impl.Abort;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -136,10 +137,15 @@ public class ScriptContext implements Context, Runnable{
         }
     }
 
+    private void log(Cmd command,String output){
+        command.logOutput(output,this);
+    }
+
     @Override
     public void next(String output) {
         getProfiler().start("next");
         Cmd cmd = getCurrentCmd();
+        log(cmd,output);
         observerPreNext(cmd,output);
         if(cmd!=null) {
             if(cmd.hasWatchers()){
@@ -157,6 +163,7 @@ public class ScriptContext implements Context, Runnable{
     public void skip(String output) {
         getProfiler().start("skip");
         Cmd cmd = getCurrentCmd();
+        log(cmd,output);
         observerPreSkip(cmd,output);
         if(cmd!=null) {
             if(cmd.hasWatchers()){
