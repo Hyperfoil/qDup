@@ -3,6 +3,7 @@ package perf.qdup;
 import org.slf4j.profiler.Profiler;
 import org.slf4j.profiler.ProfilerRegistry;
 import perf.yaup.json.Json;
+import sun.java2d.cmm.Profile;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -52,6 +53,7 @@ public class Profiles {
                 toAdd.set("name", timeInstrument.getName());
                 toAdd.set("ns", timeInstrument.elapsedTime());
                 rtrn.add(toAdd);
+
             });
         }else{
             
@@ -59,6 +61,4 @@ public class Profiles {
 
         return rtrn;
     }
-
-
 }
