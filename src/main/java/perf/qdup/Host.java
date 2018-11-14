@@ -36,6 +36,13 @@ public class Host {
     }
     public String getUserName(){return userName;}
     public String getHostName(){return hostName;}
+    public String getShortHostName(){
+        if(hostName!=null && hostName.indexOf(".")>-1){
+            return hostName.substring(0,hostName.indexOf("."));
+        }else{
+            return hostName;
+        }
+    }
     public int getPort(){return port;}
 
     @Override

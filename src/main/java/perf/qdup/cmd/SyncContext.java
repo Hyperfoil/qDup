@@ -4,11 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import org.slf4j.profiler.Profiler;
-import perf.qdup.Coordinator;
-import perf.qdup.Local;
-import perf.qdup.Run;
-import perf.qdup.SshSession;
-import perf.qdup.State;
+import perf.qdup.*;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
@@ -103,6 +99,11 @@ public class SyncContext implements Context, Runnable{
     @Override
     public SshSession getSession() {
         return session;
+    }
+
+    @Override
+    public Host getHost() {
+        return session.getHost();
     }
 
     @Override

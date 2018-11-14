@@ -2,10 +2,7 @@ package perf.qdup.cmd;
 
 import org.slf4j.Logger;
 import org.slf4j.profiler.Profiler;
-import perf.qdup.Coordinator;
-import perf.qdup.Local;
-import perf.qdup.SshSession;
-import perf.qdup.State;
+import perf.qdup.*;
 
 import java.util.concurrent.TimeUnit;
 
@@ -22,6 +19,7 @@ public interface Context {
     String getRunOutputPath();
     Script getScript(String name,Cmd command);
     SshSession getSession();
+    Host getHost();
     State getState();
     void addPendingDownload(String path,String destination);
     void abort();

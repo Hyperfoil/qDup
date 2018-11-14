@@ -2,10 +2,7 @@ package perf.qdup.cmd;
 
 import org.slf4j.Logger;
 import org.slf4j.profiler.Profiler;
-import perf.qdup.Coordinator;
-import perf.qdup.Local;
-import perf.qdup.SshSession;
-import perf.qdup.State;
+import perf.qdup.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +51,8 @@ public class SpyCommandResult implements Context {
         return null;
     }
 
+    @Override
+    public Host getHost(){return null;}
     @Override
     public String getRunOutputPath() {
         return null;

@@ -98,6 +98,12 @@ public class ScriptContext implements Context, Runnable{
     public SshSession getSession(){
         return session;
     }
+
+    @Override
+    public Host getHost() {
+        return session.getHost();
+    }
+
     public Coordinator getCoordinator(){return run.getCoordinator();}
     public State getState(){return state;}
     public void addPendingDownload(String path,String destination){

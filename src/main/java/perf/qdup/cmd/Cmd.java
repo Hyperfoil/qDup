@@ -601,9 +601,9 @@ public abstract class Cmd {
     public abstract Cmd copy();
     public void logOutput(String output,Context context){
         if (output == null || isSilent() || (getPrevious()!=null && output.equals(getPrevious().getOutput()))){
-            context.getRunLogger().info("{}",this);
+            context.getRunLogger().info("{}@{}:{}",this.getHead(),context.getHost().getShortHostName(),this);
         }else{
-            context.getRunLogger().info("{}\n{}",this,output);
+            context.getRunLogger().info("{}@{}:{}\n{}",this.getHead(),context.getHost().getShortHostName(),this,output);
         }
     }
 
