@@ -4,6 +4,7 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
+import perf.yaup.json.Json;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -89,6 +90,20 @@ public class Coordinator {
     }
     public void removeObserver(Consumer<String> observer){
         observers.remove(observer);
+    }
+
+    public Json getWaitJson(){
+        Json rtrn = new Json();
+        waitFors.keySet().forEach(key->{
+            Json entry = new Json();
+            rtrn.set(key,entry);
+            waitFors.get(key).forEach(waiter->{
+                Cmd head = waiter.getCommand().getHead();
+                Host host = waiter.getContext().getHost();
+                entry.add(head.toString()+"-"+head.getUid()+"@"+host.getShortHostName());
+            });
+        });
+        return rtrn;
     }
 
     public int increase(String name){

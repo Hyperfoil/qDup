@@ -56,6 +56,13 @@ public class JsonServer {
                 os.write(response.getBytes());
                 os.close();
             });
+            httpServer.createContext("/waiters",httpExchange -> {
+                String response = coordinator.getWaitJson().toString(2);
+                httpExchange.sendResponseHeaders(200,response.length());
+                OutputStream os = httpExchange.getResponseBody();
+                os.write(response.getBytes());
+                os.close();
+            });
             httpServer.createContext("/counters", httpExchange -> {
                 Json json = new Json();
                 coordinator.getCounters().forEach((key,value)->json.set(key,value));
