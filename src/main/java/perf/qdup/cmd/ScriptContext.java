@@ -6,6 +6,7 @@ import org.slf4j.ext.XLoggerFactory;
 import org.slf4j.profiler.Profiler;
 import perf.qdup.*;
 import perf.qdup.cmd.impl.Abort;
+import perf.qdup.cmd.impl.ScriptCmd;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -142,9 +143,30 @@ public class ScriptContext implements Context, Runnable{
             observer.onDone(this);
         }
     }
+    @Override
+    public void terminal(String output){
+        run.getRunLogger().info(output);
+    }
+    @Override
+    public boolean isColorTerminal(){
+        return run.getConfig().isColorTerminal();
+    }
 
     private void log(Cmd command,String output){
-        command.logOutput(output,this);
+        String cmdLogOuptut = command.getLogOutput(output,this);
+        String rootString;
+        if(rootCmd instanceof Script){
+            rootString = ((Script)rootCmd).getName();
+        }else if (rootCmd instanceof ScriptCmd){
+            rootString = ((ScriptCmd)rootCmd).getName();
+        }else{
+            rootString = rootCmd.toString();
+        }
+        getRunLogger().info("{}@{}:{}",
+            rootString,
+            getHost().getShortHostName(),
+            cmdLogOuptut
+        );
     }
 
     @Override

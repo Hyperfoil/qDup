@@ -36,7 +36,7 @@ public class RunConfigBuilder {
     private static final String RUN_SCRIPTS = "run-scripts";
     private static final String CLEANUP_SCRIPTS = "cleanup-scripts";
 
-    private static final String ALL_ROLE = "ALL";
+    public static final String ALL_ROLE = "ALL";
     private static final String RUN_STATE = "run";
     private static final String SCRIPT_DIR = "ENV.SCRIPT_DIR";
 

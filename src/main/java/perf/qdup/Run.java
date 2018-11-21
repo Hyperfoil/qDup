@@ -18,6 +18,7 @@ import perf.qdup.config.Role;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.StageSummary;
 import perf.qdup.stream.SuffixStream;
+import perf.yaup.AsciiArt;
 import perf.yaup.HashedSets;
 import perf.yaup.json.Json;
 
@@ -101,7 +102,7 @@ public class Run implements Runnable, DispatchObserver {
 
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         PatternLayoutEncoder consoleLayout = new PatternLayoutEncoder();
-        consoleLayout.setPattern (config.isColorTerminal() ? "%red(%date) %highlight(%msg) %n" : "%date %msg%n");
+        consoleLayout.setPattern ("%date{HH:mm:ss.SSS} %msg%n");
         consoleLayout.setContext(lc);
         consoleLayout.start();
         consoleAppender = new ConsoleAppender<>();
@@ -128,7 +129,12 @@ public class Run implements Runnable, DispatchObserver {
         runLogger.setLevel(Level.DEBUG);
         runLogger.setAdditive(false); /* set to true if root should log too */
         coordinator.addObserver((signal_name)->{
-            runLogger.info("{} reached {}",config.getName(),signal_name);
+            runLogger.info(
+                    "{}reached {}{}",
+                    config.isColorTerminal()?AsciiArt.ANSI_CYAN:"",
+                    signal_name,
+                    config.isColorTerminal()?AsciiArt.ANSI_RESET:""
+            );
         });
         this.pendingDownloads = new HashedSets<>();
     }
@@ -379,7 +385,7 @@ public class Run implements Runnable, DispatchObserver {
         //Observer to set the Env.Diffs
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
-        config.getRoleNames().forEach(roleName->{
+        config.getRoleNames().stream().forEach(roleName->{
             final Role role = config.getRole(roleName);
             if(!role.getSetup().isEmpty()){
                final Script setup = new Script(roleName+"-setup");
@@ -403,7 +409,7 @@ public class Run implements Runnable, DispatchObserver {
                                session,
                                config.getState(),
                                this,
-                               profiles.get(roleName+"-setup@"+host.getHostName()),
+                               profiles.get(roleName+"-setup@"+host.getShortHostName()),
                                setup
                        );
                        getDispatcher().addScriptContext(scriptContext);

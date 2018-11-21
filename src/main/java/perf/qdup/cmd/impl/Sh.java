@@ -10,6 +10,7 @@ import java.util.Map;
 public class Sh extends Cmd {
 
     private String command;
+    private String populatedCommand;
     private Map<String,String> prompt;
     public Sh(String command){
         this(command,false, Collections.EMPTY_MAP);
@@ -32,11 +33,11 @@ public class Sh extends Cmd {
     @Override
     public void run(String input, Context context) {
         context.getProfiler().start("Sh-invoke:"+command);
-        String commandString = populateStateVariables(command,this,context.getState());
+        populatedCommand = populateStateVariables(command,this,context.getState());
 
         //TODO do we need to manually remove the lineObserver?
         if(prompt.isEmpty()) {
-            context.getSession().sh(commandString, (output)->{
+            context.getSession().sh(populatedCommand, (output)->{
                 context.next(output);
             });
         }else{
@@ -45,11 +46,22 @@ public class Sh extends Cmd {
                 String populatedValue = Cmd.populateStateVariables(value,this,context.getState(),true);
                 populated.put(key,populatedValue);
             });
-            context.getSession().sh(commandString,context::next/*(output)->{
+            context.getSession().sh(populatedCommand,context::next/*(output)->{
                 context.next(output);
             }*/,populated);
         }
         context.getProfiler().start("Sh-await-callback:"+command);
+    }
+
+    @Override
+    public String getLogOutput(String output,Context context){
+        String rtrn =
+                populatedCommand;
+
+        if(!isSilent() && output!=null && !output.isEmpty()){
+            rtrn+="\n"+output;
+        }
+        return rtrn;
     }
 
     @Override

@@ -59,6 +59,16 @@ public class SyncContext implements Context, Runnable{
     }
 
     @Override
+    public void terminal(String output){
+        run.getRunLogger().info(output);
+    }
+    @Override
+    public boolean isColorTerminal(){
+        return run.getConfig().isColorTerminal();
+    }
+
+
+    @Override
     public void skip(String output) {
         Cmd cmd = getCurrentCmd();
         if(cmd!=null) {

@@ -17,6 +17,13 @@ public class RoleEnv extends Cmd {
     }
 
     @Override
+    public String toString(){
+        return isStart ?
+            "env" : // todo output different toString for isStart?
+            "env";
+    }
+
+    @Override
     public void run(String input, Context context) {
         String env = context.getSession().shSync("env");
         Host host = context.getSession().getHost();

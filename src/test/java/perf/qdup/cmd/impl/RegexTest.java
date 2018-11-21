@@ -2,10 +2,8 @@ package perf.qdup.cmd.impl;
 
 import org.junit.Test;
 import perf.qdup.SshTestBase;
-import perf.qdup.State;
 import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.ScriptContext;
-import perf.qdup.cmd.SpyCommandResult;
+import perf.qdup.cmd.SpyContext;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.YamlParser;
 
@@ -19,7 +17,7 @@ public class RegexTest extends SshTestBase {
     @Test
     public void lineEnding(){
         Cmd regex = Cmd.regex("^SUCCESS$");
-        SpyCommandResult context = new SpyCommandResult();
+        SpyContext context = new SpyContext();
 
         context.clear();
         regex.run("SUCCESS",context);

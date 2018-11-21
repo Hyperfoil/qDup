@@ -2,8 +2,7 @@ package perf.qdup.cmd.impl;
 
 import org.junit.Test;
 import perf.qdup.State;
-import perf.qdup.cmd.ScriptContext;
-import perf.qdup.cmd.SpyCommandResult;
+import perf.qdup.cmd.SpyContext;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -14,7 +13,7 @@ public class JsCmdTest {
     @Test
     public void testReturnTrue(){
         JsCmd jsCmd = new JsCmd("function(a,b){ return true;}");
-        SpyCommandResult context = new SpyCommandResult();
+        SpyContext context = new SpyContext();
         jsCmd.run("input",context);
 
         assertTrue("return true should call next",context.hasNext());
@@ -26,7 +25,7 @@ public class JsCmdTest {
         JsCmd jsCmd = new JsCmd("function(a,b){ return 'passed';}");
         State state = new State(State.RUN_PREFIX);
 
-        SpyCommandResult context = new SpyCommandResult();
+        SpyContext context = new SpyContext();
 
         jsCmd.run("",context);
 
@@ -38,7 +37,7 @@ public class JsCmdTest {
         JsCmd jsCmd = new JsCmd("function(a,b){}");
         State state = new State(State.RUN_PREFIX);
 
-        SpyCommandResult context = new SpyCommandResult();
+        SpyContext context = new SpyContext();
 
         jsCmd.run("input",context);
 
@@ -49,7 +48,7 @@ public class JsCmdTest {
     @Test
     public void testReadState(){
         JsCmd jsCmd = new JsCmd("function(input,state){return state.get('foo');}");
-        SpyCommandResult context = new SpyCommandResult();
+        SpyContext context = new SpyContext();
         context.getState().set("foo","FOO");
         jsCmd.run("input",context);
 
@@ -61,7 +60,7 @@ public class JsCmdTest {
         JsCmd jsCmd = new JsCmd("function(input,state){return state.get('foo');}");
         State state = new State(State.RUN_PREFIX);
 
-        SpyCommandResult context = new SpyCommandResult();
+        SpyContext context = new SpyContext();
         jsCmd.run("input",context);
         assertTrue("returning a missing state should skip",context.hasSkip());
     }
@@ -69,7 +68,7 @@ public class JsCmdTest {
     public void testSetState(){
         JsCmd jsCmd = new JsCmd("function(input,state){state.set('foo','FOO');return true;}");
 
-        SpyCommandResult context = new SpyCommandResult();
+        SpyContext context = new SpyContext();
         jsCmd.run("input",context);
 
         assertEquals("state should have foo","FOO",context.getState().get("foo"));

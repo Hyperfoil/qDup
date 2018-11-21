@@ -7,14 +7,14 @@ import perf.qdup.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SpyCommandResult implements Context {
+public class SpyContext implements Context {
 
     List<String> updates;
     String next;
     String skip;
     State state = new State("");
 
-    public SpyCommandResult(){
+    public SpyContext(){
         updates = new ArrayList<>();
         next = null;
         skip = null;
@@ -44,6 +44,15 @@ public class SpyCommandResult implements Context {
     @Override
     public Logger getRunLogger() {
         return null;
+    }
+
+    @Override
+    public void terminal(String output) {
+    }
+
+    @Override
+    public boolean isColorTerminal() {
+        return false;
     }
 
     @Override

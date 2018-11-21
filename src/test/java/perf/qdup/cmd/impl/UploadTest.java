@@ -60,6 +60,7 @@ public class UploadTest extends SshTestBase {
             File uploadedFile = new File("/tmp/destination/"+tmpFile.getName());
             assertTrue("file should have been uploaded after test run",uploadedFile.exists());
 
+            tmpFile.delete();
             boolean uploadDeleted = uploadedFile.delete();
             boolean destinationDeleted = uploadedFile.getParentFile().delete();
 

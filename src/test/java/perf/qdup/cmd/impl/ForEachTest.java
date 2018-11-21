@@ -4,13 +4,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import perf.qdup.Run;
 import perf.qdup.SshTestBase;
-import perf.qdup.State;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Dispatcher;
 import perf.qdup.cmd.Result;
 import perf.qdup.cmd.Script;
-import perf.qdup.cmd.ScriptContext;
-import perf.qdup.cmd.SpyCommandResult;
+import perf.qdup.cmd.SpyContext;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
@@ -74,7 +72,7 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void run_defined_spaces(){
         Cmd forEach = Cmd.forEach("FOO","1 2");
-        SpyCommandResult context = new SpyCommandResult();
+        SpyContext context = new SpyContext();
 
         context.clear();
         forEach.run("",context);
@@ -94,7 +92,7 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void run_defined_newlines(){
         Cmd forEach = Cmd.forEach("FOO","1\n2");
-        SpyCommandResult context = new SpyCommandResult();
+        SpyContext context = new SpyContext();
 
         context.clear();
         forEach.run("",context);

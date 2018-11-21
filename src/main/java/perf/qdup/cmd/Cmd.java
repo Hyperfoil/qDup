@@ -599,11 +599,11 @@ public abstract class Cmd {
     }
     public abstract void run(String input, Context context);
     public abstract Cmd copy();
-    public void logOutput(String output,Context context){
+    public String getLogOutput(String output,Context context){
         if (output == null || isSilent() || (getPrevious()!=null && output.equals(getPrevious().getOutput()))){
-            context.getRunLogger().info("{}@{}:{}",this.getHead(),context.getHost().getShortHostName(),this);
+            return this.toString();
         }else{
-            context.getRunLogger().info("{}@{}:{}\n{}",this.getHead(),context.getHost().getShortHostName(),this,output);
+            return this.toString()+"\n"+output;
         }
     }
 

@@ -13,10 +13,14 @@ public interface Context {
     void update(String output);
 
     Logger getRunLogger();
+
+    void terminal(String output);
+    boolean isColorTerminal();
     Profiler getProfiler();
 
 
     String getRunOutputPath();
+
     Script getScript(String name,Cmd command);
     SshSession getSession();
     Host getHost();
