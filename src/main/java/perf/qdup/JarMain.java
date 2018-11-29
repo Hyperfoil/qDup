@@ -281,7 +281,8 @@ public class JarMain {
         RunConfig config = runConfigBuilder.buildConfig();
 
         if(cmd.hasOption("test")){
-            logger.info(config.debug());
+            //logger.info(config.debug());
+            System.out.println(config.debug());
             System.exit(0);
         }
 
@@ -305,7 +306,7 @@ public class JarMain {
 
         if(config.hasErrors()){
             for(String error: config.getErrors()){
-                logger.error("Error: "+error);
+                System.out.println("Error: "+error);
             }
             System.exit(1);
             return;
@@ -355,7 +356,7 @@ public class JarMain {
 
         long stop = System.currentTimeMillis();
 
-        logger.info("Finished in "+ StringUtil.durationToString(stop-start)+" at "+run.getOutputPath());
+        System.out.println("Finished in "+ StringUtil.durationToString(stop-start)+" at "+run.getOutputPath());
 
         jsonServer.stop();
 
