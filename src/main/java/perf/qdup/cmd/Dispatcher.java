@@ -156,11 +156,12 @@ public class Dispatcher {
                         //TODO check for common prompts in output?
                         String output = context.getSession().peekOutput();
                         if(!command.isSilent()){
-                            logger.warn("Nanny found idle\n  command={}\n  host={}\n  script={}\n  idle={}",
+                            logger.warn("Nanny found idle\n  command={}\n  host={}\n  script={}\n  idle={}\n  lastLine={}",
                                     command,
                                     context.getSession().getHost().getHostName(),
                                     script,
-                                    String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000));
+                                    String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000),
+                                    context.getSession().peekOutputTail());
                         }
                     }
                 }

@@ -460,6 +460,13 @@ public class SshSession {
     public String peekOutput(){
         return shStream.toString();
     }
+    public String peekOutputTail(){
+        String rtrn = peekOutput();
+        if(rtrn.indexOf("\n")>-1){
+            rtrn = rtrn.substring(rtrn.indexOf("\n"));
+        }
+        return rtrn;
+    }
 //    public String peekCleanedOutput(){
 //        String output = shStream.toString()
 //                .replaceAll("^[\r\n]+","")  //replace leading newlines
