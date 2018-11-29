@@ -6,6 +6,7 @@ import perf.qdup.cmd.Context;
 public class Log extends Cmd {
     String value;
     public Log(String value){
+        super(true);
         this.value = value;
         if(this.value==null){
             this.value="";

@@ -7,7 +7,9 @@ import java.io.File;
 
 public class QueueDownload extends Cmd {
     private String path;
+    private String populatedPath;
     private String destination;
+    private String populatedDestination;
     public QueueDownload(String path, String destination){
         this.path = path;
         this.destination = destination;
@@ -37,7 +39,8 @@ public class QueueDownload extends Cmd {
         if(resolvedDestination.matches("[^\\$]*\\$(?!\\{\\{).*")){
             resolvedDestination = context.getSession().shSync("echo "+resolvedDestination);
         }
-
+        populatedPath = resolvedPath;
+        populatedDestination = resolvedDestination;
         context.addPendingDownload(resolvedPath,resolvedDestination);
 
         File destinationFile = new File(resolvedDestination);
@@ -51,5 +54,14 @@ public class QueueDownload extends Cmd {
     @Override
     public Cmd copy() {
         return new QueueDownload(path,destination);
+    }
+
+    @Override
+    public String getLogOutput(String output,Context context){
+        if(populatedPath!=null){
+            return "queue-download: "+populatedPath+" "+populatedDestination;
+        }else{
+            return "queue-download: "+path+" "+destination;
+        }
     }
 }

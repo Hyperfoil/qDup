@@ -46,18 +46,14 @@ public class Sh extends Cmd {
                 String populatedValue = Cmd.populateStateVariables(value,this,context.getState(),true);
                 populated.put(key,populatedValue);
             });
-            context.getSession().sh(populatedCommand,context::next/*(output)->{
-                context.next(output);
-            }*/,populated);
+            context.getSession().sh(populatedCommand,context::next,populated);
         }
         context.getProfiler().start("Sh-await-callback:"+command);
     }
 
     @Override
     public String getLogOutput(String output,Context context){
-        String rtrn =
-                populatedCommand;
-
+        String rtrn = populatedCommand;
         if(!isSilent() && output!=null && !output.isEmpty()){
             rtrn+="\n"+output;
         }

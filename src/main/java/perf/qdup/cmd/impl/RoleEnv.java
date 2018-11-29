@@ -46,4 +46,13 @@ public class RoleEnv extends Cmd {
     public Cmd copy() {
         return new RoleEnv(role,isStart);
     }
+
+    @Override
+    public String getLogOutput(String output,Context context){
+        if(isStart){
+            return "start-env:";
+        }else{
+            return "stop-env:";
+        }
+    }
 }

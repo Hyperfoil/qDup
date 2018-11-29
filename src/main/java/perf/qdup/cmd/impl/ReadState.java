@@ -6,6 +6,7 @@ import perf.qdup.cmd.Context;
 public class ReadState extends Cmd {
 
     private String key;
+    private String value;
     public ReadState(String key){
         this.key = key;
     }
@@ -21,7 +22,7 @@ public class ReadState extends Cmd {
     @Override
     public void run(String input, Context context) {
         //use populateVariable in case it is in WITH or context
-        String value = Cmd.populateVariable(key,this,context.getState(),null);
+        value = Cmd.populateVariable(key,this,context.getState(),null);
         if(value==null || value.isEmpty()){
             context.skip(input);
         }
@@ -31,5 +32,14 @@ public class ReadState extends Cmd {
     @Override
     public Cmd copy() {
         return new ReadState(key);
+    }
+
+    @Override
+    public String getLogOutput(String output,Context context){
+        if(value!=null){
+            return "read-state: "+value;
+        }else{
+            return "read-state: "+value;
+        }
     }
 }

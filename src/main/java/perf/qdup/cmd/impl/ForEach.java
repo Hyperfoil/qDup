@@ -84,4 +84,13 @@ public class ForEach extends Cmd.LoopCmd {
     public String toString(){
         return "for-each: "+name+(this.input!=null?this.input:"");
     }
+
+    @Override
+    public String getLogOutput(String output,Context context){
+        if(split!=null && !split.isEmpty()){
+            return "for-each: "+name+" = "+split.get(index);
+        }else{
+            return "for-each: "+name;
+        }
+    }
 }

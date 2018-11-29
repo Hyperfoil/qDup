@@ -5,6 +5,8 @@ import perf.qdup.cmd.Context;
 
 public class RepeatUntilSignal extends Cmd.LoopCmd {
     private String name;
+    private String populatedName;
+    private int amount=-1;
     public RepeatUntilSignal(String name){
         this.name = name;
     }
@@ -12,12 +14,12 @@ public class RepeatUntilSignal extends Cmd.LoopCmd {
 
     @Override
     public void run(String input, Context context) {
-        String populatedName = Cmd.populateStateVariables(name,this,context.getState());
+        populatedName = Cmd.populateStateVariables(name,this,context.getState());
 
         if(populatedName==null || populatedName.isEmpty()){
             context.skip(input);
         }
-        int amount = context.getCoordinator().getSignalCount(populatedName);
+        amount = context.getCoordinator().getSignalCount(populatedName);
         if( amount > 0 ){
             context.next(input);
         }else{
@@ -37,4 +39,14 @@ public class RepeatUntilSignal extends Cmd.LoopCmd {
     }
     @Override
     public String toString(){return "repeat-until: "+name;}
+
+    @Override
+    public String getLogOutput(String output,Context context){
+        String toUse = populatedName!=null ? populatedName : name;
+        if(amount > 0 ){
+            return "repeat-until: "+toUse;
+        }else{
+            return "";
+        }
+    }
 }
