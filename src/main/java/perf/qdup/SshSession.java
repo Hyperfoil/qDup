@@ -114,6 +114,7 @@ public class SshSession {
     private Map<String,Consumer<String>> shObservers;
     private ScheduledThreadPoolExecutor executor;
 
+    private boolean connected = false;
     long shStart = -1;
     long shStop = -1;
 
@@ -149,7 +150,7 @@ public class SshSession {
             blockingSemaphore.release();
         };
         this.executor = executor;
-        boolean ok = connect(-1,setupCommand);
+        connected = connect(-1,setupCommand);
 
 //        sshConfig = new Properties();
 //        sshConfig.put("StrictHostKeyChecking", "no");
@@ -346,6 +347,10 @@ public class SshSession {
     }
     public void setDelay(int delay){
         this.semaphoreStream.setExecutorDelay(delay);
+    }
+
+    public boolean isConnected() {
+        return connected;
     }
 
     public Host getHost(){return host;}

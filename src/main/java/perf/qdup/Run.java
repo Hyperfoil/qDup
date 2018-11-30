@@ -403,17 +403,23 @@ public class Run implements Runnable, DispatchObserver {
                                config.getPassphrase(),
                                config.getTimeout(),
                                "", getDispatcher().getScheduler());
-                       //TODO configure session delay
-                       session.setDelay(SuffixStream.NO_DELAY);
-                       ScriptContext scriptContext = new ScriptContext(
-                               session,
-                               config.getState(),
-                               this,
-                               profiles.get(roleName+"-setup@"+host.getShortHostName()),
-                               setup
-                       );
-                       getDispatcher().addScriptContext(scriptContext);
-                       return session.isOpen();
+                       if ( session.isConnected() ) {
+                           //TODO configure session delay
+                           session.setDelay(SuffixStream.NO_DELAY);
+                           ScriptContext scriptContext = new ScriptContext(
+                                   session,
+                                   config.getState(),
+                                   this,
+                                   profiles.get(roleName+"-setup@"+host.getShortHostName()),
+                                   setup
+                           );
+                           getDispatcher().addScriptContext(scriptContext);
+                           return session.isOpen();
+                       }
+                       else {
+                            session.close();
+                           return false;
+                       }
                    });
                });
             }
@@ -456,20 +462,26 @@ public class Run implements Runnable, DispatchObserver {
                                 config.getTimeout(),
                                 setupCommand,
                                 getDispatcher().getScheduler());
-                            session.setDelay(SuffixStream.NO_DELAY);
-                            profiler.start("context:"+host.toString());
-                            ScriptContext scriptContext = new ScriptContext(
-                                session,
-                                scriptState,
-                                this,
-                                profiler,
-                                script
-                            );
+                            if ( session.isConnected() ) {
+                                session.setDelay(SuffixStream.NO_DELAY);
+                                profiler.start("context:" + host.toString());
+                                ScriptContext scriptContext = new ScriptContext(
+                                        session,
+                                        scriptState,
+                                        this,
+                                        profiler,
+                                        script
+                                );
 
-                            getDispatcher().addScriptContext(scriptContext);
-                            boolean rtrn = session.isOpen();
-                            profiler.start("waiting for start");
-                            return rtrn;
+                                getDispatcher().addScriptContext(scriptContext);
+                                boolean rtrn = session.isOpen();
+                                profiler.start("waiting for start");
+                                return rtrn;
+                            }
+                            else {
+                                session.close();
+                                return false;
+                            }
                         });
                     }
                 }
@@ -529,16 +541,23 @@ public class Run implements Runnable, DispatchObserver {
                                 config.getTimeout(),
                                 setupCommand,
                                 getDispatcher().getScheduler());
-                        session.setDelay(SuffixStream.NO_DELAY);
-                        ScriptContext scriptContext = new ScriptContext(
-                                session,
-                                config.getState(),
-                                this,
-                                profiles.get(roleName+"-setup@"+host.getHostName()),
-                                cleanup
-                        );
-                        getDispatcher().addScriptContext(scriptContext);
-                        return session.isOpen();
+                        if ( session.isConnected() ) {
+
+                            session.setDelay(SuffixStream.NO_DELAY);
+                            ScriptContext scriptContext = new ScriptContext(
+                                    session,
+                                    config.getState(),
+                                    this,
+                                    profiles.get(roleName + "-setup@" + host.getHostName()),
+                                    cleanup
+                            );
+                            getDispatcher().addScriptContext(scriptContext);
+                            return session.isOpen();
+                        }
+                        else {
+                            session.close();
+                            return false;
+                        }
                     });
                 });
             }
