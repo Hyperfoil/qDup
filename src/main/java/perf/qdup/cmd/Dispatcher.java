@@ -1,13 +1,8 @@
 package perf.qdup.cmd;
 
-import jdk.nashorn.internal.ir.Block;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
-import perf.qdup.Run;
-import perf.qdup.cmd.impl.Abort;
-import perf.qdup.cmd.impl.Done;
 import perf.qdup.cmd.impl.Sh;
-import perf.yaup.AsciiArt;
 import perf.yaup.json.Json;
 
 import java.lang.invoke.MethodHandles;
@@ -16,7 +11,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -72,10 +66,15 @@ public class Dispatcher {
     private final boolean autoClose;
 
     private final ContextObserver observer = new ContextObserver() {
-        @Override
-        public void preNext(ScriptContext context, Cmd command, String output) {
 
-        }
+        @Override
+        public void preStart(ScriptContext context,Cmd command){}
+        @Override
+        public void preStop(ScriptContext context,Cmd command,String output){}
+        @Override
+        public void preNext(ScriptContext context, Cmd command, String output){}
+        @Override
+        public void preSkip(ScriptContext context, Cmd command, String output){}
         @Override
         public void onDone(ScriptContext context){
             scriptContexts.remove(context.getRootCmd());

@@ -13,10 +13,7 @@ import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
-import perf.qdup.stream.EscapeFilteredStream;
-import perf.qdup.stream.FilteredStream;
-import perf.qdup.stream.LineEmittingStream;
-import perf.qdup.stream.SuffixStream;
+import perf.qdup.stream.*;
 import perf.yaup.AsciiArt;
 
 import java.io.*;
@@ -39,6 +36,8 @@ import static perf.qdup.config.RunConfigBuilder.*;
 
 //Todo separate out the PROMPT, the command, and the output of the command
 public class SshSession {
+
+    public enum Stream {Escape,Semaphore,Filtered,Prompt};
 
     private static final String SH_CALLBACK = "qdup-sh-callback";
     private static final String SH_BLOCK_CALLBACK = "qdup-sh-block-callback";
@@ -303,6 +302,37 @@ public class SshSession {
             rtrn = isOpen();
         }
         return rtrn;
+    }
+    public void addStreamObserver(Stream target,String key,OutputStream stream){
+        MultiStream targetStream = getTarget(target);
+        if(targetStream!=null){
+            targetStream.addStream(key,stream);
+        }
+    }
+    public void removeStreamObserver(Stream target,String key){
+        MultiStream targetStream = getTarget(target);
+        if(targetStream!=null){
+            targetStream.removeStream(key);
+        }
+    }
+    private MultiStream getTarget(Stream target){
+        MultiStream targetStream;
+        switch (target){
+            case Prompt:
+                targetStream = promptStream;
+                break;
+            case Filtered:
+                targetStream = filteredStream;
+                break;
+            case Semaphore:
+                targetStream = semaphoreStream;
+                break;
+            case Escape:
+            default:
+                targetStream = escapeFilteredStream;
+                break;
+        }
+        return targetStream;
     }
     public boolean isOpen(){
         boolean rtrn =channelShell!=null && channelShell.isOpen() && clientSession!=null && clientSession.isOpen();

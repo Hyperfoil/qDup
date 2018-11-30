@@ -27,6 +27,32 @@ public class RunTest extends SshTestBase{
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
+    @Test
+    public void pwd_in_dollar(){
+        YamlParser parser = new YamlParser();
+        parser.load("pwd",stream(""+
+            "scripts:",
+            "  foo:",
+            "    - sh: echo \"pwd is: $(pwd)\"",
+            "    - echo:",
+                "hosts:",
+                "  local: "+getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.loadYaml(parser);
+        RunConfig config = builder.buildConfig();
+        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+    }
 
     @Test
     public void signal_in_previous_stage(){

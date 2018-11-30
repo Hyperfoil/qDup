@@ -14,6 +14,24 @@ import static org.junit.Assert.assertTrue;
 public class SshSessionTest extends SshTestBase{
 
     @Test
+    public void echo_dollar_pwd(){
+        String userHome = System.getProperty("user.home");
+        String currentDir = System.getProperty("user.dir");
+        String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
+        SshSession sshSession = new SshSession(
+                getHost(),
+                userHome+"/.ssh/known_hosts",
+                userHome+"/.ssh/id_rsa",
+                null,
+                5,
+                setupCommand,
+                null
+        );
+        String foo = sshSession.shSync("echo \"pwd is: $(pwd)\"");
+        System.out.println(foo);
+    }
+
+    @Test
     public void setupCommand(){
         String userHome = System.getProperty("user.home");
         String currentDir = System.getProperty("user.dir");

@@ -70,6 +70,8 @@ public class RunConfigBuilder {
 
     private HashMap<String,Host> hostAlias;
 
+    private HashMap<String,String> traceTargets;
+
     private CmdBuilder cmdBuilder;
     private List<String> errors;
 
@@ -89,7 +91,16 @@ public class RunConfigBuilder {
         roleCleanup = new HashedLists<>();
         roleHostExpression = new HashMap<>();
         hostAlias = new HashMap<>();
+        traceTargets = new HashMap<>();
         errors = new LinkedList<>();
+    }
+
+    public void traceSession(String session,String path){
+        traceTargets.put(session,path);
+    }
+    public Set<String> getTraceTargets(){return traceTargets.keySet();}
+    public String getTracePath(String target){
+        return traceTargets.get(target);
     }
 
     public void eachChildArray(Json target, BiConsumer<Integer,Json> consumer){

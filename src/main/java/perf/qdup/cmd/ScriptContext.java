@@ -123,13 +123,20 @@ public class ScriptContext implements Context, Runnable{
         run.getDispatcher().getScheduler().schedule(runnable,delayMs,TimeUnit.MILLISECONDS);
     }
 
+    private void observerPreStart(Cmd command){
+        if(observer!=null){
+            observer.preStart(this,command);
+        }
+    }
     private void observerPreNext(Cmd command,String output){
         if(observer!=null){
+            observer.preStop(this,command,output);
             observer.preNext(this,command,output);
         }
     }
     private void observerPreSkip(Cmd command,String output){
         if(observer!=null){
+            observer.preStop(this,command,output);
             observer.preSkip(this,command,output);
         }
     }
@@ -267,6 +274,7 @@ public class ScriptContext implements Context, Runnable{
             if (cmd == null) {
                 observerDone();//this context is finished
             } else {
+                observerPreStart(cmd);
                 getProfiler().start(cmd.toString());
                 if (!lineQueue.isEmpty()) {//clear any unhandled output lines
                     //TODO log that we are clearing orphaned lines
