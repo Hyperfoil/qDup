@@ -649,6 +649,10 @@ public abstract class Cmd {
         return rtrn;
     }
 
+    public Cmd getParent() {
+        return parent;
+    }
+
     @Override
     public int hashCode(){
         return getUid();
