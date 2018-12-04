@@ -8,12 +8,16 @@ import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandSummary;
 import perf.qdup.cmd.Script;
 import perf.qdup.cmd.impl.ScriptCmd;
+import perf.yaup.AsciiArt;
 import perf.yaup.HashedLists;
 import perf.yaup.HashedSets;
 import perf.yaup.json.Json;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -156,6 +160,14 @@ public class RunConfigBuilder {
         }
         return ok;
     }
+    public String getPathDirectory(String yamlPath){
+        File file = new File(yamlPath);
+        String rtrn = yamlPath;
+        if(file.exists()){
+            rtrn = FileSystems.getDefault().getPath(yamlPath).normalize().toAbsolutePath().getParent().toString();
+        }
+        return rtrn;
+    }
     public boolean loadYamlJson(Json yamlJson,String yamlPath){
         boolean ok = true;
         if (yamlJson.isArray()) {
@@ -182,8 +194,7 @@ public class RunConfigBuilder {
                                     logger.warn("{} tried to add script {} which already exists",yamlPath,scriptName);
                                 }else {
                                     Script newScript = new Script(scriptName);
-                                    File yamlFile = new File(yamlPath);
-                                    String scriptDir = yamlFile.exists() && yamlFile.getParentFile()!=null ? yamlFile.getParentFile().getAbsolutePath() : yamlPath;
+                                    String scriptDir = getPathDirectory(yamlPath);
                                     newScript.with(SCRIPT_DIR,scriptDir);
                                     eachChildArray(scriptEntry, (commandIndex, scriptCommand) -> {
                                         Cmd childCmd = cmdBuilder.buildYamlCommand(scriptCommand, newScript, scriptErrors);
