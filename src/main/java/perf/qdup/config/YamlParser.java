@@ -523,7 +523,7 @@ public class YamlParser {
                                             }
 
                                             if(childValue.contains("-")){
-                                                while (!builder.has(CHILD_ARRAY,false)){
+                                                while (!builder.has(CHILD_ARRAY,false) && builder.size() > 1){
                                                     builder.pop();
                                                 }
                                                 Json newEntry = new Json(false);
@@ -535,14 +535,14 @@ public class YamlParser {
                                             }
                                         } else { //sibling
                                             if (childValue.contains("-")) {
-                                                while (!builder.has(CHILD_ARRAY, false)) {
+                                                while (!builder.has(CHILD_ARRAY, false) && builder.size() > 1) {
                                                     builder.pop();
                                                 }
                                                 Json newJson = new Json(false);
                                                 builder.target().add(newJson);
                                                 builder.push(newJson);
                                             } else {
-                                                while (!builder.target().isArray()) {
+                                                while (!builder.target().isArray() && builder.size() > 1) {
                                                     builder.pop();
                                                 }
                                             }
@@ -800,7 +800,7 @@ public class YamlParser {
                                 }
 
                                 if (childValue.contains("-")) {
-                                    while (!builder.has(CHILD_ARRAY, false)) {
+                                    while (!builder.has(CHILD_ARRAY, false) && builder.size() > 1) {
                                         builder.pop();
                                     }
                                     Json newEntry = new Json(false);
@@ -813,7 +813,7 @@ public class YamlParser {
 
                             } else {//sibling
                                 if (childValue.contains("-")) {
-                                    while (!builder.has(CHILD_ARRAY, false)) {
+                                    while (!builder.has(CHILD_ARRAY, false) && builder.size() > 1) {
                                         builder.pop();
                                     }
 
@@ -823,7 +823,7 @@ public class YamlParser {
 
 
                                 } else {
-                                    while (!builder.target().isArray()) {
+                                    while (!builder.target().isArray() && builder.size() > 1) {
                                         builder.pop();
                                     }
                                 }
@@ -874,7 +874,7 @@ public class YamlParser {
                         }else if (line.startsWith(",")) {//end of the inlineList|inlineMap entry
                             if(!inlineStack.isEmpty()){
 
-                                while(!builder.hasAt(INLINE_LIST,1) && !builder.hasAt(INLINE_MAP,1) ){
+                                while(!builder.hasAt(INLINE_LIST,1) && !builder.hasAt(INLINE_MAP,1) && builder.size() > 1){
                                     builder.pop();//close the previous entry
                                 }
 

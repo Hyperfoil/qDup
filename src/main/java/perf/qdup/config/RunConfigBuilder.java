@@ -183,7 +183,7 @@ public class RunConfigBuilder {
                                 }else {
                                     Script newScript = new Script(scriptName);
                                     File yamlFile = new File(yamlPath);
-                                    String scriptDir = yamlFile.exists() ? yamlFile.getParent() : yamlPath;
+                                    String scriptDir = yamlFile.exists() && yamlFile.getParentFile()!=null ? yamlFile.getParentFile().getAbsolutePath() : yamlPath;
                                     newScript.with(SCRIPT_DIR,scriptDir);
                                     eachChildArray(scriptEntry, (commandIndex, scriptCommand) -> {
                                         Cmd childCmd = cmdBuilder.buildYamlCommand(scriptCommand, newScript, scriptErrors);

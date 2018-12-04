@@ -25,7 +25,7 @@ public class YamlParserTest extends SshTestBase {
             Json checkMe = toCheck.remove();
 
             if(checkMe.isArray()){
-                fail("CHILD should not check arrays\n"+checkMe.toString(2));
+                fail("CHILD should not check arrays\nCHILD:"+checkMe.toString(2)+"\nFULL:"+json.toString(2));
                 return false; // error, arrays should not be added
             }else{
                 if(checkMe.has(CHILD)){
@@ -140,10 +140,12 @@ public class YamlParserTest extends SshTestBase {
     public void childNotIndented(){
         YamlParser parser = new YamlParser();
         parser.load("child",stream(""+
-            "- key1: foo",
-            "- key2: value",
-            "- with: {",
-            "    KEY: \"value\" }"
+            "top:",
+            "- key1: good",
+            "    with: { KEY: \"value\" }",
+            "- key2: bad",
+            "  with: { KEY: \"value\" }",
+            ""
         ));
 
         validateParse(parser);
