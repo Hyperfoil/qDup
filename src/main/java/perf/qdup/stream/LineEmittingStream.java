@@ -99,7 +99,7 @@ public class LineEmittingStream extends OutputStream {
             }
         }catch(Exception e){
             logger.error(e.getMessage(),e);
-            System.exit(-1);
+            throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);//System.exit(-1);
         }
     }
     public int find(byte[] array,byte[] content,int start,int length){

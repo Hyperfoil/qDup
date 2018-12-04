@@ -2,9 +2,11 @@ package perf.qdup.cmd.impl;
 
 import perf.qdup.Env;
 import perf.qdup.Host;
+import perf.qdup.SshSession;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
 import perf.qdup.config.Role;
+import perf.qdup.stream.SuffixStream;
 
 public class RoleEnv extends Cmd {
 
@@ -25,7 +27,10 @@ public class RoleEnv extends Cmd {
 
     @Override
     public void run(String input, Context context) {
+        int delay = context.getSession().getDelay();
+        context.getSession().setDelay(SuffixStream.DEFAULT_DELAY);
         String env = context.getSession().shSync("env");
+        context.getSession().setDelay(delay);
         Host host = context.getSession().getHost();
         if(isStart){
             if(!role.hasEnvironment(host)){

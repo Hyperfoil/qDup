@@ -132,7 +132,7 @@ public class RunTest extends SshTestBase{
             char c = output.charAt(i);
             hasNewLine = hasNewLine || '\n' == c || '\r' ==c;
         }
-        assertFalse("output shoult not have \\r or \\n",hasNewLine);
+        assertFalse("output should not have \\r or \\n",hasNewLine);
     }
 
     @Test

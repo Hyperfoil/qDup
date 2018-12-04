@@ -38,10 +38,12 @@ public class Abort extends Cmd {
 
     @Override
     public String getLogOutput(String output,Context context){
-        if(populatedMessage!=null){
-            return "abort: "+populatedMessage;
-        }else{
-            return "abort: "+message;
-        }
+
+        String touse = populatedMessage!=null ? populatedMessage : message;
+
+        return
+            (context.isColorTerminal() ? AsciiArt.ANSI_RED : "")+
+            "abort: "+message+
+            (context.isColorTerminal() ? AsciiArt.ANSI_RESET : "");
     }
 }

@@ -37,6 +37,14 @@ import static perf.qdup.config.RunConfigBuilder.*;
 //Todo separate out the PROMPT, the command, and the output of the command
 public class SshSession {
 
+    public String getLastCommand() {
+        return lastCommand;
+    }
+
+    public void setLastCommand(String lastCommand) {
+        this.lastCommand = lastCommand;
+    }
+
     public enum Stream {Escape,Semaphore,Filtered,Prompt};
 
     private static final String SH_CALLBACK = "qdup-sh-callback";
@@ -114,6 +122,17 @@ public class SshSession {
     private Map<String,Consumer<String>> shObservers;
     private ScheduledThreadPoolExecutor executor;
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    private String name="";
+    private String lastCommand="";
+
     private boolean connected = false;
     long shStart = -1;
     long shStop = -1;
@@ -124,6 +143,7 @@ public class SshSession {
     public SshSession(Host host,String knownHosts,String identity,String passphrase, int timeout,String setupCommand,ScheduledThreadPoolExecutor executor){
 
         this.host = host;
+        this.name = host != null ? host.toString() : "null";
         this.knownHosts = knownHosts;
         this.identity = identity;
         this.passphrase = passphrase;
@@ -172,8 +192,10 @@ public class SshSession {
         shObservers.remove(name);
     }
     private void lineConsumers(String line){
-        for(Consumer<String> consumer : lineObservers.values()){
-            consumer.accept(line);
+        if(!lineObservers.isEmpty()){
+            for(Consumer<String> consumer : lineObservers.values()){
+                consumer.accept(line);
+            }
         }
     }
     private void shConsumers(String output){
@@ -248,8 +270,11 @@ public class SshSession {
                 //shStream.reset();
                 shConsumers(output);
                 shellLock.release();
+                if(permits()>1){
+                    logger.error("ShSession "+getName()+" "+getLastCommand()+" release -> permits=="+permits()+"\n"+output);
+                }
             };
-            lineEmittingStream.addConsumer(this::lineConsumers);
+            //lineEmittingStream.addConsumer(this::lineConsumers);
 
             semaphoreStream.addSuffix("PROMPT",PROMPT,"");
             semaphoreStream.addConsumer(this.semaphoreCallback);
@@ -284,8 +309,15 @@ public class SshSession {
             try {
                 try{
                     shellLock.acquire();//technically should be before try{ for cases where acquire throws the exception
+                    if(permits()!=0){
+                        logger.error("ShSession "+getName()+" connect.acquire --> permits=="+permits());
+                    }
+
                 }finally{
                     shellLock.release();
+                    if(permits()!=1){
+                        logger.error("ShSession "+getName()+" connect.release --> permits=="+permits());
+                    }
                 }
             } catch (InterruptedException e) {
                 logger.warn("{}@{} interrupted while waiting for initial PROMPT",host.getUserName(),host.getHostName());
@@ -301,6 +333,11 @@ public class SshSession {
                     channelShell==null?"false":channelShell.isOpen()
             );
             rtrn = isOpen();
+        }
+        //allow session to be fully setup before adding watcher support to lineEmittingStream
+        if(lineEmittingStream!=null) {
+            lineEmittingStream.addConsumer(this::lineConsumers);
+
         }
         return rtrn;
     }
@@ -404,7 +441,7 @@ public class SshSession {
             blockingSemaphore.acquire();
             removeShObserver(SH_BLOCK_CALLBACK);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.error("Interrupted waiting for shSync "+command,e);
         }
         return blockingResponse.toString();
     }
@@ -421,6 +458,7 @@ public class SshSession {
         sh(command,true,callback,prompt);
     }
     private void sh(String command,boolean acquireLock,Consumer<String> callback, Map<String,String> prompt){
+        lastCommand = command;
         logger.trace("{} sh: {}, lock: {}",host,command,acquireLock);
         if(isOpen()) {
 
@@ -435,7 +473,10 @@ public class SshSession {
                 if (acquireLock) {
                     try {
                         shellLock.acquire();
-                        assert permits()==0;
+                        if(permits()!=0){
+                            logger.error("ShSession "+getName()+" sh.acquire --> permits=="+permits());
+                        }
+
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         Thread.interrupted();
@@ -496,9 +537,9 @@ public class SshSession {
         return shStream.toString();
     }
     public String peekOutputTail(){
-        String rtrn = peekOutput();
-        if(rtrn.indexOf("\n")>-1){
-            rtrn = rtrn.substring(rtrn.indexOf("\n"));
+        String rtrn = peekOutput().replaceAll("[\r\n]+$",""); //replace trailing newlines;
+        if(rtrn.lastIndexOf("\n")>-1){
+            rtrn = rtrn.substring(rtrn.lastIndexOf("\n"));
         }
         return rtrn;
     }
@@ -521,6 +562,9 @@ public class SshSession {
                             logger.info("{} closing but shell still locked",this.getHost());
                         }
                         shellLock.acquire();
+                        if(permits()!=0){
+                            logger.error("ShSession "+getName()+" close.acquire --> permits=="+permits());
+                        }
 
                         //do we really care about release?
                         //we are going to destroy the semaphore / shell

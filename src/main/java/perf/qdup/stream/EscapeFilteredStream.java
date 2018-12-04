@@ -126,7 +126,7 @@ public class EscapeFilteredStream extends MultiStream {
             }
         }catch(Exception e){
             logger.error(e.getMessage(),e);
-            System.exit(-1);
+            throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);//System.exit(-1);
         }
     }
     //basically just makes sure we have \u001b[...m

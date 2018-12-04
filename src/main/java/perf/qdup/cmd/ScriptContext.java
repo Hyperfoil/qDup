@@ -130,13 +130,13 @@ public class ScriptContext implements Context, Runnable{
     }
     private void observerPreNext(Cmd command,String output){
         if(observer!=null){
-            observer.preStop(this,command,output);
+            //observer.preStop(this,command,output);
             observer.preNext(this,command,output);
         }
     }
     private void observerPreSkip(Cmd command,String output){
         if(observer!=null){
-            observer.preStop(this,command,output);
+            //observer.preStop(this,command,output);
             observer.preSkip(this,command,output);
         }
     }
@@ -176,6 +176,10 @@ public class ScriptContext implements Context, Runnable{
         );
     }
 
+    public void closeLineQueue(){
+        lineQueue.add(CLOSE_QUEUE);
+    }
+
     @Override
     public void next(String output) {
         getProfiler().start("next");
@@ -184,7 +188,7 @@ public class ScriptContext implements Context, Runnable{
         observerPreNext(cmd,output);
         if(cmd!=null) {
             if(cmd.hasWatchers()){
-                lineQueue.add(CLOSE_QUEUE);
+                closeLineQueue();
             }
             cmd.setOutput(output);
             boolean changed = setCurrentCmd(cmd,cmd.getNext());
@@ -208,7 +212,11 @@ public class ScriptContext implements Context, Runnable{
             boolean changed = setCurrentCmd(cmd,cmd.getSkip());
             if(changed) {
                 startCurrentCmd();
-            }else{}
+            }else{
+
+            }
+        }else{
+
         }
     }
     protected void startCurrentCmd(){
@@ -274,7 +282,7 @@ public class ScriptContext implements Context, Runnable{
             if (cmd == null) {
                 observerDone();//this context is finished
             } else {
-                observerPreStart(cmd);
+                //observerPreStart(cmd);
                 getProfiler().start(cmd.toString());
                 if (!lineQueue.isEmpty()) {//clear any unhandled output lines
                     //TODO log that we are clearing orphaned lines

@@ -65,5 +65,8 @@ public class Sh extends Cmd {
         return new Sh(this.command,super.isSilent(),prompt);
     }
 
-    @Override public String toString(){return "sh: "+command;}
+    @Override public String toString(){
+        String toUse = populatedCommand!=null ? populatedCommand : command;
+        return "sh: "+toUse;
+    }
 }

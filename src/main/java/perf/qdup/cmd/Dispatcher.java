@@ -3,6 +3,7 @@ package perf.qdup.cmd;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.cmd.impl.Sh;
+import perf.yaup.AsciiArt;
 import perf.yaup.json.Json;
 
 import java.lang.invoke.MethodHandles;
@@ -67,14 +68,14 @@ public class Dispatcher {
 
     private final ContextObserver observer = new ContextObserver() {
 
-        @Override
-        public void preStart(ScriptContext context,Cmd command){}
-        @Override
-        public void preStop(ScriptContext context,Cmd command,String output){}
-        @Override
-        public void preNext(ScriptContext context, Cmd command, String output){}
-        @Override
-        public void preSkip(ScriptContext context, Cmd command, String output){}
+//        @Override
+//        public void preStart(ScriptContext context,Cmd command){}
+//        @Override
+//        public void preStop(ScriptContext context,Cmd command,String output){}
+//        @Override
+//        public void preNext(ScriptContext context, Cmd command, String output){}
+//        @Override
+//        public void preSkip(ScriptContext context, Cmd command, String output){}
         @Override
         public void onDone(ScriptContext context){
             scriptContexts.remove(context.getRootCmd());
@@ -158,7 +159,9 @@ public class Dispatcher {
                         if (command.getParent() instanceof Script)
                             parentName = ((Script) (command).getParent()).getName();
                         if(!command.isSilent()){
-                            logger.warn("Nanny found idle\n  command={}\n  host={}\n  script={}\n  idle={}\n  lastLine={}",
+                            logger.warn("{}Nanny found idle{}\n  command={}\n  host={}\n  script={}\n  idle={}\n  lastLine={}",
+                                    context.isColorTerminal() ? AsciiArt.ANSI_RED : "",
+                                    context.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
                                     command,
                                     context.getSession().getHost().getHostName(),
                                     script + (parentName.equals(null)? "" : ":" + parentName),
@@ -270,7 +273,10 @@ public class Dispatcher {
             scheduler.shutdown();
         }
     }
-    public void stop(){
+    public void stop() {
+        stop(true);
+    }
+    public void stop(boolean wait){
         if(isRunning.compareAndSet(true,false)){
             logger.debug("stop");
 
@@ -280,7 +286,8 @@ public class Dispatcher {
             }
             //needs to occur before we notify observers because observers can queue next stage
             scriptContexts.values().forEach(ctx->{
-                ctx.getSession().close();
+                ctx.closeLineQueue();
+                ctx.getSession().close(wait);
             });
             scriptContexts.clear();
             dispatchObservers.forEach(c -> c.postStop());

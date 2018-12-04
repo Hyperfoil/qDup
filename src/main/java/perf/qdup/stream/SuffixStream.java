@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class SuffixStream extends MultiStream {
     private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
-    public static final int DEFAULT_DELAY = 1_000;
+    public static final int DEFAULT_DELAY = 100; //MS
     public static final int NO_DELAY = -1;
 
     private class FoundRunnable implements Runnable{
@@ -48,7 +48,7 @@ public class SuffixStream extends MultiStream {
     private List<Consumer<String>> consumers;
 
     private ScheduledThreadPoolExecutor executor;
-    private int executorDelay = NO_DELAY;
+    private int executorDelay = DEFAULT_DELAY;
     private ScheduledFuture future;
     private FoundRunnable foundRunnable;
 
@@ -136,7 +136,7 @@ public class SuffixStream extends MultiStream {
             logger.error(getClass().getName()+".write("+off+","+len+")");
             logger.error(MultiStream.printByteCharacters(b,off,Math.min(10,b.length-off)));
             logger.error(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
-            System.exit(-1);
+            //System.exit(-1);
         }
         try {
             int trailingSuffixLength = Integer.MIN_VALUE;
@@ -193,7 +193,7 @@ public class SuffixStream extends MultiStream {
             }
         }catch(Exception e){
             logger.error(e.getMessage(),e);
-            System.exit(-1);
+            throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);//System.exit(-1);
         }
     }
     private void foundSuffix(String name,int index){

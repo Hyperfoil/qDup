@@ -52,7 +52,7 @@ public class MultiStream extends OutputStream{
         bytes.append("]");
         chars.append("]");
         indxs.append("]");
-        return "bytes="+bytes.toString()/*+System.lineSeparator()+"chars="+chars.toString()+System.lineSeparator()+"indxs="+indxs.toString()*/;
+        return "bytes="+bytes.toString()+System.lineSeparator()+"chars="+chars.toString()+System.lineSeparator()+"indxs="+indxs.toString();
     }
 
     private Map<String,OutputStream> streams;
@@ -100,7 +100,7 @@ public class MultiStream extends OutputStream{
             try {
                 s.write(b, off, len);
             } catch (IOException e) {
-                logger.error(e.getMessage(),e);
+                logger.error("MultiStream.write():"+e.getMessage()+" b="+(b!=null ? b.length : "null")+" off="+off+" len="+len,e);
             }
         }
     }

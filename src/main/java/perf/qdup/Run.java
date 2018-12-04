@@ -267,7 +267,7 @@ public class Run implements Runnable, DispatchObserver {
         if(aborted.compareAndSet(false,true)){
             coordinator.clearWaiters();
             stageUpdated.set(this,Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.postStop will set it to Cleanup
-            dispatcher.stop();//interrupts working threads and stops dispatching next commands
+            dispatcher.stop(false);//interrupts working threads and stops dispatching next commands
             //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
             //abort doesn't end the run, cleanup ends the run
             //runLatch.countDown();
@@ -385,6 +385,8 @@ public class Run implements Runnable, DispatchObserver {
         //Observer to set the Env.Diffs
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
+
+        //TODO don't run an ALL-setup but rather put it it the start of each connection?
         config.getRoleNames().stream().forEach(roleName->{
             final Role role = config.getRole(roleName);
             if(!role.getSetup().isEmpty()){
@@ -403,6 +405,7 @@ public class Run implements Runnable, DispatchObserver {
                                config.getPassphrase(),
                                config.getTimeout(),
                                "", getDispatcher().getScheduler());
+                       session.setName(roleName+"-setup@"+host.getShortHostName());
                        if ( session.isConnected() ) {
                            //TODO configure session delay
                            session.setDelay(SuffixStream.NO_DELAY);
@@ -462,6 +465,7 @@ public class Run implements Runnable, DispatchObserver {
                                 config.getTimeout(),
                                 setupCommand,
                                 getDispatcher().getScheduler());
+                            session.setName(script.getName()+"@"+host.getShortHostName());
                             if ( session.isConnected() ) {
                                 session.setDelay(SuffixStream.NO_DELAY);
                                 profiler.start("context:" + host.toString());
@@ -541,6 +545,7 @@ public class Run implements Runnable, DispatchObserver {
                                 config.getTimeout(),
                                 setupCommand,
                                 getDispatcher().getScheduler());
+                        session.setName(roleName + "-cleanup@" + host.getShortHostName());
                         if ( session.isConnected() ) {
 
                             session.setDelay(SuffixStream.NO_DELAY);
@@ -548,7 +553,7 @@ public class Run implements Runnable, DispatchObserver {
                                     session,
                                     config.getState(),
                                     this,
-                                    profiles.get(roleName + "-setup@" + host.getHostName()),
+                                    profiles.get(roleName + "-setup@" + host.getShortHostName()),
                                     cleanup
                             );
                             getDispatcher().addScriptContext(scriptContext);

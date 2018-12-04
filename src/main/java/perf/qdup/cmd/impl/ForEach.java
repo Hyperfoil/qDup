@@ -53,24 +53,27 @@ public class ForEach extends Cmd.LoopCmd {
 
     @Override
     public void run(String input, Context context) {
-
-        if(split == null){
-            String toSplit = this.input.isEmpty() ? input.trim() : Cmd.populateStateVariables(this.input,this,context.getState());
-            split = split(toSplit);
-            logger.debug("for-each:{} input={} split={}",name,input,split);
-        }
-        if(split!=null && !split.isEmpty()){
-            String populatedName = Cmd.populateStateVariables(this.name,this,context.getState());
-            index++;
-            if(index < split.size()){
-                String value = split.get(index).replaceAll("\r|\n","");//defensive against trailing newline characters
-                with(populatedName,value);
-                context.next(value);
-            }else{
+        try {
+            if (split == null) {
+                String toSplit = this.input.isEmpty() ? input.trim() : Cmd.populateStateVariables(this.input, this, context.getState());
+                split = split(toSplit);
+                logger.debug("for-each:{} input={} split={}", name, input, split);
+            }
+            if (split != null && !split.isEmpty()) {
+                String populatedName = Cmd.populateStateVariables(this.name, this, context.getState());
+                index++;
+                if (index < split.size()) {
+                    String value = split.get(index).replaceAll("\r|\n", "");//defensive against trailing newline characters
+                    with(populatedName, value);
+                    context.next(value);
+                } else {
+                    context.skip(input);
+                }
+            } else {
                 context.skip(input);
             }
-        }else{
-            context.skip(input);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -87,7 +90,7 @@ public class ForEach extends Cmd.LoopCmd {
 
     @Override
     public String getLogOutput(String output,Context context){
-        if(split!=null && !split.isEmpty()){
+        if(split!=null && !split.isEmpty() && index < split.size()){
             return "for-each: "+name+" = "+split.get(index);
         }else{
             return "for-each: "+name;

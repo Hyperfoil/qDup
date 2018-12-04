@@ -82,6 +82,7 @@ public class SshSessionTest extends SshTestBase{
                 "",
                 new ScheduledThreadPoolExecutor(5)
         );
+
         assertTrue("SshSession should be open after init",sshSession.isOpen());
 
         List<String> outputs = new LinkedList<>();

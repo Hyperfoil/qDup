@@ -28,10 +28,7 @@ public class WaitFor extends Cmd {
 
     @Override
     public String getLogOutput(String output,Context context){
-        if(populatedName!=null) {
-            return "wait-for: " + populatedName;
-        }else{
-            return "wait-for: " + name;
-        }
+        String toUse = populatedName!=null ? populatedName : name;
+        return "wait-for: ["+toUse+"]";
     }
 }
