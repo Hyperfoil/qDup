@@ -28,25 +28,32 @@ public class MultiStream extends OutputStream{
         bytes.append("[");
         chars.append("[");
         indxs.append("[");
-        if(b!=null && b.length>0 && off+len < b.length){
+        if(b!=null && b.length>0 && off+len <= b.length){
             int lim = off+len;
             for(int i=off; i<lim; i++){
                 int v = b[i];
-                String append = v+"";
-                bytes.append(append);
-                bytes.append(".");
-                if(v == 10){
-                    chars.append(spaces.substring(0,append.length()-2));
-                    chars.append("\\n");
-                }else if (v == 13){
-                    chars.append(spaces.substring(0,append.length()-2));
-                    chars.append("\\r");
-                }else {
-                    chars.append(spaces.substring(0, append.length() - 1));
-                    chars.append((char) v);
+                String byteValue = ""+v;
+                String charValue = "";
+                switch (v){
+                    case 10: charValue = "'\\n'";
+                        break;
+                    case 13: charValue = "'\\r'";
+                        break;
+                    case 27: charValue = "'\\e'";
+                        break;
+                    default: charValue = "'"+((char)v)+"'";
                 }
-                indxs.append(String.format("%"+append.length()+"d.",i));
-                chars.append(".");
+                String indexValue = ""+i;
+                int width = Math.max(Math.max(byteValue.length(),charValue.length()),indexValue.length());
+                if(bytes.length()>1){
+                    bytes.append(",");
+                    chars.append(",");
+                    indxs.append(",");
+                }
+
+                bytes.append(String.format("%"+width+"s",byteValue));
+                chars.append(String.format("%"+width+"s",charValue));
+                indxs.append(String.format("%"+width+"s",indexValue));
             }
         }
         bytes.append("]");

@@ -2,6 +2,7 @@ package perf.qdup.stream;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
+import perf.yaup.AsciiArt;
 import perf.yaup.Sets;
 
 import java.io.IOException;
@@ -40,6 +41,7 @@ public class EscapeFilteredStream extends MultiStream {
 
     private byte[] buffered;
     private int writeIndex = 0;
+    private String name = "";
 
     public EscapeFilteredStream(){
         buffered = new byte[20*1024];
@@ -72,6 +74,8 @@ public class EscapeFilteredStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
+
+
         //logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
         try {
             int flushIndex = 0;
@@ -85,7 +89,7 @@ public class EscapeFilteredStream extends MultiStream {
             System.arraycopy(b, off, buffered, writeIndex, len);
             writeIndex += len;
 
-            for (int currentIndex = 0; currentIndex < writeIndex; currentIndex++) {
+            for (int currentIndex = flushIndex; currentIndex < writeIndex; currentIndex++) {
                 boolean filtered = false;
                 do {
                     filtered = false;
@@ -119,11 +123,12 @@ public class EscapeFilteredStream extends MultiStream {
                 flushIndex = writeIndex;//TODO testing if fixes double write
 
 
-                if (flushIndex > 0) {
-                    System.arraycopy(buffered, flushIndex, buffered, 0, writeIndex - flushIndex);
-                    writeIndex = writeIndex - flushIndex;
-                }
             }
+            if (flushIndex > 0) {
+                System.arraycopy(buffered, flushIndex, buffered, 0, writeIndex - flushIndex);
+                writeIndex = writeIndex - flushIndex;
+            }
+
         }catch(Exception e){
             logger.error(e.getMessage(),e);
             throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);//System.exit(-1);
@@ -169,5 +174,13 @@ public class EscapeFilteredStream extends MultiStream {
             rtrn = 0;
         }
         return rtrn;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

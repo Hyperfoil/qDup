@@ -37,6 +37,40 @@ public class EscapeFilteredStreamTest {
     }
 
     @Test
+    public void issue31_duplicate_buffer(){
+        //was seeing [[[[INFOOO]   - insead of [INFO] - because of escape sequences being split across buffer writes and flushes
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        EscapeFilteredStream stream = new EscapeFilteredStream();
+        stream.addStream("baos",outputStream);
+
+        try {
+            //[[[[INFOOO]   -
+            stream.write(new byte[]{91,27,91,49});
+            stream.write(new byte[]{59});
+            stream.write(new byte[]{51});
+            stream.write(new byte[]{52,109});
+            stream.write(new byte[]{73,78});
+            stream.write(new byte[]{70});
+            stream.write(new byte[]{79,27});
+            stream.write(new byte[]{91});
+            stream.write(new byte[]{109});
+            stream.write(new byte[]{93});
+            stream.write(new byte[]{32,27});
+            stream.write(new byte[]{91,49});
+            stream.write(new byte[]{109});
+            stream.write(new byte[]{45});
+        } catch (IOException e) {
+            fail("exception writing to stream:"+e.getMessage());
+            e.printStackTrace();
+        }
+
+        String output = new String(outputStream.toByteArray());
+        assertEquals("control characters should be removed: ","[INFO] -",output);
+
+
+    }
+
+    @Test
     public void near_miss_mid(){
         String input = "  \u001b[bar";
         EscapeFilteredStream fs = new EscapeFilteredStream();

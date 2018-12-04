@@ -128,6 +128,9 @@ public class SshSession {
 
     public void setName(String name) {
         this.name = name;
+        if(escapeFilteredStream!=null){
+            escapeFilteredStream.setName(name);
+        }
     }
 
     private String name="";
