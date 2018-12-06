@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static perf.qdup.config.RunConfigBuilder.ALL_ROLE;
+
 /**
  * Created by wreicher
  *
@@ -446,47 +448,53 @@ public class Run implements Runnable, DispatchObserver {
 
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
+        Role allRole = config.getRole(ALL_ROLE);
         for(String roleName : config.getRoleNames()){
-            Role role = config.getRole(roleName);
-            if(!role.getRun().isEmpty()){
-                for(ScriptCmd script : role.getRun()){
-                    for(Host host : role.getHosts()){
-                        State hostState = config.getState().getChild(host.getHostName(),State.HOST_PREFIX);
-                        State scriptState = hostState.getChild(script.getName()).getChild("id="+script.getUid());
-                        Profiler profiler = profiles.get(script.getName()+"-"+script.getUid()+"@"+host);
-                        String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
-                        connectSessions.add(()->{
-                            profiler.start("connect:"+host.toString());
-                            SshSession session = new SshSession(
-                                host,
-                                config.getKnownHosts(),
-                                config.getIdentity(),
-                                config.getPassphrase(),
-                                config.getTimeout(),
-                                setupCommand,
-                                getDispatcher().getScheduler());
-                            session.setName(script.getName()+"@"+host.getShortHostName());
-                            if ( session.isConnected() ) {
-                                session.setDelay(SuffixStream.NO_DELAY);
-                                profiler.start("context:" + host.toString());
-                                ScriptContext scriptContext = new ScriptContext(
-                                        session,
-                                        scriptState,
-                                        this,
-                                        profiler,
-                                        script
-                                );
+            if(!roleName.equals(ALL_ROLE)) {
+                Role role = config.getRole(roleName);
+                if (!role.getRun().isEmpty()) {
+                    for (ScriptCmd script : role.getRun()) {
+                        for (Host host : role.getHosts()) {
+                            State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
+                            State scriptState = hostState.getChild(script.getName()).getChild("id=" + script.getUid());
+                            Profiler profiler = profiles.get(script.getName() + "-" + script.getUid() + "@" + host);
+                            Env env = role.hasEnvironment(host) ? role.getEnv(host) : new Env();
+                            if(allRole!=null && allRole.hasEnvironment(host)){
+                                env.merge(allRole.getEnv(host));
+                            }
+                            String setupCommand = env.getDiff().getCommand();
+                            connectSessions.add(() -> {
+                                profiler.start("connect:" + host.toString());
+                                SshSession session = new SshSession(
+                                        host,
+                                        config.getKnownHosts(),
+                                        config.getIdentity(),
+                                        config.getPassphrase(),
+                                        config.getTimeout(),
+                                        setupCommand,
+                                        getDispatcher().getScheduler());
+                                session.setName(script.getName() + "@" + host.getShortHostName());
+                                if (session.isConnected()) {
+                                    session.setDelay(SuffixStream.NO_DELAY);
+                                    profiler.start("context:" + host.toString());
+                                    ScriptContext scriptContext = new ScriptContext(
+                                            session,
+                                            scriptState,
+                                            this,
+                                            profiler,
+                                            script
+                                    );
 
-                                getDispatcher().addScriptContext(scriptContext);
-                                boolean rtrn = session.isOpen();
-                                profiler.start("waiting for start");
-                                return rtrn;
-                            }
-                            else {
-                                session.close();
-                                return false;
-                            }
-                        });
+                                    getDispatcher().addScriptContext(scriptContext);
+                                    boolean rtrn = session.isOpen();
+                                    profiler.start("waiting for start");
+                                    return rtrn;
+                                } else {
+                                    session.close();
+                                    return false;
+                                }
+                            });
+                        }
                     }
                 }
             }

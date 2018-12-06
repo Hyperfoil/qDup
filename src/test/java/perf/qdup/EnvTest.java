@@ -15,6 +15,38 @@ public class EnvTest {
 
 
     @Test
+    public void merge(){
+        Env from = new Env();
+        Env into = new Env();
+
+        from.loadBefore("A=a\nB=b\nC=c\nD=d\nE=e\nF=f");
+        from.loadAfter("A=alpha\nB=bravo\nC=charlie\nD=delta");
+
+        into.loadBefore("A=a\nC=c\nD=d\nE=e\nF=f");
+        into.loadAfter("A=ant\nC=c\nE=e\nF=foo");
+
+        into.merge(from);
+
+        Env.Diff diff = into.getDiff();
+
+        assertEquals("Changes to local env should not override: A\n"+diff.debug(),"ant",diff.get("A"));
+        assertEquals("Missing keys should be merged: B\n"+diff.debug(),"bravo",diff.get("B"));
+        assertEquals("Unchanged keys should update from merge: C\n"+diff.debug(),"charlie",diff.get(("C")));
+        assertTrue("Removed keys should not be added by merge: D\n"+diff.debug(),!diff.keys().contains("D"));
+        assertTrue("Unset should override an unchanged key: E\n"+diff.debug(),diff.unset().contains("E"));
+        assertEquals("Unset should not override a changed key: F\n"+diff.debug(),"foo",diff.get("F"));
+    }
+
+    @Test
+    public void merge_unset_from(){
+
+    }
+    @Test
+    public void merge_unset_into(){
+        
+    }
+
+    @Test
     public void parse(){
         String input = "KEY=/value\n" +
                 "NOVALUE=\n" +

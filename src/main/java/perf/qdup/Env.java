@@ -71,7 +71,7 @@ public class Env {
 
         public String debug() {
             return "Env.Diff:" +
-                    "\n  set: " + data.keySet().stream().map((key) -> {
+                    "\n  set: \n" + data.keySet().stream().map((key) -> {
                 return "    " + key + ": " + data.get(key);
             }).collect(Collectors.joining("\n")) +
                     "\n  unset: " + unset.stream().collect(Collectors.joining(", "));
@@ -97,8 +97,18 @@ public class Env {
 
 
     public String debug(){
-        return before.toString();
+        StringBuffer sb = new StringBuffer();
+        sb.append("Before: "+before.size()+"\n");
+        before.forEach((k,v)->{
+            sb.append("  "+k+" = "+v+"\n");
+        });
+        sb.append("After: "+before.size()+"\n");
+        after.forEach((k,v)->{
+            sb.append("  "+k+" = "+v+"\n");
+        });
+        return sb.toString();
     }
+
 
     private Map<String,String> before;
     private Map<String,String> after;
@@ -122,6 +132,39 @@ public class Env {
     public String getBefore(String key){return before.get(key);}
     public String getAfter(String key){return after.get(key);}
     public boolean isEmpty(){return before.isEmpty() && after.isEmpty();}
+
+    public void merge(Env env){
+        merge(env,false);
+    }
+    public void merge(Env env,boolean force){
+
+        Diff from = env.getDiff();
+        Diff ours = getDiff();
+
+        from.keys().forEach(fromSet->{
+            if(force){
+                after.put(fromSet,from.get(fromSet));
+            }else{
+                if(!ours.unset().contains(fromSet) && !ours.keys().contains(fromSet)){
+                    after.put(fromSet,from.get(fromSet));
+                }else{
+                    //we either set or unset the value so don't merge the change
+                }
+            }
+        });
+        from.unset().forEach(fromUnset->{
+            if(force){
+                after.remove(fromUnset);
+            }else{
+                if(!ours.keys().contains(fromUnset)){
+                    after.remove(fromUnset);
+                }else{
+                    //we explicitly set it so ignore the unset
+                }
+            }
+        });
+    }
+
 
     public static void parse(String input,Map<String,String> rtrn){
         if(input!=null && !input.isEmpty()){
