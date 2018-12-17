@@ -15,11 +15,15 @@ import org.apache.commons.cli.ParseException;
 import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
+import perf.qdup.cmd.Cmd;
+import perf.qdup.cmd.ContextObserver;
 import perf.qdup.cmd.Dispatcher;
+import perf.qdup.cmd.ScriptContext;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
 import perf.qdup.config.YamlParser;
+import perf.yaup.AsciiArt;
 import perf.yaup.StringUtil;
 
 import java.io.File;
@@ -28,10 +32,13 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 public class JarMain {
 
@@ -94,6 +101,14 @@ public class JarMain {
                 .longOpt("colorTerminal")
                 .hasArg(false)
                 .desc("flag to enable color formatted terminal")
+                .build()
+        );
+        options.addOption(
+            Option.builder("K")
+                .longOpt("breakpoint")
+                .hasArg(true)
+                .argName("breakpoint")
+                .desc("break before starting commands matching the pattern")
                 .build()
         );
 
@@ -162,7 +177,7 @@ public class JarMain {
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd;
+        CommandLine commandLine;
 
         String cmdLineSyntax = "[options] [yamlFiles]";
 
@@ -178,7 +193,7 @@ public class JarMain {
             cmdLineSyntax;
 
         try{
-            cmd = parser.parse(options,args);
+            commandLine = parser.parse(options,args);
         } catch (ParseException e) {
             logger.error(e.getMessage(),e);
             formatter.printHelp(cmdLineSyntax,options);
@@ -186,14 +201,14 @@ public class JarMain {
             return;
         }
 
-        int commandThreads = Integer.parseInt(cmd.getOptionValue("commandPool","24"));
-        int scheduledThreads = Integer.parseInt(cmd.getOptionValue("scheduledPool","4"));
+        int commandThreads = Integer.parseInt(commandLine.getOptionValue("commandPool","24"));
+        int scheduledThreads = Integer.parseInt(commandLine.getOptionValue("scheduledPool","4"));
 
-        List<String> yamlPaths = cmd.getArgList();
+        List<String> yamlPaths = commandLine.getArgList();
 
         //load a custom logback configuration
-        if(cmd.hasOption("logback")){
-            String configPath = cmd.getOptionValue("logback");
+        if(commandLine.hasOption("logback")){
+            String configPath = commandLine.getOptionValue("logback");
             LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 
             try {
@@ -215,13 +230,14 @@ public class JarMain {
         }
 
         String outputPath=null;
-        if(cmd.hasOption("basePath")){
+        if(commandLine.hasOption("basePath")){
             DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-            outputPath = cmd.getOptionValue("basePath") + "/" + dt.format(LocalDateTime.now());
-        }else if (cmd.hasOption("fullPath")){
-            outputPath = cmd.getOptionValue("fullPath");
+            outputPath = commandLine.getOptionValue("basePath") + "/" + dt.format(LocalDateTime.now());
+        }else if (commandLine.hasOption("fullPath")){
+            outputPath = commandLine.getOptionValue("fullPath");
+        }else{
+            outputPath = "/tmp";
         }
-
 
         YamlParser yamlParser = new YamlParser();
         for(String yamlPath : yamlPaths){
@@ -257,21 +273,21 @@ public class JarMain {
 
         runConfigBuilder.loadYaml(yamlParser);
 
-        if (cmd.hasOption("knownHosts") ){
-            runConfigBuilder.setKnownHosts(cmd.getOptionValue("knownHosts"));
+        if (commandLine.hasOption("knownHosts") ){
+            runConfigBuilder.setKnownHosts(commandLine.getOptionValue("knownHosts"));
         }
-        if (cmd.hasOption("identity") ){
-            runConfigBuilder.setIdentity(cmd.getOptionValue("identity"));
+        if (commandLine.hasOption("identity") ){
+            runConfigBuilder.setIdentity(commandLine.getOptionValue("identity"));
         }
-        if (cmd.hasOption("passphrase") && !cmd.getOptionValue("passphrase").equals( RunConfigBuilder.DEFAULT_PASSPHRASE) ){
-            runConfigBuilder.setPassphrase(cmd.getOptionValue("passphrase"));
-        }
-
-        if(cmd.hasOption("timeout")){
-            runConfigBuilder.setTimeout(Integer.parseInt(cmd.getOptionValue("timeout")));
+        if (commandLine.hasOption("passphrase") && !commandLine.getOptionValue("passphrase").equals( RunConfigBuilder.DEFAULT_PASSPHRASE) ){
+            runConfigBuilder.setPassphrase(commandLine.getOptionValue("passphrase"));
         }
 
-        Properties stateProps = cmd.getOptionProperties("S");
+        if(commandLine.hasOption("timeout")){
+            runConfigBuilder.setTimeout(Integer.parseInt(commandLine.getOptionValue("timeout")));
+        }
+
+        Properties stateProps = commandLine.getOptionProperties("S");
         if(!stateProps.isEmpty()){
             stateProps.forEach((k,v)->{
                 runConfigBuilder.forceRunState(k.toString(),v.toString());
@@ -280,7 +296,7 @@ public class JarMain {
 
         RunConfig config = runConfigBuilder.buildConfig();
 
-        if(cmd.hasOption("test")){
+        if(commandLine.hasOption("test")){
             //logger.info(config.debug());
             System.out.println(config.debug());
             System.exit(0);
@@ -300,7 +316,7 @@ public class JarMain {
 
 
         //TODO RunConfig should be immutable and terminal color is probably better stored in Run
-        if (cmd.hasOption("colorTerminal") ){
+        if (commandLine.hasOption("colorTerminal") ){
             config.setColorTerminal( true );
         }
 
@@ -332,6 +348,37 @@ public class JarMain {
 
         Dispatcher dispatcher = new Dispatcher(executor,scheduled);
 
+        if(commandLine.hasOption("breakpoint")){
+            Scanner scanner = new Scanner(System.in);
+            Arrays.asList(commandLine.getOptionValues("breakpoint")).forEach(breakpoint->{
+                dispatcher.addContextObserver(new ContextObserver() {
+                    @Override
+                    public void preStart(ScriptContext context, Cmd command) {
+                        String commandString = command.toString();
+                        boolean matches = commandString.contains(breakpoint) || commandString.matches(breakpoint);
+                        if(matches){
+                            System.out.printf(
+                                    "%sBREAKPOINT%s%n"+
+                                    "  breakpoint: %s%n"+
+                                    "  command: %s%n"+
+                                    "  script: %s%n" +
+                                    "  host: %s%n"+
+                                    "Press enter to continue:",
+                                    config.isColorTerminal() ? AsciiArt.ANSI_RED : "",
+                                    config.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
+                                    breakpoint,
+                                    command.toString(),
+                                    command.getHead().toString(),
+                                    context.getHost().toString()
+                                    );
+                            String line = scanner.nextLine();
+                        }
+                    }
+                });
+
+            });
+        }
+
 
 
         final Run run = new Run(outputPath,config,dispatcher);
@@ -345,7 +392,7 @@ public class JarMain {
             }
         },"shutdown-abort"));
 
-        JsonServer jsonServer = new JsonServer(run,run.getDispatcher(),run.getCoordinator());
+        JsonServer jsonServer = new JsonServer(run);
 
         jsonServer.start();
 
