@@ -238,10 +238,6 @@ public class ScriptContext implements Context, Runnable{
         }
     }
     protected boolean setCurrentCmd(Cmd current,Cmd next){
-
-
-
-
         currentCmd = next;
         boolean changed = true;//currentCmdUpdater.compareAndSet(this,current,next);
 
@@ -282,7 +278,7 @@ public class ScriptContext implements Context, Runnable{
             if (cmd == null) {
                 observerDone();//this context is finished
             } else {
-                //observerPreStart(cmd);
+                observerPreStart(cmd);
                 getProfiler().start(cmd.toString());
                 if (!lineQueue.isEmpty()) {//clear any unhandled output lines
                     //TODO log that we are clearing orphaned lines

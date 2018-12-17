@@ -59,7 +59,7 @@ public class Run implements Runnable, DispatchObserver {
         public String getDestination(){return destination;}
     }
 
-    enum Stage {Setup("setup"),Run("run"),Cleanup("cleanup");
+    enum Stage {Pending("pending"),Setup("setup"),Run("run"),Cleanup("cleanup"),Done("done");
         String name;
         Stage(String name){
             this.name = name;
@@ -67,7 +67,10 @@ public class Run implements Runnable, DispatchObserver {
         public String getName(){return name;}
     }
 
-    private volatile Stage stage;
+    private volatile Stage stage = Stage.Pending;
+
+    private final List<RunObserver> runObservers;
+
     private Map<String,Long> timestamps;
     private RunConfig config;
     private String outputPath;
@@ -89,12 +92,14 @@ public class Run implements Runnable, DispatchObserver {
             throw new NullPointerException("Run config and dispatcher cannot be null");
         }
 
+        this.runObservers = new LinkedList<>();
+
         this.config = config;
 
         this.outputPath = outputPath;
         this.dispatcher = dispatcher;
         this.dispatcher.addDispatchObserver(this);
-        this.stage = Stage.Setup;
+        this.stage = Stage.Pending;
         this.aborted = new AtomicBoolean(false);
 
         this.timestamps = new LinkedHashMap<>();
@@ -141,6 +146,10 @@ public class Run implements Runnable, DispatchObserver {
         this.pendingDownloads = new HashedSets<>();
     }
 
+    public void addRunObserver(RunObserver observer){this.runObservers.add(observer);}
+    public void removeRunObserver(RunObserver observer){this.runObservers.remove(observer);}
+    public boolean hasRunObserver(){return !this.runObservers.isEmpty();}
+
     @Override
     public void preStart(){
         timestamps.put(stage.getName()+"Start",System.currentTimeMillis());
@@ -152,37 +161,48 @@ public class Run implements Runnable, DispatchObserver {
         //this.setupEnvDiff.clear();//why are we clearing the setup env diff? don't we need it for cleanup too?
 
     }
-    private void nextStage(){
+    private boolean nextStage(){
+        boolean startDispatcher = false;
+        if(hasRunObserver()){
+            for(RunObserver observer : runObservers){
+                observer.postStage(stage);
+            }
+        }
         switch (stage){
+            case Pending:
+                if(stageUpdated.compareAndSet(this,Stage.Pending, Stage.Setup)){
+                    startDispatcher = queueSetupScripts();
+                }
+                break;
             case Setup:
                 //if we are able to set the stage to Run
                 if(stageUpdated.compareAndSet(this,Stage.Setup,Stage.Run)){
-                    boolean ok = queueRunScripts();
-                    if(ok) {
-                        dispatcher.start();
-                    }else{
-
-                    }
+                    startDispatcher = queueRunScripts();
                 }
                 break;
             case Run:
-                runPendingDownloads();
-                //if we are able to set the stage to Cleanup
                 if(stageUpdated.compareAndSet(this,Stage.Run,Stage.Cleanup)){
-                    boolean ok = queueCleanupScripts();
-                    if(ok){
-                        dispatcher.start();
-                    }else{
-                    }
-                }else{
+                    runPendingDownloads();
+                    startDispatcher = queueCleanupScripts();
                 }
                 break;
             case Cleanup:
-                runPendingDownloads();//download anything queued during cleanup
-                postRun();//release any latches blocking a call to run()
+                if(stageUpdated.compareAndSet(this,Stage.Cleanup,Stage.Done)) {
+                    runPendingDownloads();//download anything queued during cleanup
+                    postRun();//release any latches blocking a call to run()
+                }
                 break;
             default:
         }
+        if(startDispatcher){
+            if(hasRunObserver()){
+                for(RunObserver observer: runObservers){
+                    observer.preStage(stage);
+                }
+            }
+            dispatcher.start();
+        }
+        return startDispatcher;
     }
     public Local getLocal(){return local;}
     public RunConfig getConfig(){return config;}
@@ -323,42 +343,39 @@ public class Run implements Runnable, DispatchObserver {
 
     @Override
     public void run() {
-        timestamps.put("start",System.currentTimeMillis());
-
-        if(config.hasErrors()){
-            config.getErrors().forEach(logger::error);
-            config.getErrors().forEach(runLogger::error);
-            timestamps.put("stop",System.currentTimeMillis());
-            return;
-        }
-
-        boolean coordinatorInitialized = initializeCoordinator();
-        if(!coordinatorInitialized){
-            timestamps.put("stop",System.currentTimeMillis());
-            return;
-        }
-
-        runLogger.info("{} starting state:\n{}",config.getName(),config.getState().tree());
-        boolean ok = queueSetupScripts();
-        if(ok) {
-
-            dispatcher.start();
-            try {
-                runLatch.await();
-
-            } catch (InterruptedException e) {
-                //e.printStackTrace();
-            } finally{
+        if(Stage.Pending.equals(stage)){
+            timestamps.put("start",System.currentTimeMillis());
+            if(config.hasErrors()){
+                config.getErrors().forEach(logger::error);
+                config.getErrors().forEach(runLogger::error);
                 timestamps.put("stop",System.currentTimeMillis());
+                return;
             }
+            boolean coordinatorInitialized = initializeCoordinator();
+            if(!coordinatorInitialized){
+                timestamps.put("stop",System.currentTimeMillis());
+                return;
+            }
+            runLogger.info("{} starting state:\n{}",config.getName(),config.getState().tree());
+            boolean ok = nextStage();
+            if(ok) {
+                try {
+                    runLatch.await();
 
-        }else{
-            //TODO failed to start
+                } catch (InterruptedException e) {
+                    //e.printStackTrace();
+                } finally{
+                    timestamps.put("stop",System.currentTimeMillis());
+                }
 
+            }else{
+                //TODO failed to start
+
+            }
+            //moved to here because abort would avoid the cleanup in postRun()
+            fileAppender.stop();
+            consoleAppender.stop();
         }
-        //moved to here because abort would avoid the cleanup in postRun()
-        fileAppender.stop();
-        consoleAppender.stop();
     }
     private boolean connectAll(List<Callable<Boolean>> toCall,int timeout){
         boolean ok = false;

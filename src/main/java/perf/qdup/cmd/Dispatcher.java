@@ -57,6 +57,7 @@ public class Dispatcher {
 
     private final List<ScriptObserver> scriptObservers;
     private final List<DispatchObserver> dispatchObservers;
+    private final List<ContextObserver> contextObservers;
 
     private final ThreadPoolExecutor executor;
     private final ScheduledThreadPoolExecutor scheduler;
@@ -68,16 +69,58 @@ public class Dispatcher {
 
     private final ContextObserver observer = new ContextObserver() {
 
-//        @Override
-//        public void preStart(ScriptContext context,Cmd command){}
-//        @Override
-//        public void preStop(ScriptContext context,Cmd command,String output){}
-//        @Override
-//        public void preNext(ScriptContext context, Cmd command, String output){}
-//        @Override
-//        public void preSkip(ScriptContext context, Cmd command, String output){}
+        @Override
+        public void onUpdate(ScriptContext context, Cmd command, String output){
+            if(hasContextObserver()){
+                for(ContextObserver o : contextObservers){
+                    o.onUpdate(context,command,output);
+                }
+            }
+        }
+
+        @Override
+        public void preStart(ScriptContext context,Cmd command){
+            if(hasContextObserver()){
+                for(ContextObserver o : contextObservers){
+                    o.preStart(context,command);
+                }
+            }
+        }
+        @Override
+        public void preStop(ScriptContext context,Cmd command,String output){
+            if(hasContextObserver()){
+                for(ContextObserver o : contextObservers){
+                    o.preStop(context,command,output);
+                }
+            }
+
+        }
+        @Override
+        public void preNext(ScriptContext context, Cmd command, String output){
+            if(hasContextObserver()){
+                for(ContextObserver o : contextObservers){
+                    o.preNext(context,command,output);
+                }
+            }
+
+        }
+        @Override
+        public void preSkip(ScriptContext context, Cmd command, String output){
+            if(hasContextObserver()){
+                for(ContextObserver o : contextObservers){
+                    o.preSkip(context,command,output);
+                }
+            }
+
+        }
         @Override
         public void onDone(ScriptContext context){
+            if(hasContextObserver()){
+                for(ContextObserver o : contextObservers){
+                    o.onDone(context);
+                }
+            }
+
             scriptContexts.remove(context.getRootCmd());
             scriptObservers.forEach(observer -> observer.onStop(context));
             context.getSession().close();
@@ -85,6 +128,19 @@ public class Dispatcher {
         }
     };
 
+    public Json getContexts(){
+        Json rtrn = new Json();
+        scriptContexts.values().forEach(context->{
+            Json entry = new Json();
+            entry.set("uid",context.hashCode());
+            entry.set("host",context.getHost().toString());
+            entry.set("script",context.getRootCmd().toString());
+            entry.set("cmdUid",context.getRootCmd().getUid());
+
+            rtrn.set(context.hashCode(),entry);
+        });
+        return rtrn;
+    }
     public Json getActiveJson(){
         Json rtrn = new Json();
 
@@ -142,6 +198,7 @@ public class Dispatcher {
         this.scriptContexts = new ConcurrentHashMap<>();
         this.scriptObservers = new LinkedList<>();
         this.dispatchObservers = new LinkedList<>();
+        this.contextObservers = new LinkedList<>();
 
         this.nannyFuture = null;
         this.nannyTask = (timestamp)->{
@@ -178,6 +235,10 @@ public class Dispatcher {
 
     public ScheduledThreadPoolExecutor getScheduler(){return scheduler;}
 
+
+    public void addContextObserver(ContextObserver observer){contextObservers.add(observer);}
+    public void removeContextObserver(ContextObserver observer){contextObservers.remove(observer);}
+    public boolean hasContextObserver(){return !contextObservers.isEmpty();}
 
     public void addScriptObserver(ScriptObserver observer){scriptObservers.add(observer);}
     public void removeScriptObserver(ScriptObserver observer){
