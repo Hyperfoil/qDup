@@ -67,7 +67,7 @@ public class RunTest extends SshTestBase{
                 "    - signal: BAR",
                 "  biz:",
                 "    - wait-for: BAR",
-                "    - sh: echo bar > /tmp/biz.txt",
+                "    - sh: echo biz > /tmp/biz.txt",
                 "hosts:",
                 "  local: "+getHost(),
                 "roles:",
@@ -85,10 +85,13 @@ public class RunTest extends SshTestBase{
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run("/tmp",config,dispatcher);
 
-        doit.run();
-
         File bar = new File("/tmp/bar.txt");
         File biz = new File("/tmp/biz.txt");
+
+        bar.delete();
+        biz.delete();
+
+        doit.run();
 
         try{
             assertTrue("bar did not run",bar.exists());

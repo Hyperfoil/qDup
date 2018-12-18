@@ -76,6 +76,11 @@ public class Coordinator {
         return waitFors.get(name);
     }
 
+    public Map<String,Integer> getLatches(){
+        Map<String,Integer> rtrn = new HashMap<>();
+        latches.forEach((k,v)->rtrn.put(k,v.intValue()));
+        return rtrn;
+    }
     public Map<String,Long> getLatchTimes(){return Collections.unmodifiableMap(latchTimes);}
     public Map<String,Integer> getCounters(){
         Map<String,Integer> rtrn = new LinkedHashMap<>();

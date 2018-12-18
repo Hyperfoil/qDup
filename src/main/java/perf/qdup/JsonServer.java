@@ -16,6 +16,7 @@ import perf.yaup.json.Json;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Map;
 
 public class JsonServer implements RunObserver, ContextObserver {
 
@@ -107,8 +108,16 @@ public class JsonServer implements RunObserver, ContextObserver {
         });
         router.route("/latches").produces("application/json").handler(rc->{
             Json json = new Json();
-            long now = System.currentTimeMillis();
-            coordinator.getLatchTimes().forEach((key,value)-> json.set(key,StringUtil.durationToString(now-((Long)value))));
+            Map<String,Integer> latches = coordinator.getLatches();
+            Map<String,Long> latchTimes = coordinator.getLatchTimes();
+            latches.forEach((key,value)->{
+                Json entry = new Json();
+                entry.set("count",value);
+                if(latchTimes.containsKey(key)){
+                    entry.set("timestamp",latchTimes.get(key));
+                }
+                json.set(key,entry);
+            });
             String response = json.toString(2);
             rc.response().end(response);
         });
