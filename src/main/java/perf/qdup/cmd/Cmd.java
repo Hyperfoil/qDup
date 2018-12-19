@@ -394,6 +394,8 @@ public abstract class Cmd {
 //            rtrn.append(value);
                 previous = matcher.end();
                 if (value != null) {
+                    //TODO do we want to force bash-escaped multi-line?
+                    //value.replaceAll("\r?\n","\\\n");
                     rtrn = rtrn.replace(rtrn.substring(findIndex, previous), value);
                     matcher.reset(rtrn);
                 }

@@ -14,7 +14,6 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.stream.*;
-import perf.yaup.AsciiArt;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
@@ -103,7 +102,7 @@ public class SshSession {
     private PipedOutputStream pipeOut;
 
     private EscapeFilteredStream escapeFilteredStream;
-    private SuffixStream semaphoreStream;
+    private SuffixStream suffixStream;
     private FilteredStream filteredStream;
     private SuffixStream promptStream;
 
@@ -236,14 +235,14 @@ public class SshSession {
             escapeFilteredStream = new EscapeFilteredStream();
             filteredStream = new FilteredStream();
 
-            semaphoreStream = executor==null ? new SuffixStream() : new SuffixStream(executor);
+            suffixStream = executor==null ? new SuffixStream() : new SuffixStream(executor);
             promptStream = new SuffixStream();
             lineEmittingStream = new LineEmittingStream();
 
-            escapeFilteredStream.addStream("semaphore",semaphoreStream);
+            escapeFilteredStream.addStream("semaphore", suffixStream);
 
-            semaphoreStream.addStream("filtered",filteredStream);
-            semaphoreStream.addStream("promptMonitor",promptStream);
+            suffixStream.addStream("filtered",filteredStream);
+            suffixStream.addStream("prompt-callback",promptStream);
 
             //move before opening connection or sending
             //was getting a ConcurrentModificationException with this after the setup sh() calls
@@ -279,8 +278,8 @@ public class SshSession {
             };
             //lineEmittingStream.addConsumer(this::lineConsumers);
 
-            semaphoreStream.addSuffix("PROMPT",PROMPT,"");
-            semaphoreStream.addConsumer(this.semaphoreCallback);
+            suffixStream.addSuffix("PROMPT",PROMPT,"");
+            suffixStream.addConsumer(this.semaphoreCallback);
 
             channelShell = clientSession.createShellChannel();
             channelShell.getPtyModes().put(PtyMode.ECHO,1);//need echo for \n from real SH but adds gargage chars for test :(
@@ -366,7 +365,7 @@ public class SshSession {
                 targetStream = filteredStream;
                 break;
             case Semaphore:
-                targetStream = semaphoreStream;
+                targetStream = suffixStream;
                 break;
             case Escape:
             default:
@@ -380,13 +379,13 @@ public class SshSession {
         return rtrn;}
 
     public boolean usesDelay(){
-        return this.semaphoreStream.usesExecutor();
+        return this.suffixStream.usesExecutor();
     }
     public int getDelay(){
-        return this.semaphoreStream.getExecutorDelay();
+        return this.suffixStream.getExecutorDelay();
     }
     public void setDelay(int delay){
-        this.semaphoreStream.setExecutorDelay(delay);
+        this.suffixStream.setExecutorDelay(delay);
     }
 
     public boolean isConnected() {
@@ -578,7 +577,7 @@ public class SshSession {
                 }
 
                 channelShell.getIn().close();
-                semaphoreStream.close();
+                suffixStream.close();
                 channelShell.close();
 
                 clientSession.close();
