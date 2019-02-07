@@ -132,7 +132,8 @@ public class Local {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.warn("rysnc was interrupted: " + path);
+            Thread.interrupted();
         }
 
     }

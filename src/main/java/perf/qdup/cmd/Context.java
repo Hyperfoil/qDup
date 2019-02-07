@@ -26,7 +26,7 @@ public interface Context {
     Host getHost();
     State getState();
     void addPendingDownload(String path,String destination);
-    void abort();
+    void abort(Boolean skipCleanup);
     void done();
     Local getLocal();
     void schedule(Runnable runnable, long delayMs);

@@ -255,7 +255,7 @@ public class RunTest extends SshTestBase{
             setup.append(System.currentTimeMillis());
             return Result.next("setup-abort @ "+System.currentTimeMillis());
         }));
-        setupScript.then(Cmd.abort("abort-aborted"));
+        setupScript.then(Cmd.abort("abort-aborted", false));
         setupScript.then(Cmd.code((input,sate)->{
             postAbort.append(System.currentTimeMillis());
             return Result.next("post-abort called");

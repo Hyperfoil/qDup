@@ -285,10 +285,15 @@ public class Run implements Runnable, DispatchObserver {
             e.printStackTrace();
         }
     }
-    public void abort(){
+    public void abort(Boolean skipCleanUp){
         if(aborted.compareAndSet(false,true)){
             coordinator.clearWaiters();
-            stageUpdated.set(this,Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.postStop will set it to Cleanup
+            if (!skipCleanUp) {
+                stageUpdated.set(this, Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.postStop will set it to Cleanup
+            } else {
+                logger.warn("Skipping cleanup - Abort has been defined to not run any cleanup scripts");
+                stageUpdated.set(this, Stage.Cleanup);//set the stage as cleanup so dispatcher.stop call to DispatchObserver.postStop will set it to Done
+            }
             dispatcher.stop(false);//interrupts working threads and stops dispatching next commands
             //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
             //abort doesn't end the run, cleanup ends the run
@@ -451,7 +456,7 @@ public class Run implements Runnable, DispatchObserver {
         if(!connectSessions.isEmpty()) {
             ok = connectAll(connectSessions, 60);
             if (!ok) {
-                abort();
+                abort(false);
             }
 
         }else{
@@ -536,7 +541,7 @@ public class Run implements Runnable, DispatchObserver {
 
             }
             if(!ok){
-                abort();
+                abort(false);
             }
 
         }else{
@@ -596,7 +601,7 @@ public class Run implements Runnable, DispatchObserver {
         if(!connectSessions.isEmpty()){
             ok = connectAll(connectSessions,60);
             if(!ok){
-                abort();
+                abort(false);
             }
 
         }else{

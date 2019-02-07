@@ -387,7 +387,7 @@ public class JarMain {
 
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
             if(!run.isAborted()) {
-                run.abort();
+                run.abort(false);
                 run.writeRunJson();
             }
         },"shutdown-abort"));

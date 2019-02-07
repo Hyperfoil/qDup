@@ -88,7 +88,7 @@ public class SpyContext implements Context {
     }
 
     @Override
-    public void abort() {
+    public void abort(Boolean skipCleanup) {
 
     }
 
