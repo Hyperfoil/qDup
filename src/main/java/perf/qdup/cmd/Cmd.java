@@ -248,6 +248,7 @@ public abstract class Cmd {
     public static Cmd js(String code){return new JsCmd(code);}
     public static Cmd done(){return new Done();}
     public static Cmd NO_OP(){return new NO_OP();}
+    public static Cmd abort(String message){return new Abort(message);}
     public static Cmd abort(String message, Boolean skipCleanup){return new Abort(message, skipCleanup);}
     public static Cmd code(Code code){return new CodeCmd(code);}
     public static Cmd code(String className){return new CodeCmd(className);}
