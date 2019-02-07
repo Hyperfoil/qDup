@@ -62,7 +62,7 @@ public class Reboot extends Cmd {
                 if(targetIndex>=kernels.size()){
                     logger.error("{} Reboot found {} kernel(s), target = {}",session.getHost().getHostName(),kernels.size(),targetIndex);
                     //TODO invoke the next command or abort?
-                    context.abort();
+                    context.abort(false);
                 }else{
                     targetIndex = index;
                 }
@@ -78,7 +78,7 @@ public class Reboot extends Cmd {
 
                 if(index<0){
                     logger.error("{} failed to find kernel = {}",session.getHost().getHostName(),this.target);
-                    context.abort();
+                    context.abort(false);
                 }else{
                     targetIndex = index;
                 }
@@ -109,7 +109,7 @@ public class Reboot extends Cmd {
         } while (!session.isOpen() && currentMillis - startMillis < this.timeout);
         if(!session.isOpen()){
             logger.error("{} failed to reconnect after reboot",session.getHost().getHostName());
-            context.abort();
+            context.abort(false);
         }else {
             logger.info("{} reconnected",session.getHost().getHostName());
             //TODO context.setStartEnv();

@@ -22,6 +22,7 @@ public class CmdBuilder {
     public static CmdBuilder getBuilder(){
         CmdBuilder rtrn = new CmdBuilder();
         rtrn.addCmdDefinition("abort",Abort.class,"message");
+        rtrn.addCmdDefinition("abort",Abort.class,"message", "skipCleanup");
         rtrn.addCmdDefinition("code",CodeCmd.class,"className");
         rtrn.addCmdDefinition("countdown", Countdown.class,"name","initial");
         rtrn.addCmdDefinition("ctrlC",CtrlC.class);

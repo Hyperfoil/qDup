@@ -7,8 +7,14 @@ import perf.yaup.AsciiArt;
 public class Abort extends Cmd {
     private String message;
     private String populatedMessage;
-    public Abort(String message){
+    private Boolean skipCleanup;
+
+    public Abort(String message) {
+        this(message, false);
+    }
+    public Abort(String message, Boolean skipCleanup){
         this.message = message;
+        this.skipCleanup = skipCleanup;
     }
 
     @Override
@@ -21,16 +27,20 @@ public class Abort extends Cmd {
                 context.isColorTerminal()?AsciiArt.ANSI_RESET:""
             )
         );
-        context.abort();
+        context.abort(this.skipCleanup);
 
         //result.next(this,input);
     }
 
     public String getMessage(){return message;}
 
+    public Boolean getSkipCleanup() {
+        return skipCleanup;
+    }
+
     @Override
     public Cmd copy() {
-        return new Abort(this.message);
+        return new Abort(this.message, this.skipCleanup);
     }
 
     @Override

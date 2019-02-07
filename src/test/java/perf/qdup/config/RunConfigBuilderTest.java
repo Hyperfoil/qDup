@@ -445,7 +445,7 @@ public class RunConfigBuilderTest extends SshTestBase {
                 "   - sh: do smomething",
                 "   - - watch:",
                 "       - regex: .*",
-                "       - - abort: message"
+                "       - - abort: message true"
                 )
         );
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);

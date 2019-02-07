@@ -127,8 +127,8 @@ public class SyncContext implements Context, Runnable{
     }
 
     @Override
-    public void abort() {
-        run.abort();
+    public void abort(Boolean skipCleanup) {
+        run.abort(skipCleanup);
     }
 
     @Override
