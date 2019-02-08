@@ -161,6 +161,7 @@ public class ScriptContext implements Context, Runnable{
 
     private void log(Cmd command,String output){
         String cmdLogOuptut = command.getLogOutput(output,this);
+        String populatedCommand = Cmd.populateStateVariables(cmdLogOuptut, command, state);
         String rootString;
         if(rootCmd instanceof Script){
             rootString = ((Script)rootCmd).getName();
@@ -172,7 +173,7 @@ public class ScriptContext implements Context, Runnable{
         getRunLogger().info("{}@{}:{}",
             rootString,
             getHost().getShortHostName(),
-            cmdLogOuptut
+            populatedCommand
         );
     }
 
