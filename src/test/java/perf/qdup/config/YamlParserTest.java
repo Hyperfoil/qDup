@@ -861,4 +861,39 @@ public class YamlParserTest extends SshTestBase {
         validateParse(parser);
     }
 
+    @Test
+    public void charsOutsideInlineList (){
+        YamlParser parser = new YamlParser();
+        parser.load("invalidList.yaml",
+                stream(
+                        "cleanup-scripts:",
+                                "  - gather-artifacts:",
+                                "      with:",
+                                "        SERVICE: insurance",
+                                "        SERVICE_REGEX: [i]nsurance",
+                                "  - gather-artifacts:",
+                                "      with:",
+                                "        SERVICE: broker",
+                                "        SERVICE_REGEX: [b]roker",
+                                "  - gather-artifacts:",
+                                "      with:",
+                                "        SERVICE: vehicle",
+                                "        SERVICE_REGEX: [v]ehicle"
+                )
+        );
+
+        try {
+            validateParse(parser);
+        }
+        catch(AssertionError assertionError){
+            return;
+        }
+        catch (Exception ex){
+            ex.printStackTrace();
+        }
+
+        Assert.fail("Yaml parser parsed incorrectly defined inline list");
+
+    }
+
 }
