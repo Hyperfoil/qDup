@@ -348,7 +348,6 @@ public class ScriptContext implements Context, Runnable{
                         );
                     }
                 }
-
                 long startDoRun = System.currentTimeMillis();
                 cmd.doRun(input, this);
 
@@ -380,7 +379,6 @@ public class ScriptContext implements Context, Runnable{
 
                     }
                 }
-
             }
     }
 }

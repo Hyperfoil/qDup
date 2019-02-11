@@ -3,14 +3,10 @@ package perf.qdup.cmd.impl;
 import perf.qdup.State;
 import perf.qdup.cmd.*;
 
-public class CodeCmd extends Cmd {
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
 
-    private class WithState extends State {
-        public WithState(State parent) {
-            super(parent, "");//empty previs to make parent read only
-            set(getWith());
-        }
-    }
+public class CodeCmd extends Cmd {
 
     private Code code;
     private String className;
@@ -27,17 +23,16 @@ public class CodeCmd extends Cmd {
         Result codeResult = Result.skip(input);
         if(className!=null){
             try {
-                Object instance = Class.forName(className).newInstance();
+                Object instance = Class.forName(className).getConstructors()[0].newInstance();
                 if(instance instanceof Code){
                     //TODO need a State subclass that uses the with before invoking state
-                    codeResult = ((Code)instance).run(input, new WithState( context.getState() ) );
+                    codeResult = ((Code)instance).run(input, new State.CmdState( context.getState(), this ) );
                 }
-
-            } catch (InstantiationException|IllegalAccessException|ClassNotFoundException e) {
+            } catch (InstantiationException|IllegalAccessException|ClassNotFoundException| InvocationTargetException e) {
                 logger.error("Failed to load "+className+": {}",e.getMessage(),e);
             }
         }else if (code != null) {
-            codeResult = code.run(input, context.getState());
+            codeResult = code.run(input, new State.CmdState( context.getState(), this ) );
 
         }
         switch (codeResult.getType()) {

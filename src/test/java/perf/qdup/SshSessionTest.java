@@ -28,7 +28,6 @@ public class SshSessionTest extends SshTestBase{
                 null
         );
         String foo = sshSession.shSync("echo \"pwd is: $(pwd)\"");
-        System.out.println(foo);
     }
 
     @Test

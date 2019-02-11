@@ -6,6 +6,7 @@ package perf.qdup;
  */
 public class Host {
 
+    public static final String HOST_PATTERN = "\\w+@\\w[\\w\\-]*(?:\\.\\w[\\w\\-])*(?::\\d+)*.*";
 
     public static Host parse(String fullyQualified) {
         Host rtrn = null;

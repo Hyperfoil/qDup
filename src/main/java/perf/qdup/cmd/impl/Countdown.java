@@ -5,16 +5,20 @@ import perf.qdup.cmd.Context;
 
 public class Countdown extends Cmd {
     private String name;
-    private int startCount;
+    private int initial;
     public Countdown(String name, int count){
 
         this.name = name;
-        this.startCount = count;
+        this.initial = count;
 
     }
+
+    public String getName(){return name;}
+    public int getInitial(){return initial;}
+
     @Override
     public void run(String input, Context context) {
-        int newCount = context.getCoordinator().decrease(this.name,this.startCount);
+        int newCount = context.getCoordinator().decrease(this.name,this.initial);
         if(newCount <= 0){
             context.next(input);
         }else{
@@ -22,7 +26,7 @@ public class Countdown extends Cmd {
         }
     }
     @Override
-    public Cmd copy() { return new Countdown(this.name,this.startCount); }
+    public Cmd copy() { return new Countdown(this.name,this.initial); }
     @Override
-    public String toString(){return "countdown: "+this.name+" "+this.startCount;}
+    public String toString(){return "countdown: "+this.name+" "+this.initial;}
 }

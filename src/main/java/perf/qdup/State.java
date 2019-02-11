@@ -1,5 +1,6 @@
 package perf.qdup;
 
+import perf.qdup.cmd.Cmd;
 import perf.yaup.json.Json;
 
 import java.util.*;
@@ -32,6 +33,25 @@ public class State {
     private Map<String,State> childStates;
     private String prefix;
 
+
+    public static class CmdState extends State {
+        private final Cmd cmd;
+        public CmdState(State parent, Cmd cmd){
+            super(parent,null);
+            this.cmd = cmd;
+        }
+        @Override
+        public String get(String key){
+            return Cmd.populateVariable(key,cmd,this,null);
+        }
+        @Override
+        public void set(String key,Object value){
+            parent().set(key,value);
+        }
+    }
+
+    State parent(){return parent;}
+
     public State(String prefix){
         this(null,prefix);
     }
@@ -40,6 +60,37 @@ public class State {
         this.json = new Json();
         this.childStates = new ConcurrentHashMap<>();
         this.prefix = prefix;
+    }
+
+    public void merge(State state){
+        if(this.prefix == state.prefix){
+            state.getKeys().forEach(key->{
+                this.state.putIfAbsent(key,state.get(key));
+            });
+            state.getChildNames().forEach(childName->{
+                State childState = state.getChild(childName);
+                addChild(childName,childState.prefix).merge(childState);
+            });
+        }else if (state.prefix!=null){
+            addChild(state.prefix,state.prefix).merge(state);
+        }else{
+            //WTF to do with a miss-match prefix
+
+        }
+    }
+    public void load(Json json){
+        json.forEach((key,value)->{
+            if(value instanceof Json){
+                String childPrefix = null;
+                if(RUN_PREFIX.equals(this.prefix)){
+                    childPrefix = HOST_PREFIX;
+                }
+                State childState = getChild(key.toString(),childPrefix);
+                childState.load((Json)value);
+            }else{
+                set(key.toString(),value.toString());
+            }
+        });
     }
 
 
@@ -69,10 +120,7 @@ public class State {
         return addChild(name,prefix);//default to creating a new CHILD
     }
     public State addChild(String name,String prefix){
-        if(!hasChild(name)){
-            State newChild = new State(this,prefix);
-            childStates.put(name,newChild);
-        }
+        childStates.putIfAbsent(name,new State(this,prefix));
         return childStates.get(name);
     }
     public void set(String key,Object value){
@@ -174,6 +222,7 @@ public class State {
         }
         return rtrn;
     }
+    public String getPrefix(){return prefix;}
     public List<String> getKeys(){
         return Collections.unmodifiableList(
             Arrays.asList(
@@ -203,7 +252,6 @@ public class State {
         for(String child : childStates.keySet()){
             rtrn.set(child,childStates.get(child).toJson());
         }
-
         return rtrn;
     }
     public void tree(int indent,StringBuilder sb){

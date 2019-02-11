@@ -3,6 +3,7 @@ package perf.qdup.config;
 import org.junit.Assert;
 import org.junit.Test;
 import perf.qdup.SshTestBase;
+import perf.qdup.config.waml.WamlParser;
 import perf.yaup.json.Json;
 
 import java.util.LinkedList;
@@ -10,9 +11,9 @@ import java.util.Queue;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static perf.qdup.config.YamlParser.*;
+import static perf.qdup.config.waml.WamlParser.*;
 
-public class YamlParserTest extends SshTestBase {
+public class WamlParserTest extends SshTestBase {
 
     private static Json EMPTY_ARRAY = new Json();
     /*
@@ -72,7 +73,7 @@ public class YamlParserTest extends SshTestBase {
     /*
      * Check each entry of the root json for CHILD format
      */
-    private void validateParse(YamlParser parser){
+    private void validateParse(WamlParser parser){
         Json json = parser.getJson();
 
         if(parser.hasErrors()){
@@ -92,12 +93,23 @@ public class YamlParserTest extends SshTestBase {
 
             }
         }else{
-            fail("YamlParser.getJson() should return an array");
+            fail("WamlParser.getJson() should return an array");
         }
 
 
     }
 
+
+    @Test
+    public void inlineWithChild(){
+        WamlParser parser = new WamlParser();
+        parser.load("inline",stream(""+
+                "key1: { inline: value}",
+                "- key2:value2",
+                "key3:value3"
+
+        ));
+    }
     @Test
     public void inline_both(){
         YamlParser parser = new YamlParser();
@@ -111,7 +123,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void keyValue(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("keyValue",stream(""+
                 "key1:value1",
                 "key2:value2"
@@ -120,7 +132,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void keyValue_dashed_nospace(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("keyValue",stream(""+
                 "-key1:value1",
                 "-key2:value2"
@@ -128,18 +140,17 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void dashed_keyValue_nospace(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("keyValue",stream(""+
             "-key1:value1",
             "-key2:value2"
         ));
 
-        System.out.println(parser.getJson().toString(2));
     }
 
     @Test
     public void noSpaceAfterDash(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("child",stream(""+
                 "- script: foo",
                 "-script: bar"
@@ -149,7 +160,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void childNotIndented(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("child",stream(""+
             "top:",
             "- key1: good",
@@ -161,14 +172,13 @@ public class YamlParserTest extends SshTestBase {
 
         validateParse(parser);
         Json child = parser.getJson();
-        System.out.println(child.toString(2));
 
         //TODO validate the yaml
     }
 
     @Test
     public void doubleSlashQuote_value(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("slash",stream(""+
             "- sh: e\"s 'f\\\\\"",
             "  - for-each: container"
@@ -178,7 +188,6 @@ public class YamlParserTest extends SshTestBase {
 
         Json slash = parser.getJson("slash");
 
-        System.out.println(slash.toString(2));
         assertTrue("slash is array[1]",slash.isArray() && slash.size()==1);
         Json first = slash.getJson(0);
 
@@ -200,7 +209,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test(timeout = 10_000)
     public void bug_nestFirstChild(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("bug",stream(""+
             "  name: this - name",
             "scripts:"
@@ -211,7 +220,7 @@ public class YamlParserTest extends SshTestBase {
     @Test
     //TODO check that first and second are children of bar
     public void testComment_differentNestLength(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("comment",stream(""+
             "foo:",
             "  bar:",
@@ -225,7 +234,7 @@ public class YamlParserTest extends SshTestBase {
     @Test
     //TODO check that js is the only child of first and is the expect code
     public void testScalarCode(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("code",stream(""+
             "scripts:",
             "  first:",
@@ -239,7 +248,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void testSyntax(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("supportedSyntax",stream(""+
             "name: syntax",
             "scripts:",
@@ -291,7 +300,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void listCommandArgument(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("listCommandArgument",stream(""+
                 "foo: {",
                 "  arg: \"value\"",
@@ -307,7 +316,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void multiPartValueString(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("supportedSyntax",stream(""+
                 "foo: \"biz \\\"buz:fuz\\\" :#boom\" 2ndValue#COMMENT",
                 "bar: bar",
@@ -331,7 +340,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void supportedSyntax(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("supportedSyntax",stream(""+
                 "#comment1",
                 "#comment2",
@@ -361,7 +370,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void multiLineEcho(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("echo",stream(""+
         "sh: echo '",
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
@@ -399,7 +408,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void miltilineQuoteMidKey(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("multiline",stream(""+
             "key: first \"",
             "second",
@@ -421,7 +430,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void multilineKey(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("multiline",stream(""+
             "'key",
             "   still key' : \"value",
@@ -449,7 +458,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void inlineCommentTrimSpaces(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("inline",stream(""+
                 "key: \"quoted part\" not quoted          #comment"
         ));
@@ -469,7 +478,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void multilineQuote(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("multiline",stream(""+
             "key: \"",
             "  <foo>",
@@ -491,7 +500,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void scalar(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("scalar",stream(""+
             "key: |",
             "  <foo>",
@@ -522,7 +531,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void commandOptions(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("comments",stream(""+
                 "test:",
                 "  - sh : shellArguments WITH spaces | and pipes | ${{variables}} and whatnot",
@@ -547,7 +556,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void testKeys(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("comments",stream(""+
                 "KEY:VALUE",
                 "\"ke:y\":VALUE"));
@@ -558,7 +567,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void comments(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("comments",stream(""+
                 "#full line",
                 "#second full line",
@@ -578,7 +587,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void spaceNesting(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("spaceNesting",stream(""+
                 "#startComment",
                 "#2ndstartComment",
@@ -595,10 +604,10 @@ public class YamlParserTest extends SshTestBase {
         Json json = parser.getJson();
     }
 
-    //Demonstrates a difference between how YamlParser and Yaml would parse input
+    //Demonstrates a difference between how WamlParser and Yaml would parse input
     @Test
     public void listOfMaps(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("listOfMaps",stream(""+
                 "foo:",
                 "  - name: firstName",
@@ -612,7 +621,7 @@ public class YamlParserTest extends SshTestBase {
     // Tests for parsing the Yaml
     @Test
     public void nestedMap(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("nestMap",stream(""+
         "foo:",
         " - foo.foo : ff",
@@ -628,7 +637,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void nesting(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("nesting.yaml",stream(""+
             "foo: 1",
             "- foo.foo: 1.1",
@@ -646,7 +655,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void inlineList(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("list.yaml",stream("---",
                 "foo: [a, b , c  ,    d]",
                 "bar: [ a , \"b[]][{}}{,\" , c,d ]",
@@ -662,7 +671,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void inlineMap(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("map.yaml",stream("---",
                 "top:",
                 "  foo: {foo : 1 , foo.foo: 1 1 , foo.bar : \"1,][{}}{.2\" , foo.biz { f.b.a : one , f.b.a : two}, zed: end }",
@@ -679,7 +688,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void variableKeyValue(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("variableKeyValue",stream(""+
             "role:",
             "  - ${{keyNovalue}}",
@@ -693,7 +702,7 @@ public class YamlParserTest extends SshTestBase {
     // Tests for generating the RunConfig
     @Test
     public void variableScriptInRoles(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("variableScriptInRole.yaml",
                 stream("name: variableScriptInRole ",
                         "--- ",
@@ -728,7 +737,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void multipleHostsInRole(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("multipleHosts.yaml",
                 stream("name: multipleHosts ",
                         "---",
@@ -778,7 +787,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void emptyNestLine(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("emptyNestLine",stream(""+
                 "top : ",
                 " - #commented",
@@ -789,7 +798,7 @@ public class YamlParserTest extends SshTestBase {
     }
     @Test
     public void multiLineInlineMap(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("multiLineInlineMap",stream(""+
             "top : {",
             "    foo : fizz",
@@ -813,7 +822,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void multipleDocuments(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("states.yaml",
             stream("",
                 "name: specjms ",
@@ -833,7 +842,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void allStateOptions(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("states.yaml",
                 stream("",
                         "states:",
@@ -854,7 +863,7 @@ public class YamlParserTest extends SshTestBase {
 
     @Test
     public void commandNesting(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
 
         parser.load("nmesting.yaml",
                 stream(

@@ -4,7 +4,7 @@ package perf.qdup.cmd;
  * Created by wreicher
  */
 public class Result {
-    public static enum Type {next, skip}
+    public enum Type {next, skip}
 
     private String result;
     private Type type;

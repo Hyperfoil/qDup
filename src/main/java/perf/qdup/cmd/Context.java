@@ -4,8 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.profiler.Profiler;
 import perf.qdup.*;
 
-import java.util.concurrent.TimeUnit;
-
 public interface Context {
 
     void next(String output);

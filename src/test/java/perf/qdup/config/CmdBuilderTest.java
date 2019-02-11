@@ -4,19 +4,21 @@ import org.junit.Test;
 import perf.qdup.SshTestBase;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.impl.*;
+import perf.qdup.config.waml.WamlParser;
 import perf.yaup.json.Json;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class CmdBuilderTest extends SshTestBase {
 
     @Test
     public void buildYamlCommand_invalidCommand(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("download",stream("-wait=for: P"));
         List<String> errors = new ArrayList<>();
         Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null,errors);
@@ -25,7 +27,7 @@ public class CmdBuilderTest extends SshTestBase {
 
     @Test
     public void download_path(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("download",stream("-download: P"));
         List<String> errors = new ArrayList<>();
         Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null,errors);
@@ -36,7 +38,7 @@ public class CmdBuilderTest extends SshTestBase {
     }
     @Test
     public void download_path_destination(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("download",stream("-download: P D"));
         List<String> errors = new ArrayList<>();
         Cmd cmd = CmdBuilder.getBuilder().buildYamlCommand(parser.getJson("download"),null,errors);
@@ -94,7 +96,7 @@ public class CmdBuilderTest extends SshTestBase {
 
     @Test
     public void queueDownloadCmd(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("queueDownload",stream(
                 "queue-download: /tmp/wf.webprofile.console.log"
         ));
@@ -107,7 +109,7 @@ public class CmdBuilderTest extends SshTestBase {
 
     @Test
     public void ctrlCCmd(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("ctrlC",stream("ctrlC:"));
         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
         List<String> errors = new ArrayList<>();
@@ -118,7 +120,7 @@ public class CmdBuilderTest extends SshTestBase {
     }
     @Test
     public void sleepCmd(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("sleep",stream(""+
                 "sleep: 5m"
         ));
@@ -132,7 +134,7 @@ public class CmdBuilderTest extends SshTestBase {
 
     @Test
     public void setStateTwoArgs(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("setstate",stream(""+
             "set-state: EXECUTOR \"unzip \""
         ));
@@ -146,7 +148,7 @@ public class CmdBuilderTest extends SshTestBase {
 
     @Test
     public void sh_echoEnvironmentVariable(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("echo",stream(""+
         "sh: echo ${SERVER_PID}"));
 
@@ -159,7 +161,7 @@ public class CmdBuilderTest extends SshTestBase {
     }
     @Test
     public void sh_Responsemap(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("response",stream(""+
             "sh: {",
             "  silent: true",
@@ -180,7 +182,7 @@ public class CmdBuilderTest extends SshTestBase {
 
     @Test
     public void xmlOperationList(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("listCommandArgument",stream(""+
                 "xml: ",
                 "  path: \"xmlPath\"",

@@ -35,7 +35,7 @@ public class XmlCmdTest extends SshTestBase {
         }
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
         Script runScript = new Script("run-xml");
-        runScript.then(Cmd.sh("echo '<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo><bar value=\"uno\"></bar><biz>buz</biz></foo>' > /tmp/foo.xml"));
+        runScript.then(Cmd.sh("echo '<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo><bar message=\"uno\"></bar><biz>buz</biz></foo>' > /tmp/foo.xml"));
         runScript.then(
                 Cmd.xml("/tmp/foo.xml>/foo/biz")///text()
                         .then(Cmd.code((input,state)->{
@@ -54,10 +54,10 @@ public class XmlCmdTest extends SshTestBase {
                         }))
         );
         runScript.then( //TODO this does not finish the write before the next Cmd runs (sometimes)
-                Cmd.xml("/tmp/foo.xml>/foo/bar/@value == two")
+                Cmd.xml("/tmp/foo.xml>/foo/bar/@message == two")
         );
         runScript.then(
-                Cmd.xml("/tmp/foo.xml>/foo/bar/@value")
+                Cmd.xml("/tmp/foo.xml>/foo/bar/@message")
                         .then(Cmd.code((input,state)->{
                             third.append(input.trim());
                             return Result.next(input);
@@ -74,7 +74,7 @@ public class XmlCmdTest extends SshTestBase {
         run.run();
         assertEquals("/tmp/foo.xml>/foo/biz/text() should be buz","buz",first.toString());
         assertEquals("/tmp/foo.xml>/foo/biz/text() should be biz after xml","biz",second.toString());
-        assertEquals("/tmp/foo.xml>/foo/bar/@value should be two afer xml","two",third.toString());
+        assertEquals("/tmp/foo.xml>/foo/bar/@message should be two afer xml","two",third.toString());
         File tmpXml = new File("/tmp/foo.xml");
 
         try {
@@ -94,7 +94,7 @@ public class XmlCmdTest extends SshTestBase {
         StringBuilder first = new StringBuilder();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
         Script runScript = new Script("run-xml");
-        runScript.then(Cmd.sh("echo '<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo><bar value=\"uno\"></bar><biz>buz</biz></foo>' > /tmp/foo.xml"));
+        runScript.then(Cmd.sh("echo '<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo><bar message=\"uno\"></bar><biz>buz</biz></foo>' > /tmp/foo.xml"));
         runScript.then(
                 Cmd.xml("/tmp/foo.xml>/foo/biz "+XmlCmd.SET_STATE_KEY+" BIZ")///text()
                         .then(Cmd.code((input,state)->{
@@ -116,6 +116,6 @@ public class XmlCmdTest extends SshTestBase {
         tmpXml.delete();
 
 
-        assertEquals("/foo/biz value set to BIZ","buz",first.toString());
+        assertEquals("/foo/biz message set to BIZ","buz",first.toString());
     }
 }

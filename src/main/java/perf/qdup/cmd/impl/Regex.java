@@ -20,6 +20,7 @@ public class Regex extends Cmd {
         this.matches = new HashMap<>();
     }
 
+
     public String getPattern(){return patternString;}
     @Override
     public void run(String input, Context context) {
@@ -28,7 +29,7 @@ public class Regex extends Cmd {
 
         matches.clear();
 
-        //key is a regex friendly capture name and value is the user provided capture name
+        //key is a regex friendly capture name and message is the user provided capture name
         LinkedHashMap<String,String> renames = new LinkedHashMap<>();
         Matcher fieldMatcher = NAMED_CAPTURE.matcher(populatedPattern);
 

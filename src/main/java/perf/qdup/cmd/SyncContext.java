@@ -123,7 +123,12 @@ public class SyncContext implements Context, Runnable{
 
     @Override
     public void addPendingDownload(String path, String destination) {
+        run.addPendingDownload(session.getHost(),path,destination);
+    }
 
+    @Override
+    public void addPendingDelete(String path) {
+        run.addPendingDelete(session.getHost(),path);
     }
 
     @Override

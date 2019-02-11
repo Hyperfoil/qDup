@@ -473,7 +473,6 @@ public class Run implements Runnable, DispatchObserver {
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
         Role allRole = config.getRole(ALL_ROLE);
-
         for(String roleName : config.getRoleNames()){
             Role role = config.getRole(roleName);
             if (!role.getRun().isEmpty()) {

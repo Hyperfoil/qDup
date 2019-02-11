@@ -2,11 +2,9 @@ package perf.qdup.config;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
-import perf.qdup.*;
+import perf.qdup.State;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Script;
-import perf.qdup.cmd.impl.ScriptCmd;
-import perf.yaup.HashedLists;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -122,10 +120,10 @@ public class RunConfig {
             return getErrors().stream().collect(Collectors.joining("\n"));
         }
         StringBuilder  sb = new StringBuilder();
-        BiConsumer<String,List<ScriptCmd>> printScripts = (phase,scripts)->{
+        BiConsumer<String,List<Cmd>> printScripts = (phase,scripts)->{
             sb.append(String.format("    %s%n",phase));
             scripts.forEach(script->{
-                sb.append(String.format("      %s%n",script.getName()));
+                sb.append(String.format("      %s%n",script.toString()));
                 if(!script.getWith().isEmpty()){
                     sb.append(String.format("        %s%n","WITH"));
                     script.getWith().forEach((k,v)->{

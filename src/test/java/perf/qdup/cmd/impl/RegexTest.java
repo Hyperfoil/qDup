@@ -5,7 +5,7 @@ import perf.qdup.SshTestBase;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.SpyContext;
 import perf.qdup.config.CmdBuilder;
-import perf.qdup.config.YamlParser;
+import perf.qdup.config.waml.WamlParser;
 import perf.yaup.json.Json;
 
 import java.util.ArrayList;
@@ -51,7 +51,7 @@ public class RegexTest extends SshTestBase {
 
     @Test
     public void removeDoubleSlashedRegex(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("regex",stream(
                 "regex: \".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\\\d+)ms.*\""
         ));

@@ -18,7 +18,7 @@ import java.util.function.BiFunction;
  * function(input,state){
  *     return true | false;
  * }
- * Returning true means invoke the next command, returning false means skip the next command. No return value assumes a return of true
+ * Returning true means invoke the next command, returning false means skip the next command. No return message assumes a return of true
  */
 public class JsCmd extends Cmd {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
@@ -70,7 +70,7 @@ public class JsCmd extends Cmd {
                 ){
                     context.skip(input);
                 }else if (ScriptObjectMirror.isUndefined(rtrn) || rtrn instanceof Boolean){
-                    //TODO potentially log that the js function should have an explicit return value
+                    //TODO potentially log that the js function should have an explicit return message
                     context.next(input);
                 }else {
                     context.next(rtrn.toString());

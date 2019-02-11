@@ -4,11 +4,15 @@ import org.junit.Assert;
 import org.junit.Test;
 import perf.qdup.Run;
 import perf.qdup.SshTestBase;
-import perf.qdup.cmd.*;
+import perf.qdup.cmd.Cmd;
+import perf.qdup.cmd.Dispatcher;
+import perf.qdup.cmd.Result;
+import perf.qdup.cmd.Script;
+import perf.qdup.cmd.SpyContext;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
-import perf.qdup.config.YamlParser;
+import perf.qdup.config.waml.WamlParser;
 import perf.yaup.Sets;
 import perf.yaup.json.Json;
 
@@ -253,8 +257,52 @@ public class ForEachTest extends SshTestBase {
     }
 
     @Test
-    public void yaml_state_from_with(){
-        YamlParser parser = new YamlParser();
+    public void forEach_ls_loop(){
+        List<String> lines = new ArrayList<>();
+        AtomicBoolean tail = new AtomicBoolean(false);
+        Script runScript = new Script("run");
+        runScript
+                .then(Cmd.sh("rm -r /tmp/foo"))
+                .then(Cmd.sh("mkdir /tmp/foo"))
+                .then(Cmd.sh("echo \"one\" > /tmp/foo/one.txt"))
+                .then(Cmd.sh("echo \"two\" > /tmp/foo/two.txt"))
+                .then(Cmd.sh("echo \"three\" > /tmp/foo/three.txt"))
+                .then(Cmd.sh("echo \"four\" > /tmp/foo/four.txt"))
+                .then(Cmd.sh("ls -1 --color=none /tmp/foo"))
+                .then(
+                    Cmd.forEach("ARG")
+                        .then(Cmd.code((input,state)->{
+                            lines.add(input);
+                            return Result.next(input);
+                        }))
+                )
+                .then(Cmd.code(((input, state) -> {
+                    tail.set(true);
+                    return Result.next(input);
+                })));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.addScript(runScript);
+        builder.addHostAlias("local",getHost().toString());
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run run = new Run("/tmp",config,dispatcher);
+        run.run();
+
+        assertEquals("lines contains 3 entries:\n"+lines,4,lines.size());
+        assertTrue("tail should be called",tail.get());
+
+    }
+
+    @Test
+    public void waml_state_from_with(){
+        WamlParser parser = new WamlParser();
         parser.load("foreach",stream(""+
                         "scripts:",
                 "  foo:",
@@ -273,7 +321,7 @@ public class ForEachTest extends SshTestBase {
 
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
 
 
         RunConfig config = builder.buildConfig();
@@ -303,7 +351,7 @@ public class ForEachTest extends SshTestBase {
 
     @Test
     public void yaml_state_quoted(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("foreach",stream(""+
                 "scripts:",
                 "  foo:",
@@ -320,7 +368,7 @@ public class ForEachTest extends SshTestBase {
         ));
 
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig config = builder.buildConfig();
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
@@ -340,7 +388,7 @@ public class ForEachTest extends SshTestBase {
     }
     @Test
     public void yaml_state(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("foreach",stream(""+
                         "scripts:",
                 "  foo:",
@@ -358,7 +406,7 @@ public class ForEachTest extends SshTestBase {
 
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig config = builder.buildConfig();
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
@@ -381,7 +429,7 @@ public class ForEachTest extends SshTestBase {
 
     @Test
     public void yaml_declared(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("foreach",stream(""+
             "scripts:",
             "  foo:",
@@ -397,7 +445,7 @@ public class ForEachTest extends SshTestBase {
 
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig config = builder.buildConfig();
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){

@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static perf.qdup.config.YamlParser.*;
+import static perf.qdup.config.waml.WamlParser.*;
 
 public class CmdBuilder {
 
@@ -36,7 +36,7 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("exec",Exec.class,"command");
 //        rtrn.addCmdDefinition("exit-code",ExitCode.class);
 //        rtrn.addCmdDefinition("exit-code",ExitCode.class,"expected");
-        rtrn.addCmdDefinition("invoke",ScriptCmd.class,"name");
+//        rtrn.addCmdDefinition("invoke",ScriptCmd.class,"name");
         rtrn.addCmdDefinition("for-each",ForEach.class,"name");
         rtrn.addCmdDefinition("for-each",ForEach.class,"name","input");
         rtrn.addCmdDefinition("script",ScriptCmd.class,"name");
@@ -502,7 +502,6 @@ public class CmdBuilder {
 
                     Json childEntry = childEntryList.getJson(c);
                     String childKey = childEntry.getString(KEY);
-
                     switch (childKey.toLowerCase()){
                         case WATCH:
                             addWatchers(rtrn,childEntry,errors);

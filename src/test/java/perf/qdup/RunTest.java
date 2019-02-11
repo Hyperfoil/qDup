@@ -7,7 +7,7 @@ import perf.qdup.cmd.impl.ReadState;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
-import perf.qdup.config.YamlParser;
+import perf.qdup.config.waml.WamlParser;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -87,7 +87,7 @@ public class RunTest extends SshTestBase{
 
     @Test
     public void pwd_in_dollar(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("pwd",stream(""+
             "scripts:",
             "  foo:",
@@ -103,7 +103,7 @@ public class RunTest extends SshTestBase{
 
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig config = builder.buildConfig();
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
@@ -167,7 +167,7 @@ public class RunTest extends SshTestBase{
 
     @Test
     public void signal_in_previous_stage(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("signal",stream(""+
                 "scripts:",
                 "  foo:",
@@ -190,7 +190,7 @@ public class RunTest extends SshTestBase{
         ));
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig config = builder.buildConfig();
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();

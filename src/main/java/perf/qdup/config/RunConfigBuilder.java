@@ -8,23 +8,89 @@ import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.CommandSummary;
 import perf.qdup.cmd.Script;
 import perf.qdup.cmd.impl.ScriptCmd;
+import perf.qdup.config.waml.WamlParser;
+import perf.qdup.config.yaml.CmdMapping;
+import perf.qdup.config.yaml.Parser;
+import perf.qdup.config.yaml.YamlFile;
 import perf.yaup.HashedLists;
 import perf.yaup.HashedSets;
 import perf.yaup.json.Json;
+import perf.yaup.yaml.Mapping;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static perf.qdup.cmd.Cmd.STATE_PREFIX;
-import static perf.qdup.config.YamlParser.*;
+import static perf.qdup.config.waml.WamlParser.*;
 
 public class RunConfigBuilder {
 
+    public static final Mapping<RunConfigBuilder> MAPPING = (builder)->{
+        Map<Object,Object> map = new LinkedHashMap<>();
+        //map.put("name",builder.getName());
+        if(!builder.scripts.isEmpty()){
+            Map<Object,Object> scriptMap = new LinkedHashMap<>();
+            builder.scripts.forEach((name,script)->{
+                scriptMap.put(name,script.getThens());
+            });
+            map.put("scripts",scriptMap);
+        }
+        if(!builder.getHosts().isEmpty()){
+            Map<Object,Object> hostMap = new LinkedHashMap<>();
+            builder.getHosts().forEach((alias,host)->{
+                if(!alias.equals(host.toString())) {//filter out entries that are fqn to only add in the unique entries
+                    hostMap.put(alias, host.toString());
+                }
+            });
+            map.put("hosts",hostMap);
+        }
+        Function<List<ScriptCmd>,List<Object>> scriptRef = (cmds)->{
+            List<Object> list = cmds.stream().map(cmd->{
+                if(cmd.getWith().isEmpty()){
+                    return cmd.getName();
+                }else{
+                    Map<Object,Object> rtrn = new LinkedHashMap<>();
+                    Map<Object,Object> with = new LinkedHashMap<>();
+                    rtrn.put(cmd.getName(),with);
+                    with.put("with",cmd.getWith());
+                    return rtrn;
+                }
+            })
+               .collect(Collectors.toList());
+            return list;
+        };
+        if(!builder.getRoleNames().isEmpty()){
+            Map<Object,Object> rolesMap = new LinkedHashMap<>();
+            builder.getRoleNames().forEach(name->{
+                Map<Object,Object> roleMap = new LinkedHashMap<>();
+                rolesMap.put(name,roleMap);
+                if(!builder.getRoleHosts(name).isEmpty()){
+                    roleMap.put("hosts",new ArrayList<>(builder.getRoleHosts(name)));
+                }
+                if(!builder.getRoleSetup(name).isEmpty()){
 
+                    roleMap.put("setup-scripts",scriptRef.apply(builder.getRoleSetup(name)));
+                }
+                if(!builder.getRoleRun(name).isEmpty()){
+                    roleMap.put("run-scripts",scriptRef.apply(builder.getRoleRun(name)));
+                }
+                if(!builder.getRoleCleanup(name).isEmpty()){
+                    roleMap.put("cleanup-scripts",scriptRef.apply(builder.getRoleCleanup(name)));
+                }
+            });
+            map.put("roles",rolesMap);
+        }
+        if(!builder.getState().allKeys().isEmpty()){
+            map.put("states",builder.getState());
+        }
+        return map;
+    };
 
     private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
@@ -51,7 +117,6 @@ public class RunConfigBuilder {
     private static final String HOST_EXPRESSION_PREFIX = "=";
     private static final String HOST_EXPRESSING_INCLUDE = "+";
     private static final String HOST_EXPRESSION_EXCLUDE = "-";
-
 
     private String identity = DEFAULT_IDENTITY;
     private String knownHosts = DEFAULT_KNOWN_HOSTS;
@@ -86,7 +151,7 @@ public class RunConfigBuilder {
     public RunConfigBuilder(String name,CmdBuilder cmdBuilder){
         this.name = name;
         this.cmdBuilder = cmdBuilder;
-        scripts = new HashMap<>();
+        scripts = new LinkedHashMap<>();
         state = new State(null,State.RUN_PREFIX);
         roleHosts = new HashedSets<>();
         roleSetup = new HashedLists<>();
@@ -106,7 +171,7 @@ public class RunConfigBuilder {
         return traceTargets.get(target);
     }
 
-    public void eachChildArray(Json target, BiConsumer<Integer,Json> consumer){
+    public void eachWamlChildArray(Json target, BiConsumer<Integer,Json> consumer){
 
         Json childArray = target.getJson(CHILD, EMPTY_ARRAY);
         for (int childIndex = 0; childIndex < childArray.size(); childIndex++) {
@@ -114,21 +179,21 @@ public class RunConfigBuilder {
             consumer.accept(childIndex,childEntry);
         }
     }
-    public Json toJson(Json yamlJson){
-        System.out.println("toJson\n"+yamlJson.toString(2));
-        Json rtrn = new Json();
+   public Json toJson(Json yamlJson){
+      System.out.println("toJson\n"+yamlJson.toString(2));
+      Json rtrn = new Json();
 
-        eachChildEntry(yamlJson,(index,entry)->{
-            String key = entry.getString(KEY);
-            if(entry.has(VALUE)){
-                rtrn.set(key,entry.get(VALUE));
-            }else{
-                rtrn.set(key,toJson(entry));
-            }
-        });
-        return rtrn;
-    }
-    public void eachChildEntry(Json target, BiConsumer<Integer,Json> consumer){
+      eachWamlChildEntry(yamlJson,(index,entry)->{
+         String key = entry.getString(KEY);
+         if(entry.has(VALUE)){
+            rtrn.set(key,entry.get(VALUE));
+         }else{
+            rtrn.set(key,toJson(entry));
+         }
+      });
+      return rtrn;
+   }
+    public void eachWamlChildEntry(Json target, BiConsumer<Integer,Json> consumer){
 
         Json childArray = target.getJson(CHILD,EMPTY_ARRAY);
         for(int childIndex=0; childIndex<childArray.size(); childIndex++){
@@ -139,9 +204,9 @@ public class RunConfigBuilder {
             }
         }
     }
-    public Map<String,String> yamlChildMap(Json json){
+    public Map<String,String> wamlChildMap(Json json){
         Map<String,String> rtrn = new LinkedHashMap<>();
-        eachChildEntry(json,(i,childEntry)->{
+        eachWamlChildEntry(json,(i, childEntry)->{
             if(childEntry.has(KEY) && childEntry.has(VALUE)) {
                 rtrn.put(childEntry.getString(KEY), childEntry.getString(VALUE));
             }
@@ -149,7 +214,6 @@ public class RunConfigBuilder {
         });
         return rtrn;
     }
-
 
     public void addError(String error){
         errors.add(error);
@@ -159,15 +223,46 @@ public class RunConfigBuilder {
     }
     public int errorCount(){return errors.size();}
 
-    public boolean loadYaml(YamlParser yamlParser) {
+    public boolean loadYaml(YamlFile yamlFile){
+        getState().merge(yamlFile.getState());
+
+        yamlFile.getScripts().forEach((name,script)->{
+            addScript(script);
+        });
+        yamlFile.getHosts().forEach((name,host)->{
+            if(hostAlias.containsKey(name) && !hostAlias.get(name).equals(host)){
+                addError(String.format("%s tried to load host $s:$s but alredy defined as $s",yamlFile.getPath(),name,host,hostAlias.get(name)));
+            }else{
+                hostAlias.put(name,host);
+            }
+        });
+        yamlFile.getRoles().forEach((name,role)->{
+            role.getHostRefs().forEach(hostRef->{
+                addHostToRole(name,hostRef);
+            });
+            role.getSetup().forEach(cmd->{
+                addRoleSetup(name,((ScriptCmd)cmd).getName(),cmd.getWith());
+            });
+            role.getRun().forEach(cmd->{
+                addRoleRun(name,((ScriptCmd)cmd).getName(),cmd.getWith());
+            });
+            role.getCleanup().forEach(cmd->{
+                addRoleCleanup(name,((ScriptCmd)cmd).getName(),cmd.getWith());
+            });
+        });
+
+        return errors.isEmpty();
+    }
+
+    public boolean loadWaml(WamlParser wamlParser) {
         boolean ok = true;
-        if(yamlParser.hasErrors()){
-            addErrors(yamlParser.getErrors());
+        if(wamlParser.hasErrors()){
+            addErrors(wamlParser.getErrors());
             ok = false;
         }else {
-            for(String yamlPath : yamlParser.fileNames()){
-                Json yamlJson = yamlParser.getJson(yamlPath);
-                boolean docOk = loadYamlJson(yamlJson,yamlPath);
+            for(String yamlPath : wamlParser.fileNames()){
+                Json yamlJson = wamlParser.getJson(yamlPath);
+                boolean docOk = loadWamlJson(yamlJson,yamlPath);
                 ok = ok && docOk;
             }
         }
@@ -181,7 +276,7 @@ public class RunConfigBuilder {
         }
         return rtrn;
     }
-    public boolean loadYamlJson(Json yamlJson,String yamlPath){
+    public boolean loadWamlJson(Json yamlJson, String yamlPath){
         boolean ok = true;
         if (yamlJson.isArray()) {
             for (int i = 0; i < yamlJson.size(); i++) {
@@ -199,7 +294,7 @@ public class RunConfigBuilder {
                             break;
                         case SCRIPTS:
                             final List<String> scriptErrors = new LinkedList<>();
-                            eachChildEntry(yamlEntry, (entryIndex, scriptEntry) -> {
+                            eachWamlChildEntry(yamlEntry, (entryIndex, scriptEntry) -> {
                                 String scriptName = scriptEntry.getString(KEY, "");
 
                                 //Only accept the first definition so make sure the most important yaml is first :)
@@ -209,7 +304,7 @@ public class RunConfigBuilder {
                                     Script newScript = new Script(scriptName);
                                     String scriptDir = getPathDirectory(yamlPath);
                                     newScript.with(SCRIPT_DIR,scriptDir);
-                                    eachChildArray(scriptEntry, (commandIndex, scriptCommand) -> {
+                                    eachWamlChildArray(scriptEntry, (commandIndex, scriptCommand) -> {
                                         Cmd childCmd = cmdBuilder.buildYamlCommand(scriptCommand, newScript, scriptErrors);
                                         newScript.then(childCmd);
                                     });
@@ -223,12 +318,12 @@ public class RunConfigBuilder {
                             }
                             break;
                         case ROLES:
-                            eachChildEntry(yamlEntry, (entryIndex, roleEntry) -> {
+                            eachWamlChildEntry(yamlEntry, (entryIndex, roleEntry) -> {
                                 String roleName = roleEntry.getString(KEY, "");
 
                                 //roles merge so no warning if already defined
 
-                                eachChildEntry(roleEntry, (sectionIndex, roleSection) -> {
+                                eachWamlChildEntry(roleEntry, (sectionIndex, roleSection) -> {
                                     String sectionName = roleSection.getString(KEY, "");
                                     if (HOSTS.equals(sectionName)) {
                                         if(roleSection.has(VALUE)){
@@ -241,7 +336,7 @@ public class RunConfigBuilder {
                                                 addHostToRole(roleName,roleSectionValue);
                                             }
                                         }
-                                        eachChildEntry(roleSection, (hostIndex, host) -> {
+                                        eachWamlChildEntry(roleSection, (hostIndex, host) -> {
                                             String hostReference = host.getString(KEY, "");
                                             if (hostReference.isEmpty()) {
                                                 //TODO log error about parsing the host
@@ -251,14 +346,14 @@ public class RunConfigBuilder {
                                         });
 
                                     } else {
-                                        eachChildEntry(roleSection, (scriptIndex, scriptRefernce) -> {
+                                        eachWamlChildEntry(roleSection, (scriptIndex, scriptRefernce) -> {
                                             String scriptName = scriptRefernce.getString(KEY);
 
                                             Map<String, String> scriptWiths = new LinkedHashMap<>();
-                                            eachChildEntry(scriptRefernce, (childIndex, scriptChild) -> {
+                                            eachWamlChildEntry(scriptRefernce, (childIndex, scriptChild) -> {
                                                 String childName = scriptChild.getString(KEY);
                                                 if (WITH.equalsIgnoreCase(childName)) {
-                                                    Map<String, String> withs = yamlChildMap(scriptChild);
+                                                    Map<String, String> withs = wamlChildMap(scriptChild);
                                                     scriptWiths.putAll(withs);
                                                 }
                                             });
@@ -281,12 +376,12 @@ public class RunConfigBuilder {
 
                             break;
                         case HOSTS:
-                            eachChildEntry(yamlEntry, (hostIndex, host) -> {
+                            eachWamlChildEntry(yamlEntry, (hostIndex, host) -> {
                                 String hostName = host.getString(KEY);
                                 String hostValue = host.getString(VALUE, "");
                                 if (hostValue.isEmpty()) {
 
-                                    Map<String, String> hostMap = yamlChildMap(host);
+                                    Map<String, String> hostMap = wamlChildMap(host);
 
                                     if (hostMap.containsKey("username") && hostMap.containsKey("hostname")) {
                                         String un = hostMap.get("username");
@@ -304,29 +399,23 @@ public class RunConfigBuilder {
                             });
                             break;
                         case STATES:
-
-                            eachChildEntry(yamlEntry, (stateIndex, stateJson) -> {
+                            eachWamlChildEntry(yamlEntry, (stateIndex, stateJson) -> {
                                 String stateName = stateJson.getString(KEY, "");
                                 if(stateJson.has(VALUE)){
                                     String stateValue = stateJson.getString(VALUE);
                                     setRunState(stateName,stateValue);
                                 }else {
                                     setRunState(stateName,toJson(stateJson));
-//                                    eachChildEntry(stateJson, (entryIndex, entry) -> {
-////                                        System.out.println(stateName+"."+entry.toString(2));
-////                                        System.out.println(stateName+"======\n"+toJson(entry));
+//                                    eachWamlChildEntry(stateJson, (entryIndex, entry) -> {
 //                                        if (RUN_STATE.equals(stateName)) {
 //                                            if (entry.has(VALUE)){
 //                                                setRunState(entry.getString(KEY), entry.getString(VALUE));
 //                                            }else if (entry.has(CHILD)){
-//
-//                                                //TODO do we set host specific state or just create state as json?
-//
 //                                                String hostName = entry.getString(KEY);
-//                                                eachChildEntry(entry, (hostEntryIndex, hostEntry) -> {
+//                                                eachWamlChildEntry(entry, (hostEntryIndex, hostEntry) -> {
 //                                                    if (!hostEntry.has(VALUE) && hostEntry.has(CHILD)) {
 //                                                        String scriptName = hostEntry.getString(KEY);
-//                                                        eachChildEntry(hostEntry, (scriptEntryIndex, scriptEntry) -> {
+//                                                        eachWamlChildEntry(hostEntry, (scriptEntryIndex, scriptEntry) -> {
 //                                                            //TODO add script entry under host
 //                                                        });
 //                                                    } else {
@@ -373,6 +462,63 @@ public class RunConfigBuilder {
 
     public int getTimeout() {
         return timeout;
+    }
+
+    public YamlFile toYamlFile(){
+        YamlFile rtrn = new YamlFile();
+        rtrn.setName(getName());
+
+        getHosts().forEach((alias,host)->{
+            rtrn.addHost(alias,host);
+        });
+        scripts.forEach((scriptName,script)->{
+            rtrn.addScript(scriptName,script);
+        });
+        getRoleNames().forEach(roleName->{
+            Role role = new Role(roleName);
+            if( roleHostExpression.containsKey(roleName) ){
+                role.setHostExpression(new HostExpression( roleHostExpression.get(roleName)) );
+            }
+            getRoleHosts(roleName).forEach(hostRef->{
+                role.addHostRef(hostRef);
+            });
+            getRoleSetup(roleName).forEach((scriptCmd)->{
+                role.addSetup(scriptCmd);
+            });
+            getRoleRun(roleName).forEach((scriptCmd)->{
+                role.addRun(scriptCmd);
+            });
+            getRoleCleanup(roleName).forEach(scriptCmd -> {
+                role.addCleanup(scriptCmd);
+            });
+        });
+        rtrn.getState().merge(getState());
+
+        return rtrn;
+    }
+
+    Set<String> getRoleNames(){
+        Set<String> rtrn = new HashSet<>();
+        rtrn.addAll(roleHostExpression.keySet());
+        rtrn.addAll(roleHosts.keys());
+        rtrn.addAll(roleSetup.keys());
+        rtrn.addAll(roleRun.keys());
+        rtrn.addAll(roleCleanup.keys());
+
+        return rtrn;
+    }
+    public List<ScriptCmd> getRoleSetup(String name){
+        return roleSetup.containsKey(name) ? roleSetup.get(name) : Collections.emptyList();
+    }
+    public List<ScriptCmd> getRoleRun(String name){
+        return roleRun.containsKey(name) ? roleRun.get(name) : Collections.emptyList();
+    }
+    public List<ScriptCmd> getRoleCleanup(String name){
+        return roleCleanup.containsKey(name) ? roleCleanup.get(name) : Collections.emptyList();
+    }
+    public Map<String,Host> getHosts(){return Collections.unmodifiableMap(hostAlias);}
+    public Set<String> getRoleHosts(String name){
+        return roleHosts.has(name) ? roleHosts.get(name) : Collections.emptySet();
     }
 
     public void setTimeout(int timeout) {

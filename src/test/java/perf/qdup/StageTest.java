@@ -7,7 +7,7 @@ import perf.qdup.cmd.Script;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
-import perf.qdup.config.YamlParser;
+import perf.qdup.config.waml.WamlParser;
 
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -48,7 +48,7 @@ public class StageTest extends SshTestBase{
 
     @Test
     public void variableSignalName_boundInRole(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("signal",stream(""+
             "scripts:",
             "  foo:",
@@ -69,7 +69,7 @@ public class StageTest extends SshTestBase{
 
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig config = builder.buildConfig();
 
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
@@ -175,7 +175,7 @@ public class StageTest extends SshTestBase{
     }
     @Test
     public void signalMultipleTimesSameScript(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("signal",stream(""+
             "scripts:",
             "  sig:",
@@ -193,26 +193,26 @@ public class StageTest extends SshTestBase{
         ));
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig config = builder.buildConfig();
         Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
 
     }
     @Test
     public void signalInRepeatedSubScript(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("signal",stream(""+
                 "scripts:",
                 "  sig:",
                 "    - signal: FOO",
                 "  inv:",
-                "    - invoke: sig",
+                "    - script: sig",
                 "        with: {BAR: alpha}",
-                "    - invoke: sig",
+                "    - script: sig",
                 "        with: {BAR: bravo}",
-                "    - invoke: sig",
+                "    - script: sig",
                 "        with: {BAR: charlie}",
-                "    - invoke: sig",
+                "    - script: sig",
                 "        with: {BAR: delta}",
                 "  wat:",
                 "    - wait-for: FOO",
@@ -229,7 +229,7 @@ public class StageTest extends SshTestBase{
 
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig config = builder.buildConfig();
         Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
     }

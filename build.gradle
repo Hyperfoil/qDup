@@ -15,7 +15,7 @@ repositories {
 dependencies {
     compile 'org.apache.commons:commons-jexl3:3.1'
     compile 'org.apache.sshd:sshd-core:2.2.0'
-    compile 'net.i2p.crypto:eddsa:0.2.0'
+    compile 'net.i2p.crypto:eddsa:0.3.0'
     compile 'perf:yaup:+'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'org.slf4j:slf4j-ext:1.7.25'
@@ -25,6 +25,9 @@ dependencies {
     compile 'io.vertx:vertx-core:3.5.2'
     compile 'io.vertx:vertx-web:3.5.2'
     compile 'org.jboss.resteasy:resteasy-vertx:3.5.1.Final'
+
+    compile 'org.yaml:snakeyaml:1.23'
+    
     testCompile group: 'junit', name: 'junit', version: '4.11'
 
 }

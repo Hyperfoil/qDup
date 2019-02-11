@@ -5,6 +5,7 @@ import perf.qdup.cmd.Context;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class Sh extends Cmd {
@@ -13,16 +14,20 @@ public class Sh extends Cmd {
     private String populatedCommand;
     private Map<String,String> prompt;
     public Sh(String command){
-        this(command,false, Collections.EMPTY_MAP);
+        this(command,false);
     }
     public Sh(String command,boolean silent){
-        this(command,silent,Collections.EMPTY_MAP);
+        this(command,silent,new LinkedHashMap<>());
 
     }
-    public Sh(String command,boolean silent,Map<String,String> prompt){
+    public Sh(String command, boolean silent, Map<String,String> prompt){
         super(silent);
         this.command = command;
         this.prompt = prompt;
+    }
+
+    public void addPrompt(String prompt,String response){
+        this.prompt.put(prompt,response);
     }
 
     public String getCommand(){return command;}

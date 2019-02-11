@@ -4,23 +4,26 @@ import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
 
 public class Log extends Cmd {
-    String value;
-    public Log(String value){
+    String message;
+    public Log(String message){
         super(true);
-        this.value = value;
-        if(this.value==null){
-            this.value="";
+        this.message = message;
+        if(this.message ==null){
+            this.message ="";
         }
     }
+
+    public String getMessage(){return message;}
+
     @Override
     public void run(String input, Context context) {
-        context.getRunLogger().info(Cmd.populateStateVariables(value,this,context.getState()));
+        context.getRunLogger().info(Cmd.populateStateVariables(message,this,context.getState()));
         context.next(input);
     }
     @Override
     public Cmd copy() {
-        return new Log(value);
+        return new Log(message);
     }
     @Override
-    public String toString(){return "log: "+this.value;}
+    public String toString(){return "log: "+this.message;}
 }

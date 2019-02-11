@@ -4,14 +4,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -22,23 +15,24 @@ import perf.qdup.cmd.ScriptContext;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
-import perf.qdup.config.YamlParser;
+import perf.qdup.config.waml.WamlParser;
+import perf.qdup.config.yaml.Parser;
+import perf.qdup.config.yaml.YamlFile;
 import perf.yaup.AsciiArt;
 import perf.yaup.StringUtil;
+import perf.yaup.file.FileUtility;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class JarMain {
 
@@ -49,6 +43,12 @@ public class JarMain {
         Options options = new Options();
 
         OptionGroup basePathGroup = new OptionGroup();
+        basePathGroup.addOption(Option.builder("W")
+            .longOpt("waml")
+           .required()
+           .desc("convert waml to q.yaml files")
+           .build()
+        );
         basePathGroup.addOption(Option.builder("T")
             .longOpt("test")
             .required()
@@ -229,6 +229,50 @@ public class JarMain {
             return;
         }
 
+        if(commandLine.hasOption("waml")){
+            Queue<String> todo = new LinkedBlockingQueue<>();
+            todo.addAll(yamlPaths);
+            Parser p = Parser.getInstance();
+            while(!todo.isEmpty()){
+                String path = todo.poll();
+                File yamlFile = new File(path);
+                if(!yamlFile.exists()){
+
+                }else{
+                    if(yamlFile.isDirectory()){
+                        for(File child : yamlFile.listFiles()){
+                            String childPath = child.getAbsolutePath();
+                            if(!childPath.endsWith("q.yaml") && (childPath.endsWith(".yaml") || childPath.endsWith(".waml"))) {
+                                todo.add(child.getAbsolutePath());
+                            }
+                        }
+                    }else {
+                        String destPath = path;
+                        if ((destPath.endsWith(".yaml") || destPath.endsWith(".waml")) && !destPath.endsWith("q.yaml")) {
+                            destPath = destPath.substring(0, destPath.length() - ".yaml".length()) + ".q.yaml";
+                        }
+                        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+                        RunConfigBuilder runConfigBuilder = new RunConfigBuilder(cmdBuilder);
+                        WamlParser wamlParser = new WamlParser();
+                        logger.info("converting {} to q.yaml format", path);
+                        wamlParser.load(path);
+                        if (wamlParser.hasErrors()) {
+                            logger.error("Errors parsing {}\n{}", path, wamlParser.getErrors().stream().collect(Collectors.joining("\n")));
+                        } else {
+                            runConfigBuilder.loadWaml(wamlParser);
+                            String toWrite = p.dump(RunConfigBuilder.MAPPING.getMap(runConfigBuilder));
+                            try {
+                                Files.write(Path.of(destPath), toWrite.getBytes());
+                            } catch (IOException e) {
+                                logger.error("Failed to write to {}\n{}", destPath, e.getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+            System.exit(0);
+        }
+
         String outputPath=null;
         if(commandLine.hasOption("basePath")){
             DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -239,7 +283,11 @@ public class JarMain {
             outputPath = "/tmp";
         }
 
-        YamlParser yamlParser = new YamlParser();
+        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
+        RunConfigBuilder runConfigBuilder = new RunConfigBuilder(cmdBuilder);
+
+        //WamlParser wamlParser = new WamlParser();
+        Parser yamlParesr = new Parser();
         for(String yamlPath : yamlPaths){
             File yamlFile = new File(yamlPath);
             if(!yamlFile.exists()){
@@ -250,29 +298,26 @@ public class JarMain {
                     logger.trace("loading directory: "+yamlPath);
                     for(File child : yamlFile.listFiles()){
                         logger.trace("  loading: "+child.getPath());
-                        yamlParser.load(child.getPath());
+                        String content = FileUtility.readFile(child.getPath());
+                        YamlFile file = yamlParesr.loadFile(child.getPath());
+                        if(file==null){
+                            logger.error("Aborting run due to error reading {}",yamlPath);
+                            System.exit(1);
+                        }
+                        runConfigBuilder.loadYaml(file);
                     }
                 }else{
                     logger.trace("loading: "+yamlPath);
-                    yamlParser.load(yamlPath);
+                    YamlFile file = yamlParesr.loadFile(yamlPath);
+                    if(file==null){
+                        logger.error("Aborting run due to error reading {}",yamlPath);
+                        System.exit(1);
+                    }
+                    runConfigBuilder.loadYaml(file);
 
                 }
             }
         }
-
-        CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-        RunConfigBuilder runConfigBuilder = new RunConfigBuilder(cmdBuilder);
-
-        if(yamlParser.hasErrors()){
-            for(String error : yamlParser.getErrors()){
-                logger.error("Error: "+error);
-            }
-            System.exit(1);
-            return;
-        }
-
-        runConfigBuilder.loadYaml(yamlParser);
-
         if (commandLine.hasOption("knownHosts") ){
             runConfigBuilder.setKnownHosts(commandLine.getOptionValue("knownHosts"));
         }
@@ -306,16 +351,9 @@ public class JarMain {
         if(!outputFile.exists()){
             outputFile.mkdirs();
         }
-        File yamlJson = new File(new File(outputPath),"yaml.json");
-        try {
-            yamlJson.createNewFile();
-            Files.write(yamlJson.toPath(),yamlParser.getJson().toString(2).getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
 
         //TODO RunConfig should be immutable and terminal color is probably better stored in Run
+        //TODO should we separte yaml config from environment config (identity, knownHosts, threads, color terminal)
         if (commandLine.hasOption("colorTerminal") ){
             config.setColorTerminal( true );
         }

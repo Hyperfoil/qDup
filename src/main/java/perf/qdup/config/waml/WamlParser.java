@@ -1,4 +1,4 @@
-package perf.qdup.config;
+package perf.qdup.config.waml;
 
 import perf.yaup.HashedLists;
 import perf.yaup.Sets;
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import static perf.qdup.cmd.Cmd.STATE_PREFIX;
 import static perf.qdup.cmd.Cmd.STATE_SUFFIX;
 
-public class YamlParser {
+public class WamlParser {
 
     public static final String ON_SIGNAL = "on-signal";
     public static final String TIMER = "timer";
@@ -159,7 +159,7 @@ public class YamlParser {
     private HashedLists<String,String> fileErrors;
     private HashMap<String,Json> loaded;
 
-    public YamlParser(){
+    public WamlParser(){
         builder = new Builder();
         fileErrors = new HashedLists<>();
         loaded = new LinkedHashMap<>();
@@ -500,7 +500,7 @@ public class YamlParser {
 
                                     //now we actually expect a key character :)
                                 }else if (nestMatcher.reset(line).find()){
-                                    //but first we have to indent
+                                    //but first we have to prefix
                                     String childValue = nestMatcher.group(CHILD);
                                     int childLength = childValue.length();
                                     int contextLength = builder.getInt(CHILD_LENGTH,true);
@@ -540,7 +540,7 @@ public class YamlParser {
                                                 builder.push(newEntry);
                                                 builder.set(CHILD_LENGTH,childLength);
                                             }else{
-                                                //space indent, don't change target
+                                                //space prefix, don't change target
                                             }
                                         } else { //sibling
                                             if (childValue.contains("-")) {
@@ -823,7 +823,7 @@ public class YamlParser {
                                     builder.push(newEntry);
                                     builder.set(CHILD_LENGTH, childLength);
                                 } else {
-                                    //space indent, don't change target
+                                    //space prefix, don't change target
                                 }
 
                             } else {//sibling

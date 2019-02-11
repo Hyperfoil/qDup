@@ -17,6 +17,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
  * Base for all the commands than can be added to a Script. Commands are created through the static methods.
  */
 public abstract class Cmd {
-    private static final JexlEngine jexl = new JexlBuilder().cache(512).strict(true).silent(false).create();
+    //private static final JexlEngine jexl = new JexlBuilder().cache(512).strict(true).silent(false).create();
     private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
     static {
         try {
@@ -500,6 +501,9 @@ public abstract class Cmd {
     }
 
     public boolean isSilent(){return silent;}
+    public void setSilent(boolean silent){
+        this.silent = silent;
+    }
 
     public Cmd with(Map<? extends Object,? extends Object> map){
         map.forEach((k,v)->{

@@ -8,8 +8,8 @@ import perf.qdup.State;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Script;
 import perf.qdup.cmd.impl.CtrlC;
-import perf.qdup.cmd.impl.ScriptCmd;
 import perf.qdup.cmd.impl.Sh;
+import perf.qdup.config.waml.WamlParser;
 
 import java.util.List;
 import java.util.Set;
@@ -25,7 +25,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
     public void testScriptWithCtrlC(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("ctrlC",stream(""+
             "scripts:",
             "  foo:",
@@ -39,7 +39,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -63,7 +63,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
     public void testRolesWithState(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("with",stream("",
             "hosts:",
             "  local : me@localhost",
@@ -78,7 +78,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         ));
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -86,13 +86,13 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertTrue("run should have wildfly role",runConfig.getRoleNames().contains("wildfly"));
         Role role = runConfig.getRole("wildfly");
         assertEquals("hosts in wildfly role",1,role.getHosts().size());
-        List<ScriptCmd> setup = role.getSetup();
+        List<Cmd> setup = role.getSetup();
         assertEquals("two scripts in setup",2,setup.size());
     }
 
     @Test
     public void testVariableScriptWithWaitFor(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("waitFor",stream("",
             "scripts:",
             "  signal:",
@@ -115,7 +115,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -126,14 +126,14 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertTrue("signal: "+signalNames.toString(),signalNames.contains("SERVER_READY"));
         assertTrue("wait-for: "+waitNames.toString(),waitNames.contains("SERVER_READY"));
 
-        int signalCount = (int)runConfig.getRunStage().getSignalCount("SERVER_READY");
+        long signalCount = runConfig.getRunStage().getSignalCount("SERVER_READY");
 
         assertEquals("signal count for SERVER_READY",2,signalCount);
     }
 
     @Test
     public void testImplicitRunState(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("implicitState",stream("",
             "states:",
             "  foo : foo",
@@ -143,7 +143,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -166,7 +166,7 @@ public class RunConfigBuilderTest extends SshTestBase {
      */
     @Test @Ignore
     public void testSameStateName(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("firstDef",stream("",
             "states:",
             "  run:",
@@ -181,7 +181,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -198,7 +198,7 @@ public class RunConfigBuilderTest extends SshTestBase {
      */
     @Test
     public void testSameScriptName(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("firstDef",stream(""+
             "scripts:",
             "  first:",
@@ -218,7 +218,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         ));
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -231,7 +231,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
     public void testSh_echoEnvironmentVariable(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("echo",stream(""+
             "scripts:",
             "  foo:",
@@ -241,7 +241,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
 
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -259,7 +259,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
     public void testSilentWithWatcher(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("silentWithWatcher",stream("",
             "scripts:",
             "  first:",
@@ -273,7 +273,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         ));
 
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -292,7 +292,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
     public void testCmdTimer(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("cmdTimer",stream("",
             "scripts:",
             "  first:",
@@ -302,7 +302,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "          - abort: not good"
         ));
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -334,7 +334,7 @@ public class RunConfigBuilderTest extends SshTestBase {
      */
     @Test
     public void testMergeRoleAcrossYaml(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("scriptDef",stream(""+
             "scripts:",
             "  first:",
@@ -357,7 +357,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         ));
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
 
         RunConfig runConfig = builder.buildConfig();
 
@@ -370,7 +370,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertEquals("role has a host",1,role.getHosts().size());
 
         Cmd setupCmd = role.getSetup().get(0);
-        List<ScriptCmd> runCmds = role.getRun();
+        List<Cmd> runCmds = role.getRun();
 
         assertTrue("setup should contain first script",setupCmd.tree().contains("first"));
         assertEquals("role should contain one role script",1,runCmds.size());
@@ -380,7 +380,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     @Test @Ignore
     public void testRoleExpession(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("roleExpression",stream(""+
                 "hosts:",
                 "  foo : user@foo",
@@ -407,7 +407,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         ));
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
 
         RunConfig runConfig = builder.buildConfig();
 
@@ -437,7 +437,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
     public void testOldNestSyntax(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("oldSyntax",stream("",
                 "name: oldSyntax",
                 "scripts:",
@@ -449,7 +449,7 @@ public class RunConfigBuilderTest extends SshTestBase {
                 )
         );
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
 
         RunConfig runConfig = builder.buildConfig();
 
