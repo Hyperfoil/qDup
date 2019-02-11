@@ -177,6 +177,16 @@ public class YamlParserTest extends SshTestBase {
 
     }
 
+    @Test
+    public void bug_value_with_bracket_start(){
+        YamlParser parser = new YamlParser();
+        parser.load("bug",stream(""+
+            "key: [v]alue"
+        ));
+        assertEquals("Expect a parse error:\n"+parser.getErrors(),1,parser.getErrors().size());
+    }
+
+
     @Test(timeout = 10_000)
     public void bug_nestFirstChild(){
         YamlParser parser = new YamlParser();
@@ -629,7 +639,7 @@ public class YamlParserTest extends SshTestBase {
         parser.load("list.yaml",stream("---",
                 "foo: [a, b , c  ,    d]",
                 "bar: [ a , \"b[]][{}}{,\" , c,d ]",
-                "biz: [ a [ a.a, a.b ], [b.a,b.b]]",
+                "biz: [ a, [ a.a, a.b ], [b.a,b.b]]",
                 ""
         ));
         validateParse(parser);

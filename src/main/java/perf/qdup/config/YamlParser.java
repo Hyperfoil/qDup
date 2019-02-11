@@ -455,6 +455,14 @@ public class YamlParser {
                                     line = line.substring(1).trim();
                                 }else if (line.startsWith("]")){//end inline list
                                     line = line.substring(1).trim();
+                                    if(!line.isEmpty() && !",]}".contains(""+line.charAt(0))){
+                                        addError(fileName,String.format(
+                                                "Unexpected character after closing an inline list %n%s[%d]: %n",
+                                                fileName,
+                                                lineNumber,
+                                                originalLine
+                                                ));
+                                    }
                                     if(!INLINE_LIST.equals(inlineStack.peek())) {
                                         addError(fileName, String.format(
                                                 "Encountered ] but expected } %n%s[%d]: %s%n",
