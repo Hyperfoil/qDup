@@ -12,6 +12,7 @@ import perf.qdup.cmd.SpyContext;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
+import perf.qdup.config.YamlParser;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -131,20 +132,24 @@ public class ForEachTest extends SshTestBase {
         assertEquals("2",split.get(1));
     }
     @Test
-    public void split_commaspace(){
+    public void split_comma_space(){
         List<String> split = ForEach.split("1 , 2");
         assertEquals("two entires",2,split.size());
         assertEquals("1",split.get(0));
         assertEquals("2",split.get(1));
     }
     @Test
-    public void split_quoted_commaspace(){
+    public void split_quoted_comma(){
         List<String> split = ForEach.split("['1,1', 2]");
         assertEquals("two entires",2,split.size());
-        assertEquals("1,1",split.get(0));
+        assertEquals("'1,1'",split.get(0));
         assertEquals("2",split.get(1));
     }
-
+    @Test
+    public void split_comma(){
+        List<String> split = ForEach.split("service1, service2, service3");
+        assertEquals("should have 3 entires\n"+split.stream().collect(Collectors.joining("\n")),3,split.size());
+    }
 
     @Test
     public void then_injects_with_children(){
@@ -218,5 +223,210 @@ public class ForEachTest extends SshTestBase {
 
         assertEquals("lines contains 3 entries",3,lines.size());
         assertTrue("tail should be called",tail.get());
+    }
+
+    @Test
+    public void yaml_state_from_with(){
+        YamlParser parser = new YamlParser();
+        parser.load("foreach",stream(""+
+                        "scripts:",
+                "  foo:",
+                "  - for-each: SERVICE ${{FOO}}",
+                "    - read-state: SERVICE",
+                "hosts:",
+                "  local:"+getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: ",
+                "    - foo: ",
+                "        with:",
+                "          FOO : server1,server2,server3"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.loadYaml(parser);
+
+
+        RunConfig config = builder.buildConfig();
+
+        Cmd target = config.getScript("foo");
+        while(target.getNext()!=null && !(target instanceof ForEach)){
+            target = target.getNext();
         }
+        List<String> splits = new ArrayList<>();
+        target.then(Cmd.code(((input, state) -> {
+            splits.add(input);
+            return Result.next(input);
+        })));
+        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        assertEquals("for-each should run 3 times entries:\n"+splits.stream().collect(Collectors.joining("\n")),3,splits.size());
+    }
+
+    @Test
+    public void yaml_state_quoted(){
+        YamlParser parser = new YamlParser();
+        parser.load("foreach",stream(""+
+                "scripts:",
+                "  foo:",
+                "  - for-each: SERVICE ${{FOO}}",
+                "    - read-state: SERVICE",
+                "hosts:",
+                "  local:"+getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]",
+                "states:",
+                "  FOO: 'server1,server2,server3'"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser);
+        RunConfig config = builder.buildConfig();
+        Cmd target = config.getScript("foo");
+        while(target.getNext()!=null && !(target instanceof ForEach)){
+            target = target.getNext();
+        }
+        List<String> splits = new ArrayList<>();
+        target.then(Cmd.code(((input, state) -> {
+            splits.add(input);
+            return Result.next(input);
+        })));
+        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+        doit.run();
+        assertEquals("for-each should not split quoted string:\n"+splits.stream().collect(Collectors.joining("\n")),1,splits.size());
+
+    }
+    @Test
+    public void yaml_state(){
+        YamlParser parser = new YamlParser();
+        parser.load("foreach",stream(""+
+                        "scripts:",
+                "  foo:",
+                "  - for-each: SERVICE ${{FOO}}",
+                "    - read-state: SERVICE",
+                "hosts:",
+                "  local:"+getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]",
+                "states:",
+                "  FOO: server1,server2,server3"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.loadYaml(parser);
+        RunConfig config = builder.buildConfig();
+        Cmd target = config.getScript("foo");
+        while(target.getNext()!=null && !(target instanceof ForEach)){
+            target = target.getNext();
+        }
+        List<String> splits = new ArrayList<>();
+        target.then(Cmd.code(((input, state) -> {
+            splits.add(input);
+            return Result.next(input);
+        })));
+        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        assertEquals("for-each should run 3 times entries:\n"+splits.stream().collect(Collectors.joining("\n")),3,splits.size());
+
+    }
+
+    @Test
+    public void yaml_declared(){
+        YamlParser parser = new YamlParser();
+        parser.load("foreach",stream(""+
+            "scripts:",
+            "  foo:",
+            "  - for-each: SERVICE 'service1, service2, service3'",
+            "    - read-state: SERVICE",
+            "hosts:",
+            "  local:"+getHost(),
+            "roles:",
+            "  doit:",
+            "    hosts: [local]",
+            "    run-scripts: [foo]"
+        ));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.loadYaml(parser);
+        RunConfig config = builder.buildConfig();
+        Cmd target = config.getScript("foo");
+        while(target.getNext()!=null && !(target instanceof ForEach)){
+            target = target.getNext();
+        }
+        List<String> splits = new ArrayList<>();
+        target.then(Cmd.code(((input, state) -> {
+            splits.add(input);
+            return Result.next(input);
+        })));
+        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        assertEquals("for-each should run 3 times entries:\n"+splits.stream().collect(Collectors.joining("\n")),3,splits.size());
+    }
+
+    @Test
+    public void forEach_ls1_loop(){
+        List<String> lines = new ArrayList<>();
+        AtomicBoolean tail = new AtomicBoolean(false);
+        Script runScript = new Script("run");
+        runScript
+                .then(Cmd.sh("rm -r /tmp/foo"))
+                .then(Cmd.sh("mkdir /tmp/foo"))
+                .then(Cmd.sh("echo \"one\" > /tmp/foo/one.txt"))
+                .then(Cmd.sh("echo \"two\" > /tmp/foo/two.txt"))
+                .then(Cmd.sh("echo \"three\" > /tmp/foo/three.txt"))
+                .then(Cmd.sh("echo \"four\" > /tmp/foo/four.txt"))
+                .then(Cmd.sh("ls -1 --color=none /tmp/foo"))
+                .then(
+                    Cmd.forEach("ARG")
+                        .then(Cmd.code((input,state)->{
+                            lines.add(input);
+                            return Result.next(input);
+                        }))
+                )
+                .then(Cmd.code(((input, state) -> {
+                    tail.set(true);
+                    return Result.next(input);
+                })))
+                .then(Cmd.sh("rm -r /tmp/foo"))
+        ;
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+        builder.addScript(runScript);
+        builder.addHostAlias("local",getHost().toString());
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run run = new Run("/tmp",config,dispatcher);
+        run.run();
+
+        assertEquals("lines contains 3 entries:\n"+lines,4,lines.size());
+        assertTrue("tail should be called",tail.get());
+    }
 }

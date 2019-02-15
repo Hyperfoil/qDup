@@ -561,7 +561,7 @@ public class SshSession {
                 if (wait) {
                     try {
                         if(shellLock.availablePermits()<=0){
-                            logger.info("{} closing but shell still locked",this.getHost());
+                            logger.info("{} closing but shell still locked {}",this.getHost(),lastCommand);
                         }
                         shellLock.acquire();
                         if(permits()!=0){

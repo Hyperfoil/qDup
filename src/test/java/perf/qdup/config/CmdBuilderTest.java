@@ -6,14 +6,10 @@ import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.impl.*;
 import perf.yaup.json.Json;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static perf.qdup.SshTestBase.stream;
+
+import static org.junit.Assert.*;
 
 
 public class CmdBuilderTest extends SshTestBase {
@@ -58,16 +54,27 @@ public class CmdBuilderTest extends SshTestBase {
         assertEquals("split \"foo bar\" should create 2 entries",2,out.size());
     }
     @Test
-    public void splitQuoted(){
+    public void split_quoted(){
         CmdBuilder builder = CmdBuilder.getBuilder();
         List<String> out = builder.split("\"foo \t\\\"bar\"  bar");
-
         assertEquals("split \"foo bar\" should create 2 entries",2,out.size());
     }
     @Test
-    public void splitNotQuoteThenQuote(){
+    public void split_commas(){
         CmdBuilder builder = CmdBuilder.getBuilder();
-        List<String> out = builder.split("EXECUTOR \"unzip \"");
+        List<String> out = builder.split("service1, service2, service3");
+        assertEquals("split into 3 entries\n"+out,3,out.size());
+    }
+    @Test
+    public void split_quoted_list(){//issue 25
+        CmdBuilder builder = CmdBuilder.getBuilder();
+        List<String> out = builder.split("'service1, service2, service3'");
+        assertEquals("do not split quoted literals"+out,1,out.size());
+    }
+    @Test
+    public void split_not_quote_then_quote(){
+        CmdBuilder builder = CmdBuilder.getBuilder();
+        List<String> out = builder.split("EXECUTOR \"unzip it please \"");
 
         assertEquals("split should create 2 entries",2,out.size());
     }

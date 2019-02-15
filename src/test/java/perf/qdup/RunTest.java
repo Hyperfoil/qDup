@@ -86,7 +86,7 @@ public class RunTest extends SshTestBase{
     public void signal_in_previous_stage(){
         YamlParser parser = new YamlParser();
         parser.load("signal",stream(""+
-                        "scripts:",
+                "scripts:",
                 "  foo:",
                 "    - signal: FOO",
                 "  bar:",

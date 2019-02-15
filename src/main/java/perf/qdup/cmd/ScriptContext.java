@@ -5,7 +5,6 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import org.slf4j.profiler.Profiler;
 import perf.qdup.*;
-import perf.qdup.cmd.impl.Abort;
 import perf.qdup.cmd.impl.ScriptCmd;
 
 import java.lang.invoke.MethodHandles;
@@ -160,7 +159,7 @@ public class ScriptContext implements Context, Runnable{
     }
 
     private void log(Cmd command,String output){
-        String cmdLogOuptut = command.getLogOutput(output,this);
+        String cmdLogOuptut = command == null ? output : command.getLogOutput(output,this);
         String populatedCommand = Cmd.populateStateVariables(cmdLogOuptut, command, state);
         String rootString;
         if(rootCmd instanceof Script){

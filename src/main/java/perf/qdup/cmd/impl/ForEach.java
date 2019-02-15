@@ -16,20 +16,28 @@ public class ForEach extends Cmd.LoopCmd {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     private String name;
-    private String input;
-    private List<String> split;
-    private int index;
+    private String populatedName;
+
+    private String declaredInput;
+    private String loadedInput;
+    private final List<String> split = new ArrayList<>();
+    private int index = -1;
 
     public ForEach(String name){
         this(name,"");
     }
     public ForEach(String name,String input){
         this.name = name;
-        this.input = input;
-        this.split = null;
-        this.index = -1;
+        this.populatedName = name;
+        this.declaredInput = input==null?"":input;
+        this.loadedInput = declaredInput;
     }
+
+    public String getName(){return name;}
+    public String getDeclaredInput(){return declaredInput;}
+
     public static List<String> split(String toSplit){
+
         List<String> split = new ArrayList<>();
         if(toSplit.contains("\n")){
             split = Arrays.asList(toSplit.split("\r?\n"));
@@ -39,9 +47,9 @@ public class ForEach extends Cmd.LoopCmd {
             }
             String found = "";
             while( !(found=StringUtil.findNotQuoted(toSplit,", ")).isEmpty() ){
-                found = found.replaceAll("^[,\\s]+","");
-                split.add(StringUtil.removeQuotes(found.trim()));
                 toSplit = toSplit.substring(found.length());
+                toSplit = toSplit.replaceAll("^[,\\s]+","");//remove the ", " that separated found
+                split.add(found);
             }
             if(!toSplit.isEmpty()){
                 toSplit = toSplit.replaceAll("^[,\\s]+","");
@@ -54,13 +62,27 @@ public class ForEach extends Cmd.LoopCmd {
     @Override
     public void run(String input, Context context) {
         try {
-            if (split == null) {
-                String toSplit = this.input.isEmpty() ? input.trim() : Cmd.populateStateVariables(this.input, this, context.getState());
-                split = split(toSplit);
+            if(split.isEmpty()){
+
+                if(!declaredInput.isEmpty()){
+                    String populatedDeclaredInput = Cmd.populateStateVariables(declaredInput,this,context.getState());
+
+                    split.addAll(split(populatedDeclaredInput));
+                    this.loadedInput = populatedDeclaredInput;
+                } else {
+                    split.addAll(split(input));
+                    this.loadedInput = input;
+                }
+            }
+            if (this.declaredInput.isEmpty() && !this.loadedInput.equals(input)) {//for-each under a for-each needs to identify when the input changed
+                split.clear();
+                split.addAll(split(input));
+                index=-1;
+                this.loadedInput = input;
                 logger.debug("for-each:{} input={} split={}", name, input, split);
             }
-            if (split != null && !split.isEmpty()) {
-                String populatedName = Cmd.populateStateVariables(this.name, this, context.getState());
+            if (!split.isEmpty()) {
+                populatedName = Cmd.populateStateVariables(this.name, this, context.getState());
                 index++;
                 if (index < split.size()) {
                     String value = split.get(index).replaceAll("\r|\n", "");//defensive against trailing newline characters
@@ -79,18 +101,18 @@ public class ForEach extends Cmd.LoopCmd {
 
     @Override
     public Cmd copy() {
-        return new ForEach(this.name,this.input);
+        return new ForEach(this.name,this.declaredInput);
     }
 
 
     @Override
     public String toString(){
-        return "for-each: "+name+(this.input!=null?this.input:"");
+        return "for-each: "+name+" "+(this.declaredInput !=null?this.declaredInput :"");
     }
 
     @Override
     public String getLogOutput(String output,Context context){
-        if(split!=null && !split.isEmpty() && index < split.size()){
+        if(!split.isEmpty() && index < split.size()){
             return "for-each: "+name+" = "+split.get(index);
         }else{
             return "for-each: "+name;

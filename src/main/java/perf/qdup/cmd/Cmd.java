@@ -292,7 +292,6 @@ public abstract class Cmd {
 
 
     private boolean hasWith(String name){
-
         boolean hasIt = with.containsKey(name);
         Cmd target = this.parent;
         while(!hasIt && target!=null){

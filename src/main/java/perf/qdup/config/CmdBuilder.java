@@ -522,6 +522,8 @@ public class CmdBuilder {
                         quoteChar = input.charAt(current);
                         if(current>start){
                             pop=true;
+                        }else if (current==start){
+                            start++;
                         }
                     } else {
                         if (quoteChar == input.charAt(current)) {
