@@ -2,10 +2,7 @@ package perf.qdup;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.Dispatcher;
-import perf.qdup.cmd.Result;
-import perf.qdup.cmd.Script;
+import perf.qdup.cmd.*;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
@@ -26,6 +23,37 @@ public class RunTest extends SshTestBase{
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
+
+    @Test
+    public void run_ALL_role(){
+        AtomicBoolean allRan = new AtomicBoolean(false);
+        Script allScript = new Script("allScript")
+            .then(Cmd.code(new Code() {
+                @Override
+                public Result run(String input, State state) {
+                    allRan.set(true);
+                    return Result.next(input);
+                }
+            }));
+        Script runScript = new Script("localScript")
+            .then(Cmd.sh("pwd"));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.addHostAlias("local",getHost().toString());
+        builder.addScript(runScript);
+        builder.addScript(allScript);
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","localScript",new HashMap<>());
+        builder.addRoleRun(RunConfigBuilder.ALL_ROLE,"allScript",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        assertTrue("all script should have run",allRan.get());
+    }
 
     @Test
     public void pwd_in_dollar(){
