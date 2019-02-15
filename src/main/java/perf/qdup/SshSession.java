@@ -393,13 +393,22 @@ public class SshSession {
     }
 
     public Host getHost(){return host;}
-    public void ctrlC() {
+    protected int ctrlInt(char key) {
+        return (Character.toUpperCase(key) & 0x1f);
+    }
+    public void ctrlC(){
+        ctrl('C');//end process
+    }
+    public void ctrlZ(){
+        ctrl('Z');//send to background
+    }
+    public void ctrl(char key) {
         if(isOpen()) {
             if (!channelShell.isOpen()) {
                 logger.error("Shell is not connected for ctrlC");
             } else {
                 try {
-                    commandStream.write(3);//works for real qdup, not TestServer
+                    commandStream.write(ctrlInt(key));//b3 works for real qdup, not TestServer
                     commandStream.flush();
 
 
