@@ -416,6 +416,7 @@ public abstract class Cmd {
     private LinkedList<Cmd> thens;
     private LinkedList<Cmd> watchers;
     private HashedLists<Long,Cmd> timers;
+    private HashedLists<String,Cmd> onSignal;
 
     private Cmd parent;
     private Cmd prev;
@@ -437,11 +438,23 @@ public abstract class Cmd {
         this.thens = new LinkedList<>();
         this.watchers = new LinkedList<>();
         this.timers = new HashedLists<>();
+        this.onSignal = new HashedLists<>();
         this.next = null;
         this.skip = null;
         this.prev = null;
         this.parent = null;
         this.uid = uidGenerator.incrementAndGet();
+    }
+    public Cmd onSignal(String name,Cmd command){
+        onSignal.put(name,command);
+        return this;
+    }
+    public boolean hasSignalWatchers(){
+        return !onSignal.isEmpty();
+    }
+    public Set<String> getSignalNames(){return onSignal.keys();}
+    public List<Cmd> getSignal(String name){
+        return onSignal.get(name);
     }
     public Cmd addTimer(long timeout,Cmd command){
         timers.put(timeout,command);
@@ -628,6 +641,11 @@ public abstract class Cmd {
         for(long timeout: this.getTimeouts()){
             for(Cmd timed : this.getTimers(timeout)){
                 clone.addTimer(timeout,timed.deepCopy());
+            }
+        }
+        for(String name :this.getSignalNames()){
+            for(Cmd signaled : this.getSignal(name)){
+                clone.onSignal(name,signaled);
             }
         }
         return clone;

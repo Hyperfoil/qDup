@@ -24,6 +24,35 @@ public class RunTest extends SshTestBase{
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
+
+    @Test(timeout = 10_000)
+    public void watch_signal(){
+        AtomicBoolean stopped = new AtomicBoolean(false);
+        Script onSignal = new Script("onSignal");
+        onSignal.then(Cmd.sleep("1h").onSignal("stop",Cmd.code(((input, state) -> {
+            stopped.set(true);
+            return Result.next("stopped");
+        })).then(Cmd.abort("signal aborted"))));
+        Script sendSignal = new Script("sendSignal");
+        sendSignal.then(Cmd.sleep("2s").then(Cmd.signal("stop")));
+
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.addHostAlias("local",getHost().toString());
+        builder.addScript(onSignal);
+        builder.addScript(sendSignal);
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","onSignal",new HashMap<>());
+        builder.addRoleRun("role","sendSignal",new HashMap<>());
+
+        RunConfig config = builder.buildConfig();
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+        
+        assertTrue("stopped should be reached",stopped.get());
+    }
+
     @Test
     public void run_ALL_role(){
         AtomicBoolean allRan = new AtomicBoolean(false);

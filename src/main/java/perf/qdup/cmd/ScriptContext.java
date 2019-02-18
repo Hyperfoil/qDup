@@ -8,14 +8,13 @@ import perf.qdup.*;
 import perf.qdup.cmd.impl.ScriptCmd;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Supplier;
 
 /**
  * Created by wreicher
@@ -24,6 +23,29 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 public class ScriptContext implements Context, Runnable{
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+
+    private class ActiveCheckCmd extends Cmd{
+
+        private Cmd target;
+
+        public ActiveCheckCmd(Cmd target){
+            this.target = target;
+        }
+
+        @Override
+        public void run(String input, Context context) {
+            if(target.equals(currentCmd)){
+                context.next(input);
+            }else{
+                context.skip(input);
+            }
+        }
+
+        @Override
+        public Cmd copy() {
+            return new ActiveCheckCmd(target);
+        }
+    }
 
     private static final AtomicReferenceFieldUpdater<ScriptContext,Cmd> currentCmdUpdater =
             AtomicReferenceFieldUpdater.newUpdater(ScriptContext.class,Cmd.class,"currentCmd");
@@ -41,6 +63,7 @@ public class ScriptContext implements Context, Runnable{
     private List<ScheduledFuture<?>> timeouts;
 
     private volatile Cmd currentCmd;
+    private final Map<String,Cmd> signalCmds = new HashMap<>();
 
     long startTime = -1;
     long updateTime = -1;
@@ -185,6 +208,12 @@ public class ScriptContext implements Context, Runnable{
         getProfiler().start("next");
         Cmd cmd = getCurrentCmd();
         log(cmd,output);
+        if(!signalCmds.isEmpty()){
+            signalCmds.forEach((name,onsignal)->{
+                getCoordinator().removeWaiter(name,onsignal);
+            });
+            signalCmds.clear();
+        }
         observerPreNext(cmd,output);
         if(cmd!=null) {
             if(cmd.hasWatchers()){
@@ -203,6 +232,12 @@ public class ScriptContext implements Context, Runnable{
         getProfiler().start("skip");
         Cmd cmd = getCurrentCmd();
         log(cmd,output);
+        if(!signalCmds.isEmpty()){
+            signalCmds.forEach((name,onsignal)->{
+                getCoordinator().removeWaiter(name,onsignal);
+            });
+            signalCmds.clear();
+        }
         observerPreSkip(cmd,output);
         if(cmd!=null) {
             if(cmd.hasWatchers()){
@@ -288,6 +323,19 @@ public class ScriptContext implements Context, Runnable{
                 setStartTime(timestamp);
                 setUpdateTime(timestamp);
                 String input = cmd != null && cmd.getPrevious() != null ? cmd.getPrevious().getOutput() : "";
+
+                if (cmd.hasSignalWatchers()){
+
+                    Supplier<String> inputSupplier = ()->getSession().peekOutput();
+                    for(String name : cmd.getSignalNames()){
+                        List<Cmd> toCall = cmd.getSignal(name);
+                        Cmd root = new ActiveCheckCmd(getCurrentCmd());
+                        SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getProfiler(),root);
+                        toCall.forEach(root::then);
+                        signalCmds.put(name,root);
+                        getCoordinator().waitFor(name,root,syncContext,inputSupplier);
+                    }
+                }
                 if (cmd.hasTimers()) {
                     for (Long timeout : cmd.getTimeouts()) {
                         List<Cmd> toCall = cmd.getTimers(timeout);
@@ -300,6 +348,7 @@ public class ScriptContext implements Context, Runnable{
                         );
                     }
                 }
+
                 long startDoRun = System.currentTimeMillis();
                 cmd.doRun(input, this);
 
@@ -331,6 +380,7 @@ public class ScriptContext implements Context, Runnable{
 
                     }
                 }
+
             }
     }
 }

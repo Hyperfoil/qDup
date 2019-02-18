@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Container for all the coordination points between Cmds
@@ -26,9 +27,12 @@ public class Coordinator {
 
     class Waiter {
         Context context;
-        String input;
+        Supplier<String> input;
         Cmd command;
         public Waiter( Cmd command, Context context, String input){
+            this(command,context,()->input);
+        }
+        public Waiter( Cmd command, Context context, Supplier<String> input){
             this.command = command;
             this.context = context;
             this.input = input;
@@ -36,7 +40,7 @@ public class Coordinator {
         public Cmd getCommand(){return command;}
 
         public Context getContext() {return context;}
-        public String getInput(){return input;}
+        public String getInput(){return input.get();}
 
         @Override
         public int hashCode(){return command.hashCode();}
@@ -48,10 +52,10 @@ public class Coordinator {
             return false;
         }
         public void next(){
-            context.next(input);
+            context.next(input.get());
         }
         public void skip(){
-            context.skip(input);
+            context.skip(input.get());
         }
     }
 
@@ -149,6 +153,7 @@ public class Coordinator {
         waitFors.clear();
     }
     public void signal(String name){
+
         if(!latches.containsKey(name)){
             logger.warn("signal {} missing latch, ignoring",name);
             return;
@@ -190,10 +195,17 @@ public class Coordinator {
                 waiter.next();
             }else {
                 logger.debug("waitFor {} count = {}, queueing",name,latches.get(name).get());
-
                 ensureWaitFor(name).add(waiter);
             }
         }
+    }
+    public void removeWaiter(String name,Cmd command){
+        waitFors.getOrDefault(name,new ArrayList<>()).removeIf((w)->w.hashCode() == command.hashCode());
+    }
+    public void waitFor(String name,Cmd command,Context context,Supplier<String> input){
+
+        Waiter waiter = new Waiter(command,context,input);
+        waitFor(name,waiter);
     }
     public void waitFor(String name,Cmd command,Context context,String input, long timeout, TimeUnit unit){
         //TODO use scheduled task to implement timeout

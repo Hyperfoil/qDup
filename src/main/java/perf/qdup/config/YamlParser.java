@@ -15,6 +15,7 @@ import static perf.qdup.cmd.Cmd.STATE_SUFFIX;
 
 public class YamlParser {
 
+    public static final String ON_SIGNAL = "on-signal";
     public static final String TIMER = "timer";
     public static final String WATCH = "watch";
     public static final String WITH = "with";

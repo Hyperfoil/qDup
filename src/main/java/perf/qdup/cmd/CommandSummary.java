@@ -3,7 +3,6 @@ package perf.qdup.cmd;
 import perf.qdup.cmd.impl.*;
 import perf.qdup.config.RunConfigBuilder;
 import perf.yaup.Counters;
-import perf.yaup.StringUtil;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -106,6 +105,13 @@ public class CommandSummary {
             for(long timeout: command.getTimeouts()){
                 for(Cmd timer : command.getTimers(timeout)){
                     processCommand(timer,true,config,ref);
+                }
+            }
+        }
+        if(command.hasSignalWatchers()){
+            for(String name : command.getSignalNames()){
+                for(Cmd onSignal : command.getSignal(name)){
+                    processCommand(onSignal,true,config,ref);
                 }
             }
         }

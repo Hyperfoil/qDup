@@ -9,6 +9,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -275,6 +276,28 @@ public class CmdBuilder {
             //TODO alert the error?
         }
     }
+    public void addOnSignal(Cmd command,Json json,List<String> errors){
+        String jsonKey = json.getString(KEY);
+        String jsonValue = json.getString(VALUE);
+        if(ON_SIGNAL.equalsIgnoreCase(jsonKey)){
+            if(jsonValue!=null){
+                String name = jsonValue;
+                if(json.has(CHILD)){
+                    Json childArray = json.getJson(CHILD);
+                    Cmd toCall = Cmd.NO_OP();
+                    for(int i=0; i<childArray.size(); i++){
+                        Json childEntryList = childArray.getJson(i);
+                        for(int c=0; c<childEntryList.size();c++){
+                            Json childEntry = childEntryList.getJson(c);
+                            Cmd childCmd = buildYamlCommand(childEntry,toCall,errors);
+                            toCall.then(childCmd);
+                        }
+                    }
+                    command.onSignal(name,toCall);
+                }
+            }
+        }
+    }
     public void addTimer(Cmd command,Json json,List<String> errors){
         String jsonKey = json.getString(KEY);
         String jsonValue = json.getString(VALUE);
@@ -489,6 +512,9 @@ public class CmdBuilder {
                             break;
                         case TIMER:
                             addTimer(rtrn.getTail(),childEntry,errors);
+                            break;
+                        case ON_SIGNAL:
+                            addOnSignal(rtrn.getTail(),childEntry,errors);
                             break;
                         default://
                             if(has(childKey)){// a known command
