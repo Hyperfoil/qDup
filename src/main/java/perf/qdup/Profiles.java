@@ -42,16 +42,15 @@ public class Profiles {
     }
 
     private Json toJson(Profiler profile){
-
         Json rtrn = new Json();
-
         if(profile!=null) {
             profile.getCopyOfChildTimeInstruments().forEach(timeInstrument -> {
-
-                Json toAdd = new Json();
-                toAdd.set("name", timeInstrument.getName());
-                toAdd.set("ns", timeInstrument.elapsedTime());
-                rtrn.add(toAdd);
+                if(timeInstrument!=null) {
+                    Json toAdd = new Json();
+                    toAdd.set("name", timeInstrument.getName()!=null ? timeInstrument.getName():"");
+                    toAdd.set("ns", timeInstrument.elapsedTime());
+                    rtrn.add(toAdd);
+                }
 
             });
         }else{
