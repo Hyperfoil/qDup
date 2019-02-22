@@ -103,6 +103,9 @@ public class State {
         return has(key,false);
     }
     public boolean has(String key,boolean recursive){
+        if(key==null){
+            return false;
+        }
         boolean rtrn = false;
         State target = this;
         while(!rtrn && target!=null){
