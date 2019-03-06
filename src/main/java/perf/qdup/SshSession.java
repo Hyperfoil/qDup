@@ -285,8 +285,8 @@ public class SshSession {
             channelShell.getPtyModes().put(PtyMode.ECHO,1);//need echo for \n from real SH but adds gargage chars for test :(
             channelShell.setPtyType("vt100");
             //channelShell.setPtyType("xterm");
-            channelShell.setPtyColumns(1024);
-            channelShell.setPtyWidth(1024);
+            channelShell.setPtyColumns(10*1024);//hack to get around " \r" when line is longer than shell width
+            channelShell.setPtyWidth(10*1024);//TODO add " \r" to the suffix stream?
             channelShell.setPtyHeight(80);
             channelShell.setPtyLines(80);
             channelShell.setUsePty(true);
