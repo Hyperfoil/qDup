@@ -5,6 +5,7 @@ import org.slf4j.ext.XLoggerFactory;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Context;
 import perf.yaup.StringUtil;
+import perf.yaup.json.Json;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ public class ForEach extends Cmd.LoopCmd {
 
     private String declaredInput;
     private String loadedInput;
-    private final List<String> split = new ArrayList<>();
+    private final List<Object> split = new ArrayList<>();
     private int index = -1;
 
     public ForEach(String name){
@@ -36,11 +37,23 @@ public class ForEach extends Cmd.LoopCmd {
     public String getName(){return name;}
     public String getDeclaredInput(){return declaredInput;}
 
-    public static List<String> split(String toSplit){
+    public static List<Object> split(String toSplit){
+        final List<Object> split = new ArrayList<>();
+        Json json;
+        if(Json.isJsonLike(toSplit) && (json = Json.fromJs(toSplit))!=null) {
+            if (json.isArray()) {
+                split.addAll(json.values());
+            } else {
+                json.forEach((key, value) -> {
+                    Json entry = new Json();
+                    entry.set("key", key);
+                    entry.set("value", value);
+                    split.add(entry);
+                });
+            }
+        }else if (toSplit.contains("\n")){
+            split.addAll(Arrays.asList(toSplit.split("\r?\n")));
 
-        List<String> split = new ArrayList<>();
-        if(toSplit.contains("\n")){
-            split = Arrays.asList(toSplit.split("\r?\n"));
         }else {
             if(toSplit.startsWith("[") && toSplit.endsWith("]")){
                 toSplit=toSplit.substring(1,toSplit.length()-1);//remove [ ] around the list
@@ -62,32 +75,34 @@ public class ForEach extends Cmd.LoopCmd {
     @Override
     public void run(String input, Context context) {
         try {
-            if(split.isEmpty()){
-
-                if(!declaredInput.isEmpty()){
-                    String populatedDeclaredInput = Cmd.populateStateVariables(declaredInput,this,context.getState());
-
-                    split.addAll(split(populatedDeclaredInput));
-                    this.loadedInput = populatedDeclaredInput;
-                } else {
-                    split.addAll(split(input));
-                    this.loadedInput = input;
-                }
-            }
-            if (this.declaredInput.isEmpty() && !this.loadedInput.equals(input)) {//for-each under a for-each needs to identify when the input changed
+            String populatedDeclaredInput = Cmd.populateStateVariables(declaredInput,this,context.getState());
+            //if we need to load from declaredInput
+            if( !declaredInput.isEmpty() && !populatedDeclaredInput.isEmpty() && (split.isEmpty() || !this.loadedInput.equalsIgnoreCase(populatedDeclaredInput)) ) {
                 split.clear();
-                split.addAll(split(input));
                 index=-1;
-                this.loadedInput = input;
+                split.addAll(split(populatedDeclaredInput));
+                this.loadedInput = populatedDeclaredInput;//set loadedInput to the string rep of what we loaded
                 logger.debug("for-each:{} input={} split={}", name, input, split);
+            //if we need to load from input
+            }else if ( (declaredInput.isEmpty() || populatedDeclaredInput.isEmpty()) && (split.isEmpty() || !this.loadedInput.equals(input))){
+                split.clear();
+                index=-1;
+                split.addAll(split(input));
+                this.loadedInput = input;
             }
             if (!split.isEmpty()) {
                 populatedName = Cmd.populateStateVariables(this.name, this, context.getState());
                 index++;
                 if (index < split.size()) {
-                    String value = split.get(index).replaceAll("\r|\n", "");//defensive against trailing newline characters
+                    Object value = split.get(index);
+                    if(value == null){
+                        value = "";
+                    }
+                    if(value instanceof String){
+                        value = ((String)value).replaceAll("\r|\n","");//defensive agaisnt trailing newline characters
+                    }
                     with(populatedName, value);
-                    context.next(value);
+                    context.next(value.toString());
                 } else {
                     context.skip(input);
                 }

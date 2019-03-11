@@ -512,6 +512,9 @@ public class SshSession {
                     addShObserver(SH_CALLBACK,callback);
                 }
                 if (!command.isEmpty()) {
+                    //TODO race between this and FilteredStream.write before we changed FilterStream to copy the keys into a new Set
+                    //Are we releasing the lock too soon in the stream chain?
+                    //test with a stream that sleeps in the write?
                     filteredStream.addFilter("command", command, "");
                 }
 //                if(acquireLock) {

@@ -12,6 +12,7 @@ import perf.qdup.config.RunConfigBuilder;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CmdTest extends SshTestBase {
 
@@ -187,6 +188,45 @@ public class CmdTest extends SshTestBase {
 
         assertEquals("should populate from state","foo",populated);
     }
+
+    @Test
+    public void hasWith_self(){
+                Cmd top = Cmd.NO_OP();
+                top.with("foo","bar");
+                assertTrue("top should have bar", top.hasWith("foo"));
+            }
+    @Test
+    public void hasWith_parent(){
+                Cmd top = Cmd.NO_OP();
+                Cmd mid = Cmd.NO_OP();
+                Cmd bot = Cmd.NO_OP();
+
+                        top.then(mid);
+                mid.then(bot);
+
+                        top.with("foo","bar");
+                assertTrue("bot should have bar", bot.hasWith("foo"));
+            }
+
+            @Test
+    public void populateStateVariables_from_parent_with(){
+                Cmd top = Cmd.NO_OP();
+                Cmd mid = Cmd.NO_OP();
+                Cmd bot = Cmd.NO_OP();
+
+                        top.then(mid);
+                mid.then(bot);
+
+                        top.with("foo","bar");
+
+                        State state = new State("");
+                state.set("foo","state");
+
+                        String populated = Cmd.populateStateVariables("${{foo}}",bot,state);
+                assertEquals("with should take priority over state","bar",populated);
+            }
+
+
 
     @Test
     public void testWith(){

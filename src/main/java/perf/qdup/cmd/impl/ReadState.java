@@ -20,11 +20,12 @@ public class ReadState extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        //use populateVariable in case it is in WITH or context
-        populatedKey = Cmd.populateVariable(key,this,context.getState(),null);
+        //use getStateValue in case it is in WITH or contest
+        Object value = Cmd.getStateValue(key, this, context.getState(), null);
+        populatedKey = value == null ? "" : value.toString();
         if(populatedKey == null || populatedKey.isEmpty()){
             context.skip(input);
-        } else {
+        }else{
             context.next(populatedKey);
         }
     }

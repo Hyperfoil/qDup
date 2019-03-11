@@ -29,7 +29,7 @@ public class ExitCode extends Cmd {
              //cannot get exit code if there wasn't a previous command
              context.skip(input);
          }else {//assuming there was a previous Sh at some point
-             if(!getPrevious().getWith().containsKey(EXIT_CODE_KEY)){
+             if(!getPrevious().getWith().has(EXIT_CODE_KEY)){
                  if(context!=null && context.getSession()!=null){
                      String response = context.getSession().shSync("echo $?");
                      getPrevious().with(EXIT_CODE_KEY,response);
@@ -38,7 +38,7 @@ public class ExitCode extends Cmd {
                      getPrevious().with(EXIT_CODE_KEY,DEFAULT_EXIT_CODE);
                  }
              }
-             String exitCode = getPrevious().getWith().get(EXIT_CODE_KEY);
+             String exitCode = getPrevious().getWith().get(EXIT_CODE_KEY).toString();
              with(EXIT_CODE_KEY,exitCode);
 
              if(expected.equals(exitCode)){

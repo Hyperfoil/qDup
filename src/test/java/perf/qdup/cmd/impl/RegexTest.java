@@ -6,6 +6,7 @@ import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.SpyContext;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.YamlParser;
+import perf.yaup.json.Json;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,28 @@ public class RegexTest extends SshTestBase {
         assertEquals("next should match entire pattern","SUCCESS",context.getNext());
         assertNull("regex should match",context.getSkip());
     }
+
+    @Test
+    public void named_capture(){
+                Cmd regex = Cmd.regex("(?<all>.*)");
+                SpyContext context = new SpyContext();
+                context.clear();
+                regex.run("foo",context);
+
+                        assertEquals("state.get(all) should be foo","foo",context.getState().get("all"));
+            }
+    @Test
+    public void named_capture_with_dots(){
+                Cmd regex = Cmd.regex("(?<all.with.dots>.*)");
+                SpyContext context = new SpyContext();
+                context.clear();
+                regex.run("foo",context);
+
+                        assertEquals("state.get(all.with.dots) should be foo","foo",context.getState().get("all.with.dots"));
+                Object all = context.getState().get("all");
+                assertTrue("state.get(all) should return json",all instanceof Json);
+            }
+
 
     @Test
     public void removeDoubleSlashedRegex(){

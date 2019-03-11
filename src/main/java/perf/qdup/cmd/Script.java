@@ -1,7 +1,5 @@
 package perf.qdup.cmd;
 
-import java.util.HashMap;
-
 /**
  * Created by wreicher
  * The starting Cmd for a sequence of Cmd that will run against a remote SshSession
@@ -9,12 +7,8 @@ import java.util.HashMap;
 public class Script extends Cmd {
     private String name;
 
-
-
     public Script(String name) {
-
         this.name = name;
-        this.with = new HashMap<>();
     }
 
     public String getName() {

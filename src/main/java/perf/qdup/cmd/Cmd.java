@@ -9,13 +9,10 @@ import perf.qdup.State;
 import perf.qdup.cmd.impl.*;
 import perf.yaup.HashedLists;
 import perf.yaup.StringUtil;
+import perf.yaup.json.Json;
 
-import javax.script.Bindings;
 import javax.script.ScriptContext;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import javax.script.SimpleScriptContext;
+import javax.script.*;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -49,11 +46,11 @@ public abstract class Cmd {
         @Override
         public Object get(String name) {
             if(state.has(name)) {
-                String value = state.get(name);
-                if (value.matches("\\d+")) {
-                    return Long.parseLong(value);
-                } else if (value.matches("\\d*\\.\\d+")) {
-                    return Double.parseDouble(value);
+                Object value = state.get(name);
+                if(value instanceof String && ((String)value).matches("\\d+")){
+                    return Long.parseLong((String)value);
+                }else if (value instanceof String && ((String)value).matches("\\d+\\.\\d+")){
+                    return Double.parseDouble((String)value);
                 }
             }
             return null;
@@ -75,11 +72,11 @@ public abstract class Cmd {
         private final ScriptContext parent;
 
         private Object fromState(String key){
-            String val = state.get(key);
-            if(val.matches("\\d+")){
-                return Long.parseLong(val);
-            }else if (val.matches("\\d*\\.\\d+")){
-                return Double.parseDouble(val);
+            Object val = state.get(key);
+            if(val instanceof String && ((String)val).matches("\\d+")) {
+                return Long.parseLong((String) val);
+            }else if (val instanceof String && ((String)val).matches("\\d+\\.\\d+")){
+                return Double.parseDouble((String)val);
             }else{
                 return val;
             }
@@ -291,30 +288,33 @@ public abstract class Cmd {
     }
 
 
-    private boolean hasWith(String name){
-        boolean hasIt = with.containsKey(name);
-        Cmd target = this.parent;
+    protected boolean hasWith(String name){
+        boolean hasIt = false;
+        Cmd target = this;
         while(!hasIt && target!=null){
-            hasIt = target.with.containsKey(name);
+            hasIt = target.with.has(name) || Json.find(target.with,name.startsWith("$") ? name : "$."+name)!=null;
             target = target.parent;
         }
         return hasIt;
     }
-    private String getWith(String name){
-        String value = with.get(name);
-        Cmd target = this.parent;
+    protected Object getWith(String name){
+        Object value = null;
+        Cmd target = this;
         while(value==null && target!=null){
-            value = target.with.get(name);
+            value = target.with.has(name) ? target.with.get(name) : Json.find(target.with,name.startsWith("$") ? name : "$."+name);
             target = target.parent;
         }
         return value;
+    }
+    public static boolean isSingelStageReference(String input){
+        return input.startsWith(STATE_PREFIX) && input.equalsIgnoreCase(STATE_SUFFIX) && input.indexOf(STATE_PREFIX,1) == -1;
     }
     public static String populateStateVariables(String command,Cmd cmd, State state){
         return populateStateVariables(command,cmd,state,true);
     }
 
     //handles recursive variable references
-    protected static String populateVariable(String name, Cmd cmd,State state, Ref ref){
+    protected static Object getStateValue(String name, Cmd cmd,State state, Ref ref){
         String rtrn = null;
         String currentName = name;
         do {
@@ -327,25 +327,26 @@ public abstract class Cmd {
 
             }
             if (cmd != null && cmd.hasWith(currentName)) {
-                rtrn = cmd.getWith(currentName);
+                rtrn = cmd.getWith(currentName).toString();
             }
             if(rtrn == null && ref!=null){
                 Ref targeetRef = ref;
                 do {
                     if(targeetRef.getCommand()!=null && targeetRef.getCommand().hasWith(currentName)){
-                        rtrn = targeetRef.getCommand().getWith(currentName);
+                        rtrn = targeetRef.getCommand().getWith(currentName).toString();
                     }
 
                 }while( (targeetRef=targeetRef.getParent())!=null && rtrn==null);
             }
             if (rtrn == null && state!=null){
-                rtrn = state.get(currentName);
+                Object val = state.get(currentName);
+                rtrn = val == null ? null : val.toString();
             }
-        }while (rtrn!=null && (currentName=rtrn).startsWith(STATE_PREFIX));
+        }while (rtrn!=null && (currentName=rtrn).contains(STATE_PREFIX));
         return rtrn;
     }
     public static String populateStateVariables(String command,Cmd cmd, State state,boolean replaceUndefined) {
-        return populateStateVariables(command,cmd,state,replaceUndefined,null);
+        return populateStateVariables(command,cmd,state,replaceUndefined,new Ref(cmd));
     }
     public static String populateStateVariables(String command,Cmd cmd, State state,boolean replaceUndefined,Ref ref){
         String rtrn = command;
@@ -375,12 +376,13 @@ public abstract class Cmd {
                         //e.printStackTrace();
                     }
                 }else {
-                    value = populateVariable(name, cmd, state, ref);
+                    Object v = getStateValue(name,cmd,state,ref);
+                    value = v == null ? null : v.toString();
                 }
                 if (value == null) {//bad times
                     if (!defaultValue.isEmpty()) {
                         value = defaultValue;
-                    } else if (defaultValue.isEmpty() && ':' == rtrn.charAt(matcher.end("name"))) {
+                    } else if (':' == rtrn.charAt(matcher.end("name"))) {
                         //TODO how to alert the missing state? It could be intentional (e.g. nothing to wait-for)
                         value = defaultValue;
                         //logger.debug("missing {} state variable for {}", name, command);
@@ -410,7 +412,7 @@ public abstract class Cmd {
 
     private static final AtomicInteger uidGenerator = new AtomicInteger(0);
 
-    protected Map<String,String> with;
+    protected Json with;
     private LinkedList<Cmd> thens;
     private LinkedList<Cmd> watchers;
     private HashedLists<Long,Cmd> timers;
@@ -431,7 +433,7 @@ public abstract class Cmd {
     }
     protected Cmd(boolean silent){
         this.silent = silent;
-        this.with = new HashMap<>();
+        this.with = new Json();
         this.thens = new LinkedList<>();
         this.watchers = new LinkedList<>();
         this.timers = new HashedLists<>();
@@ -486,15 +488,21 @@ public abstract class Cmd {
 
     public boolean isSilent(){return silent;}
 
-    public Cmd with(Map<String,String> withs){
-        this.with.putAll(withs);
+    public Cmd with(Map<? extends Object,? extends Object> map){
+        map.forEach((k,v)->{
+            with.set(k,v);
+        });
         return this;
     }
-    public Cmd with(String key,String value){
-        with.put(key,value);
+    public Cmd with(Json withs){
+        this.with.merge(withs);
         return this;
     }
-    public Map<String,String> getWith(){return Collections.unmodifiableMap(with);}
+    public Cmd with(String key,Object value){
+        with.set(key,value);
+        return this;
+    }
+    public Json getWith(){return with;}
 
     public int getUid(){return uid;}
 

@@ -4,15 +4,13 @@ import org.junit.Assert;
 import org.junit.Test;
 import perf.qdup.Run;
 import perf.qdup.SshTestBase;
-import perf.qdup.cmd.Cmd;
-import perf.qdup.cmd.Dispatcher;
-import perf.qdup.cmd.Result;
-import perf.qdup.cmd.Script;
-import perf.qdup.cmd.SpyContext;
+import perf.qdup.cmd.*;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
 import perf.qdup.config.YamlParser;
+import perf.yaup.Sets;
+import perf.yaup.json.Json;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -118,37 +116,66 @@ public class ForEachTest extends SshTestBase {
     }
 
     @Test
+    public void split_json_array_strings(){
+                List<Object> split = ForEach.split("[\"one\",\"two\",\"three\"]");
+                assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
+            }
+    @Test
+    public void split_json_array_strings_singlequote(){
+                List<Object> split = ForEach.split("['one','two','three']");
+                assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
+            }
+    @Test
+    public void split_json_array_objects(){
+                List<Object> split = ForEach.split("[{value:'one'},{value:'two'},{value:'three'}]");
+                assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
+                assertTrue("split[0] should be json\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),split.get(0) instanceof Json);
+                assertTrue("split[1] should be json\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),split.get(1) instanceof Json);
+                assertTrue("split[2] should be json\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),split.get(2) instanceof Json);
+            }
+    @Test
+    public void split_json_object(){
+                List<Object> split = ForEach.split("{one:'uno',two:'dos',three:'tres'}");
+                assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
+                for(int i=0; i<3; i++){
+                        assertTrue("split["+i+"] should have key & value as keys",((Json)split.get(i)).keys().containsAll(Sets.of("key","value")));
+                    }
+            }
+
+
+
+    @Test
     public void split_newLine(){
-        List<String> split = ForEach.split("1\n2");
+        List<Object> split = ForEach.split("1\n2");
         assertEquals("two entires",2,split.size());
         assertEquals("1",split.get(0));
         assertEquals("2",split.get(1));
     }
     @Test
     public void split_space(){
-        List<String> split = ForEach.split("1 2");
+        List<Object> split = ForEach.split("1 2");
         assertEquals("two entires",2,split.size());
         assertEquals("1",split.get(0));
         assertEquals("2",split.get(1));
     }
     @Test
     public void split_comma_space(){
-        List<String> split = ForEach.split("1 , 2");
+        List<Object> split = ForEach.split("1 , 2");
         assertEquals("two entires",2,split.size());
         assertEquals("1",split.get(0));
         assertEquals("2",split.get(1));
     }
     @Test
     public void split_quoted_comma(){
-        List<String> split = ForEach.split("['1,1', 2]");
+        List<Object> split = ForEach.split("['1,1', 2]");
         assertEquals("two entires",2,split.size());
-        assertEquals("'1,1'",split.get(0));
-        assertEquals("2",split.get(1));
+        assertEquals("1,1",split.get(0));
+        assertEquals(2,split.get(1));
     }
     @Test
     public void split_comma(){
-        List<String> split = ForEach.split("service1, service2, service3");
-        assertEquals("should have 3 entires\n"+split.stream().collect(Collectors.joining("\n")),3,split.size());
+        List<Object> split = ForEach.split("service1, service2, service3");
+        assertEquals("should have 3 entires\n"+split.stream().map(o->o.toString()).collect(Collectors.joining("\n")),3,split.size());
     }
 
     @Test
@@ -256,10 +283,15 @@ public class ForEachTest extends SshTestBase {
             target = target.getNext();
         }
         List<String> splits = new ArrayList<>();
-        target.then(Cmd.code(((input, state) -> {
-            splits.add(input);
-            return Result.next(input);
-        })));
+        if(target instanceof ForEach){
+            target.then(Cmd.code(((input, state) -> {
+                splits.add(input);
+                return Result.next(input);
+            })));
+        }else {
+            fail("failed to find for-each in script foo");
+        }
+
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run("/tmp",config,dispatcher);
