@@ -24,6 +24,8 @@ import static perf.qdup.config.YamlParser.*;
 
 public class RunConfigBuilder {
 
+
+
     private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     private static final Json EMPTY_ARRAY = new Json();
@@ -111,6 +113,20 @@ public class RunConfigBuilder {
             Json childEntry = childArray.getJson(childIndex);
             consumer.accept(childIndex,childEntry);
         }
+    }
+    public Json toJson(Json yamlJson){
+        System.out.println("toJson\n"+yamlJson.toString(2));
+        Json rtrn = new Json();
+
+        eachChildEntry(yamlJson,(index,entry)->{
+            String key = entry.getString(KEY);
+            if(entry.has(VALUE)){
+                rtrn.set(key,entry.get(VALUE));
+            }else{
+                rtrn.set(key,toJson(entry));
+            }
+        });
+        return rtrn;
     }
     public void eachChildEntry(Json target, BiConsumer<Integer,Json> consumer){
 
@@ -288,37 +304,44 @@ public class RunConfigBuilder {
                             });
                             break;
                         case STATES:
+
                             eachChildEntry(yamlEntry, (stateIndex, stateJson) -> {
                                 String stateName = stateJson.getString(KEY, "");
                                 if(stateJson.has(VALUE)){
                                     String stateValue = stateJson.getString(VALUE);
                                     setRunState(stateName,stateValue);
                                 }else {
-                                    eachChildEntry(stateJson, (entryIndex, entry) -> {
-                                        if (RUN_STATE.equals(stateName)) {
-                                            if (entry.has(VALUE)){
-                                                setRunState(entry.getString(KEY), entry.getString(VALUE));
-                                            }else if (entry.has(CHILD)){
-                                                String hostName = entry.getString(KEY);
-                                                eachChildEntry(entry, (hostEntryIndex, hostEntry) -> {
-                                                    if (!hostEntry.has(VALUE) && hostEntry.has(CHILD)) {
-                                                        String scriptName = hostEntry.getString(KEY);
-                                                        eachChildEntry(hostEntry, (scriptEntryIndex, scriptEntry) -> {
-                                                            //TODO add script entry under host
-                                                        });
-                                                    } else {
-                                                        //TODO add host entry
-                                                    }
-                                                });
-
-                                            }else{
-                                                logger.trace("setting empty value for state = {}",entry.getString(KEY));
-                                                setRunState(entry.getString(KEY),"");
-                                            }
-                                        } else {
-                                            setHostState(stateName, entry.getString(KEY), entry.getString(VALUE));
-                                        }
-                                    });
+                                    setRunState(stateName,toJson(stateJson));
+//                                    eachChildEntry(stateJson, (entryIndex, entry) -> {
+////                                        System.out.println(stateName+"."+entry.toString(2));
+////                                        System.out.println(stateName+"======\n"+toJson(entry));
+//                                        if (RUN_STATE.equals(stateName)) {
+//                                            if (entry.has(VALUE)){
+//                                                setRunState(entry.getString(KEY), entry.getString(VALUE));
+//                                            }else if (entry.has(CHILD)){
+//
+//                                                //TODO do we set host specific state or just create state as json?
+//
+//                                                String hostName = entry.getString(KEY);
+//                                                eachChildEntry(entry, (hostEntryIndex, hostEntry) -> {
+//                                                    if (!hostEntry.has(VALUE) && hostEntry.has(CHILD)) {
+//                                                        String scriptName = hostEntry.getString(KEY);
+//                                                        eachChildEntry(hostEntry, (scriptEntryIndex, scriptEntry) -> {
+//                                                            //TODO add script entry under host
+//                                                        });
+//                                                    } else {
+//                                                        //TODO add host entry
+//                                                    }
+//                                                });
+//
+//                                            }else{
+//                                                logger.trace("setting empty value for state = {}",entry.getString(KEY));
+//                                                setRunState(entry.getString(KEY),"");
+//                                            }
+//                                        } else {
+//                                            setHostState(stateName, entry.getString(KEY), entry.getString(VALUE));
+//                                        }
+//                                    });
                                 }
                             });
                             break;

@@ -640,6 +640,12 @@ public class YamlParser {
                                             builder.target().set(KEY,keyValue);
                                             if(!inlineStack.isEmpty()){
                                                 builder.target().set("INLINE",true);
+                                                System.out.println("inlineStack.peek="+inlineStack.peek());
+                                                if(INLINE_MAP.equals(inlineStack.peek())){
+                                                    builder.target().set("INLINE_MAP",true);
+                                                }else{
+                                                    builder.target().set("INLINE_SEQ",true);
+                                                }
                                             }
                                             builder.target().set(LINE_NUMBER,lineNumber);
                                         }

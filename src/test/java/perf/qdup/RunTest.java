@@ -3,6 +3,7 @@ package perf.qdup;
 import org.junit.Ignore;
 import org.junit.Test;
 import perf.qdup.cmd.*;
+import perf.qdup.cmd.impl.ReadState;
 import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
@@ -109,6 +110,59 @@ public class RunTest extends SshTestBase{
         Run doit = new Run("/tmp",config,dispatcher);
 
         doit.run();
+    }
+
+    @Test
+    public void json_state_array(){
+        YamlParser parser = new YamlParser();
+        parser.load("json",stream(""+
+            "scripts:",
+            "  foo:",
+            "  - for-each: FOO in ${{BAR}}",
+            "    - read-state: FOO.biz.buz",
+            "hosts:",
+            "  local: "+getHost(),
+            "roles:",
+            "  doit:",
+            "    hosts: [local]",
+            "    run-scripts: [foo]",
+            "states:",
+            "  BAR: [{biz:{buz:'one'}},{biz:{buz:'two'}},{biz:{buz:'three'}}]"
+                ));
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+
+
+
+        builder.loadYaml(parser);
+        RunConfig config = builder.buildConfig();
+        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+
+        Cmd target = config.getScript("foo");
+        while(target.getNext()!=null && !(target instanceof ReadState)){
+            target = target.getNext();
+        }
+        List<String> splits = new ArrayList<>();
+        if(target instanceof ReadState){
+            target.then(Cmd.code(((input, state) -> {
+                splits.add(input);
+                return Result.next(input);
+            })));
+        }else {
+            fail("failed to find for-each in script foo");
+        }
+
+        Dispatcher dispatcher = new Dispatcher();
+        dispatcher.addContextObserver(new ContextObserver() {
+            @Override
+            public void preNext(ScriptContext context, Cmd command, String output) {
+                System.out.println(command+".next::"+output);
+            }
+        });
+        Run doit = new Run("/tmp",config,dispatcher);
+
+        doit.run();
+
+        assertEquals("should see 3 times entries:\n"+splits.stream().collect(Collectors.joining("\n")),3,splits.size());
     }
 
     @Test

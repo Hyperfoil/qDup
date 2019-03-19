@@ -99,6 +99,16 @@ public class YamlParserTest extends SshTestBase {
     }
 
     @Test
+    public void inline_both(){
+        YamlParser parser = new YamlParser();
+        parser.load("test",stream(""+
+            "map: { key: value}",
+            "ary: [ {key:first}, {key:second}]"
+                ));
+        System.out.println(parser.getJson().toString(2));
+    }
+
+    @Test
     public void keyValue(){
         YamlParser parser = new YamlParser();
         parser.load("keyValue",stream(""+
