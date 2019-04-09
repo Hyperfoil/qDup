@@ -126,7 +126,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertTrue("signal: "+signalNames.toString(),signalNames.contains("SERVER_READY"));
         assertTrue("wait-for: "+waitNames.toString(),waitNames.contains("SERVER_READY"));
 
-        int signalCount = runConfig.getRunStage().getSignalCount("SERVER_READY");
+        int signalCount = (int)runConfig.getRunStage().getSignalCount("SERVER_READY");
 
         assertEquals("signal count for SERVER_READY",2,signalCount);
     }

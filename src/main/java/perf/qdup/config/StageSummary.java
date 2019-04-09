@@ -39,14 +39,14 @@ public class StageSummary {
     }
     public boolean hasErrors(){return !errors.isEmpty();}
 
-    protected void addSignal(String name,int amount){
+    protected void addSignal(String name,long amount){
         signalCounters.add(name,amount);
         signals.add(name);
     }
     public Set<String> getSignals(){
         return Collections.unmodifiableSet(signals);
     }
-    public int getSignalCount(String name){
+    public long getSignalCount(String name){
         return signalCounters.count(name);
     }
 
@@ -57,7 +57,7 @@ public class StageSummary {
         return Collections.unmodifiableSet(waiters);
     }
 
-    public void forEach(BiConsumer<String,Integer> consumer){
+    public void forEach(BiConsumer<String,Long> consumer){
         signalCounters.entries().forEach(name->consumer.accept(name,signalCounters.count(name)));
     }
 }

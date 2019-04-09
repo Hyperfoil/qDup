@@ -19,6 +19,8 @@ import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.*;
@@ -98,8 +100,8 @@ public class SshSession {
 
     private Semaphore shellLock;
 
-    private PipedInputStream pipeIn;
-    private PipedOutputStream pipeOut;
+    //private PipedInputStream pipeIn;
+    //private PipedOutputStream pipeOut;
 
     private EscapeFilteredStream escapeFilteredStream;
     private SuffixStream suffixStream;
@@ -156,6 +158,8 @@ public class SshSession {
 
         PropertyResolverUtils.updateProperty(sshClient,ClientFactoryManager.IDLE_TIMEOUT,Long.MAX_VALUE);
         PropertyResolverUtils.updateProperty(sshClient,ClientFactoryManager.NIO2_READ_TIMEOUT,Long.MAX_VALUE);
+        PropertyResolverUtils.updateProperty(sshClient,ClientFactoryManager.NIO_WORKERS,1);
+
         sshClient.start();
         //StrictHostKeyChecking=no
         sshClient.setServerKeyVerifier((clientSession1,remoteAddress,serverKey)->{return true;});
@@ -225,12 +229,12 @@ public class SshSession {
             clientSession.auth().verify(this.timeout * 1_000);
             //setup all the streams
 
-            pipeIn = new PipedInputStream();
-            pipeOut = new PipedOutputStream(pipeIn);
+            //pipeIn = new PipedInputStream();//testing invertedIn
+            //pipeOut = new PipedOutputStream(pipeIn);//testing invertedIn
             //the output of the current sh command
             shStream = new ByteArrayOutputStream();
 
-            commandStream = new PrintStream(pipeOut);
+            //commandStream = new PrintStream(pipeOut);//testing invertedIn
 
             escapeFilteredStream = new EscapeFilteredStream();
             filteredStream = new FilteredStream();
@@ -291,7 +295,8 @@ public class SshSession {
             channelShell.setPtyLines(80);
             channelShell.setUsePty(true);
 
-            channelShell.setIn(pipeIn);
+            //channelShell.setIn(pipeIn);//testing invertedIn instead
+
             channelShell.setOut(escapeFilteredStream);//efs or ss
             channelShell.setErr(escapeFilteredStream);//PROMPT goes to error stream so have to listen there too
             if(timeoutMillis>0){
@@ -299,6 +304,9 @@ public class SshSession {
             }else{
                 channelShell.open().verify().isOpened();
             }
+
+            commandStream = new PrintStream(channelShell.getInvertedIn());
+
             sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
             //shSync("pwd");
             sh("");//forces the thread to wait for the previous sh to complete
@@ -588,7 +596,7 @@ public class SshSession {
                     }
                 }
 
-                channelShell.getIn().close();
+                //channelShell.getIn().close();//testing invertedIn
                 suffixStream.close();
                 channelShell.close();
 

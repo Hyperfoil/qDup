@@ -312,8 +312,8 @@ public class Run implements Runnable, DispatchObserver {
         Set<String> signaled = new HashSet<>();
         Consumer<StageSummary> setupCoordinator = (stageSummary)->{
             stageSummary.getSignals().forEach((signalName)->{
-                int count = stageSummary.getSignalCount(signalName);
-                coordinator.initialize(signalName,count);
+                long count = stageSummary.getSignalCount(signalName);
+                coordinator.initialize(signalName,(int)count);
                 signaled.add(signalName);
             });
             stageSummary.getWaiters().stream().filter((waitName)->
