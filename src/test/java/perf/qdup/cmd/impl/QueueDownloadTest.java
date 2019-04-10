@@ -4,7 +4,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import perf.qdup.Run;
 import perf.qdup.SshTestBase;
-import perf.qdup.TestServer;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Dispatcher;
 import perf.qdup.cmd.Script;
@@ -22,9 +21,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class QueueDownloadTest extends SshTestBase {
-
-    @Rule
-    public final TestServer testServer = new TestServer();
 
     @Test
     public void stateToLocalEnv(){
