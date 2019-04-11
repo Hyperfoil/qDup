@@ -8,6 +8,10 @@ import perf.qdup.cmd.Context;
 import perf.qdup.config.Role;
 import perf.qdup.stream.SuffixStream;
 
+/**
+ * Cmd injected at the start and end of setup to capture changes to env.
+ * The changes are then applied before the start of all run-scripts in the role.
+ */
 public class RoleEnv extends Cmd {
 
     private final Role role;
