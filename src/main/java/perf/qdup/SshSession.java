@@ -519,8 +519,9 @@ public class SshSession {
       addShObserver(SH_BLOCK_CALLBACK, blockingConsumer);
       sh(command, prompt);
       try {
-         blockingSemaphore.acquire();
+         blockingSemaphore.acquire();//released in the observer
          removeShObserver(SH_BLOCK_CALLBACK);
+
       } catch (InterruptedException e) {
          logger.error("Interrupted waiting for shSync " + command, e);
       }
