@@ -41,8 +41,13 @@ public class State {
             this.cmd = cmd;
         }
         @Override
-        public String get(String key){
-            return Cmd.populateVariable(key,cmd,this,null);
+        public Object get(String key){
+            String populatedKey = Cmd.populateStateVariables(key,cmd,this);
+            if(cmd.hasWith(populatedKey)){
+                return cmd.getWith(populatedKey);
+            }else{
+                return parent().get(populatedKey);
+            }
         }
         @Override
         public void set(String key,Object value){
@@ -65,7 +70,9 @@ public class State {
     public void merge(State state){
         if(this.prefix == state.prefix){
             state.getKeys().forEach(key->{
-                this.state.putIfAbsent(key,state.get(key));
+                if(!this.json.has(key)){
+                    this.json.set(key,state.get(key));
+                }
             });
             state.getChildNames().forEach(childName->{
                 State childState = state.getChild(childName);

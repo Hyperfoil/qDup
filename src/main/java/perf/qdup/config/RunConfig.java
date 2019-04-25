@@ -120,7 +120,7 @@ public class RunConfig {
             return getErrors().stream().collect(Collectors.joining("\n"));
         }
         StringBuilder  sb = new StringBuilder();
-        BiConsumer<String,List<Cmd>> printScripts = (phase,scripts)->{
+        BiConsumer<String,List<? extends Cmd>> printScripts = (phase,scripts)->{
             sb.append(String.format("    %s%n",phase));
             scripts.forEach(script->{
                 sb.append(String.format("      %s%n",script.toString()));

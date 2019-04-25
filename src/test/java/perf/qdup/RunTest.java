@@ -114,7 +114,7 @@ public class RunTest extends SshTestBase{
 
     @Test
     public void json_state_array(){
-        YamlParser parser = new YamlParser();
+        WamlParser parser = new WamlParser();
         parser.load("json",stream(""+
             "scripts:",
             "  foo:",
@@ -133,7 +133,7 @@ public class RunTest extends SshTestBase{
 
 
 
-        builder.loadYaml(parser);
+        builder.loadWaml(parser);
         RunConfig config = builder.buildConfig();
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
@@ -152,17 +152,11 @@ public class RunTest extends SshTestBase{
         }
 
         Dispatcher dispatcher = new Dispatcher();
-        dispatcher.addContextObserver(new ContextObserver() {
-            @Override
-            public void preNext(ScriptContext context, Cmd command, String output) {
-                System.out.println(command+".next::"+output);
-            }
-        });
         Run doit = new Run("/tmp",config,dispatcher);
 
         doit.run();
-
-        assertEquals("should see 3 times entries:\n"+splits.stream().collect(Collectors.joining("\n")),3,splits.size());
+        dispatcher.shutdown();
+        assertEquals("should see 3 entries:\n"+splits.stream().collect(Collectors.joining("\n")),3,splits.size());
     }
 
     @Test
@@ -581,44 +575,6 @@ public class RunTest extends SshTestBase{
         assertEquals("lines[1] should be foo:"+lines,"foo",lines.get(1));
         assertEquals("lines[2] should be bar:"+lines,"bar",lines.get(2));
     }
-
-    @Test @Ignore
-    //testServer2 isn't working in intellij
-    public void oneScriptMultipleHosts(){
-
-        TestServer testServer1 = new TestServer();
-        testServer1.start();
-        TestServer testServer2 = new TestServer();
-        testServer2.start();
-
-
-        AtomicInteger counter = new AtomicInteger();
-
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        Script oneScript = new Script("one");
-        oneScript.then(Cmd.code(((input, state) -> {
-            return Result.next(""+counter.incrementAndGet());
-        })));
-        oneScript.then(Cmd.echo());
-
-        builder.addScript(oneScript);
-        builder.addHostAlias("first",testServer1.getHost().toString());
-        builder.addHostAlias("second",testServer2.getHost().toString());
-
-        builder.addHostToRole("role","first");
-        builder.addHostToRole("role","second");
-
-        builder.addRoleRun("role","one",new HashMap<>());
-
-        RunConfig config = builder.buildConfig();
-        Dispatcher dispatcher = new Dispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
-        run.run();
-
-        assertEquals(2,counter.get());
-    }
-
 
     @Test
     public void testTwoSetupNotSkipSecond(){

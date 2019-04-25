@@ -47,6 +47,7 @@ import perf.yaup.yaml.MapRepresenter;
 import perf.yaup.yaml.Mapping;
 import perf.yaup.yaml.OverloadConstructor;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -159,7 +160,7 @@ public class Parser {
         rtrn.addCmd(
             ForEach.class,
             "for-each",
-            (cmd)->((cmd.getName()+" "+cmd.getStaticInput()).trim()),
+            (cmd)->((cmd.getName()+" "+cmd.getDeclaredInput()).trim()),
             (str)->{
                 List<String> split = CmdBuilder.split(str);
                 if(split.size()==1){
@@ -425,7 +426,7 @@ public class Parser {
             //e.printStackTrace();
             try {
                 WamlParser wamlParser = new WamlParser();
-                wamlParser.load(path);
+                wamlParser.load(path, new ByteArrayInputStream(content.getBytes()));
 
                 if(wamlParser.hasErrors()){
                     logger.error("Failed to load {} as waml\n{}",path,wamlParser.getErrors().stream().collect(Collectors.joining("\n")));

@@ -106,14 +106,15 @@ public class XmlCmd extends Cmd {
             successful = false;
             output = "COULD NOT LOAD: "+path;
         } finally {
-            if(tmpDest != null){
-                tmpDest.delete();
-            }
             if(successful){
                 context.next(output);
             }else{
                 context.skip(output);
             }
+            if(tmpDest != null & tmpDest.exists()){
+                tmpDest.delete();
+            }
+
         }
     }
 

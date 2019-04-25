@@ -15,9 +15,9 @@ public class Role {
     private Set<String> hostRefs;
     private List<Host> hosts;
     private Map<Host,Env> environments;
-    private List<Cmd> setup;
-    private List<Cmd> run;
-    private List<Cmd> cleanup;
+    private List<ScriptCmd> setup;
+    private List<ScriptCmd> run;
+    private List<ScriptCmd> cleanup;
 
     public Role(){
         this("");
@@ -51,9 +51,9 @@ public class Role {
     public String getName(){
         return name;
     }
-    public List<Cmd> getSetup(){return Collections.unmodifiableList(setup);}
-    public List<Cmd> getRun(){return Collections.unmodifiableList(run);}
-    public List<Cmd> getCleanup(){return Collections.unmodifiableList(cleanup);}
+    public List<ScriptCmd> getSetup(){return Collections.unmodifiableList(setup);}
+    public List<ScriptCmd> getRun(){return Collections.unmodifiableList(run);}
+    public List<ScriptCmd> getCleanup(){return Collections.unmodifiableList(cleanup);}
 
     public List<Host> getHosts(){return Collections.unmodifiableList(hosts);}
 

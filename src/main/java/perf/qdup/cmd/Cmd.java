@@ -289,7 +289,7 @@ public abstract class Cmd {
     }
 
 
-    protected boolean hasWith(String name){
+    public boolean hasWith(String name){
         boolean hasIt = false;
         Cmd target = this;
         while(!hasIt && target!=null){
@@ -298,7 +298,7 @@ public abstract class Cmd {
         }
         return hasIt;
     }
-    protected Object getWith(String name){
+    public Object getWith(String name){
         Object value = null;
         Cmd target = this;
         while(value==null && target!=null){
@@ -315,7 +315,7 @@ public abstract class Cmd {
     }
 
     //handles recursive variable references
-    protected static Object getStateValue(String name, Cmd cmd,State state, Ref ref){
+    public static Object getStateValue(String name, Cmd cmd,State state, Ref ref){
         String rtrn = null;
         String currentName = name;
         do {

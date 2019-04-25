@@ -127,11 +127,6 @@ public class SyncContext implements Context, Runnable{
     }
 
     @Override
-    public void addPendingDelete(String path) {
-        run.addPendingDelete(session.getHost(),path);
-    }
-
-    @Override
     public void abort(Boolean skipCleanup) {
         run.abort(skipCleanup);
     }

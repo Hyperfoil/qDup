@@ -37,7 +37,7 @@ public class YamlFileConstruct extends DeferableConstruct {
             });
             map.put("scripts",scriptMap);
         }
-        Function<List<Cmd>,List<Object>> toScriptMap = (scripts)->{
+        Function<List<? extends Cmd>,List<Object>> toScriptMap = (scripts)->{
             return scripts.stream().map(cmd->{
                 Map<Object,Object> cmdMap = new LinkedHashMap<>();
                 CmdMapping cmdMapping = new CmdMapping("cmd",null);

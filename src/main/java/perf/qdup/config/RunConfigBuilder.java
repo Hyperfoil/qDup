@@ -564,6 +564,24 @@ public class RunConfigBuilder {
     public void addRoleCleanup(String role, String script, Map<String,String> with){
         addRoleScript(role,script,with,roleCleanup);
     }
+
+    public void addRoleSetup(String role, String script, Json with){
+        addRoleScript(role,script,with,roleSetup);
+    }
+    public void addRoleRun(String role, String script, Json with){
+        addRoleScript(role,script,with,roleRun);
+    }
+    public void addRoleCleanup(String role, String script, Json with){
+        addRoleScript(role,script,with,roleCleanup);
+    }
+
+    private void addRoleScript(String role,String script,Json with,HashedLists<String,ScriptCmd> target) {
+        ScriptCmd cmd = Cmd.script(script);
+        if(with!=null && !with.isEmpty()){
+            cmd.with(with);
+        }
+        target.put(role,cmd);
+    }
     private void addRoleScript(String role,String script,Map<String,String> with,HashedLists<String,ScriptCmd> target){
         ScriptCmd cmd = Cmd.script(script);
         if(with!=null && !with.isEmpty()){

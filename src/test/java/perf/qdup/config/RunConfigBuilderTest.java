@@ -8,6 +8,7 @@ import perf.qdup.State;
 import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Script;
 import perf.qdup.cmd.impl.CtrlC;
+import perf.qdup.cmd.impl.ScriptCmd;
 import perf.qdup.cmd.impl.Sh;
 import perf.qdup.config.waml.WamlParser;
 
@@ -86,7 +87,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertTrue("run should have wildfly role",runConfig.getRoleNames().contains("wildfly"));
         Role role = runConfig.getRole("wildfly");
         assertEquals("hosts in wildfly role",1,role.getHosts().size());
-        List<Cmd> setup = role.getSetup();
+        List<ScriptCmd> setup = role.getSetup();
         assertEquals("two scripts in setup",2,setup.size());
     }
 
@@ -370,7 +371,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         assertEquals("role has a host",1,role.getHosts().size());
 
         Cmd setupCmd = role.getSetup().get(0);
-        List<Cmd> runCmds = role.getRun();
+        List<ScriptCmd> runCmds = role.getRun();
 
         assertTrue("setup should contain first script",setupCmd.tree().contains("first"));
         assertEquals("role should contain one role script",1,runCmds.size());
