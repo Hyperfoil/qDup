@@ -180,7 +180,6 @@ public class RunConfigBuilder {
         }
     }
    public Json toJson(Json yamlJson){
-      System.out.println("toJson\n"+yamlJson.toString(2));
       Json rtrn = new Json();
 
       eachWamlChildEntry(yamlJson,(index,entry)->{
@@ -224,6 +223,9 @@ public class RunConfigBuilder {
     public int errorCount(){return errors.size();}
 
     public boolean loadYaml(YamlFile yamlFile){
+        if(yamlFile == null){
+            return false;
+        }
         getState().merge(yamlFile.getState());
 
         yamlFile.getScripts().forEach((name,script)->{

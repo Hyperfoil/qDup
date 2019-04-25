@@ -155,14 +155,6 @@ public class SshSession {
    long shStart = -1;
    long shStop = -1;
 
-
-   public static void main(String[] args) {
-      SshSession sshSession = new SshSession(Host.parse("wreicher@laptop:22"));
-      String response = sshSession.shSync("pwd");
-      System.out.println(response);
-      sshSession.close();
-   }
-
    public SshSession(Host host) {
       this(host, DEFAULT_KNOWN_HOSTS, DEFAULT_IDENTITY, DEFAULT_PASSPHRASE, DEFAULT_SSH_TIMEOUT, "", null);
    }

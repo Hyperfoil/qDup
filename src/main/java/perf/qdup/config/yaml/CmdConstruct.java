@@ -74,11 +74,26 @@ public class CmdConstruct extends DeferableConstruct {
                     throw new YAMLException(SILENT+" requires a scalar"+valueNode.getStartMark());
                 }
                 break;
+            case WATCH:
+                if(valueNode instanceof SequenceNode){
+                    SequenceNode thenNodes = (SequenceNode)valueNode;
+                    thenNodes.getValue().forEach(task->{
+                        Object built = task instanceof ScalarNode ? deferAs(task,new Tag("cmd")) : defer(task);
+                        if(built != null && built instanceof Cmd){
+                            cmd.watch((Cmd)built);
+                        }else{
+                            throw new YAMLException("failed to construct Cmd"+task.getStartMark());
+                        }
+                    });
+                }else{
+                    throw new YAMLException(WATCH+" requires a list of commands "+valueNode.getStartMark());
+                }
+                break;
             case THEN:
                 if(valueNode instanceof SequenceNode){
                     SequenceNode thenNodes = (SequenceNode)valueNode;
                     thenNodes.getValue().forEach(then->{
-                        Object built = defer(then);
+                        Object built = then instanceof ScalarNode ? deferAs(then,new Tag("cmd")) : defer(then);
                         if(built != null && built instanceof Cmd){
                             cmd.then((Cmd)built);
                         }else{
@@ -98,7 +113,7 @@ public class CmdConstruct extends DeferableConstruct {
                             if(signalTuple.getValueNode() instanceof SequenceNode){
                                 SequenceNode signalSequence = (SequenceNode)signalTuple.getValueNode();
                                 signalSequence.getValue().forEach(task->{
-                                    Object built = defer(task);
+                                    Object built = task instanceof ScalarNode ? deferAs(task,new Tag("cmd")) : defer(task);
                                     if(built !=null && built instanceof Cmd){
                                         //TODO add signal when merge onsignal branch (forgot and started working it already)
                                         //finalRtrn.onSignal(signalName,(Cmd)built);
@@ -128,7 +143,7 @@ public class CmdConstruct extends DeferableConstruct {
 
                             SequenceNode timerTaskList = (SequenceNode)timerTasks;
                             timerTaskList.getValue().forEach(task->{
-                                Object built = defer(task);
+                                Object built = task instanceof ScalarNode ? deferAs(task,new Tag("cmd")) : defer(task);
                                 if(built !=null && built instanceof Cmd){
                                     cmd.addTimer(timeoutMs,(Cmd)built);
                                 }else{

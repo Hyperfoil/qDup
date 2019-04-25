@@ -25,5 +25,5 @@ public class Echo extends Cmd {
         return new Echo();
     }
     @Override
-    public String toString(){return "echo:";}
+    public String toString(){return "echo";}
 }

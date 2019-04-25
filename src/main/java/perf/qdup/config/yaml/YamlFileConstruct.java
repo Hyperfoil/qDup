@@ -22,13 +22,8 @@ public class YamlFileConstruct extends DeferableConstruct {
 
     public static final Mapping<YamlFile> MAPPING = (yaml)->{
         Map<Object,Object> map = new LinkedHashMap<>();
-        map.put("name",yaml.getName());
-        if(!yaml.getHosts().isEmpty()){
-            Map<Object,Object> hostMap = new LinkedHashMap<>();
-            yaml.getHosts().forEach((alias,host)->{
-                hostMap.put(alias,host.toString());
-            });
-            map.put("hosts",hostMap);
+        if(yaml.getName()!=null && !yaml.getName().isEmpty()) {
+            map.put("name", yaml.getName());
         }
         if(!yaml.getScripts().isEmpty()){
             Map<Object,Object> scriptMap = new LinkedHashMap<>();
@@ -36,6 +31,13 @@ public class YamlFileConstruct extends DeferableConstruct {
                 scriptMap.put(name,script.getThens());
             });
             map.put("scripts",scriptMap);
+        }
+        if(!yaml.getHosts().isEmpty()){
+            Map<Object,Object> hostMap = new LinkedHashMap<>();
+            yaml.getHosts().forEach((alias,host)->{
+                hostMap.put(alias,host.toString());
+            });
+            map.put("hosts",hostMap);
         }
         Function<List<? extends Cmd>,List<Object>> toScriptMap = (scripts)->{
             return scripts.stream().map(cmd->{
@@ -132,11 +134,14 @@ public class YamlFileConstruct extends DeferableConstruct {
                                     Script script = new Script(scriptName);
                                     if(scriptTuple.getValueNode() instanceof SequenceNode){
                                         ((SequenceNode)scriptTuple.getValueNode()).getValue().forEach(cmdNode->{
-                                            Object loaded = defer(cmdNode);
+                                            Object loaded = cmdNode instanceof ScalarNode ? deferAs(cmdNode,new Tag("cmd")) : defer(cmdNode);
+                                            if(loaded == null){
+                                                throw new YAMLException("could not create a cmd from "+cmdNode.getClass().getSimpleName()+cmdNode.getStartMark());
+                                            }
                                             if(loaded instanceof Cmd){
                                                 script.then((Cmd)loaded);
                                             }else{
-                                                throw new YAMLException("failed to create Cmd from "+cmdNode.getStartMark());
+                                                throw new YAMLException("failed to create Cmd"+cmdNode.getStartMark());
                                             }
                                         });
                                     }else{

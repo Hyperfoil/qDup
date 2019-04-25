@@ -119,7 +119,6 @@ public class WamlParserTest extends SshTestBase {
             "aryObj: [ {key:first}, {key:second}]",
             "ary: [ 'one','two']"
                 ));
-        System.out.println(parser.getJson().toString(2));
     }
 
     @Test @Ignore

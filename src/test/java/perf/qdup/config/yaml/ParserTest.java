@@ -2,6 +2,9 @@ package perf.qdup.config.yaml;
 
 import org.junit.Test;
 import perf.qdup.SshTestBase;
+import perf.qdup.cmd.Script;
+import perf.qdup.cmd.impl.CtrlC;
+import perf.qdup.cmd.impl.Echo;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -12,6 +15,50 @@ public class ParserTest extends SshTestBase {
 
     public static String join(String...args){
         return Arrays.asList(args).stream().collect(Collectors.joining("\n"));
+    }
+
+    @Test
+    public void load_cmd_no_args_nested(){
+        Parser parser = Parser.getInstance();
+        YamlFile loaded = parser.loadFile("test",join(""+
+              "scripts:",
+           "  foo:",
+           "  - ctrlC:",
+           "    then:",
+           "    - echo"
+        ));
+
+        assertNotNull("should be able to load a nested string cmd",loaded);
+        assertTrue("missing foo script",loaded.getScripts().containsKey("foo"));
+
+        Script foo = loaded.getScripts().get("foo");
+        assertTrue("tail is echo",foo.getTail() instanceof Echo);
+
+        String output = parser.dump(loaded);
+        assertTrue("echo in output",output.contains("echo"));
+        assertFalse("echo: not in output",output.contains("echo:"));
+    }
+    @Test
+    public void load_cmd_no_args(){
+        Parser parser = Parser.getInstance();
+        YamlFile loaded = parser.loadFile("test",join(""+
+           "scripts:",
+           "  foo:",
+           "  - ctrlC:",
+           "  - echo",
+           "  - done"
+        ));
+        assertTrue("missing foo script",loaded.getScripts().containsKey("foo"));
+        Script foo = loaded.getScripts().get("foo");
+        assertTrue("next should be ctrlC",foo.getNext() instanceof CtrlC);
+
+        String output = parser.dump(loaded);
+        assertTrue("missing ctrlC cmd",output.contains("ctrlC"));
+        assertFalse("ctrlC should encode as a string",output.contains("ctrlC:"));
+        assertTrue("missing echo cmd",output.contains("echo"));
+        assertFalse("echo should encode as a string",output.contains("echo:"));
+        assertTrue("missing done cmd",output.contains("done"));
+        assertFalse("done should encode as a string",output.contains("done:"));
     }
 
     @Test
@@ -28,7 +75,10 @@ public class ParserTest extends SshTestBase {
             "       - timer: 5s # No idea why this is getting stuck at times",
             "          - ctrlC"
        ));
-        System.out.println(loaded);
+        assertNotNull(loaded);
+        assertTrue(loaded.getScripts().containsKey("perf-record"));
+        Script script = loaded.getScripts().get("perf-record");
+        assertTrue(script.getTail().hasTimers());
     }
 
     @Test

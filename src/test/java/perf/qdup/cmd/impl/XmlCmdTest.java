@@ -98,11 +98,8 @@ public class XmlCmdTest extends SshTestBase {
         runScript.then(
                 Cmd.xml("/tmp/foo.xml>/foo/biz "+XmlCmd.SET_STATE_KEY+" BIZ")///text()
                         .then(Cmd.code((input,state)->{
-                            System.out.println("BIZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
                             Object biz = state.get("BIZ");
-                            System.out.println("biz="+biz);
                             first.append(biz);
-                            System.out.println("BIPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP");
                             return Result.next(input);
                         }))
         );

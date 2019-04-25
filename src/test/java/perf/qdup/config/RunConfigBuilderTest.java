@@ -27,21 +27,19 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
     public void testScriptWithCtrlC(){
-        WamlParser parser = new WamlParser();
-        parser.load("ctrlC",stream(""+
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        builder.loadYaml(parser.loadFile("ctrlC",stream(""+
             "scripts:",
             "  foo:",
-            "    - ctrlC:",
+            "    - ctrlC",
             "    - sh: tail -f bar.txt",
-            "        watch:",
-            "        - regex: bar",
-            "          - ctrlC:",
+            "      watch:",
+            "      - regex: bar",
+            "        then:",
+            "        - ctrlC",
             "    - sh: echo 'yay'"
-        ));
-
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-
-        builder.loadWaml(parser);
+        )));
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -52,7 +50,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         cmd = cmd.getNext();//sh
 
 
-        assertTrue("sh shoudl have watchers",cmd.hasWatchers());
+        assertTrue("sh should have watchers",cmd.hasWatchers());
         cmd = cmd.getWatchers().get(0);
 
         cmd = cmd.getNext();

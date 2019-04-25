@@ -7,6 +7,8 @@ import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Construct;
 import org.yaml.snakeyaml.error.YAMLException;
+import org.yaml.snakeyaml.nodes.Node;
+import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.scanner.ScannerException;
@@ -74,7 +76,6 @@ public class Parser {
             new YamlFileConstruct(roleConstruct),
             YamlFileConstruct.MAPPING
         );
-
         rtrn.addMap(Role.class,
                 "role",
                 roleConstruct,
@@ -97,7 +98,6 @@ public class Parser {
             Abort.class,
             "abort",
             (cmd)->cmd.getMessage(),
-
             (str)-> new Abort(str),
             null
         );
@@ -117,9 +117,11 @@ public class Parser {
             (json)->new Countdown(json.getString("path"),(int)json.getLong("initial"))
 
         );
+
         rtrn.addCmd(
             CtrlC.class,
             "ctrlC",
+            true,
             (cmd)->"",
             (str)->new CtrlC(),
             (json)->new CtrlC()
@@ -127,8 +129,8 @@ public class Parser {
         rtrn.addCmd(
             Done.class,
             "done",
+            true,
             (cmd)->"",
-
             (str)->new Done(),
             (json)->new Done()
         );
@@ -150,6 +152,7 @@ public class Parser {
         rtrn.addCmd(
             Echo.class,
             "echo",
+            true,
             (cmd)->"",
             (str)->new Echo(),
             null
@@ -170,7 +173,7 @@ public class Parser {
                     throw new YAMLException("cannot create for-each from "+str);
                 }
             },
-                (json)->new ForEach(json.getString("name"),json.getString("input",""))
+            (json)->new ForEach(json.getString("name"),json.getString("input",""))
         );
         //Invoke
         rtrn.addCmd(
@@ -207,7 +210,7 @@ public class Parser {
         );
         rtrn.addCmd(
             ReadState.class,
-            "read-state",
+        "read-state",
             (cmd)->cmd.getKey(),
             (str)->new ReadState(str),
             null
@@ -221,10 +224,10 @@ public class Parser {
         );
         rtrn.addCmd(
             RepeatUntilSignal.class,
-            "repeat-until",
-                (cmd)->cmd.getName(),
-                (str)->new RepeatUntilSignal(str),
-                null
+        "repeat-until",
+            (cmd)->cmd.getName(),
+            (str)->new RepeatUntilSignal(str),
+            null
         );
         rtrn.addCmd(
             ScriptCmd.class,
@@ -349,17 +352,31 @@ public class Parser {
     private Yaml yaml;
     private OverloadConstructor constructor;
     private MapRepresenter mapRepresenter;
+    private Map<String,Function<String, Cmd>> noArgs;
 
     private Parser(){
         constructor = new OverloadConstructor();
         constructor.setExactMatchOnly(false);
         mapRepresenter = new MapRepresenter();
-
+        noArgs = new HashMap<>();
         DumperOptions dumperOptions = new DumperOptions();
         dumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         dumperOptions.setWidth(1024);
         dumperOptions.setIndent(2);
         yaml = new Yaml(constructor,mapRepresenter,dumperOptions);
+        constructor.addConstruct(new Tag("cmd"), new DeferableConstruct() {
+            @Override
+            public Object construct(Node node) {
+                if(node instanceof ScalarNode){
+                    String value = ((ScalarNode)node).getValue();
+                    if(noArgs.containsKey(value)){
+                        return noArgs.get(value).apply("");
+                    }
+                }else{
+                }
+                return defer(node);
+            }
+        });
     }
 
     public String dump(Object o){
@@ -370,13 +387,33 @@ public class Parser {
         mapRepresenter.addMapping(clazz,new CmdMapping<T>(description.getTag().getValue(),encoder));
         constructor.addTypeDescription(description);
     }
-    public <T extends Cmd> void addCmd(Class<T> clazz, String tag, CmdEncoder<T> encoder, Function<String, Cmd> fromString,Function<Json,Cmd> fromJson,String...expectedKeys){
+    public <T extends Cmd> void addCmd(Class<T> clazz, String tag, CmdEncoder<T> encoder, Function<String, Cmd> fromString,Function<Json,Cmd> fromJson,String...expectedKeys) {
+        addCmd(clazz,tag,false,encoder,fromString,fromJson,expectedKeys);
+    }
+    public <T extends Cmd> void addCmd(Class<T> clazz, String tag, boolean noArg,CmdEncoder<T> encoder, Function<String, Cmd> fromString,Function<Json,Cmd> fromJson,String...expectedKeys){
         Tag nodeTag = new Tag(tag);
         Tag tagFullyQualified = new Tag(clazz);
+
         Construct construct = new CmdConstruct(tag,fromString,fromJson,expectedKeys);
         constructor.addConstruct(tagFullyQualified,construct);
         CmdMapping cmdMapping = new CmdMapping<T>(tag,encoder);
-        mapRepresenter.addMapping(clazz,cmdMapping);
+        if(noArg){
+            this.noArgs.put(tag,fromString);
+            mapRepresenter.addEncoding(clazz, (t)->{
+                Map<Object,Object> map = cmdMapping.getMap(t);
+                if(map!=null && map.size()==1){
+                    Object key = map.entrySet().iterator().next().getKey();
+                    Object value = map.entrySet().iterator().next().getValue();
+                    if(value==null || value.toString().isEmpty()){
+                        return tag;
+                    }
+                }
+                return map;
+            });
+        }else {
+
+        }
+        mapRepresenter.addMapping(clazz, cmdMapping);
         constructor.addConstruct(nodeTag,construct);
         constructor.addTargetTag(nodeTag,tag);
         //constructor.addMapKeys(nodeTag,Sets.of(tag));
@@ -429,7 +466,7 @@ public class Parser {
                 wamlParser.load(path, new ByteArrayInputStream(content.getBytes()));
 
                 if(wamlParser.hasErrors()){
-                    logger.error("Failed to load {} as waml\n{}",path,wamlParser.getErrors().stream().collect(Collectors.joining("\n")));
+                    logger.error("Failed to load {} with waml parser \n{}",path,wamlParser.getErrors().stream().collect(Collectors.joining("\n")));
 
                 }
                 RunConfigBuilder runConfigBuilder = new RunConfigBuilder(CmdBuilder.getBuilder());
@@ -440,7 +477,7 @@ public class Parser {
                 try {
                     loaded = yaml.loadAs(newContent, YamlFile.class);
                 }catch (Exception exception){
-                    logger.error("Failed to load {} as waml\n{}",path,exception.getMessage());
+                    logger.error("Failed to load {} after waml transform\n{}",path,exception.getMessage());
                     exception.printStackTrace();
                 }
             }catch (WamlException wamlException){
