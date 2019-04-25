@@ -28,7 +28,7 @@ public class HostConstruct extends DeferableConstruct {
                         (int)json.getLong("port",Host.DEFAULT_PORT)
                 );
             }
-            Set<Object> extra = Sets.unique(json.keys(),Sets.of("hostnme","username","port"));
+            Set<Object> extra = Sets.unique(json.keys(),Sets.of("hostname","username","port"));
             if(!extra.isEmpty()){
                 throw new YAMLException("unexpected "+extra+" keys for host "+node.getStartMark());
             }

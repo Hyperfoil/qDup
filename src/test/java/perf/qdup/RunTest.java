@@ -8,6 +8,7 @@ import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
 import perf.qdup.config.waml.WamlParser;
+import perf.qdup.config.yaml.Parser;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -114,26 +115,23 @@ public class RunTest extends SshTestBase{
 
     @Test
     public void json_state_array(){
-        WamlParser parser = new WamlParser();
-        parser.load("json",stream(""+
-            "scripts:",
-            "  foo:",
-            "  - for-each: FOO in ${{BAR}}",
-            "    - read-state: FOO.biz.buz",
-            "hosts:",
-            "  local: "+getHost(),
-            "roles:",
-            "  doit:",
-            "    hosts: [local]",
-            "    run-scripts: [foo]",
-            "states:",
-            "  BAR: [{biz:{buz:'one'}},{biz:{buz:'two'}},{biz:{buz:'three'}}]"
-                ));
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("json",stream(""+
+          "scripts:",
+           "  foo:",
+           "  - for-each: FOO ${{BAR}}",
+           "    then:",
+           "    - read-state: FOO.biz.buz",
+           "hosts:",
+           "  local: "+getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  BAR: [{biz: {buz: 'one'}},{biz: {buz: 'two'}},{biz: {buz: 'three'}}]"
+        )));
         RunConfig config = builder.buildConfig();
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
@@ -505,9 +503,13 @@ public class RunTest extends SshTestBase{
 
         run.run();
         run.writeRunJson();
+        if(tmpFoo.exists()){
+            tmpFoo.delete();
+        }
 
         assertFalse("should stop tail before biz",tailed.toString().contains("biz"));
         //TODO fix the 4th entry is empty that occurs when SuffixStream removes prompt but not preceeding \r\n
+        //TODO fails when watch gets empty strings at start and end of watching [ , !, foo, bar, ]
         //assertEquals("lines should have 3 entries:"+lines,3,lines.size());
         assertEquals("lines[0] should be !:"+lines,"!",lines.get(0));
         assertEquals("lines[1] should be foo:"+lines,"foo",lines.get(1));

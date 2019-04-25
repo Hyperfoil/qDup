@@ -87,16 +87,17 @@ public class State {
     }
     public void load(Json json){
         json.forEach((key,value)->{
-            if(value instanceof Json){
-                String childPrefix = null;
-                if(RUN_PREFIX.equals(this.prefix)){
-                    childPrefix = HOST_PREFIX;
-                }
-                State childState = getChild(key.toString(),childPrefix);
-                childState.load((Json)value);
-            }else{
-                set(key.toString(),value.toString());
-            }
+            set(key.toString(),value);
+//            if(value instanceof Json){
+//                String childPrefix = null;
+//                if(RUN_PREFIX.equals(this.prefix)){
+//                    childPrefix = HOST_PREFIX;
+//                }
+//                State childState = getChild(key.toString(),childPrefix);
+//                childState.load((Json)value);
+//            }else{
+//                set(key.toString(),value.toString());
+//            }
         });
     }
 

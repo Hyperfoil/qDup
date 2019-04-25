@@ -47,8 +47,10 @@ import perf.yaup.yaml.MapRepresenter;
 import perf.yaup.yaml.Mapping;
 import perf.yaup.yaml.OverloadConstructor;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -62,9 +64,6 @@ import java.util.stream.Collectors;
 public class Parser {
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
-
-
-
 
     public static Parser getInstance(){
         Parser rtrn = new Parser();
@@ -351,7 +350,7 @@ public class Parser {
     private OverloadConstructor constructor;
     private MapRepresenter mapRepresenter;
 
-    public Parser(){
+    private Parser(){
         constructor = new OverloadConstructor();
         constructor.setExactMatchOnly(false);
         mapRepresenter = new MapRepresenter();
@@ -413,7 +412,8 @@ public class Parser {
     }
 
     public YamlFile loadFile(String path, InputStream stream) {
-        String content = FileUtility.readFile(path);
+        String content = new BufferedReader(new InputStreamReader(stream))
+           .lines().collect(Collectors.joining("\n"));
         return loadFile(path,content);
     }
     public YamlFile loadFile(String path,String content){

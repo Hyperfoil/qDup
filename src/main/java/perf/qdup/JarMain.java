@@ -287,7 +287,7 @@ public class JarMain {
         RunConfigBuilder runConfigBuilder = new RunConfigBuilder(cmdBuilder);
 
         //WamlParser wamlParser = new WamlParser();
-        Parser yamlParesr = new Parser();
+        Parser yamlParser = Parser.getInstance();
         for(String yamlPath : yamlPaths){
             File yamlFile = new File(yamlPath);
             if(!yamlFile.exists()){
@@ -299,7 +299,7 @@ public class JarMain {
                     for(File child : yamlFile.listFiles()){
                         logger.trace("  loading: "+child.getPath());
                         String content = FileUtility.readFile(child.getPath());
-                        YamlFile file = yamlParesr.loadFile(child.getPath());
+                        YamlFile file = yamlParser.loadFile(child.getPath());
                         if(file==null){
                             logger.error("Aborting run due to error reading {}",yamlPath);
                             System.exit(1);
@@ -308,7 +308,7 @@ public class JarMain {
                     }
                 }else{
                     logger.trace("loading: "+yamlPath);
-                    YamlFile file = yamlParesr.loadFile(yamlPath);
+                    YamlFile file = yamlParser.loadFile(yamlPath);
                     if(file==null){
                         logger.error("Aborting run due to error reading {}",yamlPath);
                         System.exit(1);
