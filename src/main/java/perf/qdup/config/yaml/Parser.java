@@ -457,7 +457,7 @@ public class Parser {
         YamlFile loaded = null;
         try{
             loaded = yaml.loadAs(content,YamlFile.class);
-        }catch(ParserException| ScannerException e){
+        }catch(YAMLException e){
             //e.printStackTrace();
             try {
                 WamlParser wamlParser = new WamlParser();

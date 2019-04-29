@@ -345,10 +345,9 @@ public class RunConfigBuilderTest extends SshTestBase {
            "    - sh: echo ${PWD}",
            "roles:",
            "  role:",
-           "    - setup-scripts: [first]",
-           "    - run-scripts: [second]"
+           "    setup-scripts: [first]",
+           "    run-scripts: [second]"
         )));
-        System.out.println(parser.dump(YamlFileConstruct.MAPPING.getMap(builder.toYamlFile())));
         builder.loadYaml(parser.loadFile("hostDef",stream(""+
            "hosts:",
            "  local: fakeUser@localhost",
@@ -356,8 +355,6 @@ public class RunConfigBuilderTest extends SshTestBase {
            "  role:",
            "    - hosts: [local]"
         )));
-        System.out.println(parser.dump(YamlFileConstruct.MAPPING.getMap(builder.toYamlFile())));
-
         RunConfig runConfig = builder.buildConfig();
 
         assertTrue("run has role",runConfig.getRoleNames().contains("role"));

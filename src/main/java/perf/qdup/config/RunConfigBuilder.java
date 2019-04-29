@@ -415,7 +415,8 @@ public class RunConfigBuilder {
             rtrn.addScript(scriptName,script);
         });
         getRoleNames().forEach(roleName->{
-            Role role = new Role(roleName);
+            rtrn.addRole(roleName,new Role(roleName));
+            Role role = rtrn.getRoles().get(roleName);
             if( roleHostExpression.containsKey(roleName) ){
                 role.setHostExpression(new HostExpression( roleHostExpression.get(roleName)) );
             }

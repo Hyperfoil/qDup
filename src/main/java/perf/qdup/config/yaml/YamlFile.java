@@ -33,7 +33,7 @@ public class YamlFile {
         scripts.put(name,script);
     }
     public void addRole(String name,Role role){
-        roles.put(name,role);
+        roles.putIfAbsent(name,role);
     }
     public void setName(String name){
         this.name = name;
