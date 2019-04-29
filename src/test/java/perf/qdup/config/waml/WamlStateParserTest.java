@@ -163,7 +163,6 @@ public class WamlStateParserTest extends SshTestBase {
       WamlStateParser parser = parse(""+
          "-entry#comment"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[['entry']]"),parser.getLoaded());
    }
 
@@ -181,7 +180,6 @@ public class WamlStateParserTest extends SshTestBase {
       WamlStateParser parser = parse(""+
          "\"ke:y\":value"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[{'ke:y':'value'}]"),parser.getLoaded());
    }
    @Test
@@ -190,7 +188,6 @@ public class WamlStateParserTest extends SshTestBase {
          "foo:#commennt",
          "  bar: buz#comment"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[{foo:{bar:'buz'}}]"),parser.getLoaded());
    }
    @Test
@@ -219,7 +216,6 @@ public class WamlStateParserTest extends SshTestBase {
          "- ab: 12",
          "  ac: 13"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[{a:'1',then:[{aa:'11',then:[{aaa:'111',then:[{aaaa:'1111'}]}]},{ab:'12',ac:'13'}]}]"),parser.getLoaded());
    }
    @Test
@@ -229,7 +225,6 @@ public class WamlStateParserTest extends SshTestBase {
          "bar: [a, \"b[]][{}}{,\" , c,d]",
          "biz: [a, [ aa, ab], [b, c]]"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[{foo:[a,b,c,d],bar:[a,'b[]][{}}{,',c,d],biz:[a,[aa,ab],[b,c]]}]"),parser.getLoaded());
    }
 
@@ -319,7 +314,6 @@ public class WamlStateParserTest extends SshTestBase {
          "  two",
          "  three"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[{foo: 'one\\ntwo\\nthree'}]"),parser.getLoaded());
    }
    @Test
@@ -330,7 +324,6 @@ public class WamlStateParserTest extends SshTestBase {
          "  two",
          "  three"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[['one\\ntwo\\nthree']]"),parser.getLoaded());
    }
    @Test
@@ -342,7 +335,6 @@ public class WamlStateParserTest extends SshTestBase {
          "  three",
          "bar: 'bug'"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[{foo: 'one two three',bar: 'bug'}]"),parser.getLoaded());
    }
    @Test
@@ -353,7 +345,6 @@ public class WamlStateParserTest extends SshTestBase {
          "  two",
          "  three"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[[\"one two three\"]]"),parser.getLoaded());
    }
    @Test
@@ -365,7 +356,6 @@ public class WamlStateParserTest extends SshTestBase {
          "---",
          "bar: bug"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[{foo:'fox'},{bar:'bug'}]"),parser.getLoaded());
    }
    @Test
@@ -375,7 +365,6 @@ public class WamlStateParserTest extends SshTestBase {
          "bar",
          "biz' buz"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertTrue(parser.getLoaded().has("error"));
    }
 
@@ -384,7 +373,6 @@ public class WamlStateParserTest extends SshTestBase {
       WamlStateParser parser = parse(""+
          "- ${{foo}}"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[['${{foo}}']]"),parser.getLoaded());
    }
    @Test
@@ -392,7 +380,6 @@ public class WamlStateParserTest extends SshTestBase {
       WamlStateParser parser = parse(""+
          "${{foo}}: ${{bar}}"
       );
-      System.out.println(parser.getLoaded().toString(2));
       assertEquals(Json.fromJs("[{'${{foo}}':'${{bar}}'}]"),parser.getLoaded());
    }
 

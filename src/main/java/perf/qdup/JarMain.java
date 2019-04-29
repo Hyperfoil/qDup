@@ -18,6 +18,7 @@ import perf.qdup.config.RunConfigBuilder;
 import perf.qdup.config.waml.WamlParser;
 import perf.qdup.config.yaml.Parser;
 import perf.qdup.config.yaml.YamlFile;
+import perf.qdup.config.yaml.YamlFileConstruct;
 import perf.yaup.AsciiArt;
 import perf.yaup.StringUtil;
 import perf.yaup.file.FileUtility;
@@ -46,7 +47,7 @@ public class JarMain {
         basePathGroup.addOption(Option.builder("W")
             .longOpt("waml")
            .required()
-           .desc("convert waml to q.yaml files")
+           .desc("convert waml to qd.yaml files")
            .build()
         );
         basePathGroup.addOption(Option.builder("T")
@@ -242,25 +243,25 @@ public class JarMain {
                     if(yamlFile.isDirectory()){
                         for(File child : yamlFile.listFiles()){
                             String childPath = child.getAbsolutePath();
-                            if(!childPath.endsWith("q.yaml") && (childPath.endsWith(".yaml") || childPath.endsWith(".waml"))) {
+                            if(!childPath.endsWith("qd.yaml") && (childPath.endsWith(".yaml") || childPath.endsWith(".waml"))) {
                                 todo.add(child.getAbsolutePath());
                             }
                         }
                     }else {
                         String destPath = path;
-                        if ((destPath.endsWith(".yaml") || destPath.endsWith(".waml")) && !destPath.endsWith("q.yaml")) {
-                            destPath = destPath.substring(0, destPath.length() - ".yaml".length()) + ".q.yaml";
+                        if ((destPath.endsWith(".yaml") || destPath.endsWith(".waml")) && !destPath.endsWith("qd.yaml")) {
+                            destPath = destPath.substring(0, destPath.length() - ".yaml".length()) + ".qd.yaml";
                         }
                         CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
                         RunConfigBuilder runConfigBuilder = new RunConfigBuilder(cmdBuilder);
                         WamlParser wamlParser = new WamlParser();
-                        logger.info("converting {} to q.yaml format", path);
+                        logger.info("converting {} to qd.yaml format", path);
                         wamlParser.load(path);
                         if (wamlParser.hasErrors()) {
                             logger.error("Errors parsing {}\n{}", path, wamlParser.getErrors().stream().collect(Collectors.joining("\n")));
                         } else {
                             runConfigBuilder.loadWaml(wamlParser);
-                            String toWrite = p.dump(RunConfigBuilder.MAPPING.getMap(runConfigBuilder));
+                            String toWrite = p.dump(YamlFileConstruct.MAPPING.getMap(runConfigBuilder.toYamlFile()));
                             try {
                                 Files.write(Path.of(destPath), toWrite.getBytes());
                             } catch (IOException e) {
@@ -343,7 +344,7 @@ public class JarMain {
 
         if(commandLine.hasOption("test")){
             //logger.info(config.debug());
-            System.out.println(config.debug());
+            System.out.printf("%s",config.debug());
             System.exit(0);
         }
 
@@ -360,7 +361,7 @@ public class JarMain {
 
         if(config.hasErrors()){
             for(String error: config.getErrors()){
-                System.out.println("Error: "+error);
+                System.out.printf("Error: %s%n",error);
             }
             System.exit(1);
             return;
@@ -441,7 +442,7 @@ public class JarMain {
 
         long stop = System.currentTimeMillis();
 
-        System.out.println("Finished in "+ StringUtil.durationToString(stop-start)+" at "+run.getOutputPath());
+        System.out.printf("Finished in %s at %s",StringUtil.durationToString(stop-start),run.getOutputPath());
 
         jsonServer.stop();
 

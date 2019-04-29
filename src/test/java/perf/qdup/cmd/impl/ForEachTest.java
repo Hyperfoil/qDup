@@ -13,6 +13,7 @@ import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
 import perf.qdup.config.waml.WamlParser;
+import perf.qdup.config.yaml.Parser;
 import perf.yaup.Sets;
 import perf.yaup.json.Json;
 
@@ -121,33 +122,30 @@ public class ForEachTest extends SshTestBase {
 
     @Test
     public void split_json_array_strings(){
-                List<Object> split = ForEach.split("[\"one\",\"two\",\"three\"]");
-                assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
-            }
+        List<Object> split = ForEach.split("[\"one\",\"two\",\"three\"]");
+        assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
+    }
     @Test
     public void split_json_array_strings_singlequote(){
-                List<Object> split = ForEach.split("['one','two','three']");
-                assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
-            }
+        List<Object> split = ForEach.split("['one','two','three']");
+        assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
+    }
     @Test
     public void split_json_array_objects(){
-                List<Object> split = ForEach.split("[{value:'one'},{value:'two'},{value:'three'}]");
-                assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
-                assertTrue("split[0] should be json\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),split.get(0) instanceof Json);
-                assertTrue("split[1] should be json\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),split.get(1) instanceof Json);
-                assertTrue("split[2] should be json\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),split.get(2) instanceof Json);
-            }
+        List<Object> split = ForEach.split("[{value:'one'},{value:'two'},{value:'three'}]");
+        assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
+        assertTrue("split[0] should be json\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),split.get(0) instanceof Json);
+        assertTrue("split[1] should be json\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),split.get(1) instanceof Json);
+        assertTrue("split[2] should be json\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),split.get(2) instanceof Json);
+    }
     @Test
     public void split_json_object(){
-                List<Object> split = ForEach.split("{one:'uno',two:'dos',three:'tres'}");
-                assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
-                for(int i=0; i<3; i++){
-                        assertTrue("split["+i+"] should have key & value as keys",((Json)split.get(i)).keys().containsAll(Sets.of("key","value")));
-                    }
+        List<Object> split = ForEach.split("{one:'uno',two:'dos',three:'tres'}");
+        assertEquals("split should have 3 entires\n"+split.stream().map(o->o.getClass()+" "+o.toString()).collect(Collectors.joining()),3,split.size());
+        for(int i=0; i<3; i++){
+                assertTrue("split["+i+"] should have key & value as keys",((Json)split.get(i)).keys().containsAll(Sets.of("key","value")));
             }
-
-
-
+    }
     @Test
     public void split_newLine(){
         List<Object> split = ForEach.split("1\n2");
@@ -302,27 +300,23 @@ public class ForEachTest extends SshTestBase {
 
     @Test
     public void waml_state_from_with(){
-        WamlParser parser = new WamlParser();
-        parser.load("foreach",stream(""+
-                        "scripts:",
-                "  foo:",
-                "  - for-each: SERVICE ${{FOO}}",
-                "    - read-state: SERVICE",
-                "hosts:",
-                "  local:"+getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: ",
-                "    - foo: ",
-                "        with:",
-                "          FOO : server1,server2,server3"
-        ));
-
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        builder.loadWaml(parser);
-
+        builder.loadYaml(parser.loadFile("foreach",stream(""+
+              "scripts:",
+           "  foo:",
+           "  - for-each: SERVICE ${{FOO}}",
+           "    - read-state: SERVICE",
+           "hosts:",
+           "  local:"+getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: ",
+           "    - foo: ",
+           "        with:",
+           "          FOO : server1,server2,server3"
+        )));
 
         RunConfig config = builder.buildConfig();
 
@@ -351,24 +345,22 @@ public class ForEachTest extends SshTestBase {
 
     @Test
     public void yaml_state_quoted(){
-        WamlParser parser = new WamlParser();
-        parser.load("foreach",stream(""+
-                "scripts:",
-                "  foo:",
-                "  - for-each: SERVICE ${{FOO}}",
-                "    - read-state: SERVICE",
-                "hosts:",
-                "  local:"+getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  FOO: 'server1,server2,server3'"
-        ));
-
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("foreach",stream(""+
+              "scripts:",
+           "  foo:",
+           "  - for-each: SERVICE ${{FOO}}",
+           "    - read-state: SERVICE",
+           "hosts:",
+           "  local:"+getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  FOO: 'server1,server2,server3'"
+        )));
         RunConfig config = builder.buildConfig();
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
@@ -388,25 +380,22 @@ public class ForEachTest extends SshTestBase {
     }
     @Test
     public void yaml_state(){
-        WamlParser parser = new WamlParser();
-        parser.load("foreach",stream(""+
-                        "scripts:",
-                "  foo:",
-                "  - for-each: SERVICE ${{FOO}}",
-                "    - read-state: SERVICE",
-                "hosts:",
-                "  local:"+getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  FOO: server1,server2,server3"
-        ));
-
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("foreach",stream(""+
+           "scripts:",
+           "  foo:",
+           "  - for-each: SERVICE ${{FOO}}",
+           "    - read-state: SERVICE",
+           "hosts:",
+           "  local:"+getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  FOO: server1,server2,server3"
+        )));
         RunConfig config = builder.buildConfig();
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
@@ -429,23 +418,20 @@ public class ForEachTest extends SshTestBase {
 
     @Test
     public void yaml_declared(){
-        WamlParser parser = new WamlParser();
-        parser.load("foreach",stream(""+
-            "scripts:",
-            "  foo:",
-            "  - for-each: SERVICE 'service1, service2, service3'",
-            "    - read-state: SERVICE",
-            "hosts:",
-            "  local:"+getHost(),
-            "roles:",
-            "  doit:",
-            "    hosts: [local]",
-            "    run-scripts: [foo]"
-        ));
-
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("foreach",stream(""+
+              "scripts:",
+           "  foo:",
+           "  - for-each: SERVICE 'service1, service2, service3'",
+           "    - read-state: SERVICE",
+           "hosts:",
+           "  local:"+getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]"
+        )));
         RunConfig config = builder.buildConfig();
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){

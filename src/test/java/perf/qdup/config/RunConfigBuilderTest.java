@@ -12,6 +12,7 @@ import perf.qdup.cmd.impl.ScriptCmd;
 import perf.qdup.cmd.impl.Sh;
 import perf.qdup.config.waml.WamlParser;
 import perf.qdup.config.yaml.Parser;
+import perf.qdup.config.yaml.YamlFileConstruct;
 
 import java.util.List;
 import java.util.Set;
@@ -331,37 +332,36 @@ public class RunConfigBuilderTest extends SshTestBase {
      * A role defined in 2 yaml should merge
      */
     @Test
-    public void testMergeRoleAcrossYaml(){
-        WamlParser parser = new WamlParser();
-        parser.load("scriptDef",stream(""+
-            "scripts:",
-            "  first:",
-            "    - sh: ls",
-            "    - sh: pwd",
-            "  second:",
-            "    - sh: whoami",
-            "    - sh: echo ${PWD}",
-            "roles:",
-            "  role:",
-            "    - setup-scripts: [first]",
-            "    - run-scripts: [second]"
-        ));
-        parser.load("hostDef",stream(""+
-            "hosts:",
-            "  local: fakeUser@localhost",
-            "roles:",
-            "  role:",
-            "    - hosts: [local]"
-        ));
+    public void test_merge_role_across_waml(){
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("scriptDef",stream(""+
+          "scripts:",
+           "  first:",
+           "    - sh: ls",
+           "    - sh: pwd",
+           "  second:",
+           "    - sh: whoami",
+           "    - sh: echo ${PWD}",
+           "roles:",
+           "  role:",
+           "    - setup-scripts: [first]",
+           "    - run-scripts: [second]"
+        )));
+        System.out.println(parser.dump(YamlFileConstruct.MAPPING.getMap(builder.toYamlFile())));
+        builder.loadYaml(parser.loadFile("hostDef",stream(""+
+           "hosts:",
+           "  local: fakeUser@localhost",
+           "roles:",
+           "  role:",
+           "    - hosts: [local]"
+        )));
+        System.out.println(parser.dump(YamlFileConstruct.MAPPING.getMap(builder.toYamlFile())));
 
         RunConfig runConfig = builder.buildConfig();
 
         assertTrue("run has role",runConfig.getRoleNames().contains("role"));
         Role role = runConfig.getRole("role");
-
 
         assertEquals("role has setup script",1,role.getSetup().size());
         assertEquals("role has run script",1,role.getRun().size());
@@ -372,40 +372,37 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         assertTrue("setup should contain first script",setupCmd.tree().contains("first"));
         assertEquals("role should contain one role script",1,runCmds.size());
-
         assertTrue("role should have second as a run script",runCmds.get(0).toString().contains("second"));
     }
 
     @Test @Ignore
     public void testRoleExpession(){
-        WamlParser parser = new WamlParser();
-        parser.load("roleExpression",stream(""+
-                "hosts:",
-                "  foo : user@foo",
-                "  bar : user@bar",
-                "  biz : user@biz",
-                "  buz : user@buz",
-                "roles:",
-                "  buzzer:",
-                "    hosts: [buz]",
-                "    run-scripts: [BuzScript]",
-                "  foo:",
-                "    hosts: [foo]",
-                "    run-scripts: [FooRunScript]",
-                "  foobarbiz",
-                "    hosts: [foo, bar, biz]",
-                "    run-scripts: [AllRunScript]",
-                "  NotFoo",
-                "    hosts: = foobarbiz - foo",
-                "    run-scripts: [NotFooRunScript]",
-                "  AllNotBar:",
-                "    hosts: = all - foobarbiz",
-                "    run-scripts: [AllNotBarScript]",
-                ""
-        ));
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("roleExpression",stream(""+
+              "hosts:",
+           "  foo : user@foo",
+           "  bar : user@bar",
+           "  biz : user@biz",
+           "  buz : user@buz",
+           "roles:",
+           "  buzzer:",
+           "    hosts: [buz]",
+           "    run-scripts: [BuzScript]",
+           "  foo:",
+           "    hosts: [foo]",
+           "    run-scripts: [FooRunScript]",
+           "  foobarbiz",
+           "    hosts: [foo, bar, biz]",
+           "    run-scripts: [AllRunScript]",
+           "  NotFoo",
+           "    hosts: = foobarbiz - foo",
+           "    run-scripts: [NotFooRunScript]",
+           "  AllNotBar:",
+           "    hosts: = all - foobarbiz",
+           "    run-scripts: [AllNotBarScript]",
+           ""
+        )));
 
         RunConfig runConfig = builder.buildConfig();
 
@@ -435,34 +432,25 @@ public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
     public void testOldNestSyntax(){
-        WamlParser parser = new WamlParser();
-        parser.load("oldSyntax",stream("",
-                "name: oldSyntax",
-                "scripts:",
-                "  firstScript:#comment",
-                "   - sh: do smomething",
-                "   - - watch:",
-                "       - regex: .*",
-                "       - - abort: message true"
-                )
-        );
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-        builder.loadWaml(parser);
-
+        builder.loadYaml(parser.loadFile("oldSyntax",stream("",
+           "name: oldSyntax",
+           "scripts:",
+           "  firstScript:#comment",
+           "   - sh: do smomething",
+           "   - - watch:",
+           "       - regex: .*",
+           "       - - abort: message true"
+           )
+        ));
         RunConfig runConfig = builder.buildConfig();
-
         assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
-
         Script firstScript = runConfig.getScript("firstScript");
-
         assertNotNull("firstScript should exist but was null",firstScript);
-
         Cmd next = firstScript.getNext();
-
         assertTrue("sh should have a watcher",next.hasWatchers());
-
         Cmd watcher = next.getLastWatcher();
-
         assertNotNull("sh watcher should not be null",watcher);
         assertTrue("watcher should have abort as child",watcher.getNext().toString().contains("abort"));
     }

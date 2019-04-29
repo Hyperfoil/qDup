@@ -2,6 +2,7 @@ package perf.qdup.config.yaml;
 
 import org.junit.Test;
 import perf.qdup.SshTestBase;
+import perf.qdup.cmd.Cmd;
 import perf.qdup.cmd.Script;
 import perf.qdup.cmd.impl.CtrlC;
 import perf.qdup.cmd.impl.Echo;
@@ -17,11 +18,57 @@ public class ParserTest extends SshTestBase {
         return Arrays.asList(args).stream().collect(Collectors.joining("\n"));
     }
 
+
+    @Test
+    public void load_sh_all_opts(){
+        Parser parser = Parser.getInstance();
+        YamlFile loaded = parser.loadFile("test",join(""+
+           "scripts:",
+           "  foo:",
+           "  - sh: ./test.sh",
+           "    with:",
+           "      one: 'uno'",
+           "    watch:",
+           "    - echo",
+           "    on-signal:",
+           "      bar:",
+           "      - log: message",
+           "    timer:",
+           "      10s:",
+           "      - ctrlC",
+           "    then:",
+           "    - done"
+        ));
+
+        assertNotNull(loaded);
+        assertTrue(loaded.getScripts().containsKey("foo"));
+        Script script = loaded.getScripts().get("foo");
+
+        Cmd next = script.getNext();
+        assertTrue("has with",!next.getWith().isEmpty());
+        assertTrue("has watch",next.hasWatchers());
+        assertTrue("has onsignal",next.hasSignalWatchers());
+        assertTrue("has timer",next.hasTimers());
+        assertTrue("has then",!next.getThens().isEmpty());
+
+        String output = parser.dump(loaded);
+        assertTrue(output,output.contains("with"));
+        assertTrue(output,output.contains("one"));
+        assertTrue(output,output.contains("watch"));
+        assertTrue(output,output.contains("echo"));
+        assertTrue(output,output.contains("on-signal"));
+        assertTrue(output,output.contains("message"));
+        assertTrue(output,output.contains("timer"));
+        assertTrue(output,output.contains("ctrlC"));
+        assertTrue(output,output.contains("done"));
+
+    }
+
     @Test
     public void load_cmd_no_args_nested(){
         Parser parser = Parser.getInstance();
         YamlFile loaded = parser.loadFile("test",join(""+
-              "scripts:",
+           "scripts:",
            "  foo:",
            "  - ctrlC:",
            "    then:",
@@ -32,6 +79,9 @@ public class ParserTest extends SshTestBase {
         assertTrue("missing foo script",loaded.getScripts().containsKey("foo"));
 
         Script foo = loaded.getScripts().get("foo");
+
+
+
         assertTrue("tail is echo",foo.getTail() instanceof Echo);
 
         String output = parser.dump(loaded);

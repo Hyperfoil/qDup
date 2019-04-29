@@ -116,7 +116,7 @@ public class CmdConstruct extends DeferableConstruct {
                                     Object built = task instanceof ScalarNode ? deferAs(task,new Tag("cmd")) : defer(task);
                                     if(built !=null && built instanceof Cmd){
                                         //TODO add signal when merge onsignal branch (forgot and started working it already)
-                                        //finalRtrn.onSignal(signalName,(Cmd)built);
+                                        cmd.onSignal(signalName,(Cmd)built);
                                     }else{
                                         throw new YAMLException("failed to construct Cmd"+task.getStartMark());
                                     }

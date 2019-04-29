@@ -464,14 +464,12 @@ public class WamlStateParser {
    }
    //private State peekState(){return stateStack.peek();}
    private void pushState(State state){
-      System.out.printf("  push %s%n",state.getClass().getSimpleName());
       changed = true;
       stateStack.push(state);
    }
    private void popState(){
       changed = true;
       State popped = stateStack.pop();
-      System.out.printf("  pop  %s%n", popped.getClass().getSimpleName());
    }
    public boolean changed(){return changed;}
    public void clearChanged(){changed = false;}
@@ -547,7 +545,6 @@ public class WamlStateParser {
          int lineNumber = 0;
          String originalLine;
          while((originalLine=reader.readLine())!= null && ++lineNumber > 0){
-            System.out.println("originalLine::"+originalLine);
             if(builder!=null && lineNumber > 1){
                builder.append(System.lineSeparator());
             }
@@ -556,7 +553,6 @@ public class WamlStateParser {
             while( line!=null && ( changed() || (!line.equals(prevLine) && !line.isEmpty()) ) ){
                clearChanged();
                prevLine = line;
-               System.out.printf("%-12s [[%s]]%n",stateStack.peek().getClass().getSimpleName(),line);
                if(line.isEmpty() || line.trim().startsWith("#")){
                   line="";
                } else if (line.trim().startsWith("---")) {

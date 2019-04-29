@@ -88,23 +88,20 @@ public class RunTest extends SshTestBase{
 
     @Test
     public void pwd_in_dollar(){
-        WamlParser parser = new WamlParser();
-        parser.load("pwd",stream(""+
-            "scripts:",
-            "  foo:",
-            "    - sh: echo \"pwd is: $(pwd)\"",
-            "    - echo:",
-                "hosts:",
-                "  local: "+getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        ));
-
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("pwd",stream(""+
+           "scripts:",
+           "  foo:",
+           "    - sh: echo \"pwd is: $(pwd)\"",
+           "    - echo:",
+           "hosts:",
+           "  local: "+getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]"
+        )));
         RunConfig config = builder.buildConfig();
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
@@ -159,30 +156,28 @@ public class RunTest extends SshTestBase{
 
     @Test
     public void signal_in_previous_stage(){
-        WamlParser parser = new WamlParser();
-        parser.load("signal",stream(""+
-                "scripts:",
-                "  foo:",
-                "    - signal: FOO",
-                "  bar:",
-                "    - wait-for: FOO",
-                "    - sh: echo bar > /tmp/bar.txt",
-                "    - signal: BAR",
-                "  biz:",
-                "    - wait-for: BAR",
-                "    - sh: echo biz > /tmp/biz.txt",
-                "hosts:",
-                "  local: "+getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    setup-scripts: [foo]",
-                "    run-scripts: [bar]",
-                "    cleanup-scripts: [biz]"
-        ));
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+           "scripts:",
+           "  foo:",
+           "    - signal: FOO",
+           "  bar:",
+           "    - wait-for: FOO",
+           "    - sh: echo bar > /tmp/bar.txt",
+           "    - signal: BAR",
+           "  biz:",
+           "    - wait-for: BAR",
+           "    - sh: echo biz > /tmp/biz.txt",
+           "hosts:",
+           "  local: "+getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    setup-scripts: [foo]",
+           "    run-scripts: [bar]",
+           "    cleanup-scripts: [biz]"
+        )));
         RunConfig config = builder.buildConfig();
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
@@ -211,7 +206,6 @@ public class RunTest extends SshTestBase{
     @Test
     public void sh_output_trim(){
         StringBuilder output = new StringBuilder();
-
         Script runScript = new Script("cmd-output-trim");
         runScript
             .then(Cmd.sh("if true; then echo SUCCESS; fi")
@@ -220,19 +214,15 @@ public class RunTest extends SshTestBase{
                     return Result.next(input);
                 }))
             );
-
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
         builder.addHostAlias("local",getHost().toString());
         builder.addScript(runScript);
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","cmd-output-trim",new HashMap<>());
-
         RunConfig config = builder.buildConfig();
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run("/tmp",config,dispatcher);
-
         doit.run();
-
         boolean hasNewLine = false;
         for(int i=0; i<output.length();i++){
             char c = output.charAt(i);
@@ -243,11 +233,9 @@ public class RunTest extends SshTestBase{
 
     @Test
     public void echo_exitStatus(){
-
         StringBuilder echoChildInput = new StringBuilder();
         StringBuilder pwdChildInput = new StringBuilder();
         StringBuilder pwdSiblingInput = new StringBuilder();
-
         Script runScript = new Script("run-echo-exitStatus");
         runScript
             .then(Cmd.sh("pwd")
@@ -272,14 +260,10 @@ public class RunTest extends SshTestBase{
         builder.addScript(runScript);
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-echo-exitStatus",new HashMap<>());
-
-
         RunConfig config = builder.buildConfig();
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run("/tmp",config,dispatcher);
-
         doit.run();
-
         assertEquals("echo child should see echo output","0",echoChildInput.toString());
         assertEquals("pwd child should see echo output","0",pwdChildInput.toString());
         assertEquals("pwd sibling should see pwd",System.getProperty("user.home"),pwdSiblingInput.toString());

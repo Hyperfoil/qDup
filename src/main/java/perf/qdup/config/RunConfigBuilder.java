@@ -31,69 +31,7 @@ import static perf.qdup.config.waml.WamlParser.*;
 
 public class RunConfigBuilder {
 
-    public static final Mapping<RunConfigBuilder> MAPPING = (builder)->{
-        Map<Object,Object> map = new LinkedHashMap<>();
-        //map.put("name",builder.getName());
-        if(!builder.scripts.isEmpty()){
-            Map<Object,Object> scriptMap = new LinkedHashMap<>();
-            builder.scripts.forEach((name,script)->{
-                scriptMap.put(name,script.getThens());
-            });
-            map.put("scripts",scriptMap);
-        }
-        if(!builder.getHosts().isEmpty()){
-            Map<Object,Object> hostMap = new LinkedHashMap<>();
-            builder.getHosts().forEach((alias,host)->{
-                if(!alias.equals(host.toString())) {//filter out entries that are fqn to only add in the unique entries
-                    hostMap.put(alias, host.toString());
-                }
-            });
-            map.put("hosts",hostMap);
-        }
-        Function<List<ScriptCmd>,List<Object>> scriptRef = (cmds)->{
-            List<Object> list = cmds.stream().map(cmd->{
-                if(cmd.getWith().isEmpty()){
-                    return cmd.getName();
-                }else{
-                    Map<Object,Object> rtrn = new LinkedHashMap<>();
-                    Map<Object,Object> with = new LinkedHashMap<>();
-                    rtrn.put(cmd.getName(),with);
-                    with.put("with",cmd.getWith());
-                    return rtrn;
-                }
-            })
-               .collect(Collectors.toList());
-            return list;
-        };
-        if(!builder.getRoleNames().isEmpty()){
-            Map<Object,Object> rolesMap = new LinkedHashMap<>();
-            builder.getRoleNames().forEach(name->{
-                Map<Object,Object> roleMap = new LinkedHashMap<>();
-                rolesMap.put(name,roleMap);
-                if(!builder.getRoleHosts(name).isEmpty()){
-                    roleMap.put("hosts",new ArrayList<>(builder.getRoleHosts(name)));
-                }
-                if(!builder.getRoleSetup(name).isEmpty()){
-
-                    roleMap.put("setup-scripts",scriptRef.apply(builder.getRoleSetup(name)));
-                }
-                if(!builder.getRoleRun(name).isEmpty()){
-                    roleMap.put("run-scripts",scriptRef.apply(builder.getRoleRun(name)));
-                }
-                if(!builder.getRoleCleanup(name).isEmpty()){
-                    roleMap.put("cleanup-scripts",scriptRef.apply(builder.getRoleCleanup(name)));
-                }
-            });
-            map.put("roles",rolesMap);
-        }
-        if(!builder.getState().allKeys().isEmpty()){
-            map.put("states",builder.getState());
-        }
-        return map;
-    };
-
     private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
-
     private static final Json EMPTY_ARRAY = new Json();
 
     private static final String NAME = "name";

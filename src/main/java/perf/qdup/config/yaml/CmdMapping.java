@@ -8,6 +8,7 @@ import perf.yaup.yaml.Mapping;
 import perf.yaup.yaml.WithDefer;
 
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
     public static final String WITH = "with";
@@ -16,6 +17,9 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
     public static final String ONSIGNAL = "on-signal";
     public static final String WATCH = "watch";
     public static final String SILENT = "silent";
+
+
+
 
     public static final Set<String> COMMAND_KEYS = Collections.unmodifiableSet(Sets.of(WITH,THEN,TIMER,ONSIGNAL,WATCH));
 
@@ -26,6 +30,30 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
     public CmdMapping(String key,CmdEncoder<T> encoder){
         this.key = key;
         this.encoder = encoder;
+    }
+
+
+    private void addCmd(Cmd cmd,List<Object> encoded){
+        System.out.println("addCmd("+cmd+")");
+        if(cmd instanceof Cmd.NO_OP){
+            System.out.println("  NO_OP");
+            Queue<Cmd> toAdd = new LinkedBlockingQueue<>();
+            toAdd.add(cmd);
+            while(!toAdd.isEmpty()){
+                Cmd target = toAdd.poll();
+                System.out.println("  target="+target);
+                if(target instanceof Cmd.NO_OP){
+                    target.getThens().forEach(toAdd::add);
+                }else {
+                    Object obj = defer(target);
+                    System.out.println("    "+obj);
+                    encoded.add(obj);
+                }
+            }
+        }else {
+            Object obj = defer(cmd);
+            encoded.add(obj);
+        }
     }
 
     public Object defer(Object data){
@@ -63,14 +91,22 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
             cmd.getTimeouts().forEach(timeout->{
                 List<Object> entries = new LinkedList<>();
                 cmd.getTimers(timeout).forEach(entry->{
-                    entry.getThens().forEach(then->{
-                        entries.add(defer(then));
-                    });
+                    addCmd(entry,entries);
                 });
-
                 timers.put(StringUtil.toHms(timeout),entries);
             });
             rtrn.put(TIMER,timers);
+        }
+        if(cmd.hasSignalWatchers()){
+            LinkedHashMap<Object,Object> map = new LinkedHashMap<>();
+            cmd.getSignalNames().forEach(name->{
+                List<Object> entries = new LinkedList<>();
+                cmd.getSignal(name).forEach(entry->{
+                    entries.add(defer(entry));
+                });
+                map.put(name,entries);
+            });
+            rtrn.put(ONSIGNAL,map);
         }
         if(cmd.hasWatchers()){
             List<Object> watchers = new ArrayList<>();

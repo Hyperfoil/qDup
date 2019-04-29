@@ -454,8 +454,6 @@ public class Parser {
         return loadFile(path,content);
     }
     public YamlFile loadFile(String path,String content){
-
-
         YamlFile loaded = null;
         try{
             loaded = yaml.loadAs(content,YamlFile.class);
@@ -464,24 +462,19 @@ public class Parser {
             try {
                 WamlParser wamlParser = new WamlParser();
                 wamlParser.load(path, new ByteArrayInputStream(content.getBytes()));
-
                 if(wamlParser.hasErrors()){
                     logger.error("Failed to load {} with waml parser \n{}",path,wamlParser.getErrors().stream().collect(Collectors.joining("\n")));
-
                 }
                 RunConfigBuilder runConfigBuilder = new RunConfigBuilder(CmdBuilder.getBuilder());
                 runConfigBuilder.loadWaml(wamlParser);
-
-                String newContent = yaml.dump(RunConfigBuilder.MAPPING.getMap(runConfigBuilder));
-
+                String newContent = yaml.dump(YamlFileConstruct.MAPPING.getMap(runConfigBuilder.toYamlFile()));
                 try {
                     loaded = yaml.loadAs(newContent, YamlFile.class);
                 }catch (Exception exception){
-                    logger.error("Failed to load {} after waml transform\n{}",path,exception.getMessage());
+                    logger.error("Failed to load {} after waml transform\n{}\n{}",path,exception.getMessage(),newContent);
                     exception.printStackTrace();
                 }
             }catch (WamlException wamlException){
-                wamlException.printStackTrace(System.out);
                 logger.error("Failed to load {} as waml\n{}",path,wamlException.getMessage());
                 wamlException.printStackTrace();
             }

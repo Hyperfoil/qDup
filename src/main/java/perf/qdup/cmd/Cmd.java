@@ -216,7 +216,7 @@ public abstract class Cmd {
     }
 
 
-    private static class NO_OP extends Cmd{
+    public static class NO_OP extends Cmd{
         @Override
         public void run(String input, Context context) {
             context.next(input);
@@ -462,6 +462,7 @@ public abstract class Cmd {
         return this;
     }
     public List<Cmd> getTimers(long timeout){
+        setOutput("getTimers("+timeout+")="+timers.get(timeout));
         return timers.get(timeout);
     }
     public Set<Long> getTimeouts(){return timers.keys();}

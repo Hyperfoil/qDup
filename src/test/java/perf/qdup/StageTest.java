@@ -8,6 +8,7 @@ import perf.qdup.config.CmdBuilder;
 import perf.qdup.config.RunConfig;
 import perf.qdup.config.RunConfigBuilder;
 import perf.qdup.config.waml.WamlParser;
+import perf.qdup.config.yaml.Parser;
 
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -48,28 +49,25 @@ public class StageTest extends SshTestBase{
 
     @Test
     public void variableSignalName_boundInRole(){
-        WamlParser parser = new WamlParser();
-        parser.load("signal",stream(""+
-            "scripts:",
-            "  foo:",
-            "    - signal: ${{FOO:}}",
-            "  bar:",
-            "    - wait-for: ${{BAR}}",
-            "hosts:",
-            "  local: me@localhost",
-            "roles:",
-            "  role:",
-            "    hosts: [local]",
-            "    run-scripts:",
-            "    - foo:",
-            "        with: { FOO: foo }",
-            "    - bar:",
-            "        with: { BAR: foo }"
-        ));
-
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+           "scripts:",
+           "  foo:",
+           "    - signal: ${{FOO:}}",
+           "  bar:",
+           "    - wait-for: ${{BAR}}",
+           "hosts:",
+           "  local: me@localhost",
+           "roles:",
+           "  role:",
+           "    hosts: [local]",
+           "    run-scripts:",
+           "    - foo:",
+           "        with: { FOO: foo }",
+           "    - bar:",
+           "        with: { BAR: foo }"
+        )));
         RunConfig config = builder.buildConfig();
 
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
@@ -175,61 +173,55 @@ public class StageTest extends SshTestBase{
     }
     @Test
     public void signalMultipleTimesSameScript(){
-        WamlParser parser = new WamlParser();
-        parser.load("signal",stream(""+
-            "scripts:",
-            "  sig:",
-            "    - signal: FOO",
-            "    - signal: FOO",
-            "    - signal: FOO",
-            "    - signal: FOO",
-            "hosts:",
-            "  local: me@localhost",
-            "roles:",
-            "  role:",
-            "    hosts: [local]",
-            "    run-scripts:",
-            "    - sig:"
-        ));
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+              "scripts:",
+           "  sig:",
+           "    - signal: FOO",
+           "    - signal: FOO",
+           "    - signal: FOO",
+           "    - signal: FOO",
+           "hosts:",
+           "  local: me@localhost",
+           "roles:",
+           "  role:",
+           "    hosts: [local]",
+           "    run-scripts:",
+           "    - sig:"
+        )));
         RunConfig config = builder.buildConfig();
         Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
-
     }
     @Test
     public void signalInRepeatedSubScript(){
-        WamlParser parser = new WamlParser();
-        parser.load("signal",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - signal: FOO",
-                "  inv:",
-                "    - script: sig",
-                "        with: {BAR: alpha}",
-                "    - script: sig",
-                "        with: {BAR: bravo}",
-                "    - script: sig",
-                "        with: {BAR: charlie}",
-                "    - script: sig",
-                "        with: {BAR: delta}",
-                "  wat:",
-                "    - wait-for: FOO",
-                "    - done:",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - inv:",
-                "    - wat:"
-        ));
-
+        Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-
-        builder.loadWaml(parser);
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+              "scripts:",
+           "  sig:",
+           "    - signal: FOO",
+           "  inv:",
+           "    - script: sig",
+           "        with: {BAR: alpha}",
+           "    - script: sig",
+           "        with: {BAR: bravo}",
+           "    - script: sig",
+           "        with: {BAR: charlie}",
+           "    - script: sig",
+           "        with: {BAR: delta}",
+           "  wat:",
+           "    - wait-for: FOO",
+           "    - done:",
+           "hosts:",
+           "  local: me@localhost",
+           "roles:",
+           "  role:",
+           "    hosts: [local]",
+           "    run-scripts:",
+           "    - inv:",
+           "    - wat:"
+        )));
         RunConfig config = builder.buildConfig();
         Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
     }
