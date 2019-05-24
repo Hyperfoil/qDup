@@ -146,11 +146,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             bridgeEvent.complete(true);
         }));
 
-        try {
-            server.requestHandler(router::accept).listen(port, InetAddress.getLocalHost().getHostName());
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+        server.requestHandler(router::accept).listen(port/*, InetAddress.getLocalHost().getHostName()*/);
     }
 
     public void stop(){
