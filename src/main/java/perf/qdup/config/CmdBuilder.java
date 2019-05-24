@@ -36,7 +36,7 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("exec",Exec.class,"command");
 //        rtrn.addCmdDefinition("exit-code",ExitCode.class);
 //        rtrn.addCmdDefinition("exit-code",ExitCode.class,"expected");
-//        rtrn.addCmdDefinition("invoke",ScriptCmd.class,"name");
+        rtrn.addCmdDefinition("invoke",ScriptCmd.class,"name");
         rtrn.addCmdDefinition("for-each",ForEach.class,"name");
         rtrn.addCmdDefinition("for-each",ForEach.class,"name","input");
         rtrn.addCmdDefinition("script",ScriptCmd.class,"name");
@@ -45,6 +45,7 @@ public class CmdBuilder {
         rtrn.addCmdDefinition("queue-download",QueueDownload.class,"path");
         rtrn.addCmdDefinition("queue-download",QueueDownload.class,"path","destination");
         rtrn.addCmdDefinition("read-state",ReadState.class,"name");
+        rtrn.addCmdDefinition("read-signal",ReadSignal.class,"name");
         rtrn.addCmdDefinition("reboot",Reboot.class,"timeout","target","password");
         rtrn.addCmdDefinition("regex",Regex.class,"pattern");
         rtrn.addCmdDefinition("repeat-until",RepeatUntilSignal.class,"name");

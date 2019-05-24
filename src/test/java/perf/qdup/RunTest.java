@@ -110,6 +110,53 @@ public class RunTest extends SshTestBase{
         doit.run();
     }
 
+
+    @Test
+    public void invoke_with_state_script_name(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        WamlParser wamlParser = new WamlParser();
+
+        StringBuilder sb = new StringBuilder();
+
+        wamlParser.load("test",stream(""+
+           "scripts:",
+           "  foo:",
+           "  - sh: echo ${{NAME}}",
+           "  - script: ${{NAME}}",
+           "  bar:",
+           "  - sh: echo ${{NAME}}",
+           "  - invoke: foo",
+           "      with:",
+           "        NAME: biz",
+           "  biz:",
+           "  - sh: echo ${{NAME}}",
+           "hosts:",
+           "  local: "+getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [bar]",
+           "states:",
+           "  NAME: fail"
+           ));
+        builder.loadWaml(wamlParser);
+        RunConfig config = builder.buildConfig();
+        Cmd bar = config.getScript("bar");
+        assertNotNull("missing bar script",bar);
+        Cmd biz = config.getScript("biz");
+        assertNotNull("missing biz script",biz);
+        biz.getTail().then(Cmd.code(((input, state) -> {
+            sb.append(input);
+            return Result.next(input);
+        })));
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp",config,dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+        assertEquals("biz should be called with biz","biz",sb.toString());
+    }
+
     @Test
     public void json_state_array(){
         Parser parser = Parser.getInstance();

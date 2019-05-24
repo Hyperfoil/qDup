@@ -19,6 +19,16 @@
         }
       ]
     },
+    "onSignal": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+          "type":"array",
+          "items": {"$ref":"#/definitions/cmd"}
+        },
+        "additionalProperties": false
+      }    
+    },
     "timer":{
       "type":"object",
       "patternProperties": {
@@ -52,214 +62,223 @@
       "items":{ "$ref":"#/definitions/cmd" }
     },
     "cmd": {
-      "type":"object",
       "oneOf":[
         {
-          "properties":{"abort":{"type":"string"}},
-          "required":["abort"],
-          "additionalProperties":false
+          "type": "string",
+          "enum": ["ctrlC","done","echo"]
         },
         {
-          "properties":{
-            "ctrlC":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["ctrlC"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{"done":{"type":"string"}},
-          "required":["done"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "download": {
-              "oneOf": [
-                {"type": "string"},
-                {
-                  "type": "object",
-                  "properties": {
-                    "path": {"type": "string"},
-                    "destination": {"type": "string"}
-                  },
-                  "required": ["path"],
-                  "additionalProperties":false
-                }
-              ]
+          "type":"object",
+          "oneOf":[
+            {
+              "properties":{"abort":{"type":"string"}},
+              "required":["abort"],
+              "additionalProperties":false
             },
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["download"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "echo":{"type":"string"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["echo"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "for-each":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["for-each"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "js":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["js"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "log":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["log"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "queue-download":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["queue-download"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "read-state":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["read-state"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "regex":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["regex"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "repeat-until":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["repeat-until"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "script":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["script"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "set-state":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["set-state"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "sh":{"type":"string"},
-            "prompt":{"type":"object"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"},
-            "timer":{"$ref": "#/definitions/timer"},
-            "watch":{"$ref": "#/definitions/then"}
-          },
-          "required":["sh"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "signal":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["signal"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "sleep":{"type":"string","pattern":"^(\\$\\{\\{.*?\\}\\})$|^(( ?[0-9]+[hms:]?)+)$"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["sleep"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "upload":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["upload"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "wait-for":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["wait-for"],
-          "additionalProperties":false
-        },
-        {
-          "properties":{
-            "xml":{"type":"string"},
-            "silent":{"type":"boolean"},
-            "with":{"$ref": "#/definitions/with"},
-            "then":{"$ref": "#/definitions/then"}
-          },
-          "required":["xml"],
-          "additionalProperties":false
+            {
+              "properties":{
+                "ctrlC":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["ctrlC"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{"done":{"type":"string"}},
+              "required":["done"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "download": {
+                  "oneOf": [
+                    {"type": "string"},
+                    {
+                      "type": "object",
+                      "properties": {
+                        "path": {"type": "string"},
+                        "destination": {"type": "string"}
+                      },
+                      "required": ["path"],
+                      "additionalProperties":false
+                    }
+                  ]
+                },
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["download"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "echo":{"type":"string"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["echo"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "for-each":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["for-each"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "js":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["js"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "log":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["log"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "queue-download":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["queue-download"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "read-state":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["read-state"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "regex":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["regex"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "repeat-until":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["repeat-until"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "script":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["script"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "set-state":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["set-state"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "sh":{"type":"string"},
+                "prompt":{"type":"object"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"},
+                "timer":{"$ref": "#/definitions/timer"},
+                "watch":{"$ref": "#/definitions/then"},
+                "on-signal": {"$ref":"#/definitions/onSignal"}
+              },
+              "required":["sh"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "signal":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["signal"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "sleep":{"type":"string","pattern":"^(\\$\\{\\{.*?\\}\\})$|^(( ?[0-9]+[hms:]?)+)$"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["sleep"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "upload":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["upload"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "wait-for":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["wait-for"],
+              "additionalProperties":false
+            },
+            {
+              "properties":{
+                "xml":{"type":"string"},
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+              },
+              "required":["xml"],
+              "additionalProperties":false
+            }
+          ]
         }
-      ]
+      ]      
     }
   },
   "properties": {

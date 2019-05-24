@@ -377,7 +377,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
         builder.loadYaml(parser.loadFile("roleExpression",stream(""+
-              "hosts:",
+           "hosts:",
            "  foo : user@foo",
            "  bar : user@bar",
            "  biz : user@biz",

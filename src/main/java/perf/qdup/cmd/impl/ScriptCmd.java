@@ -7,6 +7,7 @@ import perf.qdup.cmd.Script;
 public class ScriptCmd extends Cmd {
     private final String name;
     private final boolean async;
+    private String populatedName = null;
     public ScriptCmd(String name){
         this(name,false);
     }
@@ -22,9 +23,10 @@ public class ScriptCmd extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        Script toCall = context.getScript(this.name,this);
+        populatedName = populateStateVariables(name,this,context.getState());
+        Script toCall = context.getScript(populatedName,this);
         if(toCall == null){
-            logger.warn("could not find script: {}",this.name);
+            logger.warn("could not find script: {}",populatedName);
         }else {
 
 
