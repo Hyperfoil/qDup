@@ -1,5 +1,6 @@
 package perf.qdup.stream;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -153,6 +154,25 @@ public class EscapeFilteredStreamTest {
     public void filter_tail(){
         String input="m\u001b[0m";
         assertEquals("tail should be filtered","m",filter(input));
+    }
+
+    @Test @Ignore //TODO does this occur in terminals? need to change looping if it does
+    public void filter_escape_inside_escape(){
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        EscapeFilteredStream stream = new EscapeFilteredStream();
+        stream.addStream("baos",outputStream);
+
+        try {
+            stream.write("x\u001b[".getBytes());
+            stream.write("\u001b[0m".getBytes());
+            stream.write("0mxx".getBytes());
+        } catch (IOException e) {
+                fail("exception writing to stream:"+e.getMessage());
+                e.printStackTrace();
+        }
+
+        String output = new String(outputStream.toByteArray());
+            assertEquals("nested escapes should be filtered","xxx",output);
     }
 
     @Test

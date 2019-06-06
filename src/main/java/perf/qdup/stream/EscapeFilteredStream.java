@@ -103,6 +103,7 @@ public class EscapeFilteredStream extends MultiStream {
                     }
                     if (filtered) {
                         //broken escape sequences are not supported in terminals
+                        //is this true? Don't see that in spec
                         if (flushIndex < currentIndex) {
                             superWrite(buffered, flushIndex, currentIndex - flushIndex);
                         }
