@@ -1,22 +1,24 @@
-group 'perf'
+group 'io.hyperfoil.tools'
 version '0.3.0-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'idea'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 1.11
 
 repositories {
     mavenLocal()
     mavenCentral()
+
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
     compile 'org.apache.commons:commons-jexl3:3.1'
     compile 'org.apache.sshd:sshd-core:2.2.0'
     compile 'net.i2p.crypto:eddsa:0.3.0'
-    compile 'perf:yaup:+'
+    compile 'io.hyperfoil.tools:yaup:0.2-SNAPSHOT'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'org.slf4j:slf4j-ext:1.7.25'
     compile 'ch.qos.logback:logback-classic:1.2.3'
