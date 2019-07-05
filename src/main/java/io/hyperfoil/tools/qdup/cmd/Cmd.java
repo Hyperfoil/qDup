@@ -27,15 +27,16 @@ import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import io.hyperfoil.tools.qdup.cmd.impl.XmlCmd;
 import io.hyperfoil.tools.qdup.State;
 
+import io.hyperfoil.tools.yaup.HashedLists;
 import org.apache.commons.jexl3.JexlContext;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
 
-import perf.yaup.HashedLists;
-import perf.yaup.StringUtil;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.HashedLists;
+import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import javax.script.Bindings;
 import javax.script.ScriptContext;
@@ -500,6 +501,9 @@ public abstract class Cmd {
     }
     public Set<Long> getTimeouts(){return timers.keys();}
     public boolean hasTimers(){return !timers.isEmpty();}
+    public void injectThen(Cmd command){
+        injectThen(command,null);
+    }
     public void injectThen(Cmd command,Context context){
         thens.addFirst(command);
 

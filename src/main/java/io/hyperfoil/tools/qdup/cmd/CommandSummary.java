@@ -8,7 +8,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.Signal;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 
-import perf.yaup.Counters;
+import io.hyperfoil.tools.yaup.Counters;
 
 import java.util.HashSet;
 import java.util.LinkedList;

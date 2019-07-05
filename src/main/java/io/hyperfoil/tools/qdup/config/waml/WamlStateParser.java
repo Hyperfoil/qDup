@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.config.waml;
 
-import perf.yaup.StringUtil;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.*;
 import java.util.LinkedHashMap;

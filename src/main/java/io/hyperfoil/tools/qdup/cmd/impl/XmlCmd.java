@@ -2,10 +2,10 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
-import perf.yaup.StringUtil;
-import perf.yaup.file.FileUtility;
-import perf.yaup.xml.XmlOperation;
-import perf.yaup.xml.pojo.Xml;
+import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.file.FileUtility;
+import io.hyperfoil.tools.yaup.xml.XmlOperation;
+import io.hyperfoil.tools.yaup.xml.pojo.Xml;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static perf.yaup.StringUtil.removeQuotes;
+import static io.hyperfoil.tools.yaup.StringUtil.removeQuotes;
 
 
 

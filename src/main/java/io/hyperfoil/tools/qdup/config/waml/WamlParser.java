@@ -1,9 +1,9 @@
 package io.hyperfoil.tools.qdup.config.waml;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import perf.yaup.HashedLists;
-import perf.yaup.Sets;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.HashedLists;
+import io.hyperfoil.tools.yaup.Sets;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.*;
 import java.util.*;

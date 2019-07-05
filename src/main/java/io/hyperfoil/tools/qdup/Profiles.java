@@ -2,7 +2,7 @@ package io.hyperfoil.tools.qdup;
 
 import org.slf4j.profiler.Profiler;
 import org.slf4j.profiler.ProfilerRegistry;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.HashSet;
 import java.util.Set;

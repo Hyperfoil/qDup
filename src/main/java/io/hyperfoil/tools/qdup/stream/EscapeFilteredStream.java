@@ -2,8 +2,8 @@ package io.hyperfoil.tools.qdup.stream;
 
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
-import perf.yaup.AsciiArt;
-import perf.yaup.Sets;
+import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.Sets;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;

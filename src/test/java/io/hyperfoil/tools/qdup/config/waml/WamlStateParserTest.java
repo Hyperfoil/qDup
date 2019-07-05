@@ -3,7 +3,7 @@ package io.hyperfoil.tools.qdup.config.waml;
 import org.junit.Ignore;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;

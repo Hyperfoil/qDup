@@ -1,12 +1,19 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.JsonServer;
+import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.Dispatcher;
+import io.hyperfoil.tools.qdup.cmd.Result;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
+import io.hyperfoil.tools.qdup.config.RunConfig;
+import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +21,44 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class RegexTest extends SshTestBase {
+
+    @Test
+    public void systemctlBug(){
+       Parser parser = Parser.getInstance();
+       RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+       WamlParser wamlParser = new WamlParser();
+
+       StringBuilder sb = new StringBuilder();
+
+       wamlParser.load("test",stream(""+
+             "scripts:",
+          "  foo:",
+          "  - sh: systemctl status docker",
+          "    - regex: \"\\s*Active: (?<active>\\w+) \\(.*\"",
+          "hosts:",
+          "  local: "+getHost(),
+          "roles:",
+          "  doit:",
+          "    hosts: [local]",
+          "    run-scripts: [foo]"
+       ));
+       builder.loadWaml(wamlParser);
+       RunConfig config = builder.buildConfig();
+       Dispatcher dispatcher = new Dispatcher();
+
+       Cmd foo = config.getScript("foo");
+       foo.getNext().getNext().injectThen(Cmd.code(((input, state) -> {
+          System.out.println("FOO");
+          return Result.next(input);
+       })));
+
+       Run doit = new Run("/tmp",config,dispatcher);
+
+       JsonServer jsonServer = new JsonServer(doit);
+       jsonServer.start();
+       doit.run();
+       dispatcher.shutdown();
+    }
 
     @Test
     public void lineEnding(){

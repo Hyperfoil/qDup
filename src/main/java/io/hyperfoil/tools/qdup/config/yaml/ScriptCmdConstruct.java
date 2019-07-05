@@ -6,11 +6,11 @@ import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.ScalarNode;
-import perf.yaup.Sets;
+import io.hyperfoil.tools.yaup.Sets;
 
 import java.util.Set;
 
-import static perf.yaup.yaml.OverloadConstructor.keys;
+import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.keys;
 
 public class ScriptCmdConstruct extends CmdConstruct {
 

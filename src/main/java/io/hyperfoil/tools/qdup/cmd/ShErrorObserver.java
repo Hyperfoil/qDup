@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
-import perf.yaup.HashedLists;
+import io.hyperfoil.tools.yaup.HashedLists;
 
 import java.util.Arrays;
 import java.util.LinkedList;

@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

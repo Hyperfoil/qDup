@@ -28,8 +28,8 @@ import io.hyperfoil.tools.qdup.cmd.impl.Upload;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import io.hyperfoil.tools.qdup.cmd.impl.XmlCmd;
 
-import perf.yaup.Sets;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.Sets;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

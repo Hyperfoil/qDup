@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.cmd.CommandSummary;
-import perf.yaup.Counters;
+import io.hyperfoil.tools.yaup.Counters;
 
 import java.util.*;
 import java.util.function.BiConsumer;

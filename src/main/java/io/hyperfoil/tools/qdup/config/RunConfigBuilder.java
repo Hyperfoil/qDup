@@ -10,10 +10,10 @@ import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
-import perf.yaup.HashedLists;
-import perf.yaup.HashedSets;
-import perf.yaup.json.Json;
-import perf.yaup.yaml.Mapping;
+import io.hyperfoil.tools.yaup.HashedLists;
+import io.hyperfoil.tools.yaup.HashedSets;
+import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.yaml.Mapping;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;

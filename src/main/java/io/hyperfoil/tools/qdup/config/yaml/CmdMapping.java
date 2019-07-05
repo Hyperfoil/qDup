@@ -1,11 +1,11 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import perf.yaup.Sets;
-import perf.yaup.StringUtil;
-import perf.yaup.yaml.Defer;
-import perf.yaup.yaml.Mapping;
-import perf.yaup.yaml.WithDefer;
+import io.hyperfoil.tools.yaup.Sets;
+import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.yaml.Defer;
+import io.hyperfoil.tools.yaup.yaml.Mapping;
+import io.hyperfoil.tools.yaup.yaml.WithDefer;
 
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;

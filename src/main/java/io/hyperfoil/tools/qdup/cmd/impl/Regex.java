@@ -2,7 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
-import perf.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.StringUtil;
 
 import java.util.*;
 import java.util.regex.Matcher;

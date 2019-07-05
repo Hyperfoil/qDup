@@ -4,8 +4,8 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
-import perf.yaup.StringUtil;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;

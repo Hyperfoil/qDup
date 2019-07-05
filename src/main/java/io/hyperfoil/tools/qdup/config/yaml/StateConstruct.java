@@ -5,10 +5,10 @@ import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.ScalarNode;
-import perf.yaup.json.Json;
-import perf.yaup.yaml.DeferableConstruct;
+import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 
-import static perf.yaup.yaml.OverloadConstructor.json;
+import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.json;
 
 public class StateConstruct extends DeferableConstruct {
     @Override

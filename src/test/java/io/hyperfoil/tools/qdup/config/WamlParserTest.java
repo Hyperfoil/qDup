@@ -4,7 +4,7 @@ import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import org.junit.Ignore;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.LinkedList;
 import java.util.Queue;

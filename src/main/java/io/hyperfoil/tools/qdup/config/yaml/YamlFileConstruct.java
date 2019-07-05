@@ -8,8 +8,8 @@ import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.Role;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.*;
-import perf.yaup.yaml.DeferableConstruct;
-import perf.yaup.yaml.Mapping;
+import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
+import io.hyperfoil.tools.yaup.yaml.Mapping;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

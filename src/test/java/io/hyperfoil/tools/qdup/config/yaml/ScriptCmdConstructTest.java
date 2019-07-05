@@ -8,7 +8,7 @@ import org.junit.Test;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.nodes.Tag;
 
-import perf.yaup.yaml.OverloadConstructor;
+import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

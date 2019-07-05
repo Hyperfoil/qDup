@@ -40,12 +40,12 @@ import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.Tag;
 import io.hyperfoil.tools.qdup.config.waml.WamlException;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
-import perf.yaup.file.FileUtility;
-import perf.yaup.json.Json;
-import perf.yaup.yaml.DeferableConstruct;
-import perf.yaup.yaml.MapRepresenter;
-import perf.yaup.yaml.Mapping;
-import perf.yaup.yaml.OverloadConstructor;
+import io.hyperfoil.tools.yaup.file.FileUtility;
+import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
+import io.hyperfoil.tools.yaup.yaml.MapRepresenter;
+import io.hyperfoil.tools.yaup.yaml.Mapping;
+import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

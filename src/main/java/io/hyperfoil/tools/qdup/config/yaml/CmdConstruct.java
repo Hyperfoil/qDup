@@ -4,15 +4,15 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Sleep;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.*;
-import perf.yaup.json.Json;
-import perf.yaup.yaml.DeferableConstruct;
+import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-import static perf.yaup.yaml.OverloadConstructor.json;
+import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.json;
 
 public class CmdConstruct extends DeferableConstruct {
 

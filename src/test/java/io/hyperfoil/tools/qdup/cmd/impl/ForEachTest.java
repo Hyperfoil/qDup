@@ -13,8 +13,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
-import perf.yaup.Sets;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.Sets;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup;
 
 import org.junit.Test;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import static org.junit.Assert.*;
 

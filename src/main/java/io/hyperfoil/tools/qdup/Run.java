@@ -22,9 +22,9 @@ import org.slf4j.ext.XLoggerFactory;
 import org.slf4j.profiler.Profiler;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.stream.SuffixStream;
-import perf.yaup.AsciiArt;
-import perf.yaup.HashedSets;
-import perf.yaup.json.Json;
+import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.HashedSets;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.File;
 import java.io.FileNotFoundException;

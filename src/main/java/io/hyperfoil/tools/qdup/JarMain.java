@@ -19,9 +19,9 @@ import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFileConstruct;
-import perf.yaup.AsciiArt;
-import perf.yaup.StringUtil;
-import perf.yaup.file.FileUtility;
+import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.file.FileUtility;
 
 import java.io.File;
 import java.io.IOException;
