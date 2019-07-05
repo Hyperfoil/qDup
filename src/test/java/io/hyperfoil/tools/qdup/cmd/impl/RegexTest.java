@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import org.junit.Ignore;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
@@ -22,7 +23,7 @@ import static org.junit.Assert.*;
 
 public class RegexTest extends SshTestBase {
 
-    @Test
+    @Test @Ignore
     public void systemctlBug(){
        Parser parser = Parser.getInstance();
        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
@@ -33,10 +34,11 @@ public class RegexTest extends SshTestBase {
        wamlParser.load("test",stream(""+
              "scripts:",
           "  foo:",
-          "  - sh: systemctl status docker",
-          "    - regex: \"\\s*Active: (?<active>\\w+) \\(.*\"",
+          "  - sh: sudo systemctl status docker",
+          "    - regex: \"\\s*Active: (?<active>\\w+) \\(.*\" #Test to see if docker is running",
+          "      - log: active=${{active}}",
           "hosts:",
-          "  local: "+getHost(),
+          "  local: root@benchclient1.perf.lab.eng.rdu2.redhat.com:22",//+getHost(),
           "roles:",
           "  doit:",
           "    hosts: [local]",

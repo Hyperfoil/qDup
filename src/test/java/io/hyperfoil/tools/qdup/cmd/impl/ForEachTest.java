@@ -171,7 +171,7 @@ public class ForEachTest extends SshTestBase {
         List<Object> split = ForEach.split("['1,1', 2]");
         assertEquals("two entires",2,split.size());
         assertEquals("1,1",split.get(0));
-        assertEquals(2,split.get(1));
+        assertEquals(2l,split.get(1));
     }
     @Test
     public void split_comma(){
@@ -304,6 +304,7 @@ public class ForEachTest extends SshTestBase {
         builder.loadYaml(parser.loadFile("foreach",stream(""+
               "scripts:",
            "  foo:",
+           "  - log: FOO=${{FOO}}",
            "  - for-each: SERVICE ${{FOO}}",
            "    - read-state: SERVICE",
            "hosts:",
@@ -420,7 +421,7 @@ public class ForEachTest extends SshTestBase {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
         builder.loadYaml(parser.loadFile("foreach",stream(""+
-              "scripts:",
+           "scripts:",
            "  foo:",
            "  - for-each: SERVICE 'service1, service2, service3'",
            "    - read-state: SERVICE",

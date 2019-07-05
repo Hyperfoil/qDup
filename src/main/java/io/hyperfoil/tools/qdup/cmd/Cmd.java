@@ -65,8 +65,8 @@ public abstract class Cmd {
     private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
     static {
         try {
-            engine.eval("function milliseconds(v){ return Packages.Sleep.parseToMs(v)}");
-            engine.eval("function seconds(v){ return Packages.Sleep.parseToMs(v)/1000}");
+            engine.eval("function milliseconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)}");
+            engine.eval("function seconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)/1000}");
         } catch (ScriptException e) {
             e.printStackTrace();
         }

@@ -7,6 +7,7 @@ import io.hyperfoil.tools.yaup.StringUtil;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class Regex extends Cmd {
 
@@ -16,7 +17,9 @@ public class Regex extends Cmd {
     private Map<String,String> matches;
     public Regex(String pattern){
         this.pattern = pattern;
-        this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW])","\\\\");
+        this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW\\(\\)remo])","\\\\");
+
+        System.out.println("Regex("+pattern+")=>||"+patternString+"||");
         this.matches = new HashMap<>();
     }
 
@@ -42,7 +45,8 @@ public class Regex extends Cmd {
             renames.put(compName,realName);
 
         }
-        Pattern pattern = Pattern.compile(newPattern,Pattern.DOTALL);
+        try {
+            Pattern pattern = Pattern.compile(newPattern, Pattern.DOTALL);
         Matcher matcher = pattern.matcher(input);
 
         //full line matching only if the pattern specifies start of line
@@ -72,6 +76,11 @@ public class Regex extends Cmd {
             logger.trace("{} NOT match {} ",this,input);
             context.skip(input);
         }
+        }catch(PatternSyntaxException e){
+            context.getRunLogger().error("failed to parse regex pattern from {}\n", newPattern);
+            context.abort(false);
+        }
+
     }
 
     @Override

@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.config.yaml;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.yaup.Sets;
 import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.yaml.Defer;
 import io.hyperfoil.tools.yaup.yaml.Mapping;
 import io.hyperfoil.tools.yaup.yaml.WithDefer;
@@ -84,7 +85,7 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
             }
         }
         if(!cmd.getWith().isEmpty()){
-            rtrn.put(WITH,cmd.getWith());
+            rtrn.put(WITH, Json.toObjectMap(cmd.getWith()));
         }
         if(cmd.hasTimers()){
             LinkedHashMap<Object,Object> timers = new LinkedHashMap<>();

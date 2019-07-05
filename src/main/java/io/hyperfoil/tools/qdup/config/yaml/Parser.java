@@ -52,12 +52,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -160,15 +155,17 @@ public class Parser {
         rtrn.addCmd(
             ForEach.class,
             "for-each",
-            (cmd)->((cmd.getName()+" "+cmd.getDeclaredInput()).trim()),
+            //have to quote declaredInput because CmdBuilder.split() strips out the quotes, remove once cmd builder is gone
+            (cmd)->((cmd.getName()+" "+(cmd.getDeclaredInput().trim().isEmpty()?"":"'"+cmd.getDeclaredInput()).trim()+"'")),
             (str)->{
+
                 List<String> split = CmdBuilder.split(str);
                 if(split.size()==1){
                     return new ForEach(split.get(0));
                 }else if (split.size()==2){
                     return new ForEach(split.get(0),split.get(1));
                 }else{
-                    throw new YAMLException("cannot create for-each from "+str);
+                    throw new YAMLException("cannot create for-each from "+str+" splits "+split.size()+" "+ Arrays.asList(split).stream().map(a->"|["+a.toString()+"]|").collect(Collectors.toList()));
                 }
             },
             (json)->new ForEach(json.getString("name"),json.getString("input",""))

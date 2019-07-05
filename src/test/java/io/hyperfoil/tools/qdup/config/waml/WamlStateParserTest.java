@@ -225,7 +225,7 @@ public class WamlStateParserTest extends SshTestBase {
          "bar: [a, \"b[]][{}}{,\" , c,d]",
          "biz: [a, [ aa, ab], [b, c]]"
       );
-      assertEquals(Json.fromJs("[{foo:[a,b,c,d],bar:[a,'b[]][{}}{,',c,d],biz:[a,[aa,ab],[b,c]]}]"),parser.getLoaded());
+      assertEquals(Json.fromJs("[{foo:['a','b','c','d'],bar:['a','b[]][{}}{,','c','d'],biz:['a',['aa','ab'],['b','c']]}]"),parser.getLoaded());
    }
 
    @Test
@@ -263,7 +263,7 @@ public class WamlStateParserTest extends SshTestBase {
       WamlStateParser parser = parse(""+
          "{key1: [value1], key2: [value2]}"
       );
-      assertEquals(Json.fromJs("[{key1: [value1], key2: [value2]}]"),parser.getLoaded());
+      assertEquals(Json.fromJs("[{key1: ['value1'], key2: ['value2']}]"),parser.getLoaded());
    }
    @Test
    public void map_nesting(){

@@ -531,6 +531,12 @@ public class RunConfigBuilder {
         state.set(key,value);
     }
     public void setRunState(String key,Object value){
+       if(value instanceof Json && ((Json)value).isEmpty()){
+         return;
+       }
+       if(value instanceof String && ((String)value).isEmpty()){
+          return;
+       }
         if(!state.has(key)){
             state.set(key, value);
         } else {
