@@ -40,7 +40,7 @@ jar {
     manifest {
         attributes 'Implementation-Title' : 'Ssh controller',
                 'Implementation-Version' : version,
-                'Main-Class': 'perf.qdup.JarMain'
+                'Main-Class': 'io.hyperfoil.tools.qdup.JarMain'
     }
 }
 test {
