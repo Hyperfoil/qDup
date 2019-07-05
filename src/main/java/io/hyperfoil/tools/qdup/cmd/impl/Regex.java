@@ -77,7 +77,7 @@ public class Regex extends Cmd {
             context.skip(input);
         }
         }catch(PatternSyntaxException e){
-            context.getRunLogger().error("failed to parse regex pattern from {}\n", newPattern);
+            context.getRunLogger().error("failed to parse regex pattern from {}\n{}", newPattern, e.getMessage());
             context.abort(false);
         }
 
