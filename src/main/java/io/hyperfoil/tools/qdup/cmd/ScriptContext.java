@@ -7,6 +7,7 @@ import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
+import io.hyperfoil.tools.yaup.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -333,7 +334,8 @@ public class ScriptContext implements Context, Runnable{
 
                     Supplier<String> inputSupplier = ()->getSession().peekOutput();
                     for(String name : cmd.getSignalNames()){
-                        List<Cmd> toCall = cmd.getSignal(name);
+                        String populatedName = StringUtil.populatePattern(name,new CmdStateRefMap(cmd,state,null),true);
+                        List<Cmd> toCall = cmd.getSignal(populatedName);
                         Cmd root = new ActiveCheckCmd(getCurrentCmd());
                         SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getProfiler(),root);
                         toCall.forEach(root::then);

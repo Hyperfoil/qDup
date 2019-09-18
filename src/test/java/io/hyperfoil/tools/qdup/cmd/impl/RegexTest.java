@@ -50,7 +50,6 @@ public class RegexTest extends SshTestBase {
 
        Cmd foo = config.getScript("foo");
        foo.getNext().getNext().injectThen(Cmd.code(((input, state) -> {
-          System.out.println("FOO");
           return Result.next(input);
        })));
 

@@ -173,10 +173,9 @@ public class State {
         State target = this;
         String currentKey = key;//once we remove the prefixes it can match any scope above the current scope
         while(!rtrn && target!=null){
-            if(currentKey.startsWith(target.prefix)){
+            if(target.prefix!=null && currentKey.startsWith(target.prefix)){
                 currentKey = currentKey.substring(target.prefix.length());
             }
-            System.out.println("currentKey="+currentKey);
             rtrn = target.json.has(currentKey) || Json.find(target.json,currentKey.startsWith("$") ? currentKey : "$." + currentKey)!=null;
             target = target.parent;
         }

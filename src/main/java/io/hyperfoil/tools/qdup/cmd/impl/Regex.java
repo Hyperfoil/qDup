@@ -18,8 +18,6 @@ public class Regex extends Cmd {
     public Regex(String pattern){
         this.pattern = pattern;
         this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW\\(\\)remo])","\\\\");
-
-        System.out.println("Regex("+pattern+")=>||"+patternString+"||");
         this.matches = new HashMap<>();
     }
 

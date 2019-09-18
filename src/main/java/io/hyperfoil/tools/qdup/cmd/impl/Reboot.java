@@ -60,7 +60,7 @@ public class Reboot extends Cmd {
             if(target.matches("\\d+")){
                 logger.info("{} target kernel index",session.getHost().getHostName());
                 int index = Integer.parseInt(target);
-                if(targetIndex>=kernels.size()){
+                if(index>=kernels.size()){
                     logger.error("{} Reboot found {} kernel(s), target = {}",session.getHost().getHostName(),kernels.size(),targetIndex);
                     //TODO invoke the next command or abort?
                     context.abort(false);

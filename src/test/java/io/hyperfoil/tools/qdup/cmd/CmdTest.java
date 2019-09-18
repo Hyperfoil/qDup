@@ -36,6 +36,32 @@ public class CmdTest extends SshTestBase {
         assertEquals("expected value with seconds()","140",response);
     }
     @Test
+    public void populateStateVariables_combine_path_with_slash_in_values(){
+        State state = new State("");
+        state.set("PATH","/tmp/foo/");
+        state.set("FOLDER","bar");
+        String response = Cmd.populateStateVariables("${{PATH}}${{FOLDER}}",null,state);
+        assertEquals("/tmp/foo/bar",response);
+    }
+    @Test
+    public void populateStateVariables_combine_path_with_slash_between_values(){
+        State state = new State("");
+        state.set("PATH","/tmp/foo");
+        state.set("FOLDER","bar");
+        String response = Cmd.populateStateVariables("${{PATH}}/${{FOLDER}}",null,state);
+        assertEquals("/tmp/foo/bar",response);
+    }
+    @Test
+    public void populateStateVariables_value_from_multiple_values(){
+        State state = new State("");
+        state.set("PATH","/tmp/foo");
+        state.set("FOLDER","bar");
+        state.set("DEST","${{PATH}}/${{FOLDER}}");
+        String response = Cmd.populateStateVariables("${{DEST}}",null,state);
+        assertEquals("/tmp/foo/bar",response);
+    }
+
+    @Test
     public void populateStateVariables_arithmetic_missing_state(){
         State state = new State("");
         state.set("FOO","10");
@@ -188,6 +214,16 @@ public class CmdTest extends SshTestBase {
 
         assertEquals("should populate from state","foo",populated);
     }
+    @Test
+    public void getStateValue_twoValues(){
+        State state = new State("");
+        state.set("FOO","foo");
+        state.set("BAR","bar");
+        Object populated = Cmd.getStateValue("${{FOO}}${{BAR}}",null,state,null);
+        assertEquals("expect both values to replace","foobar",populated);
+    }
+
+
 
     @Test
     public void hasWith_self(){
@@ -226,7 +262,47 @@ public class CmdTest extends SshTestBase {
                 assertEquals("with should take priority over state","bar",populated);
             }
 
+    @Test
+    public void test_timer(){
 
+    }
+
+    @Test
+    public void test_on_signal(){
+       RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+       StringBuilder first = new StringBuilder();
+
+       Script runSleep = new Script("run-sleep");
+       runSleep.then(
+          Cmd.sleep("2m")
+          .onSignal("signalFoo",
+             Cmd.code((input,ctx)->{
+               first.append("called");
+               return Result.next(input);
+             })
+             .then(Cmd.abort("done"))
+          )
+       );
+       Script runSignal = new Script("run-signal");
+       runSignal.then(Cmd.sleep("2s"));
+       runSignal.then(Cmd.signal("signalFoo"));
+
+
+       builder.addScript(runSignal);
+       builder.addScript(runSleep);
+
+       builder.addHostAlias("local",getHost().toString());
+       builder.addHostToRole("role","local");
+       builder.addRoleRun("role","run-signal",new HashMap<>());
+       builder.addRoleRun("role","run-sleep",new HashMap<>());
+
+       RunConfig config = builder.buildConfig();
+       Dispatcher dispatcher = new Dispatcher();
+       Run run = new Run("/tmp",config,dispatcher);
+       run.run();
+
+       assertEquals("on-signal signalFoo should be called","called",first.toString());
+    }
 
     @Test
     public void testWith(){

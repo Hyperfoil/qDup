@@ -35,19 +35,15 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
 
 
     private void addCmd(Cmd cmd,List<Object> encoded){
-        System.out.println("addCmd("+cmd+")");
         if(cmd instanceof Cmd.NO_OP){
-            System.out.println("  NO_OP");
             Queue<Cmd> toAdd = new LinkedBlockingQueue<>();
             toAdd.add(cmd);
             while(!toAdd.isEmpty()){
                 Cmd target = toAdd.poll();
-                System.out.println("  target="+target);
                 if(target instanceof Cmd.NO_OP){
                     target.getThens().forEach(toAdd::add);
                 }else {
                     Object obj = defer(target);
-                    System.out.println("    "+obj);
                     encoded.add(obj);
                 }
             }
