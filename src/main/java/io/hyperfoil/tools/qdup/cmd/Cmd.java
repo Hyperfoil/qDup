@@ -470,6 +470,8 @@ public abstract class Cmd {
    }
 
    public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined, Ref ref) {
+      if(command == null){
+      }
       if (command.indexOf(STATE_PREFIX) < 0) {
          return command;
       }
@@ -647,6 +649,12 @@ public abstract class Cmd {
       });
       timers.forEach((timeout, cmdList) -> {
          rtrn.append(String.format("%" + (correctedIndent + 4) + "stimer: %d%n", "", timeout));
+         cmdList.forEach(cmd -> {
+            cmd.tree(rtrn, correctedIndent + 6, "", debug);
+         });
+      });
+      onSignal.forEach((name,cmdList)->{
+         rtrn.append(String.format("%" + (correctedIndent +4) + "son-signal: %s%n","",name));
          cmdList.forEach(cmd -> {
             cmd.tree(rtrn, correctedIndent + 6, "", debug);
          });

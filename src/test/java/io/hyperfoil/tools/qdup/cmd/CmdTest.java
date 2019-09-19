@@ -268,6 +268,44 @@ public class CmdTest extends SshTestBase {
     }
 
     @Test
+    public void test_on_signal_variable(){
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        StringBuilder first = new StringBuilder();
+
+        Script runSleep = new Script("run-sleep");
+        runSleep.then(
+           Cmd.sleep("2m")
+              .onSignal("${{NAME}}-signal",
+                 Cmd.code((input,ctx)->{
+                     first.append("called");
+                     return Result.next(input);
+                 })
+                    .then(Cmd.abort("done"))
+              )
+        );
+        Script runSignal = new Script("run-signal");
+        runSignal.then(Cmd.sleep("2s"));
+        runSignal.then(Cmd.signal("${{NAME}}-signal"));
+
+
+        builder.addScript(runSignal);
+        builder.addScript(runSleep);
+
+        builder.addHostAlias("local",getHost().toString());
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run-signal",new HashMap<>());
+        builder.addRoleRun("role","run-sleep",new HashMap<>());
+
+        builder.setRunState("NAME","variable");
+
+        RunConfig config = builder.buildConfig();
+        Dispatcher dispatcher = new Dispatcher();
+        Run run = new Run("/tmp",config,dispatcher);
+        run.run();
+
+        assertEquals("on-signal should be called","called",first.toString());
+    }
+    @Test
     public void test_on_signal(){
        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
        StringBuilder first = new StringBuilder();
