@@ -207,9 +207,9 @@ public class ScriptContext implements Context, Runnable{
 
     public void closeLineQueue(){
         //only close if something is listening
-        if(lineQueueSemaphore.availablePermits()==0) {
-            lineQueue.add(CLOSE_QUEUE);
-        }
+        //may need to send close before listener has the semaphore (e.g. tests)
+        lineQueue.add(CLOSE_QUEUE);
+
     }
 
     @Override
@@ -327,6 +327,7 @@ public class ScriptContext implements Context, Runnable{
                 if (!lineQueue.isEmpty()) {//clear any unhandled output lines
                     //TODO log that we are clearing orphaned lines
                     //need to make sure we don't clear if another thread needs to pickup up the CLOSE_QUEUE
+
                     try{
                         lineQueueSemaphore.acquire();
                         lineQueue.clear();

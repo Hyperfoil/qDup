@@ -161,11 +161,6 @@ public class ParserTest extends SshTestBase {
            "        FOO: One,Two,Three",
            "    - set-state: PWD"
         ));
-        
-//        String output = parser.dump(YamlFileConstruct.MAPPING.getMap(loaded));
-//
-//        System.out.println(output);
-
         assertNotNull("loaded should not be null",loaded);
         assertEquals("loaded scripts",1,loaded.getScripts().size());
         assertEquals("loaded hosts",0,loaded.getHosts().size());
