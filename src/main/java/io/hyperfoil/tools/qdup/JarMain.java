@@ -344,7 +344,7 @@ public class JarMain {
 
         if(commandLine.hasOption("test")){
             //logger.info(config.debug());
-            System.out.printf("%s",config.debug());
+            System.out.printf("%s",config.debug(true));
             System.exit(0);
         }
 

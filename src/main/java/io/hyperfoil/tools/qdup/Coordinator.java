@@ -156,16 +156,16 @@ public class Coordinator {
 
         if(!latches.containsKey(name)){
             logger.warn("signal {} missing latch, ignoring",name);
-            return;
-        }
-        if( latches.get(name).get() > 0 ){
+            //return;
+        }else if( latches.get(name).get() > 0 ){
             latches.get(name).decrementAndGet();
             if(latches.get(name).get()==0){
                 latchTimes.put(name,System.currentTimeMillis());
             }
         }
-        if( latches.get(name).get()<=0 ) {
-            if(latches.get(name).get() < 0){
+        //TODO this should not signal missing once we correctly find singals inside for-each
+        if( !latches.containsKey(name) || latches.get(name).get()<=0  ) {//signal for a missing latch
+            if(latches.containsKey(name) && latches.get(name).get() < 0){
                 logger.error("Latch {} went below zero to {}",name,latches.get(name).get());
             }
             if(!observers.isEmpty()){

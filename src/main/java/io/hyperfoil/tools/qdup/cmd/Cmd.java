@@ -27,6 +27,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import io.hyperfoil.tools.qdup.cmd.impl.XmlCmd;
 import io.hyperfoil.tools.qdup.State;
 
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
 import org.apache.commons.jexl3.JexlContext;
 
@@ -207,6 +208,7 @@ public abstract class Cmd {
       @Override
       protected void setSkip(Cmd skip) {
          //prevent propagating skip to last then because it needs to skip to this
+
          this.forceSkip(skip);
       }
 
@@ -215,12 +217,54 @@ public abstract class Cmd {
          Cmd commandTail = command.getTail();
          Cmd currentTail = this.getTail();
          Cmd rtrn = super.then(command, true);
-         currentTail.forceNext(command);
-         if (!this.equals(currentTail)) {
-            currentTail.forceSkip(command);//if current tail is skipping it's children
+
+
+         if(currentTail==this){
+            forceNext(command);//setting loopback will happen later
+         }else if(currentTail.isLoopBack()){//
+            //if this is making the  current tail a loop back then it needs to no longer be a loopback
+            if(currentTail.getNext() == this){
+               currentTail.clearLoopBack();
+               currentTail.forceNext(command);
+            }else{
+               //the currentTail is the end of a different loop, set the other LoopCmd to skip to command
+               assert currentTail.getSkip() instanceof LoopCmd;
+               currentTail.getSkip().forceSkip(command);
+            }
+         }else{
+            //TODO I think this is an error, how could the tail of a loop not be loopback
+            System.out.printf("Not sure how LoopCmd.tail !isLoopBack "+currentTail);
          }
-         commandTail.forceNext(this);
-         command.setSkip(this);
+
+         if(!commandTail.isLoopBack()){//if the command is not part of a loop add it to this loop
+            commandTail.setLoopBack(this);
+         }else{
+            Cmd commandTailSkip = commandTail.getSkip();
+            assert commandTailSkip instanceof LoopCmd;
+
+            Cmd target = commandTailSkip;
+            while(target != null && target != this){
+               if( !target.hasSkip() ){
+                  target.forceSkip(this);
+               }else {
+                  if(target.getSkip() instanceof LoopCmd){
+
+                  }else{
+
+                  }
+               }
+
+               target = target.getParent();
+            }
+            //commandTailSkip.forceSkip(this);//if the other loop exits it should go back to this loop
+
+
+//            while(target!=null && !target.hasSkip() && target !=this){
+//               target.forceSkip(this);
+//               target = target.getParent();
+//            }
+         }
+
          return rtrn;
       }
 
@@ -493,6 +537,8 @@ public abstract class Cmd {
    private Cmd next;
    private Cmd skip;
 
+   private boolean isLoopBack = false;
+
    int uid;
 
    protected boolean silent = false;
@@ -516,6 +562,25 @@ public abstract class Cmd {
       this.parent = null;
       this.uid = uidGenerator.incrementAndGet();
    }
+
+   public boolean isLoopBack(){return isLoopBack;}
+   public void setLoopBack(LoopCmd loopCmd){
+      if(!isLoopBack){
+         isLoopBack=true;
+         forceNext(loopCmd);
+         forceSkip(loopCmd);
+         //set the parent skip if it isn't set so that they don't skip out of the loop
+         Cmd pnt = this.getParent();
+         while(pnt!=null && !pnt.hasSkip() && pnt!=loopCmd){
+            pnt.forceSkip(loopCmd);
+            pnt = pnt.getParent();
+         }
+      }
+   }
+   public void clearLoopBack(){
+      isLoopBack=false;
+   }
+
 
    public Cmd onSignal(String name, Cmd command) {
       onSignal.put(name, command);
@@ -698,6 +763,7 @@ public abstract class Cmd {
       this.skip = skip;
    }
 
+   public boolean hasSkip(){return skip!=null;}
    public Cmd getSkip() {
       return skip;
    }
@@ -715,18 +781,47 @@ public abstract class Cmd {
    }
 
    protected Cmd then(Cmd command, boolean setSkip) {
-      setNext(command);
-      if (setSkip && !this.thens.isEmpty()) {
-         Cmd previousThen = this.thens.getLast();
-         previousThen.setSkip(command);
-         previousThen.setNext(command);
+      if(isLoopBack()) {
+         Cmd loopCmd = getSkip();
+         assert loopCmd instanceof LoopCmd;
 
-         command.setPrevious(previousThen);
-      } else {
-         command.setPrevious(this);
+         command.parent = this;
+         this.thens.add(command);
+
+         clearLoopBack();
+         forceNext(command);
+         command.getTail().setLoopBack((LoopCmd) loopCmd);
+
+      }else if (getTail().isLoopBack() && getTail().getSkip() == this.getSkip()){
+         //if tail is a loop back to the same loop this is probably within
+         Cmd loopCmd = this.getSkip();
+         assert loopCmd instanceof LoopCmd;
+
+         command.parent = this;
+
+         getTail().clearLoopBack();
+         getTail().forceNext(command);
+
+         this.thens.add(command);
+
+         command.getTail().setLoopBack((LoopCmd)loopCmd);
+
+
+
+      }else {
+         setNext(command);
+         if (setSkip && !this.thens.isEmpty()) {
+            Cmd previousThen = this.thens.getLast();
+            previousThen.setSkip(command);
+            previousThen.setNext(command);
+
+            command.setPrevious(previousThen);
+         } else {
+            command.setPrevious(this);
+         }
+         command.parent = this;
+         this.thens.add(command);
       }
-      command.parent = this;
-      this.thens.add(command);
       return this;
    }
 
@@ -761,7 +856,12 @@ public abstract class Cmd {
 //                context.getState().set(key,with.get(key));
 //            }
       }
-      run(input, context);
+      try {
+         run(input, context);
+      }catch(Exception e){
+         e.printStackTrace();
+         abort("Exception from "+this);
+      }
    }
 
    public abstract void run(String input, Context context);

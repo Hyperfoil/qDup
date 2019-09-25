@@ -4,27 +4,7 @@ import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
-import io.hyperfoil.tools.qdup.cmd.impl.Abort;
-import io.hyperfoil.tools.qdup.cmd.impl.Countdown;
-import io.hyperfoil.tools.qdup.cmd.impl.CtrlC;
-import io.hyperfoil.tools.qdup.cmd.impl.Done;
-import io.hyperfoil.tools.qdup.cmd.impl.Download;
-import io.hyperfoil.tools.qdup.cmd.impl.Echo;
-import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
-import io.hyperfoil.tools.qdup.cmd.impl.JsCmd;
-import io.hyperfoil.tools.qdup.cmd.impl.Log;
-import io.hyperfoil.tools.qdup.cmd.impl.QueueDownload;
-import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
-import io.hyperfoil.tools.qdup.cmd.impl.Regex;
-import io.hyperfoil.tools.qdup.cmd.impl.RepeatUntilSignal;
-import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
-import io.hyperfoil.tools.qdup.cmd.impl.SetState;
-import io.hyperfoil.tools.qdup.cmd.impl.Sh;
-import io.hyperfoil.tools.qdup.cmd.impl.Signal;
-import io.hyperfoil.tools.qdup.cmd.impl.Sleep;
-import io.hyperfoil.tools.qdup.cmd.impl.Upload;
-import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
-import io.hyperfoil.tools.qdup.cmd.impl.XmlCmd;
+import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
@@ -160,12 +140,19 @@ public class Parser {
             (str)->{
 
                 List<String> split = CmdBuilder.split(str);
-                if(split.size()==1){
+                if(split.size()<=1){
                     return new ForEach(split.get(0));
                 }else if (split.size()==2){
                     return new ForEach(split.get(0),split.get(1));
                 }else{
-                    throw new YAMLException("cannot create for-each from "+str+" splits "+split.size()+" "+ Arrays.asList(split).stream().map(a->"|["+a.toString()+"]|").collect(Collectors.toList()));
+                   String name = split.get(0);
+                   String remainder = str.substring(name.length());
+                   if(Json.isJsonLike(remainder)){
+                      return new ForEach(name,remainder);
+
+                   } else {
+                      throw new YAMLException("cannot create for-each from " + str + " splits " + split.size() + " " + Arrays.asList(split).stream().map(a -> "||" + a.toString() + "||").collect(Collectors.toList()));
+                   }
                 }
             },
             (json)->new ForEach(json.getString("name"),json.getString("input",""))
@@ -211,6 +198,20 @@ public class Parser {
             null
         );
         rtrn.addCmd(
+           ReadSignal.class,
+           "read-signal",
+           (cmd)->cmd.getName(),
+           (str)->new ReadSignal(str),
+           null
+        );
+        rtrn.addCmd(
+           Cmd.NO_OP.class,
+           "#NO_OP",
+           (cmd)->"",
+           (str)->new Cmd.NO_OP(),
+           null
+        );
+        rtrn.addCmd(
             Regex.class,
             "regex",
             (cmd)->cmd.getPattern(),
@@ -235,8 +236,21 @@ public class Parser {
             SetState.class,
             "set-state",
             (cmd)->cmd.getKey()+(cmd.getValue()!=null && !cmd.getValue().isEmpty() ? " "+cmd.getValue() : ""),
-            (str)->new SetState(str),
-            (json)->new SetState(json.getString("key"),json.getString("value",null))
+            (str)->{
+                List<String> split = CmdBuilder.split(str);
+                if(split.size()<=1){
+                    return new SetState(str);
+                }else{
+                    String name = split.get(0);
+                    String remainder = str.substring(name.length()).trim();
+                    return new SetState(name,remainder);
+                }
+            },
+            (json)->new SetState(
+               json.getString("key"),
+               json.getString("value",null),
+               json.getBoolean("silent",false)
+            )
         );
         rtrn.addCmd(
             Sh.class,
@@ -296,8 +310,8 @@ public class Parser {
             (cmd)->(cmd.getPath()+" "+cmd.getDestination()),
             (str)->{
                 List<String> split = CmdBuilder.split(str);
-                if(split.size()==1){
-                    return new Upload(split.get(0));
+                if(split.size()<=1){
+                    return new Upload(str);
                 }else if (split.size()==2){
                     return new Upload(split.get(0),split.get(1));
                 }else{
@@ -307,11 +321,34 @@ public class Parser {
             (json)->new Upload(json.getString("path"),json.getString("destination",""))
         );
         rtrn.addCmd(
+           SetSignal.class,
+           "set-signal",
+           (cmd)->cmd.getName()+" "+cmd.getInitial(),
+           (str)->{
+               List<String> split = CmdBuilder.split(str);
+               if(split.size()!=2){
+                   throw new YAMLException("cannot create countdown from " + str);
+               }else{
+                   return new SetSignal(split.get(0),split.get(1));
+               }
+           },
+           (json)->new SetSignal(json.getString("name"),json.getString("initial"))
+        );
+        rtrn.addCmd(
             WaitFor.class,
             "wait-for",
             (cmd)->cmd.getName(),
-            (str)->new WaitFor(str),
-            (json)->new WaitFor(json.getString("name"),json.getBoolean("silent",true))
+            (str)->{
+                List<String> split = CmdBuilder.split(str);
+                if(split.size()<=1){
+                    return new WaitFor(str);
+                }else{
+                    String name = split.get(0);
+                    String remainder = str.substring(name.length()).trim();
+                    return new WaitFor(name,remainder);
+                }
+            },
+            (json)->new WaitFor(json.getString("name"),json.getString("initial",null))
         );
         rtrn.addCmd(
             XmlCmd.class,
@@ -478,6 +515,7 @@ public class Parser {
             }
         }catch(RuntimeException e){
             logger.error("Failed to load {}\n{}",path,e.getMessage());
+            e.printStackTrace();
         }
         if(loaded!=null) {
             loaded.setPath(path);

@@ -21,6 +21,7 @@ public class ForEach extends Cmd.LoopCmd {
 
     private String declaredInput;
     private String loadedInput;
+    private String lastInput;
     private final List<Object> split = new ArrayList<>();
     private int index = -1;
 
@@ -32,6 +33,8 @@ public class ForEach extends Cmd.LoopCmd {
         this.populatedName = name;
         this.declaredInput = input==null?"":input;
         this.loadedInput = declaredInput;
+        this.lastInput = null;
+
     }
 
     public String getName(){return name;}
@@ -75,6 +78,7 @@ public class ForEach extends Cmd.LoopCmd {
     @Override
     public void run(String input, Context context) {
         try {
+
             String populatedDeclaredInput = Cmd.populateStateVariables(declaredInput,this,context.getState());
             //if we need to load from declaredInput
             if( !declaredInput.isEmpty() && !populatedDeclaredInput.isEmpty() && (split.isEmpty() || !this.loadedInput.equalsIgnoreCase(populatedDeclaredInput)) ) {
@@ -85,8 +89,7 @@ public class ForEach extends Cmd.LoopCmd {
                 logger.debug("for-each:{} input={} split={}", name, input, split);
             //if we need to load from input
             }else if ( (declaredInput.isEmpty() || populatedDeclaredInput.isEmpty()) && (split.isEmpty() || !this.loadedInput.equals(input))){
-                split.clear();
-                index=-1;
+                clearLoopState();
                 split.addAll(split(input));
                 this.loadedInput = input;
             }
@@ -104,14 +107,35 @@ public class ForEach extends Cmd.LoopCmd {
                     with(populatedName, value);
                     context.next(value.toString());
                 } else {
+                    clearLoopState();//we finished looping, next run() should start a new loop
                     context.skip(input);
                 }
             } else {
+                clearLoopState();//we didn't find anything to loop, next run() should look again
                 context.skip(input);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+        } finally{
+            setLastInput(input);
         }
+    }
+
+    private boolean isFirstCall(){
+        return lastInput == null;
+    }
+    private boolean isSameInput(String input){
+        return input == lastInput;
+    }
+    private void setLastInput(String input){
+        this.lastInput = input;
+    }
+    private void clearLoopState(){
+        index=-1;
+        split.clear();
+    }
+    private boolean isEmptyLoopState(){
+        return split.isEmpty() && index==-1;
     }
 
     @Override

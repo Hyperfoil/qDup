@@ -10,10 +10,14 @@ public class Signal extends Cmd {
     public String getName(){return name;}
     @Override
     public void run(String input, Context context) {
-        populatedName = Cmd.populateStateVariables(name,this,context.getState());
-        context.getCoordinator().signal(populatedName);
-        
-        context.next(input);
+        try {
+            populatedName = Cmd.populateStateVariables(name, this, context.getState());
+            context.getCoordinator().signal(populatedName);
+
+            context.next(input);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Override

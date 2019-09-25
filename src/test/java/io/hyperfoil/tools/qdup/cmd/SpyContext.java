@@ -19,6 +19,8 @@ public class SpyContext implements Context {
     String skip;
     State state = new State("");
 
+
+
     public SpyContext(){
         updates = new ArrayList<>();
         next = null;
@@ -121,4 +123,5 @@ public class SpyContext implements Context {
     public boolean hasNext(){return next!=null;}
     public String getSkip(){return skip;}
     public boolean hasSkip(){return skip!=null;}
+    public List<String> getUpdates(){return updates;}
 }

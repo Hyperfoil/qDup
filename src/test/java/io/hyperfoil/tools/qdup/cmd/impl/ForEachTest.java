@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
@@ -20,11 +21,206 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
 public class ForEachTest extends SshTestBase {
+
+
+    @Test
+    public void nested_loop_count(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+           "  foo:",
+           "  - for-each: ARG1 ${{FIRST}}",
+           "    then:",
+           "    - for-each: ARG2 ${{SECOND}}",
+           "      then:",
+           "      - set-state: RUN.LOG ${{LOG}}-${{ARG1}}.${{ARG2}}",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  FIRST: [1, 2, 3]",
+           "  SECOND: [1, 2, 3]"
+        )));
+
+        RunConfig config = builder.buildConfig();
+        Cmd foo = config.getScript("foo");
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp", config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+        assertEquals("ARG1 and ARG2 should each loop 3 times","-1.1-1.2-1.3-2.1-2.2-2.3-3.1-3.2-3.3",config.getState().get("LOG"));
+
+
+    }
+
+    @Test
+    public void definedLoopCount(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser.loadFile("",stream(""+
+           "scripts:",
+           "  foo:",
+           "  - for-each: ARG1 ${{FIRST}}",
+           "    then:",
+           "    - for-each: ARG2 ${{SECOND}}",
+           "      then:",
+           "      - for-each: ARG3 ${{THIRD}}",
+           "        then:",
+           "        - set-state: RUN.LOG ${{LOG}}-${{ARG1}}.${{ARG2}}.${{ARG3}}",
+           "  - sh: echo ${{LOG}}",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  FIRST: [1, 2]",
+           "  SECOND: [1, 2]",
+           "  THIRD: [1, 2]"
+           )));
+
+
+        RunConfig config = builder.buildConfig();
+
+        Cmd foo = config.getScript("foo");
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp", config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        assertEquals("ARG1 ARG2 ARG3 should each loop 3 times","-1.1.1-1.1.2-1.2.1-1.2.2-2.1.1-2.1.2-2.2.1-2.2.2",config.getState().get("LOG"));
+    }
+
+    @Test @Ignore
+    public void inject_nested_and_sequence_loops(){
+        Script first = new Script("first");
+        Cmd arg1 = Cmd.forEach("ARG1");
+        Cmd arg2 = Cmd.forEach("ARG2");
+        Cmd arg3 = Cmd.forEach("ARG3");
+        Cmd log1 = Cmd.log("args1");
+        Cmd log2 = Cmd.log("args2");
+        Cmd log3a = Cmd.log("args3a");
+        Cmd log3b = Cmd.log("args3b");
+        Cmd after1 = Cmd.log("after1");
+        Cmd after2 = Cmd.log("after2");
+        first.then(
+           arg1
+              .then(log1)
+              .then(
+                 arg2.then(log2))
+              .then(
+                 arg3.then(log3a).then(log3b))
+              .then(after1)
+              .then(after2)
+        );
+
+    }
+
+    @Test
+    public void nest_3_then_sequence(){
+        Script first = new Script("first");
+        Cmd arg1 = Cmd.forEach("ARG1 ${{FIRST}}");
+        Cmd arg2 = Cmd.forEach("ARG2 ${{SECOND}}");
+        Cmd arg3 = Cmd.forEach("ARG3 ${{THIRD}}");
+        Cmd log1 = Cmd.log("one");
+        Cmd log2 = Cmd.log("two");
+        Cmd log3a = Cmd.log("threeA");
+        Cmd log3b = Cmd.log("threeB");
+        Cmd log4 = Cmd.log("four");
+
+        first.then(
+           arg1.then(
+              arg2.then(
+                 arg3
+                    .then(log1)
+                    .then(log2)
+                    .then(log3a.then(log3b))
+                    .then(log4)
+              )
+           )
+        );
+        assertEquals("log4 should next back to arg3",arg3,log4.getNext());
+        assertEquals("log4 should skip back to arg3",arg3,log4.getSkip());
+
+        assertEquals("arg2 should skip back to arg1",arg1,arg2.getSkip());
+        assertEquals("arg3 should skip back to arg2",arg2,arg3.getSkip());
+
+
+    }
+
+    @Test
+    public void inject_nested_loop_with_after(){
+        Script first = new Script("first");
+        Cmd arg1 = Cmd.forEach("ARG1");
+        Cmd arg2 = Cmd.forEach("ARG2");
+        Cmd log = Cmd.log("args");
+        Cmd logThen = Cmd.log("then");
+        Cmd after1 = Cmd.log("after1");
+        Cmd after2 = Cmd.log("after2");
+        first.then(
+           arg1
+              .then(
+                 arg2.then(
+                    log.then(logThen)))
+              .then(after1)
+              .then(after2)
+        );
+
+        assertEquals("after2 should next to arg1",arg1,after2.getNext());
+        assertEquals("after2 should skip to arg1",arg1,after2.getSkip());
+        assertEquals("log should skip to arg2",arg2,log.getSkip());
+        assertEquals("then should skip to arg2",arg2,logThen.getSkip());
+        assertEquals("then should next to arg2",arg2,logThen.getNext());
+
+
+        Cmd injected = Cmd.log("injected");
+
+        log.then(injected);
+
+        assertEquals("after2 should next to arg1",arg1,after2.getNext());
+        assertEquals("after2 should skip to arg1",arg1,after2.getSkip());
+        assertEquals("log should skip to arg2",arg2,log.getSkip());
+        assertEquals("then should skip to arg2",arg2,logThen.getSkip());
+        assertEquals("then should next to injected",injected,logThen.getNext());
+        assertEquals("injected should skip to arg2",arg2,injected.getSkip());
+        assertEquals("injected should next to arg2",arg2,injected.getNext());
+
+    }
+
+
+    @Test
+    public void inject_nested_loop(){
+        Script first = new Script("first");
+        Cmd arg1 = Cmd.forEach("ARG1");
+        Cmd arg2 = Cmd.forEach("ARG2");
+        Cmd log = Cmd.log("${{ARG1}}.${{ARG2}}");
+        Cmd logThen = Cmd.log("then-${{ARG1}}.${{ARG2}}");
+        first.then(
+           arg1
+            .then(arg2.then(log.then(logThen)))
+        );
+
+        assertEquals("ARG1 next is ARG2",arg2,arg1.getNext());
+        assertEquals("ARG2 next is log",log,arg2.getNext());
+        assertEquals("ARG2 skip is ARG1",arg1,arg2.getSkip());
+        assertEquals("log next is logThen",logThen,log.getNext());
+        assertEquals("log skip is ARG2",arg2,log.getSkip());
+        assertEquals("logThen next is ARG2",arg2,logThen.getNext());
+        assertEquals("logThen skip is ARG2",arg2,logThen.getSkip());
+    }
 
     @Test
     public void inject_then(){

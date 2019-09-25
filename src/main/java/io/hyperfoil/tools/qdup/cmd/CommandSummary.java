@@ -29,39 +29,24 @@ public class CommandSummary {
         if(isWatching && command instanceof Sh){
             addWarning(command+" cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
         }
-//TODO }} is valid for some commands
-//        if(StringUtil.countOccurances(toString,STATE_PREFIX) != StringUtil.countOccurances(toString,Cmd.STATE_SUFFIX)){
-//            addWarning(command+" does not have the same number of ${{ and }} for state variable referencing");
-//        }
 
         if(command instanceof Signal){
             String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),command,config.getState(),false, ref);
-//            if(populatedSignal.contains(STATE_PREFIX)){
-//                Cmd.Ref currentRef = ref;
-//                do{
-//                    //TODO Cmd.populateStateVariables should accept the CommandRef argument and use it before returning a defaultValue
-//                    populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),currentRef.getCommand(),config.getState(),false);
-//                    currentRef = currentRef.getParent();
-//                }while((populatedSignal.contains(STATE_PREFIX) || populatedSignal.isEmpty())&& currentRef!=null);
-//
+
+            addSignal(populatedSignal);
+            //TODO how to detect when a signal has an initialized value
+//            if(populatedSignal.contains(Cmd.STATE_PREFIX) && !hasWait(populatedSignal)) {
+//                addWarning("signal: " + populatedSignal + " does not have a known value for state variable and cannot calculate expected signal count. waits:"+waits);
+//            } else {
+//                addSignal(populatedSignal);
 //            }
-            if(populatedSignal.contains(Cmd.STATE_PREFIX)) {
-                addWarning("signal: " + populatedSignal + " does not have a known value for state variable and cannot calculate expected signal count");
-            } else {
-                addSignal(populatedSignal);
-            }
         }else if (command instanceof WaitFor){
             String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),command,config.getState(),false, ref);
-//            if(populatedWait.contains(STATE_PREFIX)){
-//                Cmd.Ref currentRef = ref;
-//                do{
-//                    populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),currentRef.getCommand(),config.getState(),false);
-//                    currentRef = currentRef.getParent();
-//                }while(populatedWait.contains(STATE_PREFIX) && currentRef!=null);
-//            }
-            if(populatedWait.contains(Cmd.STATE_PREFIX)) {
-                addWarning("wait-for: " + populatedWait + " does not have a known value for state variable and will likely not be signalled");
+            if(populatedWait.contains(Cmd.STATE_PREFIX) && !((WaitFor)command).hasInitial()) {
+                // TODO better detection of populatedStateVariables
+                //                addWarning("wait-for: " + populatedWait + " does not have a known value for state variable and will likely not be signalled");
             } else {
+
                 addWait(populatedWait);
             }
         }else if (command instanceof ScriptCmd){
@@ -151,6 +136,9 @@ public class CommandSummary {
         if(!name.isEmpty()){
             signals.add(name);
         }
+    }
+    private boolean hasWait(String name){
+        return waits.contains(name);
     }
     private void addWait(String name){
         if(!name.isEmpty()) {

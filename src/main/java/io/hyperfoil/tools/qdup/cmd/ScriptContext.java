@@ -214,8 +214,10 @@ public class ScriptContext implements Context, Runnable{
 
     @Override
     public void next(String output) {
+
         getProfiler().start("next");
         Cmd cmd = getCurrentCmd();
+
         log(cmd,output);
         if(!signalCmds.isEmpty()){
             signalCmds.forEach((name,onsignal)->{
@@ -332,6 +334,7 @@ public class ScriptContext implements Context, Runnable{
                         lineQueueSemaphore.acquire();
                         lineQueue.clear();
                     } catch (InterruptedException e) {
+                        System.out.printf("Interrupted cmd=%s%n",cmd.toString());
                         e.printStackTrace();
                     } finally {
                         lineQueueSemaphore.release();
