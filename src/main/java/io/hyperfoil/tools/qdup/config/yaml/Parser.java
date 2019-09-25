@@ -100,6 +100,14 @@ public class Parser {
             (json)->new CtrlC()
         );
         rtrn.addCmd(
+           CtrlC.class,
+           "ctrlZ",
+           true,
+           (cmd)->"",
+           (str)->new CtrlZ(),
+           (json)->new CtrlZ()
+        );
+        rtrn.addCmd(
             Done.class,
             "done",
             true,
@@ -131,6 +139,13 @@ public class Parser {
             null
         );
         //Exec
+        rtrn.addCmd(
+            Exec.class,
+            "exec",
+            (cmd)->cmd.getCommand(),
+            (str)->new Exec(str),
+            (json)->new Exec(json.getString("command"),json.getBoolean("silent",false))
+        );
         //ExitCode
         rtrn.addCmd(
             ForEach.class,
@@ -172,6 +187,7 @@ public class Parser {
             (str)->new Log(str),
             null
         );
+        //TODO QueueDelete
         rtrn.addCmd(
             QueueDownload.class,
             "queue-download",
@@ -191,13 +207,6 @@ public class Parser {
             }
         );
         rtrn.addCmd(
-            ReadState.class,
-        "read-state",
-            (cmd)->cmd.getKey(),
-            (str)->new ReadState(str),
-            null
-        );
-        rtrn.addCmd(
            ReadSignal.class,
            "read-signal",
            (cmd)->cmd.getName(),
@@ -205,12 +214,20 @@ public class Parser {
            null
         );
         rtrn.addCmd(
+            ReadState.class,
+        "read-state",
+            (cmd)->cmd.getKey(),
+            (str)->new ReadState(str),
+            null
+        );
+        rtrn.addCmd( //this is here to help find errors in waml -> yaml conversion
            Cmd.NO_OP.class,
            "#NO_OP",
            (cmd)->"",
            (str)->new Cmd.NO_OP(),
            null
         );
+        //TODO add Reboot to yaml support
         rtrn.addCmd(
             Regex.class,
             "regex",
@@ -231,6 +248,20 @@ public class Parser {
                 (cmd)->cmd.getName(),
                 (str)->new ScriptCmd(str),
                 (json)->new ScriptCmd(json.getString("name"),json.getBoolean("async",false))
+        );
+        rtrn.addCmd(
+           SetSignal.class,
+           "set-signal",
+           (cmd)->cmd.getName()+" "+cmd.getInitial(),
+           (str)->{
+               List<String> split = CmdBuilder.split(str);
+               if(split.size()!=2){
+                   throw new YAMLException("cannot create countdown from " + str);
+               }else{
+                   return new SetSignal(split.get(0),split.get(1));
+               }
+           },
+           (json)->new SetSignal(json.getString("name"),json.getString("initial"))
         );
         rtrn.addCmd(
             SetState.class,
@@ -320,20 +351,7 @@ public class Parser {
             },
             (json)->new Upload(json.getString("path"),json.getString("destination",""))
         );
-        rtrn.addCmd(
-           SetSignal.class,
-           "set-signal",
-           (cmd)->cmd.getName()+" "+cmd.getInitial(),
-           (str)->{
-               List<String> split = CmdBuilder.split(str);
-               if(split.size()!=2){
-                   throw new YAMLException("cannot create countdown from " + str);
-               }else{
-                   return new SetSignal(split.get(0),split.get(1));
-               }
-           },
-           (json)->new SetSignal(json.getString("name"),json.getString("initial"))
-        );
+
         rtrn.addCmd(
             WaitFor.class,
             "wait-for",

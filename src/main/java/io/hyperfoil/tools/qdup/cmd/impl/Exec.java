@@ -3,11 +3,16 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 
+//Uses a new Ssh Exec Channel to run a single command on the server and save the output
 public class Exec extends Cmd {
 
     private String command;
 
     public Exec(String command){
+        this(command,false);
+    }
+    public Exec(String command,boolean silent){
+        super(silent);
         this.command = command;
     }
 

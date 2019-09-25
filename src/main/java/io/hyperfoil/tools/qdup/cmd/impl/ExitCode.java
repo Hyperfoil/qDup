@@ -4,9 +4,13 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 
 /**
+ * NOTE: I don't think this should be a command, it breaks the idea that qdup is just shell scripts
+ * and moves closer to having ansible like encapsulation of shell functionality
+ *
  * Check the previous exit code (echo $?) and invoke the child commands if the exit code matches the expected code.
  * The default expected is 0.
- * This works by saving the exit code of the previous
+ * This works by saving the exit code of the previous shell command
+ *
  */
 public class ExitCode extends Cmd {
 

@@ -28,8 +28,6 @@ public class ScriptCmd extends Cmd {
         if(toCall == null){
             logger.warn("could not find script: {}",populatedName);
         }else {
-
-
             if(isAsync()){
                 //TODO how to invoke the script?
             }else{
