@@ -17,9 +17,11 @@ public class EscapeFilteredStreamTest {
 
         try {
             fs.write(input.getBytes(),0,input.getBytes().length);
+            fs.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return new String(bao.toByteArray());
     }
 
@@ -139,6 +141,27 @@ public class EscapeFilteredStreamTest {
         String input="\u001b[0m";
         assertEquals("all input should be filtered","",filter(input));
     }
+    @Test
+    public void filter_questionMark_1h(){
+        String input="\u001b[?1h";
+        assertEquals("all input should be filtered","",filter(input));
+    }
+    @Test
+    public void filter_equal(){
+        String input="\u001b=";
+        assertEquals("all input should be filtered","",filter(input));
+    }
+    @Test
+    public void filter_greaterThan(){
+        String input="\u001b>";
+        assertEquals("all input should be filtered","",filter(input));
+    }
+    @Test
+    public void filter_CR(){
+        String input="\r";
+        assertEquals("all input should be filtered","",filter(input));
+    }
+
     @Test
     public void filter_all_complex(){
         String input="\u001b[0;1;2;3m";

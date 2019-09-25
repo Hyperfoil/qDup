@@ -16,6 +16,9 @@ import java.util.Set;
 public class EscapeFilteredStream extends MultiStream {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
+    private static final int CR = 13;  //\u000d
+    private static final int ESC = 27; //\u001b
+
     private static final Set<Character> CONTROL_SUFFIX = Sets.of(
             'A',//cursor up
             'B',//cursor down
@@ -34,7 +37,9 @@ public class EscapeFilteredStream extends MultiStream {
             'i',//aux port on
             'n',//device status
             's',//save cursor position
-            'u' //restore cursor position
+            'u', //restore cursor position
+            'h',//seen in git output, switches screen?
+            'l'//same as 'h', seen in git and supposedly changes scrrens?
             );
 
     private byte[] buffered;
@@ -135,17 +140,29 @@ public class EscapeFilteredStream extends MultiStream {
     }
     //basically just makes sure we have \u001b[...m
     public boolean isEscaped(byte b[],int off,int len){
-        return len>=3 && b[off]==27 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]);
+        return
+            len ==1 && b[off] == CR ||
+            (
+                b[off]==ESC
+                && (
+                    ( len>=3 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]))
+                    || (len == 2 && b[off+1]=='=')
+                    || (len == 2 && b[off+1]=='>')
+                )
+            );
     }
     //return length of match up to len or 0 if match failed
     public int escapeLength(byte b[], int off, int len){
         boolean matching = true;
         int rtrn = 0;
-        if( b[off]==27 ) {//\003
-            rtrn=1;
-            if( 2 <= len ){
-                if (b[off+1]=='[' ){
+        if( b[off]==ESC ) {//\003
+            rtrn = 1;
+            if (2 <= len) {
+                if (b[off + 1] == '[') {
                     rtrn = 2;//the initial 2 matched characters
+                    if (rtrn < len && b[off + rtrn] == '?') {
+                        rtrn = 3;// ^[[? indicates the sequence is for private use
+                    }
                     while (matching && rtrn < len) {
                         while (rtrn < len && b[off + rtrn] >= '0' && b[off + rtrn] <= '9') {//digit
                             rtrn++;
@@ -165,10 +182,16 @@ public class EscapeFilteredStream extends MultiStream {
                             matching = false;//stop the match at end of len
                         }
                     }
-                }else{
+                } else if (b[off + 1] == '=') {
+                    rtrn = 2; //^[= is from DEC VT100s application mode
+                } else if (b[off + 1] == '>') {
+                    rtrn = 2;
+                } else {
                     rtrn = 0;
                 }
             }
+        }else if ( b[off] == CR ){
+            rtrn = 1;
         }else{
             rtrn = 0;
         }
