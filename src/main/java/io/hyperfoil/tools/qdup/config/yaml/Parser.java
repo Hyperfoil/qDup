@@ -121,7 +121,9 @@ public class Parser {
             (cmd)->(cmd.getPath()+(cmd.getDestination()!=null && !cmd.getDestination().isEmpty() ? " "+cmd.getDestination() : "" )),
             (str)->{
                 List<String> split = CmdBuilder.split(str);
-                if(split.size()==2){
+                if(split.size()<=1){
+                    return new Download(str);
+                }else if(split.size()==2){
                     return new Download(split.get(0),split.get(1));
                 }else{
                     throw new YAMLException("cannot create download from "+str);
