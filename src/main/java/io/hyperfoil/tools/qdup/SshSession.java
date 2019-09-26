@@ -22,11 +22,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
@@ -44,6 +40,8 @@ import java.util.function.Consumer;
 
 //Todo separate out the PROMPT, the command, and the output of the command
 public class SshSession {
+
+   private static final AtomicInteger UID = new AtomicInteger();
 
    public String getLastCommand() {
       return lastCommand;
@@ -194,7 +192,7 @@ public class SshSession {
          blockingSemaphore.release();
       };
       this.executor = executor;
-      connected = connect(-1, setupCommand);
+      connected = connect(-1, setupCommand, false);
 
 //        sshConfig = new Properties();
 //        sshConfig.put("StrictHostKeyChecking", "no");
@@ -239,7 +237,7 @@ public class SshSession {
       return shellLock.availablePermits();
    }
 
-   public boolean connect(long timeoutMillis, String setupCommand) {
+   public boolean connect(long timeoutMillis, String setupCommand, boolean trace) {
       if (isOpen()) {
          return true;
       }
@@ -337,6 +335,11 @@ public class SshSession {
 
          channelShell.setOut(escapeFilteredStream);//efs or ss
          channelShell.setErr(escapeFilteredStream);//PROMPT goes to error stream so have to listen there too
+
+         if(trace){
+            FileOutputStream fileOutputStream = new FileOutputStream("/tmp/"+getHost().toString()+"."+UID.getAndIncrement()+".log");
+            escapeFilteredStream.addStream("trace",fileOutputStream);
+         }
          if (timeoutMillis > 0) {
             channelShell.open().verify(timeoutMillis).isOpened();
          } else {
@@ -538,8 +541,11 @@ public class SshSession {
    }
 
    private void sh(String command, boolean acquireLock, Consumer<String> callback, Map<String, String> prompt) {
-      lastCommand = command;
+      command = command.replaceAll("[\r\n]+$", ""); //replace trailing newlines
       logger.trace("{} sh: {}, lock: {}", host, command, acquireLock);
+
+      lastCommand = command;
+
       if (isOpen()) {
 
          if (command == null) {
@@ -554,7 +560,7 @@ public class SshSession {
                try {
                   shellLock.acquire();
                   if (permits() != 0) {
-                     logger.error("ShSession " + getName() + " sh.acquire --> permits==" + permits());
+                     logger.error("ShSession " + getName() + "cmd="+command+" sh.acquire --> permits==" + permits());
                   }
 
                } catch (InterruptedException e) {

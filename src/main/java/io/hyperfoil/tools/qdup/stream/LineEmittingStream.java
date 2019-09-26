@@ -88,8 +88,10 @@ public class LineEmittingStream extends OutputStream {
             }
             if (writeFrom < off + len) {
                 int toBuffer = (off + len - writeFrom);//remaining bytes
-                if (writeIndex + toBuffer > buffered.length) {
-                    byte newBuffered[] = new byte[buffered.length * 2];
+                //should only grow once but still using while loop
+                while (writeIndex + toBuffer > buffered.length) {
+                    int needed = writeIndex + toBuffer - buffered.length;
+                    byte newBuffered[] = new byte[buffered.length + 2 * needed];
                     System.arraycopy(buffered, 0, newBuffered, 0, writeIndex);
                     buffered = newBuffered;
                 }
