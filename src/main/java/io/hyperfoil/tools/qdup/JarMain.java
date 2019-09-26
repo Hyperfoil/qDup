@@ -299,7 +299,7 @@ public class JarMain {
                     logger.trace("loading directory: "+yamlPath);
                     for(File child : yamlFile.listFiles()){
                         logger.trace("  loading: "+child.getPath());
-                        String content = FileUtility.readFile(child.getPath());
+                        //String content = FileUtility.readFile(child.getPath());
                         YamlFile file = yamlParser.loadFile(child.getPath());
                         if(file==null){
                             logger.error("Aborting run due to error reading {}",yamlPath);

@@ -570,7 +570,7 @@ public class Parser {
             logger.error("Failed to load {}\n{}",path,e.getMessage());
             e.printStackTrace();
         }
-        if(loaded!=null) {
+        if(loaded!=null){
             loaded.setPath(path);
         }
         return loaded;
