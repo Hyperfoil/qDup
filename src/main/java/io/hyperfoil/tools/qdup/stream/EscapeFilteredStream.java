@@ -190,9 +190,9 @@ public class EscapeFilteredStream extends MultiStream {
                     rtrn = 0;
                 }
             }
-        }else if ( b[off] == CR ){
+        }/*else if ( b[off] == CR ){ //doing this breaks things
             rtrn = 1;
-        }else{
+        }*/else{
             rtrn = 0;
         }
         return rtrn;

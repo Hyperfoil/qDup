@@ -11,13 +11,18 @@ import static org.junit.Assert.*;
 public class EscapeFilteredStreamTest {
 
     private String filter(String input){
+        return filter(input,false);
+    }
+    private String filter(String input,boolean close){
         EscapeFilteredStream fs = new EscapeFilteredStream();
         ByteArrayOutputStream bao = new ByteArrayOutputStream();
         fs.addStream("bao",bao);
 
         try {
             fs.write(input.getBytes(),0,input.getBytes().length);
-            fs.close();
+            if(close) {
+                fs.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -156,12 +161,6 @@ public class EscapeFilteredStreamTest {
         String input="\u001b>";
         assertEquals("all input should be filtered","",filter(input));
     }
-    @Test
-    public void filter_CR(){
-        String input="\r";
-        assertEquals("all input should be filtered","",filter(input));
-    }
-
     @Test
     public void filter_all_complex(){
         String input="\u001b[0;1;2;3m";
