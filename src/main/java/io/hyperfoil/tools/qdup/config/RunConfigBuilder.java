@@ -41,7 +41,7 @@ public class RunConfigBuilder {
 
     public static final String ALL_ROLE = "ALL";
     private static final String RUN_STATE = "run";
-    private static final String SCRIPT_DIR = "ENV.SCRIPT_DIR";
+    public static final String SCRIPT_DIR = "ENV.SCRIPT_DIR";
 
     public static final String DEFAULT_KNOWN_HOSTS = System.getProperty("user.home")+"/.ssh/known_hosts";
     public static final String DEFAULT_IDENTITY = System.getProperty("user.home")+"/.ssh/id_rsa";

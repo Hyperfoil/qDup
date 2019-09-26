@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.Role;
+import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -40,6 +41,9 @@ public class YamlFile {
     }
     public void setPath(String path){
         this.path = path;
+        scripts.values().forEach(script->{
+            script.with(RunConfigBuilder.SCRIPT_DIR,path);
+        });
     }
 
     public String getName(){return name;}
