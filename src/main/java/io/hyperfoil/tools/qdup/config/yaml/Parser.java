@@ -289,12 +289,14 @@ public class Parser {
                 (cmd)->{
                     if(cmd.isSilent() || !cmd.getPrompt().isEmpty()){
                         LinkedHashMap<Object,Object> map = new LinkedHashMap<>();
-                        map.put("sh",cmd.getCommand());
+                        LinkedHashMap<Object,Object> opts = new LinkedHashMap<>();
+                        map.put("sh",opts);
+                        opts.put("command",cmd.getCommand());
                         if(cmd.isSilent()) {
-                            map.put("silent", cmd.isSilent());
+                            opts.put("silent", cmd.isSilent());
                         }
                         if(!cmd.getPrompt().isEmpty()){
-                            map.put("prompt",cmd.getPrompt());
+                            opts.put("prompt",cmd.getPrompt());
                         }
                         return map;
                     }else{
@@ -371,8 +373,39 @@ public class Parser {
         rtrn.addCmd(
             XmlCmd.class,
             "xml",
-            (cmd)->(cmd.getPath()+" "+cmd.getOperations()),
-            (str)->new XmlCmd(str),
+            (cmd)->{
+                if(cmd.getOperations().isEmpty()){
+                    return cmd.getPath();
+                }else{
+                    LinkedHashMap<Object,Object> map = new LinkedHashMap<>();
+                    LinkedHashMap<Object,Object> opts = new LinkedHashMap<>();
+                    map.put("xml",opts);
+                    opts.put("path",cmd.getPath());
+                    opts.put("operations",cmd.getOperations());
+                    return map;
+                }
+            },
+            (str)->{
+                List<String> split = CmdBuilder.split(str);
+                if(split.size()==1){
+                    return new XmlCmd(str);
+                }else {
+                    String name = split.get(0);
+                    String remainder = str.substring(name.length()).trim();
+                    if(Json.isJsonLike(remainder)){
+                        Json remainderJson = Json.fromJs(remainder);
+                        if(remainderJson.isArray() && !remainderJson.isEmpty()){
+                            split.clear();
+                            remainderJson.forEach(v->split.add(v.toString()));
+                        }else{
+                            split.remove(0);
+                        }
+                    }else{
+                        split.remove(0);
+                    }
+                    return new XmlCmd(name,split.toArray(new String[0]));
+                }
+            },
             (json)->{
                 List<String> operations = new LinkedList<>();
                 json.getJson("operations",new Json()).forEach(entry->{
