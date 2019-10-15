@@ -134,12 +134,14 @@ public class Coordinator {
         return counters.get(name).get();
 
     }
-    public void initialize(String name,int count){
-        if(latches.containsKey(name)){
-            logger.warn("duplicate initialize for {}, using current VALUE {} not new VALUE {}",name,latches.get(name).get(),count);
+    public void setSignal(String name, int count){
+        if(latches.containsKey(name) && latches.get(name).get()>0){
+            logger.warn("duplicate setSignal for {}, using previous VALUE {} not new VALUE {}",name,latches.get(name).get(),count);
+            return;
         }
         AtomicInteger latch = new AtomicInteger(count);
         latches.put(name,latch);
+        checkWatchers(name);
     }
     public int getSignalCount(String name){
         if(!latches.containsKey(name)){
@@ -148,21 +150,17 @@ public class Coordinator {
         }
         return latches.get(name).get();
     }
+    public int getWaitCount(String name){
+        if(!waitFors.containsKey(name)){
+            return 0;
+        }
+        return waitFors.get(name).size();
+    }
 
     public void clearWaiters(){
         waitFors.clear();
     }
-    public void signal(String name){
-
-        if(!latches.containsKey(name)){
-            logger.warn("signal {} missing latch, ignoring",name);
-            //return;
-        }else if( latches.get(name).get() > 0 ){
-            latches.get(name).decrementAndGet();
-            if(latches.get(name).get()==0){
-                latchTimes.put(name,System.currentTimeMillis());
-            }
-        }
+    private void checkWatchers(String name){
         //TODO this should not signal missing once we correctly find singals inside for-each
         if( !latches.containsKey(name) || latches.get(name).get()<=0  ) {//signal for a missing latch
             if(latches.containsKey(name) && latches.get(name).get() < 0){
@@ -179,6 +177,20 @@ public class Coordinator {
             }
             waiters.clear();
         }
+    }
+    public void signal(String name){
+
+        if(!latches.containsKey(name)){
+            logger.warn("signal {} missing latch, ignoring",name);
+            //return;
+        }else if( latches.get(name).get() > 0 ){
+            latches.get(name).decrementAndGet();
+            if(latches.get(name).get()==0){
+                latchTimes.put(name,System.currentTimeMillis());
+            }
+        }
+
+        checkWatchers(name);
     }
     public void waitFor(String name, Cmd command, Context context, String input){
         Waiter waiter = new Waiter(command,context,input);

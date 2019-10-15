@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -192,7 +193,7 @@ public class SshSession {
          blockingSemaphore.release();
       };
       this.executor = executor;
-      connected = connect(this.timeout*1_000, setupCommand, false);
+      connected = connect(this.timeout*1_000, setupCommand, true);
 
 //        sshConfig = new Properties();
 //        sshConfig.put("StrictHostKeyChecking", "no");
@@ -224,6 +225,13 @@ public class SshSession {
             consumer.accept(line);
          }
       }
+   }
+
+   public Set<String> getPrompts(){
+      return suffixStream.getSuffixes();
+   }
+   public void addPrompt(String prommpt){
+      suffixStream.addSuffix(prommpt,prommpt,"");
    }
 
    private void shConsumers(String output) {

@@ -67,12 +67,20 @@ public class Parser {
                 (host)->host.toString()
         );
         rtrn.addValuePattern("host",Host.HOST_PATTERN);
+
         rtrn.addCmd(
             Abort.class,
             "abort",
             (cmd)->cmd.getMessage(),
             (str)-> new Abort(str),
             null
+        );
+        rtrn.addCmd(
+           AddPrompt.class,
+           "add-prompt",
+           (cmd)->cmd.getPrompt(),
+           (str)->new AddPrompt(str),
+           null
         );
         rtrn.addCmd(
             Countdown.class,
@@ -254,7 +262,19 @@ public class Parser {
         rtrn.addCmd(
            SetSignal.class,
            "set-signal",
-           (cmd)->cmd.getName()+" "+cmd.getInitial(),
+           (cmd)->{
+               if(cmd.isReset()){
+                   LinkedHashMap<Object,Object> map = new LinkedHashMap<>();
+                   LinkedHashMap<Object,Object> opts = new LinkedHashMap<>();
+                   map.put("set-signal",opts);
+                   opts.put("name",cmd.getName());
+                   opts.put("initial",cmd.getInitial());
+                   opts.put("reset",cmd.isReset());
+                   return map;
+               }else {
+                  return cmd.getName() + " " + cmd.getInitial();
+               }
+           },
            (str)->{
                List<String> split = CmdBuilder.split(str);
                if(split.size()!=2){

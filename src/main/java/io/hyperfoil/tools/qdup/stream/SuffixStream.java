@@ -112,6 +112,16 @@ public class SuffixStream extends MultiStream {
     public boolean hasSuffix(String name){
         return suffixes.containsKey(name);
     }
+    public Set<String> getSuffixes(){
+        return suffixes.keySet();
+    }
+    public Map<String,String> getReplacements(){
+        Map<String,String> rtrn = new HashMap<>();
+        for(String key : suffixes.keySet()){
+            rtrn.put(key,replacements.containsKey(key) ? new String(replacements.get(key)) : "");
+        }
+        return rtrn;
+    }
     public void addConsumer(Consumer<String> consumer){
         consumers.add(consumer);
     }

@@ -61,6 +61,17 @@ public class RegexTest extends SshTestBase {
        dispatcher.shutdown();
     }
 
+    @Test @Ignore
+    public void one_line_in_multi_line(){
+       Cmd regex = Cmd.regex("(?<date>\\d{4}-\\d{2}-\\d{2})\\s+(?<time>\\d{2}:\\d{2}:\\d{2})\\s+(?<offset>[+-]\\d{4})");
+       SpyContext context = new SpyContext();
+
+       regex.run(
+          "fatal: unable to read source tree (ea9f40f5940637b18c197952e7d0bd0a28185ae9)"
+             +"\n"+"2019-10-01 16:21:04 -1000",
+          context);
+    }
+
     @Test
     public void lineEnding(){
         Cmd regex = Cmd.regex("^SUCCESS$");

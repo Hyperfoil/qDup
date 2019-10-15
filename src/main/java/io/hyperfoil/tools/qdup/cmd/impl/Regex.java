@@ -25,6 +25,7 @@ public class Regex extends Cmd {
     public String getPattern(){return patternString;}
     @Override
     public void run(String input, Context context) {
+
         String populatedPattern = populateStateVariables(patternString,this,context.getState());
         String newPattern = populatedPattern;
 

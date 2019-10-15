@@ -9,13 +9,19 @@ public class SetSignal extends Cmd {
    private String populatedName;
    private String initial;
    private String populatedInitial;
+   private boolean reset;
 
    public SetSignal(String name,String initial){
+      this(name,initial,false);
+   }
+   public SetSignal(String name,String initial, boolean reset){
       super(true);
       this.name = name;
       this.initial = initial;
+      this.reset = reset;
    }
 
+   public boolean isReset(){return reset;}
    public String getName(){return name;}
    public String getInitial(){return initial;}
 
@@ -25,9 +31,16 @@ public class SetSignal extends Cmd {
       populatedInitial = Cmd.populateStateVariables(initial,this,context.getState());
       try {
          int intialLatches = Integer.parseInt(populatedInitial);
-         context.getCoordinator().initialize(populatedName,intialLatches);
+
+         if(isReset()){
+
+         }else{
+            context.getCoordinator().setSignal(populatedName,intialLatches);
+         }
+
+
       }catch(NumberFormatException e){
-         logger.error("set-signal: {} could not initialize {} due to NumberFormatException",populatedName,populatedInitial);
+         logger.error("set-signal: {} could not setSignal {} due to NumberFormatException",populatedName,populatedInitial);
       }
       context.next(input);
    }
