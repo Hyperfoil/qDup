@@ -193,7 +193,7 @@ public class SshSession {
          blockingSemaphore.release();
       };
       this.executor = executor;
-      connected = connect(this.timeout*1_000, setupCommand, true);
+      connected = connect(this.timeout*1_000, setupCommand, false);
 
 //        sshConfig = new Properties();
 //        sshConfig.put("StrictHostKeyChecking", "no");
