@@ -167,10 +167,10 @@ public class SshSession {
    long shStop = -1;
 
    public SshSession(Host host) {
-      this(host, RunConfigBuilder.DEFAULT_KNOWN_HOSTS, RunConfigBuilder.DEFAULT_IDENTITY, RunConfigBuilder.DEFAULT_PASSPHRASE, RunConfigBuilder.DEFAULT_SSH_TIMEOUT, "", null);
+      this(host, RunConfigBuilder.DEFAULT_KNOWN_HOSTS, RunConfigBuilder.DEFAULT_IDENTITY, RunConfigBuilder.DEFAULT_PASSPHRASE, RunConfigBuilder.DEFAULT_SSH_TIMEOUT, "", null,false);
    }
 
-   public SshSession(Host host, String knownHosts, String identity, String passphrase, int timeout, String setupCommand, ScheduledThreadPoolExecutor executor) {
+   public SshSession(Host host, String knownHosts, String identity, String passphrase, int timeout, String setupCommand, ScheduledThreadPoolExecutor executor, boolean trace) {
 
       this.host = host;
       this.name = host != null ? host.toString() : "null";
@@ -204,7 +204,7 @@ public class SshSession {
          blockingSemaphore.release();
       };
       this.executor = executor;
-      connected = connect(this.timeout*1_000, setupCommand, false);
+      connected = connect(this.timeout*1_000, setupCommand, trace);
 
 //        sshConfig = new Properties();
 //        sshConfig.put("StrictHostKeyChecking", "no");

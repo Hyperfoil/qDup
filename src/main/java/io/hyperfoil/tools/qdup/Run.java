@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -423,14 +424,16 @@ public class Run implements Runnable, DispatchObserver {
                setup.then(new RoleEnv(role,false));
                role.getHosts().forEach(host->{
                    connectSessions.add(()->{
+                       String name = roleName+"-setup@"+host.getShortHostName();
                        SshSession session = new SshSession(
                                host,
                                config.getKnownHosts(),
                                config.getIdentity(),
                                config.getPassphrase(),
                                config.getTimeout(),
-                               "", getDispatcher().getScheduler());
-                       session.setName(roleName+"-setup@"+host.getShortHostName());
+                               "", getDispatcher().getScheduler(),
+                                isTrace(name));
+                       session.setName(name);
                        if ( session.isConnected() ) {
                            //TODO configure session delay
                            session.setDelay(SuffixStream.NO_DELAY);
@@ -486,6 +489,7 @@ public class Run implements Runnable, DispatchObserver {
                         }
                         String setupCommand = env.getDiff().getCommand();
                         connectSessions.add(() -> {
+                            String name = script.getName() + "@" + host.getShortHostName();
                             profiler.start("connect:" + host.toString());
                             SshSession session = new SshSession(
                                     host,
@@ -494,8 +498,11 @@ public class Run implements Runnable, DispatchObserver {
                                     config.getPassphrase(),
                                     config.getTimeout(),
                                     setupCommand,
-                                    getDispatcher().getScheduler());
-                            session.setName(script.getName() + "@" + host.getShortHostName());
+                                    getDispatcher().getScheduler(),
+                                    isTrace(name)
+
+                            );
+                            session.setName(name);
                             if (session.isConnected()) {
                                 session.setDelay(SuffixStream.NO_DELAY);
                                 profiler.start("context:" + host.toString());
@@ -548,6 +555,11 @@ public class Run implements Runnable, DispatchObserver {
         }
         return ok;
     }
+
+    private boolean isTrace(String value){
+        return config.getTracePatterns().stream().anyMatch(pattern -> value.contains(pattern) || Pattern.matches(pattern,value));
+    }
+
     private boolean queueCleanupScripts(){
         logger.info("{}.queueCleanupScripts",this);
         //run before cleanup
@@ -566,6 +578,7 @@ public class Run implements Runnable, DispatchObserver {
                 role.getHosts().forEach(host->{
                     String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
                     connectSessions.add(()->{
+                        String name = roleName + "-cleanup@" + host.getShortHostName();
                         SshSession session = new SshSession(
                                 host,
                                 config.getKnownHosts(),
@@ -573,8 +586,9 @@ public class Run implements Runnable, DispatchObserver {
                                 config.getPassphrase(),
                                 config.getTimeout(),
                                 setupCommand,
-                                getDispatcher().getScheduler());
-                        session.setName(roleName + "-cleanup@" + host.getShortHostName());
+                                getDispatcher().getScheduler(),
+                                isTrace(name));
+                        session.setName(name);
                         if ( session.isConnected() ) {
 
                             session.setDelay(SuffixStream.NO_DELAY);
