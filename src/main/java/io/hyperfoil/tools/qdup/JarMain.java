@@ -175,6 +175,16 @@ public class JarMain {
                 .build()
         );
 
+        options.addOption(
+            Option.builder("R")
+           .longOpt("trace")
+           .argName("pattern")
+           .hasArg()
+           .desc("trace ssh sessions matching the pattern")
+           .type(String.class)
+           .build()
+        );
+
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -338,6 +348,10 @@ public class JarMain {
             stateProps.forEach((k,v)->{
                 runConfigBuilder.forceRunState(k.toString(),v.toString());
             });
+        }
+
+        if(commandLine.hasOption("trace")){
+            runConfigBuilder.trace(commandLine.getOptionValue("trace"));
         }
 
         RunConfig config = runConfigBuilder.buildConfig();

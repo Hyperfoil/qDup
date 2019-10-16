@@ -72,7 +72,7 @@ public class RunConfigBuilder {
 
     private HashMap<String,Host> hostAlias;
 
-    private HashMap<String,String> traceTargets;
+    private Set<String> traceTargets;
 
     private CmdBuilder cmdBuilder;
     private List<String> errors;
@@ -93,17 +93,14 @@ public class RunConfigBuilder {
         roleCleanup = new HashedLists<>();
         roleHostExpression = new HashMap<>();
         hostAlias = new HashMap<>();
-        traceTargets = new HashMap<>();
+        traceTargets = new HashSet<>();
         errors = new LinkedList<>();
     }
 
-    public void traceSession(String session,String path){
-        traceTargets.put(session,path);
+    public void trace(String pattern){
+        traceTargets.add(pattern);
     }
-    public Set<String> getTraceTargets(){return traceTargets.keySet();}
-    public String getTracePath(String target){
-        return traceTargets.get(target);
-    }
+    public Set<String> getTracePatterns(){ return traceTargets; }
 
     public void eachWamlChildArray(Json target, BiConsumer<Integer,Json> consumer){
 
@@ -726,7 +723,8 @@ public class RunConfigBuilder {
                     getKnownHosts(),
                     getIdentity(),
                     getPassphrase(),
-                    timeout
+                    timeout,
+                    getTracePatterns()
             );
         }
     }

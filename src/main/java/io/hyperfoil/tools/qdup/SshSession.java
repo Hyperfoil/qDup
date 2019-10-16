@@ -24,6 +24,7 @@ import org.slf4j.ext.XLoggerFactory;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.Map;
@@ -122,6 +123,9 @@ public class SshSession {
    private FilteredStream filteredStream;
    private SuffixStream promptStream;
 
+   private FileOutputStream traceStream;
+   private String tracePath;
+
    private LineEmittingStream lineEmittingStream;
 
    private Host host;
@@ -140,6 +144,13 @@ public class SshSession {
    public String getName() {
       return name;
    }
+   public boolean isTracing(){
+      return traceStream!=null && tracePath!=null;
+   }
+   public String getTracePath(){
+      return tracePath;
+   }
+   public boolean hasName(){return name!=null && !name.isEmpty();}
 
    public void setName(String name) {
       this.name = name;
@@ -344,10 +355,8 @@ public class SshSession {
          channelShell.setOut(escapeFilteredStream);//efs or ss
          channelShell.setErr(escapeFilteredStream);//PROMPT goes to error stream so have to listen there too
 
-         if(trace){
-            FileOutputStream fileOutputStream = new FileOutputStream("/tmp/"+getHost().toString()+"."+UID.getAndIncrement()+".log");
-            escapeFilteredStream.addStream("trace",fileOutputStream);
-         }
+         setTrace(trace);
+
          if (timeoutMillis > 0) {
             channelShell.open().verify(timeoutMillis).isOpened();
          } else {
@@ -399,6 +408,24 @@ public class SshSession {
 
       }
       return rtrn;
+   }
+
+   public void setTrace(boolean trace) throws IOException {
+      if(trace){
+         if(traceStream == null){
+            tracePath = Files.createTempFile(getHost().toString()+(hasName()?"."+getName():""),".log").toAbsolutePath().toString();
+            traceStream = new FileOutputStream(tracePath);
+            escapeFilteredStream.addStream("trace",traceStream);
+         }else{
+            //already tracing, do nothing
+         }
+
+      }else{
+         if(traceStream != null){
+            traceStream.close();
+            escapeFilteredStream.removeStream("trace");
+         }
+      }
    }
 
    public void addStreamObserver(Stream target, String key, OutputStream stream) {

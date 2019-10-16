@@ -64,6 +64,9 @@ public class RunConfig {
     private Boolean colorTerminal = false;
     private List<String> errors;
 
+
+    private Set<String> tracePatterns;
+
     private int timeout = 10;
 
     protected RunConfig(String name,List<String> errors){
@@ -81,7 +84,8 @@ public class RunConfig {
             String knownHosts,
             String identity,
             String passphrase,
-            Integer timeout){
+            Integer timeout,
+            Set<String> tracePatterns){
         this.name = name;
         this.scripts = scripts;
         this.state = state;
@@ -93,9 +97,13 @@ public class RunConfig {
         this.identity = identity;
         this.passphrase = passphrase;
         this.errors = new LinkedList<>();
-        if ( timeout != null )
+        if ( timeout != null ) {
             this.timeout = timeout;
+        }
+        this.tracePatterns = new HashSet<>(tracePatterns);
     }
+
+    public Set<String> getTracePatterns(){return tracePatterns;}
 
     public StageSummary getSetupStage() {
         return setupStage;
