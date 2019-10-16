@@ -38,7 +38,8 @@ public class SshTestBase {
                 null,
                 5,
                 setupCommand,
-                executor
+                executor,
+           false
         );
         assertTrue("local ssh session failed to connect",sshSession.isOpen());
         return sshSession;

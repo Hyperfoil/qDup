@@ -25,7 +25,8 @@ public class SshSessionTest extends SshTestBase{
                 null,
                 5,
                 setupCommand,
-                null
+                null,
+           false
         );
         String foo = sshSession.shSync("echo \"pwd is: $(pwd)\"");
     }
@@ -42,7 +43,8 @@ public class SshSessionTest extends SshTestBase{
                 null,
                 5,
                 setupCommand,
-                null
+                null,
+           false
         );
         String foo = sshSession.shSync("echo $FOO");
         String bar = sshSession.shSync("echo $BAR");
@@ -62,7 +64,8 @@ public class SshSessionTest extends SshTestBase{
                 null,
                 5,
                 "echo 'fooooo'",
-                null
+                null,
+           false
         );
         assertTrue("SshSession should be open after init",sshSession.isOpen());
         String pwd = sshSession.shSync("pwd");
@@ -79,7 +82,8 @@ public class SshSessionTest extends SshTestBase{
                 null,
                 5,
                 "",
-                new ScheduledThreadPoolExecutor(5)
+                new ScheduledThreadPoolExecutor(5),
+           false
         );
 
         assertTrue("SshSession should be open after init",sshSession.isOpen());
@@ -107,7 +111,8 @@ public class SshSessionTest extends SshTestBase{
                 null,
                 5,
                 "",
-                null
+                null,
+           false
         );
         assertTrue("SshSession should be open after init",sshSession.isOpen());
         String pwdOutput = sshSession.shSync("pwd");
