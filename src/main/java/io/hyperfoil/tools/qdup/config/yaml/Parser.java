@@ -564,27 +564,31 @@ public class Parser {
             loaded = yaml.loadAs(content,YamlFile.class);
         }catch(YAMLException e){
             //e.printStackTrace();
-            try {
-                WamlParser wamlParser = new WamlParser();
-                wamlParser.load(path, new ByteArrayInputStream(content.getBytes()));
-                if(wamlParser.hasErrors()){
-                    logger.error("Failed to load {} with waml parser \n{}",path,wamlParser.getErrors().stream().collect(Collectors.joining("\n")));
-                }
-                RunConfigBuilder runConfigBuilder = new RunConfigBuilder(CmdBuilder.getBuilder());
-                runConfigBuilder.loadWaml(wamlParser);
-                String newContent = yaml.dump(YamlFileConstruct.MAPPING.getMap(runConfigBuilder.toYamlFile()));
+            if(yamlOnly){
+                logger.error("Failed to load {} as yaml only\n{}",path,e.getMessage());
+            }else {
                 try {
-                    loaded = yaml.loadAs(newContent, YamlFile.class);
-                }catch (Exception exception){
-                    logger.error("Failed to load {} after waml transform\n{}\n{}",path,exception.getMessage(),newContent);
-                    exception.printStackTrace();
+                    WamlParser wamlParser = new WamlParser();
+                    wamlParser.load(path, new ByteArrayInputStream(content.getBytes()));
+                    if (wamlParser.hasErrors()) {
+                        logger.error("Failed to load {} with waml parser \n{}", path, wamlParser.getErrors().stream().collect(Collectors.joining("\n")));
+                    }
+                    RunConfigBuilder runConfigBuilder = new RunConfigBuilder(CmdBuilder.getBuilder());
+                    runConfigBuilder.loadWaml(wamlParser);
+                    String newContent = yaml.dump(YamlFileConstruct.MAPPING.getMap(runConfigBuilder.toYamlFile()));
+                    try {
+                        loaded = yaml.loadAs(newContent, YamlFile.class);
+                    } catch (Exception exception) {
+                        logger.error("Failed to load {} after waml transform\n{}\n{}", path, exception.getMessage(), newContent);
+                        exception.printStackTrace();
+                    }
+                } catch (WamlException wamlException) {
+                    logger.error("Failed to load {} as waml\n{}", path, wamlException.getMessage());
+                    wamlException.printStackTrace();
                 }
-            }catch (WamlException wamlException){
-                logger.error("Failed to load {} as waml\n{}",path,wamlException.getMessage());
-                wamlException.printStackTrace();
-            }
-            if(loaded!=null){
-                logger.warn("loaded {} as deprecated waml format, convert with -W jar argument",path);
+                if (loaded != null) {
+                    logger.warn("loaded {} as deprecated waml format, convert with -W jar argument", path);
+                }
             }
         }catch(RuntimeException e){
             logger.error("Failed to load {}\n{}",path,e.getMessage());
