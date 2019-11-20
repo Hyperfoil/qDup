@@ -115,6 +115,14 @@ public class JarMain {
 
 
         options.addOption(
+           Option.builder("Y")
+           .longOpt("yamlOnly")
+           .hasArg(false)
+           .desc("do not accept waml configuration")
+           .build()
+        );
+
+        options.addOption(
             Option.builder("s")
                 .longOpt("scheduledPool")
                 .hasArg()
@@ -240,7 +248,7 @@ public class JarMain {
             return;
         }
 
-        if(commandLine.hasOption("waml")){
+        if(commandLine.hasOption("waml")){ //convert waml to yaml
             Queue<String> todo = new LinkedBlockingQueue<>();
             todo.addAll(yamlPaths);
             Parser p = Parser.getInstance();
@@ -310,7 +318,7 @@ public class JarMain {
                     for(File child : yamlFile.listFiles()){
                         logger.trace("  loading: "+child.getPath());
                         //String content = FileUtility.readFile(child.getPath());
-                        YamlFile file = yamlParser.loadFile(child.getPath());
+                        YamlFile file = yamlParser.loadFile(child.getPath(),options.hasOption("yamlOnly"));
                         if(file==null){
                             logger.error("Aborting run due to error reading {}",yamlPath);
                             System.exit(1);
@@ -319,7 +327,7 @@ public class JarMain {
                     }
                 }else{
                     logger.trace("loading: "+yamlPath);
-                    YamlFile file = yamlParser.loadFile(yamlPath);
+                    YamlFile file = yamlParser.loadFile(yamlPath,options.hasOption("yamlOnly"));
                     if(file==null){
                         logger.error("Aborting run due to error reading {}",yamlPath);
                         System.exit(1);

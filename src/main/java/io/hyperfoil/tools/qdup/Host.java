@@ -25,16 +25,23 @@ public class Host {
     public static final int DEFAULT_PORT = 22;
 
     private String hostName;
+    private String password;
     private String userName;
     private int port;
     public Host(String userName,String hostName){
         this(userName,hostName,DEFAULT_PORT);
     }
     public Host(String userName,String hostName,int port){
+        this(userName,hostName,null,port);
+    }
+    public Host(String userName,String hostName,String password,int port){
         this.userName = userName;
         this.hostName = hostName;
+        this.password = password;
         this.port = port;
     }
+    public boolean hasPassword(){return password!=null && !password.isEmpty();}
+    public String getPassword(){return password;}
     public String getUserName(){return userName;}
     public String getHostName(){return hostName;}
     public String getShortHostName(){

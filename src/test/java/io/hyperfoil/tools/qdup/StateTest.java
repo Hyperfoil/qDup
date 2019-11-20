@@ -1,11 +1,105 @@
 package io.hyperfoil.tools.qdup;
 
+import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.config.CmdBuilder;
+import io.hyperfoil.tools.qdup.config.RunConfig;
+import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import static org.junit.Assert.*;
 
-public class StateTest {
+public class StateTest extends SshSessionTest{
+
+    @Test
+    public void array_state(){
+        State state = new State("");
+        Json json = new Json();
+        json.add("uno");
+        json.add("dos");
+        state.set("foo", json);
+
+        Object found = state.get("foo");
+
+        assertTrue("state should have foo", found != null);
+        assertTrue("state.get(foo) should be Json", found instanceof Json);
+
+        Json foundJson = (Json)found;
+
+        assertTrue("state.foo should be an array",foundJson.isArray());
+
+    }
+
+    @Test
+    public void array_index_reference(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+           "  foo:",
+           "  - sh: pwd",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  inline: ['one','two']",
+           "  multi:",
+           "   - one",
+           "   - two"
+        )));
+
+        RunConfig config = builder.buildConfig();
+
+        String populated = Cmd.populateStateVariables("${{inline[1]}}",null,config.getState());
+
+        System.out.println(populated);
+    }
+
+    @Test
+    public void array_state_in_yaml(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser.loadFile("",stream(""+
+           "scripts:",
+           "  foo:",
+           "  - sh: pwd",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  inline: ['one','two']",
+           "  multi:",
+           "   - one",
+           "   - two"
+        )));
+
+        RunConfig config = builder.buildConfig();
+
+        Object found = config.getState().get("inline");
+
+        assertTrue("state should have inline", found != null);
+        assertTrue("state.get(inline) should be Json", found instanceof Json);
+
+        Json foundJson = (Json)found;
+
+        assertTrue("state.foo should be an array",foundJson.isArray());
+
+        found = config.getState().get("multi");
+
+        assertTrue("state should have multi", found != null);
+        assertTrue("state.get(inline) should be Json", found instanceof Json);
+
+        foundJson = (Json)found;
+
+        assertTrue("state.foo should be an array",foundJson.isArray());
+    }
 
     @Test
     public void set_with_dots() {

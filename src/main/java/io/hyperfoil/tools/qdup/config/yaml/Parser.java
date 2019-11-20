@@ -548,17 +548,17 @@ public class Parser {
     }
 
 
-    public YamlFile loadFile(String path){
+    public YamlFile loadFile(String path, boolean yamlOnly){
         InputStream stream  = FileUtility.getInputStream(path);
-        return loadFile(path,stream);
+        return loadFile(path,stream,yamlOnly);
     }
 
-    public YamlFile loadFile(String path, InputStream stream) {
+    public YamlFile loadFile(String path, InputStream stream, boolean yamlOnly) {
         String content = new BufferedReader(new InputStreamReader(stream))
            .lines().collect(Collectors.joining("\n"));
-        return loadFile(path,content);
+        return loadFile(path,content,yamlOnly);
     }
-    public YamlFile loadFile(String path,String content){
+    public YamlFile loadFile(String path,String content,boolean yamlOnly){
         YamlFile loaded = null;
         try{
             loaded = yaml.loadAs(content,YamlFile.class);

@@ -51,7 +51,7 @@ public class SetState extends Cmd {
 
     @Override
     public Cmd copy() {
-        return new SetState(key, value);
+        return new SetState(key, value, silent);
     }
 
     @Override

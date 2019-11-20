@@ -16,6 +16,17 @@ import static org.junit.Assert.assertTrue;
 
 public class CmdTest extends SshTestBase {
 
+
+    @Test
+    public void populateStateVariables_part_of_path(){
+        State state = new State("");
+        state.set("FOO","alpha");
+
+        String response = Cmd.populateStateVariables("/tmp/${{FOO}}/bravo",null,state);
+        assertEquals("expected value","/tmp/alpha/bravo",response);
+    }
+
+
     @Test
     public void populateStateVariables_arithmetic(){
         State state = new State("");

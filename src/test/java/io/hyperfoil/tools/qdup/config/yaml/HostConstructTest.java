@@ -48,7 +48,7 @@ public class HostConstructTest {
     }
     @Test
     public void map_full(){
-        Host loaded = yaml.loadAs("username: userName\nhostname: hostName.subdomain.domain.com\nport: 22",Host.class);
+        Host loaded = yaml.loadAs("username: userName\nhostname: hostName.subdomain.domain.com\nport: 22\npassword: foo",Host.class);
         assertNotNull("should load from map",loaded);
         assertEquals("username","userName",loaded.getUserName());
         assertEquals("hostname","hostName.subdomain.domain.com",loaded.getHostName());

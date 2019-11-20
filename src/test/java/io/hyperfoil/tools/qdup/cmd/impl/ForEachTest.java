@@ -28,6 +28,38 @@ import static org.junit.Assert.*;
 
 public class ForEachTest extends SshTestBase {
 
+    @Test
+    public void nested_loop_objects(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser.loadFile("",stream(""+
+           "scripts:",
+           "  foo:",
+           "  - for-each: FOO ${{DATA}}",
+           "    then:",
+           "    - for-each: BAR ${{FOO.bar}}",
+           "      then:",
+           "      - set-state: RUN.LOG ${{LOG}} ${{FOO.name}}=${{BAR}}",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  DATA: [{name: \"one\",bar: [1, 2, 3]},{name: \"two\",bar: [2,4,6]},{name: 'three' ,bar: [3,6,9]}]"
+        )));
+
+        RunConfig config = builder.buildConfig();
+        Cmd foo = config.getScript("foo");
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp", config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+        System.out.println(config.getState().get("LOG"));
+        assertEquals("FOO should loop over bar entries"," one=1 one=2 one=3 two=2 two=4 two=6 three=3 three=6 three=9",config.getState().get("LOG"));
+    }
 
     @Test
     public void nested_loop_count(){
