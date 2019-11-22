@@ -115,8 +115,8 @@ public class JarMain {
 
 
         options.addOption(
-           Option.builder("Y")
-           .longOpt("yamlOnly")
+           Option.builder(null)
+           .longOpt("enableWaml")
            .hasArg(false)
            .desc("do not accept waml configuration")
            .build()
@@ -318,7 +318,7 @@ public class JarMain {
                     for(File child : yamlFile.listFiles()){
                         logger.trace("  loading: "+child.getPath());
                         //String content = FileUtility.readFile(child.getPath());
-                        YamlFile file = yamlParser.loadFile(child.getPath(),options.hasOption("yamlOnly"));
+                        YamlFile file = yamlParser.loadFile(child.getPath(),options.hasOption("enableWaml"));
                         if(file==null){
                             logger.error("Aborting run due to error reading {}",yamlPath);
                             System.exit(1);
@@ -327,7 +327,7 @@ public class JarMain {
                     }
                 }else{
                     logger.trace("loading: "+yamlPath);
-                    YamlFile file = yamlParser.loadFile(yamlPath,options.hasOption("yamlOnly"));
+                    YamlFile file = yamlParser.loadFile(yamlPath,options.hasOption("enableWaml"));
                     if(file==null){
                         logger.error("Aborting run due to error reading {}",yamlPath);
                         System.exit(1);

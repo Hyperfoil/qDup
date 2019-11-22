@@ -548,25 +548,22 @@ public class Parser {
     }
 
 
-    public YamlFile loadFile(String path, boolean yamlOnly){
+    public YamlFile loadFile(String path, boolean enableWaml){
         InputStream stream  = FileUtility.getInputStream(path);
-        return loadFile(path,stream,yamlOnly);
+        return loadFile(path,stream,enableWaml);
     }
 
-    public YamlFile loadFile(String path, InputStream stream, boolean yamlOnly) {
+    public YamlFile loadFile(String path, InputStream stream, boolean enableWaml) {
         String content = new BufferedReader(new InputStreamReader(stream))
            .lines().collect(Collectors.joining("\n"));
-        return loadFile(path,content,yamlOnly);
+        return loadFile(path,content,enableWaml);
     }
-    public YamlFile loadFile(String path,String content,boolean yamlOnly){
+    public YamlFile loadFile(String path,String content,boolean enableWaml){
         YamlFile loaded = null;
         try{
             loaded = yaml.loadAs(content,YamlFile.class);
         }catch(YAMLException e){
-            //e.printStackTrace();
-            if(yamlOnly){
-                logger.error("Failed to load {} as yaml only\n{}",path,e.getMessage());
-            }else {
+            if(enableWaml){
                 try {
                     WamlParser wamlParser = new WamlParser();
                     wamlParser.load(path, new ByteArrayInputStream(content.getBytes()));
@@ -589,6 +586,8 @@ public class Parser {
                 if (loaded != null) {
                     logger.warn("loaded {} as deprecated waml format, convert with -W jar argument", path);
                 }
+            }else {
+                logger.error("Failed to load {} as yaml only\n{}",path,e.getMessage());
             }
         }catch(RuntimeException e){
             logger.error("Failed to load {}\n{}",path,e.getMessage());
