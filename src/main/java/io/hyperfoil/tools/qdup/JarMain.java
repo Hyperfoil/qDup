@@ -316,14 +316,18 @@ public class JarMain {
                 if(yamlFile.isDirectory()){
                     logger.trace("loading directory: "+yamlPath);
                     for(File child : yamlFile.listFiles()){
-                        logger.trace("  loading: "+child.getPath());
-                        //String content = FileUtility.readFile(child.getPath());
-                        YamlFile file = yamlParser.loadFile(child.getPath(),commandLine.hasOption("enableWaml"));
-                        if(file==null){
-                            logger.error("Aborting run due to error reading {}",yamlPath);
-                            System.exit(1);
+                        if(child.getName().endsWith("yaml") || child.getName().endsWith("yml")) {
+                            logger.trace("  loading: " + child.getPath());
+                            //String content = FileUtility.readFile(child.getPath());
+                            YamlFile file = yamlParser.loadFile(child.getPath(), commandLine.hasOption("enableWaml"));
+                            if (file == null) {
+                                logger.error("Aborting run due to error reading {}", yamlPath);
+                                System.exit(1);
+                            }
+                            runConfigBuilder.loadYaml(file);
+                        }else{
+                            logger.trace("  skipping: " + child.getPath());
                         }
-                        runConfigBuilder.loadYaml(file);
                     }
                 }else{
                     logger.trace("loading: "+yamlPath);

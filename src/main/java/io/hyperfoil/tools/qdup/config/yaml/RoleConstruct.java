@@ -120,7 +120,7 @@ public class RoleConstruct extends DeferableConstruct {
                 throw new YAMLException("roles require scalar name key"+tuple.getKeyNode().getStartMark());
             }
         }else{
-            throw new YAMLException("roles requires  mapping node"+node.getStartMark());
+            throw new YAMLException("roles requires mapping node"+node.getStartMark());
         }
         //throw new YAMLException("failed to create role"+node.getStartMark());
     }

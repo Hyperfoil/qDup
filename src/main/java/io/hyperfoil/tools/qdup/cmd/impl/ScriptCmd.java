@@ -51,6 +51,9 @@ public class ScriptCmd extends Cmd {
                 State state = context.getState().clone();
                 Run run = context instanceof ScriptContext ? ((ScriptContext)context).getRun() : null;
 
+                //copy withs because it will not be inherited
+                copyCmd.with(getWith(true));
+
                 ScriptContext scriptContext = new ScriptContext(ssh,state,run,context.getProfiler(),copyCmd);
                 if(run!=null){ //register context so phase does not end before script completes
                     //dispatcher will aslo start the context

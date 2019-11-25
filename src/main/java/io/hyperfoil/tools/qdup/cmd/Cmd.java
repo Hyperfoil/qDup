@@ -685,6 +685,28 @@ public abstract class Cmd {
    public Json getWith() {
       return with;
    }
+   public Json getWith(boolean recursive){
+      if(!recursive){
+         return with.clone();
+      }else{
+         Json rtrn = new Json();
+         Cmd target = this;
+         while(target!=null){
+            target.getWith().forEach((key,value)->{
+               if(!rtrn.has(key)){
+                  if(value instanceof Json){
+                     rtrn.set(key,((Json)value).clone()); //clone to avoid parallel modification
+                  }else {
+                     rtrn.set(key, value);
+                  }
+               }
+            });
+            target = target.getParent();
+         }
+         return rtrn;
+      }
+   }
+
 
    public int getUid() {
       return uid;

@@ -480,7 +480,7 @@ public class Parser {
                         return noArgs.get(value).apply("");
                     }
                 }else{
-                    System.out.println("TODO cmd !=ScalarNode\n!!!!\n!!!!\n!!!!");
+                    //TODO cmd !=ScalarNode
                 }
                 return defer(node);
             }
@@ -589,8 +589,9 @@ public class Parser {
                 if (loaded != null) {
                     logger.warn("loaded {} as deprecated waml format, convert with -W jar argument", path);
                 }
-            }else {
+            } else {
                 logger.error("Failed to load {} as yaml only\n{}",path,e.getMessage());
+                e.printStackTrace();
             }
         }catch(RuntimeException e){
             logger.error("Failed to load {}\n{}",path,e.getMessage());
