@@ -114,7 +114,9 @@ public class ScriptContext implements Context, Runnable{
 
     protected Cmd getRootCmd(){return rootCmd;}
     protected Cmd getCurrentCmd(){return currentCmd;}
-    protected Run getRun(){return run;}
+
+
+    public Run getRun(){return run;}
 
     public Logger getRunLogger(){return run.getRunLogger();}
     public Profiler getProfiler(){return profiler;}

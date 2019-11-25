@@ -1,8 +1,12 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.Run;
+import io.hyperfoil.tools.qdup.SshSession;
+import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.Script;
+import io.hyperfoil.tools.qdup.cmd.ScriptContext;
 import io.hyperfoil.tools.yaup.AsciiArt;
 
 /*
@@ -40,15 +44,24 @@ public class ScriptCmd extends Cmd {
         if(toCall == null){
             logger.warn("could not find script: {}",populatedName);
         }else {
+            Cmd copyCmd = toCall.deepCopy();
             if(isAsync()){
                 //TODO how to invoke the script?
+                SshSession ssh = context.getSession() != null ? context.getSession().openCopy() : null;
+                State state = context.getState().clone();
+                Run run = context instanceof ScriptContext ? ((ScriptContext)context).getRun() : null;
+
+                ScriptContext scriptContext = new ScriptContext(ssh,state,run,context.getProfiler(),copyCmd);
+                if(run!=null){ //register context so phase does not end before script completes
+                    //dispatcher will aslo start the context
+                    run.getDispatcher().addScriptContext(scriptContext);
+                }
             }else{
-                Cmd copyCmd = toCall.deepCopy();
                 injectThen(copyCmd, context);
             }
         }
         context.next(input);
-        if(!addToCmdTree){
+        if(!addToCmdTree && !async){
             //remove the injected command from the tree after it was picked up by context.next
             forceNext(originalNext);
         }

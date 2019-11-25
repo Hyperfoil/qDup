@@ -133,6 +133,9 @@ public class SshSession {
    private String identity;
    private String passphrase;
    private int timeout;
+   private String setupCommand;
+   private boolean trace;
+
    private Consumer<String> semaphoreCallback;
    private Semaphore blockingSemaphore;
    private Consumer<String> blockingConsumer;
@@ -178,6 +181,8 @@ public class SshSession {
       this.identity = identity;
       this.passphrase = passphrase;
       this.timeout = timeout;
+      this.setupCommand = setupCommand;
+      this.trace = trace;
 
       shellLock = new Semaphore(1);
       sshClient = SshClient.setUpDefaultClient();
@@ -208,6 +213,10 @@ public class SshSession {
 
 //        sshConfig = new Properties();
 //        sshConfig.put("StrictHostKeyChecking", "no");
+   }
+
+   public SshSession openCopy(){
+      return new SshSession(host,knownHosts,identity,passphrase,timeout,setupCommand,executor,trace);
    }
 
    public void addLineObserver(String name, Consumer<String> consumer) {
