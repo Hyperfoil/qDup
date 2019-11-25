@@ -8,6 +8,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
@@ -163,7 +164,6 @@ public class Parser {
             //have to quote declaredInput because CmdBuilder.split() strips out the quotes, remove once cmd builder is gone
             (cmd)->((cmd.getName()+" "+(cmd.getDeclaredInput().trim().isEmpty()?"":"'"+cmd.getDeclaredInput()).trim()+"'")),
             (str)->{
-
                 List<String> split = CmdBuilder.split(str);
                 if(split.size()<=1){
                     return new ForEach(split.get(0));
@@ -180,7 +180,9 @@ public class Parser {
                    }
                 }
             },
-            (json)->new ForEach(json.getString("name"),json.getString("input",""))
+            (json)->{
+                return new ForEach(json.getString("name"),json.getString("input",""));
+            }
         );
         //Invoke
         rtrn.addCmd(
@@ -257,7 +259,7 @@ public class Parser {
             "script",
                 (cmd)->cmd.getName(),
                 (str)->new ScriptCmd(str),
-                (json)->new ScriptCmd(json.getString("name"),json.getBoolean("async",false))
+                (json)->new ScriptCmd(json.getString("name"),json.getBoolean("async",false),false)
         );
         rtrn.addCmd(
            SetSignal.class,
@@ -478,6 +480,7 @@ public class Parser {
                         return noArgs.get(value).apply("");
                     }
                 }else{
+                    System.out.println("TODO cmd !=ScalarNode\n!!!!\n!!!!\n!!!!");
                 }
                 return defer(node);
             }

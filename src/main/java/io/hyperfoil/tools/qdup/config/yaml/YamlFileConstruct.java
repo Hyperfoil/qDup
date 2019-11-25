@@ -178,6 +178,8 @@ public class YamlFileConstruct extends DeferableConstruct {
                             throw new YAMLException("roles requires a mapping");
                         }
                         break;
+                    default:
+                        throw new YAMLException("unknown yaml tag"+((ScalarNode)nodeTuple.getKeyNode()).getStartMark());
                 }
             });
             return yamlFile;

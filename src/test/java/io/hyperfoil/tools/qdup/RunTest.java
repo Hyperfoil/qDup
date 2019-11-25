@@ -111,7 +111,7 @@ public class RunTest extends SshTestBase {
          "  doit:",
          "    hosts: [local]",
          "    run-scripts: [foo]"
-      )));
+      ),true));
       RunConfig config = builder.buildConfig();
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -185,7 +185,7 @@ public class RunTest extends SshTestBase {
          "    run-scripts: [foo]",
          "states:",
          "  BAR: [{biz: {buz: 'one'}},{biz: {buz: 'two'}},{biz: {buz: 'three'}}]"
-      )));
+      ),true));
       RunConfig config = builder.buildConfig();
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
@@ -241,7 +241,7 @@ public class RunTest extends SshTestBase {
          "    run-scripts: [foo,bar]",
          "states:",
          "  NAME: signalName"
-      )));
+      ),true));
       RunConfig config = builder.buildConfig();
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
    }
@@ -269,7 +269,7 @@ public class RunTest extends SshTestBase {
          "    setup-scripts: [foo]",
          "    run-scripts: [bar]",
          "    cleanup-scripts: [biz]"
-      )));
+      ),true));
       RunConfig config = builder.buildConfig();
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();

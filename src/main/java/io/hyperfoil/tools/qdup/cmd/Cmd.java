@@ -428,11 +428,11 @@ public abstract class Cmd {
    }
 
    public static ScriptCmd script(String name) {
-      return new ScriptCmd(name, false);
+      return new ScriptCmd(name, false,false);
    }
 
    public static ScriptCmd script(String name, boolean async) {
-      return new ScriptCmd(name, async);
+      return new ScriptCmd(name, async,false);
    }
 
    public static Cmd setState(String name) {
@@ -623,7 +623,10 @@ public abstract class Cmd {
 
    public void injectThen(Cmd command, Context context) {
       thens.addFirst(command);
-
+      forceParent(command,context);
+      this.next = command;
+   }
+   public void forceParent(Cmd command, Context context) {
       Cmd next = this.getNext();
       Cmd skip = this.getSkip();
       if (next != null) {
@@ -650,7 +653,6 @@ public abstract class Cmd {
             toForce = toForce.getPrevious();
          } while (toForce != null && toForce.getSkip() == null);
       }
-      this.next = command;
       command.parent = this;
       command.prev = this;
    }

@@ -44,9 +44,9 @@ public class CmdConstruct extends DeferableConstruct {
     public boolean supportsJson(){return fromJson!=null;}
 
     public void populate(final Cmd cmd,MappingNode mappingNode) {
-        mappingNode.getValue().forEach(nodeTuple -> {
-            populate(cmd,nodeTuple);
-        });
+        for(NodeTuple nodeTuple : mappingNode.getValue()){
+            populate(cmd, nodeTuple);
+        }
     }
     public void populate(final Cmd cmd, NodeTuple nodeTuple){
         String key = ((ScalarNode)nodeTuple.getKeyNode()).getValue();

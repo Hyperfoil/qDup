@@ -42,7 +42,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "        then:",
             "        - ctrlC",
             "    - sh: echo 'yay'"
-        )));
+        ),true));
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -143,7 +143,7 @@ public class RunConfigBuilderTest extends SshTestBase {
            "  foo : foo",
            "  host :",
            "    foo : bar"
-        )));
+        ),true));
         RunConfig runConfig = builder.buildConfig();
 
         assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
@@ -349,14 +349,14 @@ public class RunConfigBuilderTest extends SshTestBase {
            "  role:",
            "    setup-scripts: [first]",
            "    run-scripts: [second]"
-        )));
+        ),true));
         builder.loadYaml(parser.loadFile("hostDef",stream(""+
            "hosts:",
            "  local: fakeUser@localhost",
            "roles:",
            "  role:",
            "    - hosts: [local]"
-        )));
+        ),true));
         RunConfig runConfig = builder.buildConfig();
 
         assertTrue("run has role",runConfig.getRoleNames().contains("role"));
@@ -401,7 +401,7 @@ public class RunConfigBuilderTest extends SshTestBase {
            "    hosts: = all - foobarbiz",
            "    run-scripts: [AllNotBarScript]",
            ""
-        )));
+        ),true));
 
         RunConfig runConfig = builder.buildConfig();
 
@@ -441,7 +441,7 @@ public class RunConfigBuilderTest extends SshTestBase {
            "   - - watch:",
            "       - regex: .*",
            "       - - abort: message true"
-           )
+           ),true
         ));
         RunConfig runConfig = builder.buildConfig();
         assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());

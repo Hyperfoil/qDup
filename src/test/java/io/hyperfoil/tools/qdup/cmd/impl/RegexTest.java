@@ -70,6 +70,8 @@ public class RegexTest extends SshTestBase {
           "fatal: unable to read source tree (ea9f40f5940637b18c197952e7d0bd0a28185ae9)"
              +"\n"+"2019-10-01 16:21:04 -1000",
           context);
+
+       System.out.println(context.getState().get("date"));
     }
 
     @Test

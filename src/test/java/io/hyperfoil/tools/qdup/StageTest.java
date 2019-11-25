@@ -66,7 +66,7 @@ public class StageTest extends SshTestBase{
            "        with: { FOO: foo }",
            "    - bar:",
            "        with: { BAR: foo }"
-        )));
+        ),true));
         RunConfig config = builder.buildConfig();
 
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
@@ -188,7 +188,7 @@ public class StageTest extends SshTestBase{
            "    hosts: [local]",
            "    run-scripts:",
            "    - sig:"
-        )));
+        ),true));
         RunConfig config = builder.buildConfig();
         Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
     }
@@ -220,7 +220,7 @@ public class StageTest extends SshTestBase{
            "    run-scripts:",
            "    - inv:",
            "    - wat:"
-        )));
+        ),true));
         RunConfig config = builder.buildConfig();
         Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
     }

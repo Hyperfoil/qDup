@@ -558,6 +558,7 @@ public class CmdBuilder {
         }
         return rtrn;
     }
+    //TODO split should not split ${{...}}
     public static List<String> split(String input){
         List<String> rtrn = new LinkedList<>();
         int start=0;

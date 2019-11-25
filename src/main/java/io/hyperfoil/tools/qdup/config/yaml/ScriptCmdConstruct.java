@@ -12,6 +12,7 @@ import java.util.Set;
 
 import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.keys;
 
+// creates a scriptCmd from a reference in a phase stage
 public class ScriptCmdConstruct extends CmdConstruct {
 
     public static CmdEncoder<ScriptCmd> ENCODER = (scriptCmd)->{
@@ -29,14 +30,14 @@ public class ScriptCmdConstruct extends CmdConstruct {
     public Object construct(Node node) {
         ScriptCmd rtrn = null;
         if(node instanceof ScalarNode){
-            rtrn = new ScriptCmd(((ScalarNode)node).getValue());
+            rtrn = new ScriptCmd(((ScalarNode)node).getValue(),false,true);
         }else if (node instanceof MappingNode){
             MappingNode scriptMapping = (MappingNode)node;
             Set<String> keys = keys(scriptMapping);
             Set<String> nonCmdKeys = Sets.unique(keys,CmdMapping.COMMAND_KEYS);
             if(nonCmdKeys.size()==1){
                 setTag(nonCmdKeys.iterator().next());
-                rtrn = new ScriptCmd(getTag());
+                rtrn = new ScriptCmd(getTag(),false,true);
                 populate(rtrn,scriptMapping);//will load any peer keys, what about child keys?
             }else{
                 throw new YAMLException("cannot create scripCmd, too many unknown keys "+nonCmdKeys+scriptMapping.getStartMark());

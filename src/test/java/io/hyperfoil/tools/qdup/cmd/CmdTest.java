@@ -28,6 +28,18 @@ public class CmdTest extends SshTestBase {
 
 
     @Test
+    public void populateStateVariables_simple_arithmetic(){
+        State state = new State("");
+        state.set("FOO","2");
+        state.set("BAR","2");
+        state.set("BIZ","3");
+
+        String response = Cmd.populateStateVariables("${{2 * (2 + 3)}}",null,state);
+        assertEquals("expected value","10",response);
+    }
+
+
+    @Test
     public void populateStateVariables_arithmetic(){
         State state = new State("");
         state.set("FOO","2");

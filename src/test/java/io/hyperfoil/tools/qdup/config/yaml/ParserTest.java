@@ -39,7 +39,7 @@ public class ParserTest extends SshTestBase {
            "      - ctrlC",
            "    then:",
            "    - done"
-        ));
+        ),true);
 
         assertNotNull(loaded);
         assertTrue(loaded.getScripts().containsKey("foo"));
@@ -74,7 +74,7 @@ public class ParserTest extends SshTestBase {
            "  - ctrlC:",
            "    then:",
            "    - echo"
-        ));
+        ),true);
 
         assertNotNull("should be able to load a nested string cmd",loaded);
         assertTrue("missing foo script",loaded.getScripts().containsKey("foo"));
@@ -98,7 +98,7 @@ public class ParserTest extends SshTestBase {
            "  - ctrlC:",
            "  - echo",
            "  - done"
-        ));
+        ),true);
         assertTrue("missing foo script",loaded.getScripts().containsKey("foo"));
         Script foo = loaded.getScripts().get("foo");
         assertTrue("next should be ctrlC",foo.getNext() instanceof CtrlC);
@@ -125,11 +125,12 @@ public class ParserTest extends SshTestBase {
             "    - sh: kill ${PERF_RECORD_PID}",
             "       - timer: 5s # No idea why this is getting stuck at times",
             "          - ctrlC"
-       ));
+       ),true);
         assertNotNull(loaded);
         assertTrue(loaded.getScripts().containsKey("perf-record"));
         Script script = loaded.getScripts().get("perf-record");
         assertTrue(script.getTail().hasTimers());
+
     }
 
     @Test
@@ -141,7 +142,7 @@ public class ParserTest extends SshTestBase {
            "  - sh: pwd",
            "    then:",
            "    - set-state: PWD"
-        ));
+        ),true);
 
         assertNotNull("loaded should not be null",loaded);
         assertEquals("loaded scripts",1,loaded.getScripts().size());
@@ -160,7 +161,7 @@ public class ParserTest extends SshTestBase {
            "      with:",
            "        FOO: One,Two,Three",
            "    - set-state: PWD"
-        ));
+        ),true);
         assertNotNull("loaded should not be null",loaded);
         assertEquals("loaded scripts",1,loaded.getScripts().size());
         assertEquals("loaded hosts",0,loaded.getHosts().size());

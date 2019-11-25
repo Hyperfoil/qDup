@@ -50,7 +50,7 @@ public class StateTest extends SshSessionTest{
            "  multi:",
            "   - one",
            "   - two"
-        )));
+        ),true));
 
         RunConfig config = builder.buildConfig();
 
@@ -78,7 +78,7 @@ public class StateTest extends SshSessionTest{
            "  multi:",
            "   - one",
            "   - two"
-        )));
+        ),true));
 
         RunConfig config = builder.buildConfig();
 
