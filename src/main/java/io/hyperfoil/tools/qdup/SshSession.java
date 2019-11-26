@@ -182,7 +182,8 @@ public class SshSession {
       this.passphrase = passphrase;
       this.timeout = timeout;
       this.setupCommand = setupCommand;
-      this.trace = trace;
+      //this.trace = trace;
+      this.trace = true;
 
       shellLock = new Semaphore(1);
       sshClient = SshClient.setUpDefaultClient();
@@ -209,7 +210,7 @@ public class SshSession {
          blockingSemaphore.release();
       };
       this.executor = executor;
-      connected = connect(this.timeout*1_000, setupCommand, trace);
+      connected = connect(this.timeout*1_000, setupCommand, this.trace);
 
 //        sshConfig = new Properties();
 //        sshConfig.put("StrictHostKeyChecking", "no");
@@ -501,11 +502,15 @@ public class SshSession {
    }
 
    public void ctrlC() {
-      ctrl('C');//end process
+      ctrl('C'); //SIGINT
+   }
+
+   public void ctrlU() {
+      ctrl('U'); //SIGQUIT
    }
 
    public void ctrlZ() {
-      ctrl('Z');//send to background
+      ctrl('Z'); //send to background
    }
 
    public void ctrl(char key) {

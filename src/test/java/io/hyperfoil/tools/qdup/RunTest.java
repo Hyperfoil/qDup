@@ -1,18 +1,19 @@
 package io.hyperfoil.tools.qdup;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Code;
+import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.qdup.cmd.ContextObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Result;
 import io.hyperfoil.tools.qdup.cmd.Script;
+import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import org.junit.Test;
 
 import java.io.File;
@@ -24,11 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 
 public class RunTest extends SshTestBase {
@@ -596,6 +593,66 @@ public class RunTest extends SshTestBase {
       assertFalse("run not called", run.length() == 0);
       assertFalse("cleanup not called", cleanup.length() == 0);
 
+   }
+
+   @Test
+   public void watch_only_signal_if_active(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      builder.loadYaml(parser.loadFile("",stream(""+
+         "scripts:",
+         "  foo:",
+         "  - sh: ",
+         "      command: top",
+         "      silent: true",
+         "    watch:",
+         "    - regex: Task",
+         "      then:",
+         "      - ctrlC",
+         "      - sleep: 3s",
+         "      - ctrlC",
+         "      - set-state: RUN.FOO ${{RUN.FOO}}-worked",
+         "    - regex: PID",
+         "      then:",
+         "      - set-state: RUN.PID ${{RUN.PID}}-found",
+         "  - sleep: 5s",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts: [foo]",
+         "states:",
+         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+         "  charlie: {name: \"cat\"}"
+      ),false));
+
+      RunConfig config = builder.buildConfig();
+      Dispatcher dispatcher = new Dispatcher();
+
+      List<String> signals = new ArrayList<>();
+
+      dispatcher.addContextObserver(new ContextObserver() {
+         @Override
+         public void preStart(Context context, Cmd command) {
+            if(command instanceof CtrlSignal){
+               signals.add(command.toString());
+            }
+         }
+
+         @Override
+         public void preStop(Context context, Cmd command, String output) {
+
+         }
+      });
+      Run doit = new Run("/tmp", config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+
+      assertEquals("should only run one signal command",1,signals.size());
+      assertEquals("watcher should finish even if watched already stopped","-found",config.getState().get("PID"));
+      assertEquals("skipped singals for stopped watcher should not stop subsequent commands","-worked",config.getState().get("FOO"));
    }
 
    @Test

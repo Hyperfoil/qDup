@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -29,12 +30,17 @@ public class SyncContext implements Context, Runnable{
 
     private volatile Cmd currentCmd;
 
-    public SyncContext(SshSession session, State state, Run run, Profiler profiler, Cmd currentCmd){
+    private final ScriptContext scriptContext;
+    private final Cmd scriptActiveCmd;
+
+    public SyncContext(SshSession session, State state, Run run, Profiler profiler, Cmd currentCmd, ScriptContext scriptContext){
         this.session = session;
         this.state = state;
         this.run = run;
         this.profiler = profiler;
         this.currentCmd = currentCmd;
+        this.scriptContext = scriptContext;
+        this.scriptActiveCmd = scriptContext.getCurrentCmd();
     }
 
     protected Cmd getCurrentCmd(){return currentCmd;}
@@ -57,8 +63,16 @@ public class SyncContext implements Context, Runnable{
             Cmd next = cmd.getNext();
             cmd.setOutput(output);
             if(next!=null) {
+                while(next!=null && (next instanceof CtrlSignal) && scriptContext!=null && scriptActiveCmd != null && !scriptActiveCmd.equals(scriptContext.getCurrentCmd())){
+                    logger.info("not running {} because completed active command {}",next,scriptActiveCmd);
+                    next = next.getNext();
+                }
                 setCurrentCmd(cmd, next);
-                next.doRun(output,this);
+                logger.trace("synchronously running {}",next);
+                if(scriptContext!=null && scriptContext.getObserver() != null){
+                    scriptContext.getObserver().preStart(this,next);
+                }
+                next.doRun(output, this);
             }
         }
     }
@@ -80,8 +94,17 @@ public class SyncContext implements Context, Runnable{
             Cmd next = cmd.getSkip();
             cmd.setOutput(output);
             if(next!=null) {
+                while(next!=null && (next instanceof CtrlSignal) && scriptContext!=null && scriptActiveCmd != null && !scriptActiveCmd.equals(scriptContext.getCurrentCmd())){
+                    logger.info("not running {} because completed active command {}",next,scriptActiveCmd);
+                    next = next.getNext();
+                }
                 setCurrentCmd(cmd, next);
-                next.doRun(output,this);
+                logger.trace("synchronously running {}",next);
+                if(scriptContext!=null && scriptContext.getObserver() != null){
+                    scriptContext.getObserver().preStart(this,next);
+                }
+                next.doRun(output, this);
+
             }
         }
     }

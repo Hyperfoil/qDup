@@ -176,7 +176,7 @@ public class ScriptContextTest extends SshTestBase {
         List<String> updates = new LinkedList<>();
         context.setObserver(new ContextObserver() {
             @Override
-            public void onUpdate(ScriptContext context, Cmd command, String output) {
+            public void onUpdate(Context context, Cmd command, String output) {
                 updates.add(output);
             }
         });

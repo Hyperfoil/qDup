@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.qdup.cmd.SyncContext;
 
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -56,7 +57,9 @@ public class Sleep extends Cmd {
     public void run(String input, Context context) {
         String toParse = Cmd.populateStateVariables(amount,this,context.getState());
         long sleepMs = parseToMs(toParse);
-        context.schedule(() -> context.next(input),sleepMs);
+        context.schedule(() -> {
+            context.next(input);
+        },sleepMs);
     }
 
     @Override

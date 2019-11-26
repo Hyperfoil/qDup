@@ -70,7 +70,7 @@ public class Dispatcher {
     private final ContextObserver observer = new ContextObserver() {
 
         @Override
-        public void onUpdate(ScriptContext context, Cmd command, String output){
+        public void onUpdate(Context context, Cmd command, String output){
             if(hasContextObserver()){
                 for(ContextObserver o : contextObservers){
                     o.onUpdate(context,command,output);
@@ -79,7 +79,7 @@ public class Dispatcher {
         }
 
         @Override
-        public void preStart(ScriptContext context,Cmd command){
+        public void preStart(Context context,Cmd command){
             if(hasContextObserver()){
                 for(ContextObserver o : contextObservers){
                     o.preStart(context,command);
@@ -87,7 +87,7 @@ public class Dispatcher {
             }
         }
         @Override
-        public void preStop(ScriptContext context,Cmd command,String output){
+        public void preStop(Context context,Cmd command,String output){
             if(hasContextObserver()){
                 for(ContextObserver o : contextObservers){
                     o.preStop(context,command,output);
@@ -96,7 +96,7 @@ public class Dispatcher {
 
         }
         @Override
-        public void preNext(ScriptContext context, Cmd command, String output){
+        public void preNext(Context context, Cmd command, String output){
             if(hasContextObserver()){
                 for(ContextObserver o : contextObservers){
                     o.preNext(context,command,output);
@@ -105,7 +105,7 @@ public class Dispatcher {
 
         }
         @Override
-        public void preSkip(ScriptContext context, Cmd command, String output){
+        public void preSkip(Context context, Cmd command, String output){
             if(hasContextObserver()){
                 for(ContextObserver o : contextObservers){
                     o.preSkip(context,command,output);
@@ -114,17 +114,19 @@ public class Dispatcher {
 
         }
         @Override
-        public void onDone(ScriptContext context){
+        public void onDone(Context context){
             if(hasContextObserver()){
                 for(ContextObserver o : contextObservers){
                     o.onDone(context);
                 }
             }
-
-            scriptContexts.remove(context.getRootCmd());
-            scriptObservers.forEach(observer -> observer.onStop(context));
-            context.getSession().close();
-            checkActiveCount();
+            if(context instanceof ScriptContext){
+                ScriptContext scriptContext = (ScriptContext)context;
+                scriptContexts.remove(scriptContext.getRootCmd());
+                scriptObservers.forEach(observer -> observer.onStop(scriptContext));
+                context.getSession().close();
+                checkActiveCount();
+            }
         }
     };
 

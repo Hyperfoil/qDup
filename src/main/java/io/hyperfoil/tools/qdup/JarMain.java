@@ -5,6 +5,7 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.ContextObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.ScriptContext;
@@ -418,7 +419,7 @@ public class JarMain {
             Arrays.asList(commandLine.getOptionValues("breakpoint")).forEach(breakpoint->{
                 dispatcher.addContextObserver(new ContextObserver() {
                     @Override
-                    public void preStart(ScriptContext context, Cmd command) {
+                    public void preStart(Context context, Cmd command) {
                         String commandString = command.toString();
                         boolean matches = commandString.contains(breakpoint) || commandString.matches(breakpoint);
                         if(matches){

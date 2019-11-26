@@ -78,7 +78,7 @@ public class ShErrorObserver implements ContextObserver {
     }
 
     @Override
-    public void onUpdate(ScriptContext context,Cmd command, String output) {
+    public void onUpdate(Context context,Cmd command, String output) {
         checkErrors(command,output);
 
     }

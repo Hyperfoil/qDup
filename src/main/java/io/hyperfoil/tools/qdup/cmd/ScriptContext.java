@@ -153,6 +153,8 @@ public class ScriptContext implements Context, Runnable{
         run.getDispatcher().getScheduler().schedule(runnable,delayMs,TimeUnit.MILLISECONDS);
     }
 
+    protected ContextObserver getObserver(){return observer;}
+
     private void observerPreStart(Cmd command){
         if(observer!=null){
             observer.preStart(this,command);
@@ -314,7 +316,8 @@ public class ScriptContext implements Context, Runnable{
                     this.getState(),
                     this.getRun(),
                     this.getProfiler(),
-                    toRun
+                    toRun,
+                   this
                 ));
             }
         },timeout,TimeUnit.MILLISECONDS);
@@ -331,7 +334,6 @@ public class ScriptContext implements Context, Runnable{
                 if (!lineQueue.isEmpty()) {//clear any unhandled output lines
                     //TODO log that we are clearing orphaned lines
                     //need to make sure we don't clear if another thread needs to pickup up the CLOSE_QUEUE
-
                     try{
                         lineQueueSemaphore.acquire();
                         lineQueue.clear();
@@ -349,13 +351,12 @@ public class ScriptContext implements Context, Runnable{
                 String input = cmd != null && cmd.getPrevious() != null ? cmd.getPrevious().getOutput() : "";
 
                 if (cmd.hasSignalWatchers()){
-
                     Supplier<String> inputSupplier = ()->getSession().peekOutput();
                     for(String name : cmd.getSignalNames()){
                         String populatedName = StringUtil.populatePattern(name,new CmdStateRefMap(cmd,state,null),true);
                         List<Cmd> toCall = cmd.getSignal(name);
                         Cmd root = new ActiveCheckCmd(getCurrentCmd());
-                        SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getProfiler(),root);
+                        SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getProfiler(),root,this);
                         toCall.forEach(root::then);
                         signalCmds.put(name,root);
                         getCoordinator().waitFor(populatedName,root,syncContext,inputSupplier);
@@ -373,26 +374,29 @@ public class ScriptContext implements Context, Runnable{
                         );
                     }
                 }
-                long startDoRun = System.currentTimeMillis();
-                cmd.doRun(input, this);
-
-                long stopDoRun = System.currentTimeMillis();
                 if (cmd.hasWatchers()) {
-
-                    getProfiler().start("watch:"+cmd.toString());
                     String line = "";
                     try {
+                        getProfiler().start("watch.acquire:"+cmd.toString());
                         lineQueueSemaphore.acquire();
-                        SyncContext watcherContext = new SyncContext(
-                            this.getSession(),
-                            this.getState(),
-                            this.getRun(),
-                            this.getProfiler(),
-                            cmd
-                        );
+                        getProfiler().start("watch.start:"+cmd.toString());
+                        assert lineQueueSemaphore.availablePermits() == 0;
+
+                        cmd.doRun(input, this);
+
                         while (!CLOSE_QUEUE.equals(line = lineQueue.take())) {
+                            logger.trace("watch.line: {}",line);
                             for (Cmd watcher : cmd.getWatchers()) {
+                                SyncContext watcherContext = new SyncContext(
+                                   this.getSession(),
+                                   this.getState(),
+                                   this.getRun(),
+                                   this.getProfiler(),
+                                   cmd,
+                                   this
+                                );
                                 try {
+                                    logger.trace("watcher.run {}",watcher);
                                     watcherContext.forceCurrentCmd(watcher);
                                     watcher.doRun(line, watcherContext);
                                 } catch (Exception e) {
@@ -403,8 +407,12 @@ public class ScriptContext implements Context, Runnable{
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } finally {
+                        getProfiler().start("watch.release:"+cmd.toString());
                         lineQueueSemaphore.release();
+                        assert lineQueueSemaphore.availablePermits() == 1;
                     }
+                } else {
+                    cmd.doRun(input, this);
                 }
             }
     }

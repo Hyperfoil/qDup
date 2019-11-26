@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.ContextObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.ScriptContext;
@@ -46,7 +47,7 @@ public class JsonServer implements RunObserver, ContextObserver {
     }
 
     @Override
-    public void preStart(ScriptContext context, Cmd command){
+    public void preStart(Context context, Cmd command){
         if(server!=null){
             Json event = new Json();
             event.set("type","cmd.start");
@@ -57,7 +58,7 @@ public class JsonServer implements RunObserver, ContextObserver {
         }
     }
     @Override
-    public void preStop(ScriptContext context,Cmd command,String output){
+    public void preStop(Context context,Cmd command,String output){
         if(server!=null){
             Json event = new Json();
             event.set("type","cmd.stop");

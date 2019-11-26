@@ -109,7 +109,24 @@ public class Parser {
             (json)->new CtrlC()
         );
         rtrn.addCmd(
-           CtrlC.class,
+           CtrlSlash.class,
+           "ctrl/",
+           true,
+           (cmd)->"",
+           (str)->new CtrlSlash(),
+           (json)->new CtrlSlash()
+        );
+        rtrn.addCmd(
+           CtrlU.class,
+           "ctrlU",
+           true,
+           (cmd)->"",
+           (str)->new CtrlU(),
+           (json)->new CtrlU()
+        );
+
+        rtrn.addCmd(
+           CtrlZ.class,
            "ctrlZ",
            true,
            (cmd)->"",
