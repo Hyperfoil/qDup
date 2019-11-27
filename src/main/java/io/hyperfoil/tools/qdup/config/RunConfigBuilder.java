@@ -1,7 +1,5 @@
 package io.hyperfoil.tools.qdup.config;
 
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
@@ -12,13 +10,23 @@ import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.HashedSets;
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
-import io.hyperfoil.tools.yaup.yaml.Mapping;
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -70,7 +78,7 @@ public class RunConfigBuilder {
 
     private HashMap<String,String> roleHostExpression;
 
-    private HashMap<String,Host> hostAlias;
+    private HashMap<String,String> hostAlias;
 
     private Set<String> traceTargets;
 
@@ -401,37 +409,25 @@ public class RunConfigBuilder {
         YamlFile rtrn = new YamlFile();
         rtrn.setName(getName());
 
-        getHosts().forEach((alias,host)->{
-            rtrn.addHost(alias,host);
-        });
-        scripts.forEach((scriptName,script)->{
-            rtrn.addScript(scriptName,script);
-        });
+        getHosts().forEach(rtrn::addHost);
+        scripts.forEach(rtrn::addScript);
         getRoleNames().forEach(roleName->{
             rtrn.addRole(roleName,new Role(roleName));
             Role role = rtrn.getRoles().get(roleName);
             if( roleHostExpression.containsKey(roleName) ){
                 role.setHostExpression(new HostExpression( roleHostExpression.get(roleName)) );
             }
-            getRoleHosts(roleName).forEach(hostRef->{
-                role.addHostRef(hostRef);
-            });
-            getRoleSetup(roleName).forEach((scriptCmd)->{
-                role.addSetup(scriptCmd);
-            });
-            getRoleRun(roleName).forEach((scriptCmd)->{
-                role.addRun(scriptCmd);
-            });
-            getRoleCleanup(roleName).forEach(scriptCmd -> {
-                role.addCleanup(scriptCmd);
-            });
+            getRoleHosts(roleName).forEach(role::addHostRef);
+            getRoleSetup(roleName).forEach(role::addSetup);
+            getRoleRun(roleName).forEach(role::addRun);
+            getRoleCleanup(roleName).forEach(role::addCleanup);
         });
         rtrn.getState().merge(getState());
 
         return rtrn;
     }
 
-    Set<String> getRoleNames(){
+    private Set<String> getRoleNames(){
         Set<String> rtrn = new HashSet<>();
         rtrn.addAll(roleHostExpression.keySet());
         rtrn.addAll(roleHosts.keys());
@@ -441,17 +437,17 @@ public class RunConfigBuilder {
 
         return rtrn;
     }
-    public List<ScriptCmd> getRoleSetup(String name){
+    private List<ScriptCmd> getRoleSetup(String name){
         return roleSetup.containsKey(name) ? roleSetup.get(name) : Collections.emptyList();
     }
-    public List<ScriptCmd> getRoleRun(String name){
+    private List<ScriptCmd> getRoleRun(String name){
         return roleRun.containsKey(name) ? roleRun.get(name) : Collections.emptyList();
     }
-    public List<ScriptCmd> getRoleCleanup(String name){
+    private List<ScriptCmd> getRoleCleanup(String name){
         return roleCleanup.containsKey(name) ? roleCleanup.get(name) : Collections.emptyList();
     }
-    public Map<String,Host> getHosts(){return Collections.unmodifiableMap(hostAlias);}
-    public Set<String> getRoleHosts(String name){
+    private Map<String,String> getHosts(){return Collections.unmodifiableMap(hostAlias);}
+    private Set<String> getRoleHosts(String name){
         return roleHosts.has(name) ? roleHosts.get(name) : Collections.emptySet();
     }
 
@@ -459,34 +455,27 @@ public class RunConfigBuilder {
         this.timeout = timeout;
     }
 
-    public String getKnownHosts(){return knownHosts;}
+    private String getKnownHosts(){return knownHosts;}
     public void setKnownHosts(String knownHosts){
         this.knownHosts = knownHosts;
     }
-    public String getIdentity(){return identity;}
+    private String getIdentity(){return identity;}
     public void setIdentity(String identity){
         this.identity = identity;
     }
-    public String getPassphrase(){return passphrase;}
+    private String getPassphrase(){return passphrase;}
     public void setPassphrase(String passphrase){
         this.passphrase = passphrase;
     }
 
-    public void setRoleHostExpession(String roleName,String expression){
+    private void setRoleHostExpession(String roleName, String expression){
         roleHostExpression.put(roleName,expression);
     }
     public void addHostToRole(String name,String hostReference){
         roleHosts.put(name,hostReference);
     }
     public void addHostAlias(String alias,String host){
-        Host newHost = Host.parse(host);
-        if(newHost!=null) {
-            hostAlias.put(alias, newHost);
-            hostAlias.put(host, newHost);
-            hostAlias.put(newHost.toString(), newHost);
-        }else{
-            addError("Failed to parse host "+alias+":"+host);
-        }
+       hostAlias.putIfAbsent(alias,host);
     }
 
     public void addRoleSetup(String role, String script, Map<String,String> with){
@@ -499,13 +488,13 @@ public class RunConfigBuilder {
         addRoleScript(role,script,with,roleCleanup);
     }
 
-    public void addRoleSetup(String role, String script, Json with){
+    private void addRoleSetup(String role, String script, Json with){
         addRoleScript(role,script,with,roleSetup);
     }
-    public void addRoleRun(String role, String script, Json with){
+    private void addRoleRun(String role, String script, Json with){
         addRoleScript(role,script,with,roleRun);
     }
-    public void addRoleCleanup(String role, String script, Json with){
+    private void addRoleCleanup(String role, String script, Json with){
         addRoleScript(role,script,with,roleCleanup);
     }
 
@@ -548,8 +537,6 @@ public class RunConfigBuilder {
         State target = state.getChild(host,State.HOST_PREFIX);
         if(!target.has(key)){
             target.set(key,value);
-        }else{
-
         }
         state.getChild(host,State.HOST_PREFIX).set(key,value);
     }
@@ -561,6 +548,7 @@ public class RunConfigBuilder {
         }
         return true;
     }
+    @SuppressWarnings("WeakerAccess")
     public boolean hasScript(String name){
         return scripts.containsKey(name);
     }
@@ -580,10 +568,27 @@ public class RunConfigBuilder {
         Map<String,Host> seenHosts = new HashMap<>();
         Map<String,Role> roles = new HashMap<>();
 
+        //build a Map of alias to Host
+       Map<Object,Object> map = getState().toMap();
+        Map<String,Host> hostAliases = new HashMap<>();
+
+        for(String alias : hostAlias.keySet()){
+           String value = hostAlias.get(alias);
+           String populatedValue = StringUtil.populatePattern(value,map,false);
+           if(populatedValue.contains(StringUtil.PATTERN_PREFIX)){
+              addError("cannot create host from "+value+" -> "+populatedValue);
+           }
+           Host host = Host.parse(populatedValue);
+           if(host == null){
+              addError("cannot create host from "+value+" -> "+populatedValue);
+           }
+           hostAliases.put(alias,host);
+        }
+
         //build map of all known hosts
         roleHosts.forEach((roleName,hostSet)->{
             for(String hostShortname : hostSet){
-                Host resolvedHost = hostAlias.get(hostShortname);
+                Host resolvedHost = hostAliases.get(hostShortname);
                 if(resolvedHost!=null){
                     seenHosts.putIfAbsent(hostShortname,resolvedHost);
                     seenHosts.put(resolvedHost.toString(),resolvedHost);//could duplicate fullyQualified but guarantees to include port
@@ -612,7 +617,7 @@ public class RunConfigBuilder {
                         i++;
                     }else{
                         //how does the expression end with an = or +?
-                        addError("host expresion for "+roleName+" should not end with "+token);
+                        addError("host expression for "+roleName+" should not end with "+token);
                     }
                 } else if (token.equals(HOST_EXPRESSION_EXCLUDE)){
                     if( i + 1 < split.size() ) {

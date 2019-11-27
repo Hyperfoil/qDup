@@ -6,15 +6,20 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.Role;
+import io.hyperfoil.tools.yaup.Sets;
+import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.*;
 import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 import io.hyperfoil.tools.yaup.yaml.Mapping;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -107,10 +112,27 @@ public class YamlFileConstruct extends DeferableConstruct {
                             valueMapping.getValue().forEach(valueTuple->{
                                 String hostAlias = ((ScalarNode)valueTuple.getKeyNode()).getValue();
                                 Node hostNode = valueTuple.getValueNode();
-                                hostNode.setTag(new Tag("host"));
-                                Object hostObj = defer(hostNode);
-                                if(hostObj instanceof Host){
-                                    yamlFile.addHost(hostAlias,(Host)hostObj);
+
+                                if(hostNode instanceof ScalarNode){
+                                    yamlFile.addHost(hostAlias,((ScalarNode)hostNode).getValue());
+                                }else if (hostNode instanceof MappingNode){
+                                    MappingNode hostMapping = (MappingNode)hostNode;
+                                    Json json = OverloadConstructor.json(hostMapping);
+                                    Set<Object> extra = Sets.unique(json.keys(),Sets.of("hostname","username","password","port"));
+                                    if(!json.keySet().containsAll(Arrays.asList("hostname","username"))){
+                                        throw new YAMLException("host mapping requires username and hostname "+hostNode.getStartMark());
+                                    }
+                                    if(!extra.isEmpty()){
+                                        throw new YAMLException("unknown host key(s): "+extra+hostNode.getStartMark());
+                                    }
+                                    yamlFile.addHost(hostAlias, new Host(
+                                       json.getString("username"),
+                                       json.getString("hostname"),
+                                       json.getString("password",null),
+                                       (int)json.getLong("port",Host.DEFAULT_PORT)
+                                    ).toString());
+                                }else{
+                                    throw new YAMLException("cannot create host from "+hostNode.getStartMark());
                                 }
                             });
                         }else if( !(valueNode instanceof ScalarNode) || !((ScalarNode)valueNode).getValue().isEmpty() ){

@@ -10,7 +10,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-class CmdStateRefMap implements Map<Object, Object> {
+public class CmdStateRefMap implements Map<Object, Object> {
 
    private Cmd cmd;
    private State state;

@@ -75,6 +75,11 @@ public class SpyContext implements Context {
     }
 
     @Override
+    public Cmd getCurrentCmd() {
+        return null;
+    }
+
+    @Override
     public Script getScript(String name, Cmd command) {
         return null;
     }

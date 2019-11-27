@@ -16,7 +16,7 @@ public class YamlFile {
     private String path;
     private String name;
     private Map<String, Script> scripts;
-    private Map<String, Host> hosts;
+    private Map<String, String> hosts;
     private State state;
     private Map<String, Role> roles;
 
@@ -28,7 +28,7 @@ public class YamlFile {
         roles = new LinkedHashMap<>();
     }
 
-    public void addHost(String name,Host host){
+    public void addHost(String name,String host){
         hosts.put(name,host);
     }
     public void addScript(String name,Script script){
@@ -53,7 +53,7 @@ public class YamlFile {
 
     public String getName(){return name;}
     public String getPath(){return path;}
-    public Map<String,Host> getHosts(){
+    public Map<String,String> getHosts(){
         return Collections.unmodifiableMap(hosts);
     }
     public Map<String,Script> getScripts(){

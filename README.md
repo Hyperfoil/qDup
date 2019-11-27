@@ -13,51 +13,52 @@ for more details
 
 Let's look at a sample yaml.
 ```YAML
-name: example                                  # the name of the test we plan to run
-scripts:                                       # scripts are the series of commands to run a test
-  sync-time:                                   # the unique script name
-    - sh: ntpdate -u time.google.com           # runs ntpdate in the remote shell
+name: example                                # the name of the test we plan to run
+scripts:                                     # scripts are the series of commands to run a test
+  sync-time:                                 # the unique script name
+  - sh: ntpdate -u time.google.com           # runs ntpdate in the remote shell
 
-  widflyScript:                                # the name of a new script
-    - sh: cd ${{WF_HOME}}                      # cd to the WF_HOME state variable
-    - sh: rm ./standalone/log/*                # remove the old logs
-    - queue-download: ./standalone/log         # save the files after the script stops
-    - sh: ./bin/standalone.sh &                # starts wildfly as a background process
-    - sleep: 1s                                # wait a second for the new log files
-    - sh: cd ./standalone/log                  # change to the log directory
-    - sh: {                                    # inline maps help for commands with multiple arguments
-         silent : true                         # omit output from the run log
-         command: tail -f server.log           # tail server.log
-      }
-         watch:                                # watch streams each line of output to the sub commands
-          - regex: ".*?tail: no files.*"       # a tail error message that server.log was missing
-             - abort: WF error                 # abort the run with a message WF error
-          - regex: ".*?FATAL.*"                # if the line contains FATAL
-             - ctrlC:                          # send ctrl+c to the shell (ends tail -f)
-             - abort: WF error                 # abort the run with a message WF error
-          - regex: ".*? started in (?<startTime>\\d+)ms.*"
-             - log: startTime=${{startTime}}   # named regex groups are added as state variables
-             - ctrlC:
-             - signal: WF_STARTED              # notify other scripts that wildfly started
-    - wait-for: DONE                           # pause this script until DONE is signalled
-         timer: 30m                            # wait 30m then run sub-commands if still waiting for DONE
-          - abort: run took longer than 30 minutes
-
+  widflyScript:                              # the name of a new script
+  - sh: cd ${{WF_HOME}}                      # cd to the WF_HOME state variable
+  - sh: rm ./standalone/log/*                # remove the old logs
+  - queue-download: ./standalone/log         # save the files after the script stops
+  - sh: ./bin/standalone.sh &                # starts wildfly as a background process
+  - sleep: 1s                                # wait a second for the new log files
+  - sh: cd ./standalone/log                  # change to the log directory
+  - sh:                                      # inline maps help for commands with multiple arguments
+      silent : true                          # omit output from the run log
+      command: tail -f server.log            # tail server.log       
+    watch:                                   # watch streams each line of output to the sub commands
+    - regex: ".*?tail: no files.*"           # a tail error message that server.log was missing
+      then:
+      - abort: WF error                      # abort the run with a message WF error
+    - regex: ".*?FATAL.*"                    # if the line contains FATAL
+      then:
+      - ctrlC                                # send ctrl+c to the shell (ends tail -f)
+      - abort: WF error                      # abort the run with a message WF error
+    - regex: ".*? started in (?<startTime>\\d+)ms.*"
+      then:
+      - log: startTime=${{startTime}}        # named regex groups are added as state variables
+      - ctrlC:
+      - signal: WF_STARTED                   # notify other scripts that wildfly started
+  - wait-for: DONE                           # pause this script until DONE is signalled
+    timer: 
+      30m:                                   # wait 30m then run sub-commands if still waiting for DONE
+      - abort: run took longer than 30 minutes
 hosts:                            # qDup needs a list of all the hosts involved in the test
   local : me@localhost:22         # use local as an alias for me on my laptop
   server :                        # use server as an alias for labserver4
     username : root               # the username
     hostname : labserver4         # the dns hostname
     port: 2222                    # the ssh port on the server
-
 roles:                            # roles are how scripts are applied to hosts
   wildfly:                        # unique name for the role
     hosts:                        # a list of hosts in this role
-      server
+    - server
     setup-scripts:                # scripts run sequentially before the run stage
     run-scripts:                  # scripts run in parallel during the run stage
       - wildflyScript             # wildflyScript will run on each host
-      - wildflyScript             # run a second copy of widflyScript
+      - wildflyScript:            # run a second copy of widflyScript
           with:                   # with allows an override for state variables
            WF_HOME : /dev/wf-x    # WF_HOME will be different for this instance of wildflyScript
     cleanup-scripts:              # scripts run sequentially after the run stage
@@ -67,8 +68,7 @@ roles:                            # roles are how scripts are applied to hosts
       ${{hostMonitoring}}         # a script name defined in a state variable
                                   # leaving hostMonitoring undefined means a script is not run
 states:
-  run:                            # variables visible to the entire run
-    WF_HOME: /runtime/wf-11       # sets WF_HOME state variable
+  WF_HOME: /runtime/wf-11         # sets WF_HOME state variable visible to all scripts
   server:                         # variables only visible to scripts running on server
     UNUSED : value
 ```
@@ -207,18 +207,19 @@ This is an overloaded command that can perform an xpath
 
 ## Monitoring
 ### Watching
-Some commands (e.g. sh commands) can provide updates during execution.
+Some commands (e.g. `sh` commands) can provide updates during execution.
 A child command with the `watch` prefix will receive each new line of
 output from the parent command as they are available (instead of after
 the parent completes). This is mostly used to monitor output with `regex`
-and to subsequently call `signal STATE` or `ctrlC` the command when a
+and to subsequently call `signal: STATE` or `ctrlC` the command when a
 condition is met.
 ```YAML
- - sh: tail -f /tmp/server.log
-   - watch:
-     - regex: .*?FATAL.*
-       - ctrlC:
-       - abort: FATAL error
+- sh: tail -f /tmp/server.log
+  watch:
+  - regex: .*?FATAL.*
+    then:
+    - ctrlC:
+    - abort: FATAL error
 ```
 
 Note: `sh`, `waitFor`, and `repeat-until` cannot be used in `watch` or `timer`
@@ -229,7 +230,8 @@ Another option for long running commands is to set a timer that will
 execute if the command has been active for longer than the timeout.
 ```YAML
  - wait-for: SERVER_STARTED
-   - timer: 120_000 #ms
+   timer: 
+     120_000: #ms
      - abort: server took too long to start, aborting
 ```
 Note: `sh`, `waitFor`, and `repeat-until` cannot be used in a timer
@@ -240,18 +242,20 @@ State is the main way to introduce variability into a run. Commands can
 reference state variables by name with `${{name}}` and `regex` can define
 new entries with standard java regex capture groups `(?<name>.*)`
 ```YAML
- - sh: tail -f /tmp/server.log
-   - watch:
-     - regex : ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
-       - log : eap ${{eapVersion}} started in ${{eapStartTime}}
-       - ctrlC:
+- sh: tail -f /tmp/server.log
+  watch:
+- regex : ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
+  then:
+  - log : eap ${{eapVersion}} started in ${{eapStartTime}}
+  - ctrlC
 ```
 ### State variables
 State variables can be combined within a state reference using either arithmetic operators or string concatenation
 A `:` can also be used to define a default value should any of the state variable names not be defined
 ```YAML
  - sh: tail -f /tmp/server.log
-   - timer: ${{ RAMP_UP + MEASURE + RAMP_DOWN : 100}}
+   timer: 
+     ${{ ${{RAMP_UP}} + ${{MEASURE}} + ${{RAMP_DOWN}} : 100}}:
      - echo : ${{ (RAMP_UP+MEASURE+RAMP_DOWN)+'s'}} have has lapsed
 ```
 State references also have built in functions for time conversion
@@ -259,23 +263,6 @@ State references also have built in functions for time conversion
 * `milliseconds(val)` - converts `val` like `60s` into milliseconds
 
 ## YAML
-qDup configuration is not yaml but it looks very similar to yaml so we often call it yaml.
-The problem (as mentioned in the Introduction) is that yaml does not support key value pairs
-with nested lists or maps and we use those to denote sub-commands.
-
-We use a custom parser based on yaml and recommend files stick to using a
-`-` before each command and using inline list or map notation when specifying
-multiple arguments to a command.
-
-```YAML
-  - command : value
-     - subCommand: subCommandValue
-  - command : {
-       arg1 : value,
-       arg2 : secondValue }
-     - subCommand: subCommandValue
-```
-
 Configuration files can include the following sections:
 
 __name__ the name of the benchmark
@@ -286,7 +273,7 @@ __scripts__ a map of scriptName : command tree
 ```YAML
 scripts:
   test-script :
-    - log: "${{greeting}}, world"
+  - log: "${{greeting}}, world"
 ```
 __hosts__ a map of name : host
 ```YAML
@@ -298,34 +285,30 @@ hosts:
    - port: 22 # port is optional and will default to 22
 ```
 __roles__ a map of roleName : a hosts list and at least one of:
-setup-scripts, run-scripts, cleanup-scripts. If the hosts list is missing
-then the role is applied to all hosts in the run. It is a best practice
-to use a role name that makes it clear it will apply ALL hosts
+`setup-scripts`, `run-scripts`, `cleanup-scripts`. If the hosts list is missing
+then the role is ignored. The reserved role name `ALL` applies to all hosts used in the run.
 ```YAML
 roles:
   test:
     hosts: [local]
     run-scripts: [test-script]
   notTest:
-    hosts: = ALL - tests                  #host expressions start with = and
+    hosts: = ALL - tests                  #host expressions start with = and include +, -, and other role names
     run-scripts: [notTest-script]
   ALL:                                    #ALL automatically includes all hosts from other roles
     setup-scripts: [some-script]
 ```
 
-__states__ a nested map of name : value pairs used to inject variables
+__states__ a map of name : value used for variable substitution in the run
+
+a nested map of name : value pairs used to inject variables
 into the run configuration. Children are either a name : value pair or the name of a host.
 Hosts can have name : value pairs or the name of a script as children.
 Scripts are the lowest level in the state tree and therefore they can only have name : value pairs as children
 ```YAML
 states:
-  run:
-    foo : bar
-    biz : buzz
-    hostName:
-      key : value
-      scriptName:
-        key : otherValue
+  foo : bar
+  biz : buzz
 ```
 
 ## Building

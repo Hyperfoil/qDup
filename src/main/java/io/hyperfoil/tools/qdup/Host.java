@@ -6,12 +6,17 @@ package io.hyperfoil.tools.qdup;
  */
 public class Host {
 
-    public static final String HOST_PATTERN = "\\w+@\\w[\\w\\-]*(?:\\.\\w[\\w\\-])*(?::\\d+)*.*";
+    public static final String HOST_PATTERN = "\\w+(?::.*?)@\\w[\\w\\-]*(?:\\.\\w[\\w\\-])*(?::\\d+)*.*";
 
     public static Host parse(String fullyQualified) {
         Host rtrn = null;
         if (fullyQualified.contains("@")) {
-            String username = fullyQualified.substring(0, fullyQualified.indexOf("@"));
+            String password = null;
+            String username = fullyQualified.substring(0, fullyQualified.lastIndexOf("@"));
+            if(username.contains(":")){
+                password = username.substring(0,username.indexOf(":"));
+                username = username.substring(username.indexOf(":")+1);
+            }
             String hostname = fullyQualified.substring(fullyQualified.indexOf("@") + 1);
             int port = DEFAULT_PORT;
             if (hostname.contains(":")) {

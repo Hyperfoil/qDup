@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.CmdStateRefMap;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.*;
@@ -250,6 +251,9 @@ public class State {
         StringBuilder buffer = new StringBuilder();
         tree(1,buffer);
         return buffer.toString();
+    }
+    public Map<Object,Object> toMap(){
+        return new CmdStateRefMap(null,this,null);
     }
     public Json toJson(){
         Json rtrn = new Json();
