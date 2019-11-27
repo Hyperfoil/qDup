@@ -54,7 +54,7 @@ public class Host {
     public int getPort(){return port;}
 
     @Override
-    public String toString(){return userName+"@"+hostName+":"+port;}
+    public String toString(){return userName+(hasPassword()?":"+password:"")+"@"+hostName+":"+port;}
 
     @Override
     public int hashCode(){return toString().hashCode();}
