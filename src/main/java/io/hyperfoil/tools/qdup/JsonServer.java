@@ -48,7 +48,7 @@ public class JsonServer implements RunObserver, ContextObserver {
 
     @Override
     public void preStart(Context context, Cmd command){
-        if(server!=null){
+        if(server!=null && command!=null){
             Json event = new Json();
             event.set("type","cmd.start");
             event.set("cmdUid",command.getUid());
@@ -59,7 +59,7 @@ public class JsonServer implements RunObserver, ContextObserver {
     }
     @Override
     public void preStop(Context context,Cmd command,String output){
-        if(server!=null){
+        if(server!=null && command!=null){
             Json event = new Json();
             event.set("type","cmd.stop");
             event.set("cmdUid",command.getUid());

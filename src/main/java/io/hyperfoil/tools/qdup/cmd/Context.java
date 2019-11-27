@@ -24,6 +24,8 @@ public interface Context {
 
     String getRunOutputPath();
 
+    Cmd getCurrentCmd();
+
     Script getScript(String name,Cmd command);
     SshSession getSession();
     Host getHost();

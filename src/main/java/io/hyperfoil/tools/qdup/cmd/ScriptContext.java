@@ -113,7 +113,7 @@ public class ScriptContext implements Context, Runnable{
     protected void setUpdateTime(long updateTime){this.updateTime = updateTime;}
 
     protected Cmd getRootCmd(){return rootCmd;}
-    protected Cmd getCurrentCmd(){return currentCmd;}
+    public Cmd getCurrentCmd(){return currentCmd;}
 
 
     public Run getRun(){return run;}

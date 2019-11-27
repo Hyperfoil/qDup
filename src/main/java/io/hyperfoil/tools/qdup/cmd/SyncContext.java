@@ -43,7 +43,9 @@ public class SyncContext implements Context, Runnable{
         this.scriptActiveCmd = scriptContext.getCurrentCmd();
     }
 
-    protected Cmd getCurrentCmd(){return currentCmd;}
+    @Override
+    public Cmd getCurrentCmd(){return currentCmd;}
+
     protected boolean forceCurrentCmd(Cmd next){
         boolean changed = currentCmdUpdater.compareAndSet(this,getCurrentCmd(),next);
         return changed;
@@ -65,14 +67,16 @@ public class SyncContext implements Context, Runnable{
             if(next!=null) {
                 while(next!=null && (next instanceof CtrlSignal) && scriptContext!=null && scriptActiveCmd != null && !scriptActiveCmd.equals(scriptContext.getCurrentCmd())){
                     logger.info("not running {} because completed active command {}",next,scriptActiveCmd);
-                    next = next.getNext();
+                    next = next.getSkip();
                 }
-                setCurrentCmd(cmd, next);
-                logger.trace("synchronously running {}",next);
-                if(scriptContext!=null && scriptContext.getObserver() != null){
-                    scriptContext.getObserver().preStart(this,next);
+                if(next!=null) {
+                    setCurrentCmd(cmd, next);
+                    logger.trace("synchronously running {}", next);
+                    if (scriptContext != null && scriptContext.getObserver() != null) {
+                        scriptContext.getObserver().preStart(this, next);
+                    }
+                    next.doRun(output, this);
                 }
-                next.doRun(output, this);
             }
         }
     }
@@ -96,15 +100,16 @@ public class SyncContext implements Context, Runnable{
             if(next!=null) {
                 while(next!=null && (next instanceof CtrlSignal) && scriptContext!=null && scriptActiveCmd != null && !scriptActiveCmd.equals(scriptContext.getCurrentCmd())){
                     logger.info("not running {} because completed active command {}",next,scriptActiveCmd);
-                    next = next.getNext();
+                    next = next.getSkip();
                 }
-                setCurrentCmd(cmd, next);
-                logger.trace("synchronously running {}",next);
-                if(scriptContext!=null && scriptContext.getObserver() != null){
-                    scriptContext.getObserver().preStart(this,next);
+                if(next!=null) {
+                    setCurrentCmd(cmd, next);
+                    logger.trace("synchronously running {}", next);
+                    if (scriptContext != null && scriptContext.getObserver() != null) {
+                        scriptContext.getObserver().preStart(this, next);
+                    }
+                    next.doRun(output, this);
                 }
-                next.doRun(output, this);
-
             }
         }
     }
