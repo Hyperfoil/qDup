@@ -135,13 +135,19 @@ public class Coordinator {
 
     }
     public void setSignal(String name, int count){
-        if(latches.containsKey(name) && latches.get(name).get()>0){
+        setSignal(name,count,false);
+    }
+    public void setSignal(String name, int count,boolean force){
+        if(latches.containsKey(name) && latches.get(name).get()>0 && !force){
             logger.warn("duplicate setSignal for {}, using previous VALUE {} not new VALUE {}",name,latches.get(name).get(),count);
             return;
         }
         AtomicInteger latch = new AtomicInteger(count);
         latches.put(name,latch);
         checkWatchers(name);
+    }
+    public boolean hasSignal(String name){
+        return latches.containsKey(name);
     }
     public int getSignalCount(String name){
         if(!latches.containsKey(name)){

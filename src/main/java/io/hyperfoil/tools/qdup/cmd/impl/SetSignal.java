@@ -31,14 +31,7 @@ public class SetSignal extends Cmd {
       populatedInitial = Cmd.populateStateVariables(initial,this,context.getState());
       try {
          int intialLatches = Integer.parseInt(populatedInitial);
-
-         if(isReset()){
-
-         }else{
-            context.getCoordinator().setSignal(populatedName,intialLatches);
-         }
-
-
+         context.getCoordinator().setSignal(populatedName,intialLatches,reset);
       }catch(NumberFormatException e){
          logger.error("set-signal: {} could not setSignal {} due to NumberFormatException",populatedName,populatedInitial);
       }
@@ -47,7 +40,7 @@ public class SetSignal extends Cmd {
 
    @Override
    public Cmd copy() {
-      return new SetSignal(name,initial);
+      return new SetSignal(name,initial,reset);
    }
 
    @Override public String toString(){return "set-signal: "+name+" "+initial;}

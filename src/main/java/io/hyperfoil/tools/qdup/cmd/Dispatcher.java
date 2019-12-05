@@ -53,7 +53,9 @@ public class Dispatcher {
 
     //Result called by watchers which will just invoke the next watcher on the current thread
 
+
     private final ConcurrentHashMap<Cmd,ScriptContext> scriptContexts;
+    private final ConcurrentHashMap<String,ScriptContext> contextById;
 
     private final List<ScriptObserver> scriptObservers;
     private final List<DispatchObserver> dispatchObservers;
@@ -130,16 +132,21 @@ public class Dispatcher {
         }
     };
 
+    public Context getContext(String id){
+        ScriptContext rtrn = contextById.containsKey(id) ? contextById.get(id) : null;
+
+        return rtrn;
+    }
     public Json getContexts(){
         Json rtrn = new Json();
         scriptContexts.values().forEach(context->{
             Json entry = new Json();
-            entry.set("uid",context.hashCode());
-            entry.set("host",context.getHost().toString());
-            entry.set("script",context.getRootCmd().toString());
-            entry.set("cmdUid",context.getRootCmd().getUid());
+            entry.set("id", context.getContextId());
+            entry.set("host", context.getHost().toString());
+            entry.set("script", context.getRootCmd().toString());
+            entry.set("cmdUid", context.getRootCmd().getUid());
 
-            rtrn.set(context.hashCode(),entry);
+            rtrn.add(entry);
         });
         return rtrn;
     }
@@ -152,6 +159,7 @@ public class Dispatcher {
             entry.set("name",Cmd.populateStateVariables(currentCmd.toString(),currentCmd,context.getState()));
             entry.set("host",context.getSession().getHost().toString());
             entry.set("uid",currentCmd.getUid());
+            entry.set("contextId",context.getContextId());
             entry.set("script",rootCmd.getUid()+":"+rootCmd.toString());
             if(currentCmd instanceof Sh){
                 entry.set("input",currentCmd.getPrevious()!=null?currentCmd.getPrevious().getOutput():"");
@@ -198,6 +206,7 @@ public class Dispatcher {
         this.autoClose=autoClose;
 
         this.scriptContexts = new ConcurrentHashMap<>();
+        this.contextById = new ConcurrentHashMap<>();
         this.scriptObservers = new LinkedList<>();
         this.dispatchObservers = new LinkedList<>();
         this.contextObservers = new LinkedList<>();
@@ -262,10 +271,12 @@ public class Dispatcher {
         logger.trace("add script {} to {}",context.getRootCmd(),context.getSession().getHost().getHostName());
 
         context.setObserver(observer);
+
         ScriptContext previous = scriptContexts.put(
                 context.getRootCmd(),
                 context
         );
+        contextById.put(context.getContextId(),context);
         if(previous!=null){
             logger.error("already have getScript.tail={} mapped to {}@{}",context.getRootCmd().getTail().getUid(),context.getRootCmd(),context.getSession().getHost().getHostName());
         }

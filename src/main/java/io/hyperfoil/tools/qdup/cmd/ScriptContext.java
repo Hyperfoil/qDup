@@ -73,6 +73,10 @@ public class ScriptContext implements Context, Runnable{
     long startTime = -1;
     long updateTime = -1;
 
+    public String getContextId(){
+        return (getRootCmd()!=null ? getRootCmd().toString()+":"+getRootCmd().getUid()+"@" : "") + (getSession()!=null ? getSession().getHost().toString() : "");
+    }
+
     public ScriptContext(SshSession session, State state, Run run, Profiler profiler, Cmd rootCmd){
         this(session,state,run,profiler,rootCmd.deepCopy(),null);
     }

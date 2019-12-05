@@ -412,7 +412,7 @@ public class Run implements Runnable, DispatchObserver {
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
 
-        //TODO don't run an ALL-setup but rather put it it the start of each connection?
+        //TODO don't run an ALL-setup but rather put it in the start of each connection?
         config.getRoleNames().stream().forEach(roleName->{
             final Role role = config.getRole(roleName);
             if(!role.getSetup().isEmpty()){
@@ -439,7 +439,7 @@ public class Run implements Runnable, DispatchObserver {
                            session.setDelay(SuffixStream.NO_DELAY);
                            ScriptContext scriptContext = new ScriptContext(
                                    session,
-                                   config.getState(),
+                                   config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
                                    this,
                                    profiles.get(roleName+"-setup@"+host.getShortHostName()),
                                    setup

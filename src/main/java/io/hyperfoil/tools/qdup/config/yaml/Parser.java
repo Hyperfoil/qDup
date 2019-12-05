@@ -287,7 +287,7 @@ public class Parser {
                    LinkedHashMap<Object,Object> opts = new LinkedHashMap<>();
                    map.put("set-signal",opts);
                    opts.put("name",cmd.getName());
-                   opts.put("initial",cmd.getInitial());
+                   opts.put("count",cmd.getInitial());
                    opts.put("reset",cmd.isReset());
                    return map;
                }else {
@@ -302,7 +302,7 @@ public class Parser {
                    return new SetSignal(split.get(0),split.get(1));
                }
            },
-           (json)->new SetSignal(json.getString("name"),json.getString("initial"))
+           (json)->new SetSignal(json.getString("name"),json.getString("count"),json.getBoolean("reset",false))
         );
         rtrn.addCmd(
             SetState.class,

@@ -610,6 +610,7 @@ public class SshSession {
                   shellLock.acquire();
                   if (permits() != 0) {
                      logger.error("ShSession " + getName() + "cmd="+command+" sh.acquire --> permits==" + permits());
+                     assert permits() == 0;
                   }
 
                } catch (InterruptedException e) {
@@ -708,6 +709,7 @@ public class SshSession {
                   shellLock.acquire();
                   if (permits() != 0) {
                      logger.error("ShSession " + getName() + " close.acquire --> permits==" + permits());
+                     assert permits() == 0;
                   }
 
                   //do we really care about release?

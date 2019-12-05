@@ -478,7 +478,7 @@ public class JarMain {
         scheduled.shutdownNow();
 
         if(run.isAborted()){
-            System.exit(-1);
+            System.exit(1);
         }
     }
 }
