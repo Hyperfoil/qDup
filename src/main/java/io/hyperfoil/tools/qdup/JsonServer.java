@@ -168,17 +168,6 @@ public class JsonServer implements RunObserver, ContextObserver {
            }else{
               rc.response().setStatusCode(400).end("missing signal name");
            }
-            JsonObject jsonObject = rc.getBodyAsJson();
-            if(jsonObject!=null){
-                if(jsonObject.containsKey("name") && jsonObject.containsKey("count")){
-                    if(coordinator!=null){
-                        coordinator.setSignal(jsonObject.getString("name"),jsonObject.getInteger("count"));
-                        rc.response().end(""+coordinator.getWaitCount(jsonObject.getString("name")));
-                        return;
-                    }
-                }
-            }
-            rc.response().setStatusCode(400).end("failed to apply "+rc.getBodyAsString());
         });
 
         router.route("/signal").produces("application/json").handler(rc->{
@@ -196,6 +185,24 @@ public class JsonServer implements RunObserver, ContextObserver {
             });
             String response = json.toString(2);
             rc.response().end(response);
+        });
+        router.route("/signal/:name").produces("application/json").handler(rc->{
+           String name = rc.request().getParam("name");
+           if(name != null && !name.trim().isEmpty()){
+              if(coordinator.hasSignal(name)){
+                 Json json = new Json();
+                 json.set("name",name);
+                 json.set("count",coordinator.getSignalCount(name));
+                 if(coordinator.getLatchTimes().containsKey(name)){
+                    json.set("timestamp",coordinator.getLatchTimes().get(name));
+                 }
+                 rc.response().end(json.toString());
+              }else{
+                 rc.response().setStatusCode(400).end(name+ "does not exist");
+              }
+           }else{
+              rc.response().setStatusCode(400).end("missing signal name");
+           }
         });
         router.route("/waiter").produces("application/json").handler(rc->{
             String response = coordinator.getWaitJson().toString(2);

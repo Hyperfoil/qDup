@@ -889,7 +889,6 @@ public abstract class Cmd {
    }
 
    public abstract void run(String input, Context context);
-
    public abstract Cmd copy();
 
    public String getLogOutput(String output, Context context) {

@@ -74,7 +74,19 @@ public class ScriptContext implements Context, Runnable{
     long updateTime = -1;
 
     public String getContextId(){
-        return (getRootCmd()!=null ? getRootCmd().toString()+":"+getRootCmd().getUid()+"@" : "") + (getSession()!=null ? getSession().getHost().toString() : "");
+        //TODO use a StringBuilder to correctly handle missing session or root
+        Cmd root = getRootCmd();
+        String cmdName = "";
+        if(root != null){
+            if( root instanceof ScriptCmd){
+                cmdName = ((ScriptCmd)root).getName();
+            }else if (root instanceof Script){
+                cmdName = ((Script)root).getName();
+            }else{
+                cmdName = root.toString();
+            }
+        }
+        return (cmdName.isEmpty() ? "" : cmdName+":"+getRootCmd().getUid()+"@") + (getSession()!=null ? getSession().getHost().toString() : "");
     }
 
     public ScriptContext(SshSession session, State state, Run run, Profiler profiler, Cmd rootCmd){
