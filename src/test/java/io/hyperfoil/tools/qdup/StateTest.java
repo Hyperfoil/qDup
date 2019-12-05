@@ -10,7 +10,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 
 import static org.junit.Assert.*;
 
-public class StateTest extends SshSessionTest{
+public class StateTest extends SshTestBase{
 
     @Test
     public void array_state(){
