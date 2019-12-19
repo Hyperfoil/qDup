@@ -43,7 +43,7 @@ public class SetState extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context.getState(),false,separator);
+        populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context.getState(),true,separator);
         if(StringUtil.isQuoted(populatedValue) && (StringUtil.removeQuotes(populatedValue)).trim().isEmpty()){
             populatedValue="";
         }
