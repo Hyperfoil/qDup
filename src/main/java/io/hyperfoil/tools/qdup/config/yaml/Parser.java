@@ -9,6 +9,7 @@ import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.StringUtil;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
@@ -262,7 +263,7 @@ public class Parser {
             "regex",
             (cmd)->cmd.getPattern(),
             (str)->new Regex(str),
-            null
+            (json)-> new Regex(json.getString("pattern",""),json.getBoolean("miss",false))
         );
         rtrn.addCmd(
             RepeatUntilSignal.class,
@@ -321,6 +322,7 @@ public class Parser {
             (json)->new SetState(
                json.getString("key"),
                json.getString("value",null),
+               json.getString("separator", StringUtil.PATTERN_DEFAULT_SEPARATOR),
                json.getBoolean("silent",false)
             )
         );
@@ -356,9 +358,7 @@ public class Parser {
                     }
                     Sh sh = new Sh(json.getString("command"),json.getBoolean("silent",false));
                     if(json.has("prompt")){
-                        json.getJson("prompt",new Json()).forEach((k,v)->{
-                            sh.addPrompt(k.toString(),v.toString());
-                        });
+                        json.getJson("prompt",new Json()).forEach((k,v)-> sh.addPrompt(k.toString(),v.toString()));
                     }
                     return sh;
                 }

@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.Json;
 
 public class SetState extends Cmd {
 
@@ -10,18 +11,20 @@ public class SetState extends Cmd {
     String value;
     String populatedKey;
     String populatedValue;
+    String separator;
 
     public SetState(String key) {
         this(key, null);
     }
 
     public SetState(String key, String value) {
-        this(key,value,false);
+        this(key,value,StringUtil.PATTERN_DEFAULT_SEPARATOR,false);
     }
-    public SetState(String key, String value,boolean silent) {
+    public SetState(String key, String value,String separator, boolean silent) {
         super(silent);
         this.key = key;
         this.value = value;
+        this.separator = separator;
     }
 
     public String getKey() {
@@ -40,18 +43,27 @@ public class SetState extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context.getState());
+        populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context.getState(),false,separator);
         if(StringUtil.isQuoted(populatedValue) && (StringUtil.removeQuotes(populatedValue)).trim().isEmpty()){
             populatedValue="";
         }
         populatedKey = Cmd.populateStateVariables(this.key, this, context.getState());
-        context.getState().set(populatedKey, populatedValue);
+        if(Json.isJsonLike(populatedValue) && value.contains(StringUtil.PATTERN_PREFIX) && value.contains(StringUtil.PATTERN_SUFFIX)){
+            Json fromPopulatedValue = Json.fromString(populatedValue);
+            if(!fromPopulatedValue.isEmpty()){
+                context.getState().set(populatedKey,fromPopulatedValue);
+            }else{
+                context.getState().set(populatedKey, populatedValue);
+            }
+        }else{
+            context.getState().set(populatedKey, populatedValue);
+        }
         context.next(input);
     }
 
     @Override
     public Cmd copy() {
-        return new SetState(key, value, silent);
+        return new SetState(key, value, separator, silent);
     }
 
     @Override

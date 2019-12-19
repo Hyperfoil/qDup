@@ -174,7 +174,17 @@
             },
             {
               "properties":{
-                "regex":{"type":"string"},
+                "regex":{"oneOf": [
+                  {"type":"string"},
+                  {
+                    "type": "object",
+                    "properties": {
+                      "pattern": {"type": "string"},
+                      "miss": {"type": "boolean"}
+                    },
+                    "required": ["pattern"]
+                  }
+                ]},
                 "silent":{"type":"boolean"},
                 "with":{"$ref": "#/definitions/with"},
                 "then":{"$ref": "#/definitions/then"}
@@ -204,7 +214,18 @@
             },
             {
               "properties":{
-                "set-state":{"type":"string"},
+                "set-state":{"oneOf": [
+                  {"type":"string"},
+                  {
+                    "type": "object",
+                    "properties": {
+                      "key": {"type": "string"},
+                      "value": {"type": "string"},
+                      "separator": {"type": "string"}
+                    },
+                    "required": ["key"]
+                  }
+                ]},
                 "silent":{"type":"boolean"},
                 "with":{"$ref": "#/definitions/with"},
                 "then":{"$ref": "#/definitions/then"}
@@ -214,7 +235,18 @@
             },
             {
               "properties":{
-                "sh":{"type":"string"},
+                "sh":{
+                  "oneOf":[
+                    {"type":"string"},
+                    {
+                      "type": "object",
+                      "properties": {
+                        "command":{"type": "string"},
+                        "prompt": {"type": "object"},
+                        "silent": {"type": "boolean"}
+                      }}
+                  ]
+                  },
                 "prompt":{"type":"object"},
                 "silent":{"type":"boolean"},
                 "with":{"$ref": "#/definitions/with"},
@@ -275,6 +307,37 @@
               },
               "required":["xml"],
               "additionalProperties":false
+            },
+            {
+              "properties": {
+                "set-signal": {
+                  "oneOf": [
+                    {"type": "string"},
+                    {
+                      "type": "object",
+                      "properties": {
+                        "name": {"type": "string"},
+                        "count": {"type": "integer"},
+                        "reset": {"type": "boolean"}
+                      },
+                      "required": ["name","count"]
+                    }
+                  ]
+                },
+                "silent":{"type":"boolean"},
+                "with":{"$ref": "#/definitions/with"},
+                "then":{"$ref": "#/definitions/then"}
+
+              },
+              "required": ["set-signal"],
+              "additionalProperties": false
+            },
+            {
+              "properties": {
+                "add-prompt": {"type": "string"}
+              },
+              "required": ["add-prompt"],
+              "additionalProperties": false
             }
           ]
         }
@@ -282,6 +345,7 @@
     }
   },
   "properties": {
+    "name": {"type": "string"},
     "scripts": {
       "type": "object",
       "patternProperties": {

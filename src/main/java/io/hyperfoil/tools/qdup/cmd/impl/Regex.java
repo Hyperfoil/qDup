@@ -14,9 +14,14 @@ public class Regex extends Cmd {
     private String pattern;
     private String patternString;
     private boolean matched = false;
+    private boolean miss = false;
     private Map<String,String> matches;
     public Regex(String pattern){
+        this(pattern,false);
+    }
+    public Regex(String pattern, boolean miss){
         this.pattern = pattern;
+        this.miss = miss;
         this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW\\(\\)remo])","\\\\");
         this.matches = new HashMap<>();
     }
@@ -50,24 +55,26 @@ public class Regex extends Cmd {
 
         //full line matching only if the pattern specifies start of line
         matched = newPattern.startsWith("^") ? matcher.matches() : matcher.find();
-        if(matched){
+        if(matched == !miss){//if matched and !miss or miss and !match
             logger.trace("{} match {} ",this,input);
-            fieldMatcher = NAMED_CAPTURE.matcher(newPattern);
-            List<String> names = new LinkedList<>();
-            while(fieldMatcher.find()){
-                names.add(fieldMatcher.group(1));
-            }
-            if(!names.isEmpty()){
-                for(String name : names){
-                    String capturedValue = matcher.group(name);
-                    String realName = renames.get(name);
-                    matches.put(realName,capturedValue);
-                    //context.getState().set(realName,capturedValue);
+            if( !miss ) { //cannot populate name capture groups for miss becasue it didn't match
+                fieldMatcher = NAMED_CAPTURE.matcher(newPattern);
+                List<String> names = new LinkedList<>();
+                while (fieldMatcher.find()) {
+                    names.add(fieldMatcher.group(1));
                 }
-            }
-            if(!matches.isEmpty()){
-                for(String key : matches.keySet()){
-                    context.getState().set(key,matches.get(key));
+                if (!names.isEmpty()) {
+                    for (String name : names) {
+                        String capturedValue = matcher.group(name);
+                        String realName = renames.get(name);
+                        matches.put(realName, capturedValue);
+                        //context.getState().set(realName,capturedValue);
+                    }
+                }
+                if (!matches.isEmpty()) {
+                    for (String key : matches.keySet()) {
+                        context.getState().set(key, matches.get(key));
+                    }
                 }
             }
             context.next(input);
@@ -84,10 +91,10 @@ public class Regex extends Cmd {
 
     @Override
     public Cmd copy() {
-        return new Regex(this.patternString);
+        return new Regex(this.patternString,this.miss);
     }
 
-    @Override public String toString(){return "regex: "+replaceEscapes(patternString);}
+    @Override public String toString(){return "regex: "+(miss? "! ":" ")+replaceEscapes(patternString);}
 
     private String replaceEscapes(String input){
         return input.replace("\n","\\n")

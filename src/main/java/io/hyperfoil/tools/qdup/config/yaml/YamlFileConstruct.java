@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 public class YamlFileConstruct extends DeferableConstruct {
 
-    public static final Mapping<YamlFile> MAPPING = (yaml)->{
+    public static final Mapping<YamlFile>   MAPPING = (yaml)->{
         Map<Object,Object> map = new LinkedHashMap<>();
         if(yaml.getName()!=null && !yaml.getName().isEmpty()) {
             map.put("name", yaml.getName());

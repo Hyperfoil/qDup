@@ -410,6 +410,7 @@ public class JarMain {
             return rtrn;
         };
         ThreadPoolExecutor executor = new ThreadPoolExecutor(commandThreads/2,commandThreads,30, TimeUnit.MINUTES,workQueue,factory);
+
         ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(scheduledThreads, runnable -> new Thread(runnable,"scheduled-"+scheduledCounter.getAndIncrement()));
 
         Dispatcher dispatcher = new Dispatcher(executor,scheduled);

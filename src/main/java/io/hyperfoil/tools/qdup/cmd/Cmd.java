@@ -496,30 +496,37 @@ public abstract class Cmd {
       return input.startsWith(STATE_PREFIX) && input.equalsIgnoreCase(STATE_SUFFIX) && input.indexOf(STATE_PREFIX, 1) == -1;
    }
 
-   public static String populateStateVariables(String command, Cmd cmd, State state) {
-      return populateStateVariables(command, cmd, state, true);
-   }
 
    //handles recursive variable references
    public static Object getStateValue(String name, Cmd cmd, State state, Ref ref) {
-      return getStateValue(name,cmd,state,ref,true);
+      return getStateValue(name,cmd,state,ref,true,StringUtil.PATTERN_DEFAULT_SEPARATOR);
    }
-   public static Object getStateValue(String name, Cmd cmd, State state, Ref ref, boolean replaceUndefined) {
+
+   public static Object getStateValue(String name, Cmd cmd, State state, Ref ref, boolean replaceUndefined, String separator) {
       CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
-      return StringUtil.populatePattern(name,map,replaceUndefined);
+      return StringUtil.populatePattern(name,map,replaceUndefined,separator);
    }
 
+   public static String populateStateVariables(String command, Cmd cmd, State state) {
+      return populateStateVariables(command, cmd, state, true,StringUtil.PATTERN_DEFAULT_SEPARATOR);
+   }
    public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined) {
-      return populateStateVariables(command, cmd, state, replaceUndefined, new Ref(cmd));
+      return populateStateVariables(command, cmd, state, replaceUndefined, new Ref(cmd),StringUtil.PATTERN_DEFAULT_SEPARATOR);
    }
 
-   public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined, Ref ref) {
+   public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined, String separator) {
+      return populateStateVariables(command, cmd, state, replaceUndefined, new Ref(cmd),separator);
+   }
+   public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined, Ref ref){
+      return populateStateVariables(command, cmd, state, replaceUndefined, ref, StringUtil.PATTERN_DEFAULT_SEPARATOR);
+   }
+   public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined, Ref ref, String separator) {
       if(command == null){
       }
       if (command.indexOf(STATE_PREFIX) < 0) {
          return command;
       }
-      Object rtrn = getStateValue(command,cmd,state,ref,replaceUndefined);
+      Object rtrn = getStateValue(command,cmd,state,ref,replaceUndefined,separator);
       return rtrn == null ? "" : rtrn.toString();
    }
 
