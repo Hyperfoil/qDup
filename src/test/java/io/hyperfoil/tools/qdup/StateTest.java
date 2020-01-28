@@ -164,7 +164,7 @@ public class StateTest extends SshTestBase{
     public void set_with_dots() {
         State state = new State("");
         state.set("key.with.dots", "value");
-        assertTrue("state shoudl have key", state.has("key"));
+        assertTrue("state should have key", state.has("key"));
         assertTrue("state.get(key) should be Json", state.get("key") instanceof Json);
         assertTrue("state should have key.with.dots", state.has("key.with.dots"));
     }
