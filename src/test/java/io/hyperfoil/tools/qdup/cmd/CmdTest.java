@@ -238,6 +238,16 @@ public class CmdTest extends SshTestBase {
         assertEquals("should populate from state","foo",populated);
     }
     @Test
+    public void populateStateVariables_defaultIgnored_bindWith(){
+        State state = new State("RUN.");
+        state.set("FOO","bar");
+        Cmd cmd = Cmd.NO_OP();
+        cmd.with("FOO","foo");
+        String populated = Cmd.populateStateVariables("${{FOO:biz}}",cmd,state,false);
+
+        assertEquals("should populate from state","foo",populated);
+    }
+    @Test
     public void getStateValue_twoValues(){
         State state = new State("");
         state.set("FOO","foo");

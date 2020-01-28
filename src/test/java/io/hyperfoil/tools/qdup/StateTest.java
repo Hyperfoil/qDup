@@ -32,6 +32,64 @@ public class StateTest extends SshTestBase{
     }
 
     @Test
+    public void populateStateVariables_object_spread(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+           "  foo:",
+           "  - sh: pwd",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  inline: {one : { name : 'uno'}, two : { name : 'dos' } }",
+           "  multi:",
+           "   - one",
+           "   - two"
+        ),true));
+
+        RunConfig config = builder.buildConfig();
+
+        String populated = Cmd.populateStateVariables("${{{...inline.one}}}",null,config.getState());
+
+        System.out.println("populated="+populated);
+    }
+
+    @Test
+    public void array_object_reference(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+           "  foo:",
+           "  - sh: pwd",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  inline: [{name: 'jvm'},{name: 'native'}]",
+           "  multi:",
+           "   - one",
+           "   - two"
+        ),true));
+
+        RunConfig config = builder.buildConfig();
+
+        String populated = Cmd.populateStateVariables("${{inline[1]}}",null,config.getState());
+
+        System.out.println(populated);
+        assertEquals("{\"name\":\"native\"}",populated);
+
+    }
+
+    @Test
     public void array_index_reference(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
@@ -57,6 +115,7 @@ public class StateTest extends SshTestBase{
         String populated = Cmd.populateStateVariables("${{inline[1]}}",null,config.getState());
 
         System.out.println(populated);
+        assertEquals("two",populated);
     }
 
     @Test

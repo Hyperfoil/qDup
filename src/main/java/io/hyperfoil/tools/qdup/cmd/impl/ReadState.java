@@ -26,6 +26,10 @@ public class ReadState extends Cmd {
         if(populatedKey == null || populatedKey.isEmpty()){
             context.skip(input);
         }else{
+//TODO should we also support read-state: KEY in addition to read-state: ${{KEY}}
+//            if(context.getState().has(populatedKey,true)){
+//                context.next(context.getState().get(populatedKey).toString());
+//            }
             context.next(populatedKey);
         }
     }

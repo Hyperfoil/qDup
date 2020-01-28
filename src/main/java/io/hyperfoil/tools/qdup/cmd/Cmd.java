@@ -504,7 +504,7 @@ public abstract class Cmd {
 
    public static Object getStateValue(String name, Cmd cmd, State state, Ref ref, boolean replaceUndefined, String separator) {
       CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
-      return StringUtil.populatePattern(name,map,replaceUndefined,separator);
+      return StringUtil.populatePattern(name,map,replaceUndefined,StringUtil.PATTERN_PREFIX,separator,StringUtil.PATTERN_SUFFIX);
    }
 
    public static String populateStateVariables(String command, Cmd cmd, State state) {
