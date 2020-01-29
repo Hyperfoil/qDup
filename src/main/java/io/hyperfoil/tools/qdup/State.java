@@ -2,10 +2,12 @@ package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.CmdStateRefMap;
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Created by wreicher
@@ -24,6 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  */
 public class State {
+
+    private static Pattern IntegerPattern = Pattern.compile("-?\\d{1,16}+");
+    private static Pattern DoublePattern = Pattern.compile("-?\\d+(?:\\.\\d+)?");
 
     public static final String RUN_PREFIX = "RUN.";
     public static final String HOST_PREFIX = "HOST.";
@@ -54,6 +59,23 @@ public class State {
         public void set(String key,Object value){
             parent().set(key,value);
         }
+    }
+
+    public static Object convertType(Object input){
+        if(input == null){
+            return "";
+        }
+        if(input instanceof String){
+            String a = (String)input;
+            if (IntegerPattern.matcher(a).matches()) {
+                return Long.parseLong(a);
+            } else if (DoublePattern.matcher(a).matches()) {
+                return Double.parseDouble(a);
+            } else if (Json.isJsonLike(a)) {
+                return Json.fromString(a);
+            }
+        }
+        return input;
     }
 
     State parent(){return parent;}
@@ -133,6 +155,7 @@ public class State {
         return childStates.get(name);
     }
     public void set(String key,Object value){
+        value = convertType(value);
         State target = this;
         do {
             if(target.prefix!=null && key.startsWith(target.prefix)){
