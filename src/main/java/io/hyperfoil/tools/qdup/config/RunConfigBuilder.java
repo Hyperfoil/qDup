@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.HashedSets;
+import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.slf4j.ext.XLogger;
@@ -574,8 +575,14 @@ public class RunConfigBuilder {
 
         for(String alias : hostAlias.keySet()){
            String value = hostAlias.get(alias);
-           String populatedValue = StringUtil.populatePattern(value,map,false);
-           if(populatedValue.contains(StringUtil.PATTERN_PREFIX)){
+            String populatedValue = null;
+            try {
+                populatedValue = StringUtil.populatePattern(value,map,false);
+            } catch (PopulatePatternException e) {
+                logger.warn(e.getMessage());
+                populatedValue="";
+            }
+            if(populatedValue.contains(StringUtil.PATTERN_PREFIX)){
               addError("cannot create host from "+value+" -> "+populatedValue);
            }
            Host host = Host.parse(populatedValue);
