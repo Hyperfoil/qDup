@@ -8,6 +8,7 @@ import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
@@ -369,7 +370,13 @@ public class ScriptContext implements Context, Runnable{
                 if (cmd.hasSignalWatchers()){
                     Supplier<String> inputSupplier = ()->getSession().peekOutput();
                     for(String name : cmd.getSignalNames()){
-                        String populatedName = StringUtil.populatePattern(name,new CmdStateRefMap(cmd,state,null),true);
+                        String populatedName = null;
+                        try {
+                            populatedName = StringUtil.populatePattern(name,new CmdStateRefMap(cmd,state,null),true);
+                        } catch (PopulatePatternException e) {
+                            logger.warn(e.getMessage());
+                            populatedName = "";
+                        }
                         List<Cmd> toCall = cmd.getSignal(name);
                         Cmd root = new ActiveCheckCmd(getCurrentCmd());
                         SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getProfiler(),root,this);

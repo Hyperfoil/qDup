@@ -29,6 +29,7 @@ import io.hyperfoil.tools.qdup.State;
 
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
+import io.hyperfoil.tools.yaup.PopulatePatternException;
 import org.apache.commons.jexl3.JexlContext;
 
 import org.slf4j.ext.XLogger;
@@ -504,7 +505,13 @@ public abstract class Cmd {
 
    public static Object getStateValue(String name, Cmd cmd, State state, Ref ref, boolean replaceUndefined, String separator) {
       CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
-      return StringUtil.populatePattern(name,map,replaceUndefined,StringUtil.PATTERN_PREFIX,separator,StringUtil.PATTERN_SUFFIX);
+      try {
+          return StringUtil.populatePattern(name, map, replaceUndefined, StringUtil.PATTERN_PREFIX, separator, StringUtil.PATTERN_SUFFIX);
+      } catch (PopulatePatternException pe){
+          logger.warn(pe.getMessage());
+          return ""; //TODO: this is the default behaviour, do we want to return a zero length string when populating the pattern has failed?
+      }
+
    }
 
    public static String populateStateVariables(String command, Cmd cmd, State state) {
