@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd;
 
+import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.Abort;
 import io.hyperfoil.tools.qdup.cmd.impl.CodeCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Countdown;
@@ -25,19 +26,13 @@ import io.hyperfoil.tools.qdup.cmd.impl.Sleep;
 import io.hyperfoil.tools.qdup.cmd.impl.Upload;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import io.hyperfoil.tools.qdup.cmd.impl.XmlCmd;
-import io.hyperfoil.tools.qdup.State;
-
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
-import org.apache.commons.jexl3.JexlContext;
-
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
-
-
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import org.apache.commons.jexl3.JexlContext;
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 
 import javax.script.Bindings;
 import javax.script.ScriptContext;
@@ -48,7 +43,11 @@ import javax.script.SimpleScriptContext;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -101,7 +100,7 @@ public abstract class Cmd {
       }
    }
 
-   private static class NashonStateContext implements javax.script.ScriptContext {
+   private static class NashornStateContext implements javax.script.ScriptContext {
 
       private final State state;
       private final ScriptContext parent;
@@ -117,11 +116,11 @@ public abstract class Cmd {
          }
       }
 
-      public NashonStateContext(State state) {
+      public NashornStateContext(State state) {
          this(state, new SimpleScriptContext());
       }
 
-      public NashonStateContext(State state, javax.script.ScriptContext parent) {
+      public NashornStateContext(State state, javax.script.ScriptContext parent) {
          this.state = state;
          this.parent = parent;
       }
@@ -307,7 +306,7 @@ public abstract class Cmd {
 
       @Override
       public Cmd copy() {
-         return new NO_OP().with(this.with);
+         return new NO_OP().with(this.withDef);
       }
 
       @Override
@@ -477,7 +476,7 @@ public abstract class Cmd {
       boolean hasIt = false;
       Cmd target = this;
       while (!hasIt && target != null) {
-         hasIt = target.with.has(name) || Json.find(target.with, name.startsWith("$") ? name : "$." + name) != null;
+         hasIt = target.withActive.has(name) || Json.find(target.withActive, name.startsWith("$") ? name : "$." + name) != null;
          target = target.parent;
       }
       return hasIt;
@@ -487,7 +486,7 @@ public abstract class Cmd {
       Object value = null;
       Cmd target = this;
       while (value == null && target != null) {
-         value = target.with.has(name) ? target.with.get(name) : Json.find(target.with, name.startsWith("$") ? name : "$." + name);
+         value = target.withActive.has(name) ? target.withActive.get(name) : Json.find(target.withActive, name.startsWith("$") ? name : "$." + name);
          target = target.parent;
       }
       return value;
@@ -540,7 +539,8 @@ public abstract class Cmd {
 
    private static final AtomicInteger uidGenerator = new AtomicInteger(0);
 
-   protected Json with;
+   protected Json withDef;
+   protected Json withActive;
    private LinkedList<Cmd> thens;
    private LinkedList<Cmd> watchers;
    private HashedLists<Long, Cmd> timers;
@@ -565,7 +565,8 @@ public abstract class Cmd {
 
    protected Cmd(boolean silent) {
       this.silent = silent;
-      this.with = new Json();
+      this.withDef = new Json();
+      this.withActive = new Json();
       this.thens = new LinkedList<>();
       this.watchers = new LinkedList<>();
       this.timers = new HashedLists<>();
@@ -681,27 +682,30 @@ public abstract class Cmd {
 
    public Cmd with(Map<? extends Object, ? extends Object> map) {
       map.forEach((k, v) -> {
-         with.set(k, v);
+         withDef.set(k, v);
+         withActive.set(k, v);
       });
       return this;
    }
 
    public Cmd with(Json withs) {
-      this.with.merge(withs);
+      this.withDef.merge(withs);
+      this.withActive.merge(withs);
       return this;
    }
 
    public Cmd with(String key, Object value) {
-      with.set(key, value);
+      withDef.set(key, value);
+      withActive.set(key, value);
       return this;
    }
 
    public Json getWith() {
-      return with;
+      return withDef;
    }
    public Json getWith(boolean recursive){
       if(!recursive){
-         return with.clone();
+         return withDef.clone();
       }else{
          Json rtrn = new Json();
          Cmd target = this;
@@ -743,7 +747,7 @@ public abstract class Cmd {
       } else {
          rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this.toString()));
       }
-      with.forEach((k, v) -> {
+      withDef.forEach((k, v) -> {
          String value = String.format("%" + (correctedIndent + 4) + "swith: %s=%s%n", "", k, v);
          rtrn.append(value);
       });
@@ -887,7 +891,16 @@ public abstract class Cmd {
 
 
    protected final void doRun(String input, Context context) {
-      if (!with.isEmpty()) {
+
+      if (!withDef.isEmpty()) {
+         //replace with values if they have ${{
+         withDef.forEach((k,v)->{
+            if(v instanceof String && ((String) v).indexOf(StringUtil.PATTERN_PREFIX) > -1){
+               String populatedV =populateStateVariables((String)v,this,context.getState(),false,new Ref(this));
+               Object convertedV = State.convertType(populatedV);
+               withActive.set(k,convertedV);
+            }
+         });
          //TODO the is currently being handles by populateStateVariables
          // a good idea might be to create a new context for this and this.then()
 //            for(String key : with.keySet()){

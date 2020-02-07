@@ -182,10 +182,11 @@ public class SshSession {
       this.passphrase = passphrase;
       this.timeout = timeout;
       this.setupCommand = setupCommand;
-      //this.trace = trace;
-      this.trace = true;
+      this.trace = trace;
+//      this.trace = true;
 
       shellLock = new Semaphore(1);
+
       sshClient = SshClient.setUpDefaultClient();
 
       PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.IDLE_TIMEOUT, Long.MAX_VALUE);
@@ -284,7 +285,9 @@ public class SshSession {
                (session, resourceKey, retryIndex) -> passphrase
             )));
          }
-
+         if(host.hasPassword()){
+            clientSession.addPasswordIdentity(host.getPassword());
+         }
 //            clientSession.addPublicKeyIdentity(SecurityUtils.loadKeyPairIdentities(
 //                    identity,
 //                    Files.newInputStream((new File(identity)).toPath()),
