@@ -695,6 +695,9 @@ public abstract class Cmd {
    }
 
    public Cmd with(String key, Object value) {
+      if(value instanceof String){
+         value = State.convertType(value);
+      }
       withDef.set(key, value);
       withActive.set(key, value);
       return this;

@@ -292,6 +292,41 @@ public class CmdTest extends SshTestBase {
 
         assertEquals("state.name should populate","cat",config.getState().get("name"));
     }
+    @Test
+    public void with_json(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+           "  foo:",
+           //"  - set-state: RUN.bar ${{host}}",
+           "  - set-state: RUN.name ${{host.name}}",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts:",
+           "    - foo:",
+           "        with:",
+           "          host: {name: \"cat\"}",
+           "states:",
+           "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+           "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+           "  charlie: {name: \"cat\"}"
+        ),false));
+
+        RunConfig config = builder.buildConfig();
+        Dispatcher dispatcher = new Dispatcher();
+
+        Cmd foo = config.getScript("foo");
+
+        Run doit = new Run("/tmp", config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        assertEquals("state.name should populate","cat",config.getState().get("name"));
+    }
 
     @Test
     public void hasWith_self(){
