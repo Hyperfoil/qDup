@@ -543,6 +543,9 @@ public abstract class Cmd {
    private String patternSeparator = StringUtil.PATTERN_DEFAULT_SEPARATOR;
    private String patternJavascriptPrefix = StringUtil.PATTERN_JAVASCRIPT_PREFIX;
 
+   public boolean hasPatternPrefix(){
+      return !StringUtil.PATTERN_PREFIX.equals(getPatternPrefix());
+   }
    public String getPatternPrefix() {
       return patternPrefix;
    }
@@ -551,6 +554,9 @@ public abstract class Cmd {
       this.patternPrefix = patternPrefix;
    }
 
+   public boolean hasPatternSuffix(){
+      return !StringUtil.PATTERN_SUFFIX.equals(getPatternSuffix());
+   }
    public String getPatternSuffix() {
       return patternSuffix;
    }
@@ -559,6 +565,9 @@ public abstract class Cmd {
       this.patternSuffix = patternSuffix;
    }
 
+   public boolean hasPatternSeparator(){
+      return !StringUtil.PATTERN_DEFAULT_SEPARATOR.equals(getPatternSeparator());
+   }
    public String getPatternSeparator() {
       return patternSeparator;
    }
@@ -567,6 +576,9 @@ public abstract class Cmd {
       this.patternSeparator = patternSeparator;
    }
 
+   public boolean hasPatternJavascriptPrefix(){
+      return !StringUtil.PATTERN_JAVASCRIPT_PREFIX.equals(getPatternJavascriptPrefix());
+   }
    public String getPatternJavascriptPrefix() {
       return patternJavascriptPrefix;
    }
@@ -960,6 +972,18 @@ public abstract class Cmd {
 
    public Cmd deepCopy() {
       Cmd clone = this.copy().with(this.getWith());
+      if(this.hasPatternPrefix()){
+         clone.setPatternPrefix(this.getPatternPrefix());
+      }
+      if(this.hasPatternSuffix()){
+         clone.setPatternSuffix(this.getPatternSuffix());
+      }
+      if(this.hasPatternSeparator()){
+         clone.setPatternSeparator(this.getPatternSeparator());
+      }
+      if(this.hasPatternJavascriptPrefix()){
+         clone.setPatternJavascriptPrefix(this.getPatternJavascriptPrefix());
+      }
       for (Cmd watcher : this.getWatchers()) {
          clone.watch(watcher.deepCopy());
       }

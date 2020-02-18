@@ -103,7 +103,7 @@ public class CmdConstruct extends DeferableConstruct {
                     throw new YAMLException(CmdMapping.THEN+" requires a list of commands "+valueNode.getStartMark());
                 }
                 break;
-            case CmdMapping.ONSIGNAL:
+            case CmdMapping.ON_SIGNAL:
                 if(valueNode instanceof MappingNode){
                     MappingNode signalMapNode = (MappingNode)valueNode;
                     signalMapNode.getValue().forEach(signalTuple->{
@@ -121,14 +121,14 @@ public class CmdConstruct extends DeferableConstruct {
                                     }
                                 });
                             }else{
-                                throw new YAMLException(CmdMapping.ONSIGNAL+" "+signalName+" value must be a sequence"+signalTuple.getValueNode().getStartMark());
+                                throw new YAMLException(CmdMapping.ON_SIGNAL +" "+signalName+" value must be a sequence"+signalTuple.getValueNode().getStartMark());
                             }
                         }else{
-                            throw new YAMLException(CmdMapping.ONSIGNAL+" keys must be a scalar"+signalTuple.getKeyNode().getStartMark());
+                            throw new YAMLException(CmdMapping.ON_SIGNAL +" keys must be a scalar"+signalTuple.getKeyNode().getStartMark());
                         }
                     });
                 }else{
-                    throw new YAMLException(CmdMapping.ONSIGNAL+" requires a map "+valueNode.getStartMark());
+                    throw new YAMLException(CmdMapping.ON_SIGNAL +" requires a map "+valueNode.getStartMark());
                 }
                 break;
             case CmdMapping.TIMER:
@@ -155,6 +155,38 @@ public class CmdConstruct extends DeferableConstruct {
                     });
                 }else{
                     throw new YAMLException(CmdMapping.TIMER+" requires a map "+valueNode.getStartMark());
+                }
+                break;
+            case CmdMapping.PREFIX:
+                if(valueNode instanceof ScalarNode) {
+                    String value = ((ScalarNode) valueNode).getValue();
+                    cmd.setPatternPrefix(value);
+                }else{
+                    throw new YAMLException(CmdMapping.PREFIX+" requires a scalar "+valueNode.getStartMark());
+                }
+                break;
+            case CmdMapping.SUFFIX:
+                if(valueNode instanceof ScalarNode) {
+                    String value = ((ScalarNode) valueNode).getValue();
+                    cmd.setPatternSuffix(value);
+                }else{
+                    throw new YAMLException(CmdMapping.SUFFIX+" requires a scalar "+valueNode.getStartMark());
+                }
+                break;
+            case CmdMapping.SEPARATOR:
+                if(valueNode instanceof ScalarNode) {
+                    String value = ((ScalarNode) valueNode).getValue();
+                    cmd.setPatternSeparator(value);
+                }else{
+                    throw new YAMLException(CmdMapping.SEPARATOR+" requires a scalar "+valueNode.getStartMark());
+                }
+                break;
+            case CmdMapping.JS_PREFIX:
+                if(valueNode instanceof ScalarNode) {
+                    String value = ((ScalarNode) valueNode).getValue();
+                    cmd.setPatternJavascriptPrefix(value);
+                }else{
+                    throw new YAMLException(CmdMapping.JS_PREFIX+" requires a scalar "+valueNode.getStartMark());
                 }
                 break;
             default:

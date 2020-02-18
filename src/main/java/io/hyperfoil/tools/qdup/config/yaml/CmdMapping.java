@@ -15,14 +15,18 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
     public static final String WITH = "with";
     public static final String THEN = "then";
     public static final String TIMER = "timer";
-    public static final String ONSIGNAL = "on-signal";
+    public static final String ON_SIGNAL = "on-signal";
     public static final String WATCH = "watch";
     public static final String SILENT = "silent";
+    public static final String PREFIX = "prefix";
+    public static final String SUFFIX = "suffix";
+    public static final String SEPARATOR = "separator";
+    public static final String JS_PREFIX = "js-prefix";
 
 
 
 
-    public static final Set<String> COMMAND_KEYS = Collections.unmodifiableSet(Sets.of(WITH,THEN,TIMER,ONSIGNAL,WATCH));
+    public static final Set<String> COMMAND_KEYS = Collections.unmodifiableSet(Sets.of(WITH,THEN,TIMER, ON_SIGNAL,WATCH,SILENT,PREFIX,SUFFIX,SEPARATOR,JS_PREFIX));
 
     private Defer defer = null;
     final String key;
@@ -80,6 +84,18 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
                 rtrn.put(key, encoded);
             }
         }
+        if(cmd.hasPatternPrefix()){
+            rtrn.put(PREFIX,cmd.getPatternPrefix());
+        }
+        if(cmd.hasPatternSuffix()){
+            rtrn.put(SUFFIX,cmd.getPatternSuffix());
+        }
+        if(cmd.hasPatternSeparator()){
+            rtrn.put(SEPARATOR,cmd.getPatternSeparator());
+        }
+        if(cmd.hasPatternJavascriptPrefix()){
+            rtrn.put(JS_PREFIX,cmd.getPatternJavascriptPrefix());
+        }
         if(!cmd.getWith().isEmpty()){
             rtrn.put(WITH, Json.toObjectMap(cmd.getWith()));
         }
@@ -103,7 +119,7 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
                 });
                 map.put(name,entries);
             });
-            rtrn.put(ONSIGNAL,map);
+            rtrn.put(ON_SIGNAL,map);
         }
         if(cmd.hasWatchers()){
             List<Object> watchers = new ArrayList<>();
