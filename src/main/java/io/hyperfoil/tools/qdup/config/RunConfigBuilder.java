@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import static io.hyperfoil.tools.qdup.cmd.Cmd.STATE_PREFIX;
 import static io.hyperfoil.tools.qdup.config.waml.WamlParser.*;
 
 public class RunConfigBuilder {
@@ -557,7 +556,7 @@ public class RunConfigBuilder {
         return getScript(name,null);
     }
     public Script getScript(String name, Cmd command){
-        if(name.contains(STATE_PREFIX)){
+        if(name.contains(StringUtil.PATTERN_PREFIX)){
             name = Cmd.populateStateVariables(name,command,state);
         }
         Script script = scripts.get(name);
@@ -577,7 +576,7 @@ public class RunConfigBuilder {
            String value = hostAlias.get(alias);
             String populatedValue = null;
             try {
-                populatedValue = StringUtil.populatePattern(value,map,false);
+                populatedValue = StringUtil.populatePattern(value,map);
             } catch (PopulatePatternException e) {
                 logger.warn(e.getMessage());
                 populatedValue="";

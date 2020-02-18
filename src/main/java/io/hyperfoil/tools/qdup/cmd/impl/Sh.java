@@ -48,7 +48,7 @@ public class Sh extends Cmd {
         }else{
             HashMap<String,String> populated = new HashMap<>();
             prompt.forEach((key,value)->{
-                String populatedValue = Cmd.populateStateVariables(value,this,context.getState(),true);
+                String populatedValue = Cmd.populateStateVariables(value,this,context.getState());
                 populated.put(key,populatedValue);
             });
             context.getSession().sh(populatedCommand,context::next,populated);

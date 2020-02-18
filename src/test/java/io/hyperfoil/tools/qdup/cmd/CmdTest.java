@@ -118,11 +118,11 @@ public class CmdTest extends SshTestBase {
 
     @Test
     public void populateStateVariables_envVariable(){
-        String populated = Cmd.populateStateVariables("$foo",null,null,false);
+        String populated = Cmd.populateStateVariables("$foo",null,null);
 
         assertEquals("$ env variable reference","$foo",populated);
 
-        populated = Cmd.populateStateVariables("${foo}",null,null,false);
+        populated = Cmd.populateStateVariables("${foo}",null,null);
         assertEquals("${} env variable reference","${foo}",populated);
     }
     @Test
@@ -131,7 +131,7 @@ public class CmdTest extends SshTestBase {
         state.set("foo","FOO");
         state.set("bar","BAR");
 
-        String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}",null,state,true);
+        String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}",null,state);
 
         assertEquals("all 3 found","FOO.FOO.BAR",populated);
     }
@@ -144,7 +144,7 @@ public class CmdTest extends SshTestBase {
         state.set("foo","FOO");
         state.set("bar","BAR");
 
-        String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}",cmd,state,true);
+        String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}",cmd,state);
 
         assertEquals("cmd override state","foo.foo.BAR",populated);
     }
@@ -157,11 +157,11 @@ public class CmdTest extends SshTestBase {
         parent.set("FOO","foo");
 
         String populated;
-        populated = Cmd.populateStateVariables("${{FOO}}",null,state,true);
+        populated = Cmd.populateStateVariables("${{FOO}}",null,state);
         assertEquals("should use parent value","foo",populated);
 
         state.set("FOO","FOO");
-        populated = Cmd.populateStateVariables("${{FOO}}",null,state,true);
+        populated = Cmd.populateStateVariables("${{FOO}}",null,state);
         assertEquals("should use child value","FOO",populated);
 
 
@@ -175,9 +175,9 @@ public class CmdTest extends SshTestBase {
         state.set("FOO","FOO");
 
         String populated;
-        populated = Cmd.populateStateVariables("${{RUN.FOO}}",null,state,true);
+        populated = Cmd.populateStateVariables("${{RUN.FOO}}",null,state);
         assertEquals("should use parent value due to prefix","foo",populated);
-        populated = Cmd.populateStateVariables("${{HOST.FOO}}",null,state,true);
+        populated = Cmd.populateStateVariables("${{HOST.FOO}}",null,state);
         assertEquals("should use parent value due to prefix","FOO",populated);
 
 
@@ -189,23 +189,24 @@ public class CmdTest extends SshTestBase {
         state.set("BAR","bar");
 
         String populated;
-        populated = Cmd.populateStateVariables("${{${{FOO}}}}",null,state,true);
+        populated = Cmd.populateStateVariables("${{${{FOO}}}}",null,state);
 
         assertEquals("evaluate as two state refernces","bar",populated);
     }
 
     @Test
     public void populateStateVariables_notFound(){
-        String populated = Cmd.populateStateVariables("${{FOO}}",null,null,false);
+        String populated = Cmd.populateStateVariables("${{FOO}}",null,null);
 
         assertEquals("not replaced","${{FOO}}",populated);
-        populated = Cmd.populateStateVariables("${{FOO}}",null,null,true);
-        assertEquals("replaced","",populated);
+        //no longer valid because we do not support replaceMissing
+//        populated = Cmd.populateStateVariables("${{FOO}}",null,null);
+//        assertEquals("replaced","",populated);
     }
 
     @Test
     public void populateStateVariables_defaultValue(){
-        String populated = Cmd.populateStateVariables("${{FOO:foo}}",null,null,true);
+        String populated = Cmd.populateStateVariables("${{FOO:foo}}",null,null);
         assertEquals("use default value","foo",populated);
     }
     @Test
@@ -216,7 +217,7 @@ public class CmdTest extends SshTestBase {
         Cmd cmd = Cmd.NO_OP();
         cmd.with("BAR","${{FOO}}");
 
-        String populated = Cmd.populateStateVariables("${{BAR}}",cmd,state,true);
+        String populated = Cmd.populateStateVariables("${{BAR}}",cmd,state);
 
         assertEquals("${{BAR}} should resolve to foo","foo",populated);
     }
@@ -224,7 +225,7 @@ public class CmdTest extends SshTestBase {
     public void populateStateVariables_defaultEmpty_bindState(){
         State state = new State("RUN.");
         state.set("FOO","foo");
-        String populated = Cmd.populateStateVariables("${{FOO:}}",null,state,false);
+        String populated = Cmd.populateStateVariables("${{FOO:}}",null,state);
 
         assertEquals("should populate from state","foo",populated);
     }
@@ -234,7 +235,7 @@ public class CmdTest extends SshTestBase {
         state.set("FOO","bar");
         Cmd cmd = Cmd.NO_OP();
         cmd.with("FOO","foo");
-        String populated = Cmd.populateStateVariables("${{FOO:}}",cmd,state,false);
+        String populated = Cmd.populateStateVariables("${{FOO:}}",cmd,state);
 
         assertEquals("should populate from state","foo",populated);
     }
@@ -244,7 +245,7 @@ public class CmdTest extends SshTestBase {
         state.set("FOO","bar");
         Cmd cmd = Cmd.NO_OP();
         cmd.with("FOO","foo");
-        String populated = Cmd.populateStateVariables("${{FOO:biz}}",cmd,state,false);
+        String populated = Cmd.populateStateVariables("${{FOO:biz}}",cmd,state);
 
         assertEquals("should populate from state","foo",populated);
     }

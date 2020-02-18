@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.stream;
 
+import io.hyperfoil.tools.yaup.AsciiArt;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -102,6 +103,7 @@ public class SuffixStream extends MultiStream {
         addSuffix(name,name);
     }
     public void addSuffix(String name,String suffix){
+        System.out.println(AsciiArt.ANSI_GREEN+"SuffixStream.addSuffix "+AsciiArt.ANSI_RESET+name+" -> "+suffix);
         suffixes.put(name,suffix.getBytes());
         replacements.remove(name);
     }

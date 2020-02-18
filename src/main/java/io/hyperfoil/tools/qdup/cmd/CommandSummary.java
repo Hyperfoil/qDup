@@ -9,6 +9,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 
 import io.hyperfoil.tools.yaup.Counters;
+import io.hyperfoil.tools.yaup.StringUtil;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -31,7 +32,7 @@ public class CommandSummary {
         }
 
         if(command instanceof Signal){
-            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),command,config.getState(),false, ref);
+            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),command,config.getState(), ref);
 
             addSignal(populatedSignal);
             //TODO how to detect when a signal has an initialized value
@@ -41,8 +42,8 @@ public class CommandSummary {
 //                addSignal(populatedSignal);
 //            }
         }else if (command instanceof WaitFor){
-            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),command,config.getState(),false, ref);
-            if(populatedWait.contains(Cmd.STATE_PREFIX) && !((WaitFor)command).hasInitial()) {
+            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),command,config.getState(), ref);
+            if(populatedWait.contains(StringUtil.PATTERN_PREFIX) && !((WaitFor)command).hasInitial()) {
                 // TODO better detection of populatedStateVariables
                 //                addWarning("wait-for: " + populatedWait + " does not have a known value for state variable and will likely not be signalled");
             } else {
@@ -71,7 +72,7 @@ public class CommandSummary {
         }else{
         }
 
-        if(toString.indexOf(Cmd.STATE_PREFIX)>-1) {
+        if(toString.indexOf(StringUtil.PATTERN_PREFIX)>-1) {
 
             Matcher matcher = Cmd.STATE_PATTERN.matcher(toString);
             while (matcher.find()) {

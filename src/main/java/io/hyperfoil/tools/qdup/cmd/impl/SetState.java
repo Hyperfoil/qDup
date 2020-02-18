@@ -11,7 +11,7 @@ public class SetState extends Cmd {
     String value;
     String populatedKey;
     String populatedValue;
-    String separator;
+    //String separator;
 
     public SetState(String key) {
         this(key, null);
@@ -24,7 +24,8 @@ public class SetState extends Cmd {
         super(silent);
         this.key = key;
         this.value = value;
-        this.separator = separator;
+        setPatternSeparator(separator);
+        //this.separator = separator;
     }
 
     public String getKey() {
@@ -43,7 +44,7 @@ public class SetState extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context.getState(),true,separator);
+        populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context.getState());
         if(StringUtil.isQuoted(populatedValue) && (StringUtil.removeQuotes(populatedValue)).trim().isEmpty()){
             populatedValue="";
         }
@@ -63,7 +64,7 @@ public class SetState extends Cmd {
 
     @Override
     public Cmd copy() {
-        return new SetState(key, value, separator, silent);
+        return new SetState(key, value, getPatternSeparator(), silent);
     }
 
     @Override

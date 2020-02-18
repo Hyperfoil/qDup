@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.config.waml;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.Sets;
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.*;
@@ -310,7 +311,7 @@ public class WamlParser {
                                                 }
                                                 break;
                                             case '$':
-                                                if (!quoted && line.startsWith(Cmd.STATE_PREFIX, i)) {
+                                                if (!quoted && line.startsWith(StringUtil.PATTERN_PREFIX, i)) {
                                                     inVariable = true;
                                                 }
                                                 break;
@@ -342,7 +343,7 @@ public class WamlParser {
                                                 break;
                                             case '}':
                                                 if (!quoted) {
-                                                    if (inVariable && line.startsWith(Cmd.STATE_SUFFIX, i)) {
+                                                    if (inVariable && line.startsWith(StringUtil.PATTERN_PREFIX, i)) {
                                                         i++;//skip the next }
                                                         inVariable = false;
                                                     } else if (!inlineStack.isEmpty() && INLINE_MAP.equals(inlineStack.peek())) {

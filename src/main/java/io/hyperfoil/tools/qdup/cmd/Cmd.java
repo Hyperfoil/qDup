@@ -317,8 +317,6 @@ public abstract class Cmd {
 
    protected final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-   public static final String STATE_PREFIX = "${{";
-   public static final String STATE_SUFFIX = "}}";
    public static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^${}:]+):?(?<default>[^}]*)}}");
 
    public static final String ENV_PREFIX = "${";
@@ -492,47 +490,40 @@ public abstract class Cmd {
       return value;
    }
 
-   public static boolean isSingelStageReference(String input) {
-      return input.startsWith(STATE_PREFIX) && input.equalsIgnoreCase(STATE_SUFFIX) && input.indexOf(STATE_PREFIX, 1) == -1;
+//   public static boolean isSingelStageReference(String input) {
+//      return input.startsWith(STATE_PREFIX) && input.equalsIgnoreCase(STATE_SUFFIX) && input.indexOf(STATE_PREFIX, 1) == -1;
+//   }
+
+   public static boolean hasStateReference(String input, Cmd cmd){
+      if(cmd == null){
+         return input.contains(StringUtil.PATTERN_PREFIX);
+      }else{
+         return input.contains(cmd.getPatternPrefix());
+      }
    }
 
-
-   //handles recursive variable references
    public static Object getStateValue(String name, Cmd cmd, State state, Ref ref) {
-      return getStateValue(name,cmd,state,ref,true,StringUtil.PATTERN_DEFAULT_SEPARATOR);
-   }
-
-   public static Object getStateValue(String name, Cmd cmd, State state, Ref ref, boolean replaceUndefined, String separator) {
+      if(!hasStateReference(name,cmd)){
+         return name;
+      }
       CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
       try {
-          return StringUtil.populatePattern(name, map, replaceUndefined, StringUtil.PATTERN_PREFIX, separator, StringUtil.PATTERN_SUFFIX);
+         if(cmd!=null){
+            return StringUtil.populatePattern(name,map,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
+         }else {
+            return StringUtil.populatePattern(name, map, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+         }
       } catch (PopulatePatternException pe){
           logger.warn(pe.getMessage());
-          return ""; //TODO: this is the default behaviour, do we want to return a zero length string when populating the pattern has failed?
+          return name;//""; //TODO: this is the default behaviour, do we want to return a zero length string when populating the pattern has failed?
       }
 
    }
-
    public static String populateStateVariables(String command, Cmd cmd, State state) {
-      return populateStateVariables(command, cmd, state, true,StringUtil.PATTERN_DEFAULT_SEPARATOR);
+      return populateStateVariables(command, cmd, state, new Ref(cmd));
    }
-   public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined) {
-      return populateStateVariables(command, cmd, state, replaceUndefined, new Ref(cmd),StringUtil.PATTERN_DEFAULT_SEPARATOR);
-   }
-
-   public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined, String separator) {
-      return populateStateVariables(command, cmd, state, replaceUndefined, new Ref(cmd),separator);
-   }
-   public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined, Ref ref){
-      return populateStateVariables(command, cmd, state, replaceUndefined, ref, StringUtil.PATTERN_DEFAULT_SEPARATOR);
-   }
-   public static String populateStateVariables(String command, Cmd cmd, State state, boolean replaceUndefined, Ref ref, String separator) {
-      if(command == null){
-      }
-      if (command.indexOf(STATE_PREFIX) < 0) {
-         return command;
-      }
-      Object rtrn = getStateValue(command,cmd,state,ref,replaceUndefined,separator);
+   public static String populateStateVariables(String command, Cmd cmd, State state, Ref ref) {
+      Object rtrn = getStateValue(command,cmd,state,ref);
       return rtrn == null ? "" : rtrn.toString();
    }
 
@@ -545,6 +536,44 @@ public abstract class Cmd {
    private LinkedList<Cmd> watchers;
    private HashedLists<Long, Cmd> timers;
    private HashedLists<String, Cmd> onSignal;
+
+
+   private String patternPrefix = StringUtil.PATTERN_PREFIX;
+   private String patternSuffix = StringUtil.PATTERN_SUFFIX;
+   private String patternSeparator = StringUtil.PATTERN_DEFAULT_SEPARATOR;
+   private String patternJavascriptPrefix = StringUtil.PATTERN_JAVASCRIPT_PREFIX;
+
+   public String getPatternPrefix() {
+      return patternPrefix;
+   }
+
+   public void setPatternPrefix(String patternPrefix) {
+      this.patternPrefix = patternPrefix;
+   }
+
+   public String getPatternSuffix() {
+      return patternSuffix;
+   }
+
+   public void setPatternSuffix(String patternSuffix) {
+      this.patternSuffix = patternSuffix;
+   }
+
+   public String getPatternSeparator() {
+      return patternSeparator;
+   }
+
+   public void setPatternSeparator(String patternSeparator) {
+      this.patternSeparator = patternSeparator;
+   }
+
+   public String getPatternJavascriptPrefix() {
+      return patternJavascriptPrefix;
+   }
+
+   public void setPatternJavascriptPrefix(String patternJavascriptPrefix) {
+      this.patternJavascriptPrefix = patternJavascriptPrefix;
+   }
 
    private Cmd parent;
    private Cmd prev;
@@ -899,7 +928,7 @@ public abstract class Cmd {
          //replace with values if they have ${{
          withDef.forEach((k,v)->{
             if(v instanceof String && ((String) v).indexOf(StringUtil.PATTERN_PREFIX) > -1){
-               String populatedV =populateStateVariables((String)v,this,context.getState(),false,new Ref(this));
+               String populatedV =populateStateVariables((String)v,this,context.getState(),new Ref(this));
                Object convertedV = State.convertType(populatedV);
                withActive.set(k,convertedV);
             }

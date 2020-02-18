@@ -56,7 +56,7 @@ public class XmlCmd extends Cmd {
         String output = input;
         File tmpDest = null;
         try {
-            String remotePath = Cmd.populateStateVariables(path,this,context.getState(),true);
+            String remotePath = Cmd.populateStateVariables(path,this,context.getState());
 
             if(remotePath!=null){
                 remotePath = removeQuotes(remotePath);
@@ -75,7 +75,7 @@ public class XmlCmd extends Cmd {
                 xml = Xml.parseFile(tmpDest.getPath());
             }
             for(int i=0; i<operations.size(); i++){
-                String operation = Cmd.populateStateVariables(operations.get(i),this,context.getState(),true);
+                String operation = Cmd.populateStateVariables(operations.get(i),this,context.getState());
                 operation = removeQuotes(operation);
                 XmlOperation xmlOperation = XmlOperation.parse(operation);
                 if(XmlOperation.Operation.None.equals(xmlOperation.getOperation()) &&

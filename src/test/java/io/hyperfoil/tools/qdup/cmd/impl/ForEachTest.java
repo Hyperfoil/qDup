@@ -40,7 +40,7 @@ public class ForEachTest extends SshTestBase {
            "      name: arg",
            "      input: ${{ [${{charlie}}, ...${{alpha}}, ...${{bravo}} ] }}",
            "    then:",
-           "    - set-state: RUN.FOO ${{RUN.FOO}}-${{arg.name}}",
+           "    - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg.name}}",
            "hosts:",
            "  local: " + getHost(),
            "roles:",

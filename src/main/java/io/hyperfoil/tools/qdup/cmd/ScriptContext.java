@@ -372,7 +372,7 @@ public class ScriptContext implements Context, Runnable{
                     for(String name : cmd.getSignalNames()){
                         String populatedName = null;
                         try {
-                            populatedName = StringUtil.populatePattern(name,new CmdStateRefMap(cmd,state,null),true);
+                            populatedName = StringUtil.populatePattern(name,new CmdStateRefMap(cmd,state,null));
                         } catch (PopulatePatternException e) {
                             logger.warn(e.getMessage());
                             populatedName = "";
