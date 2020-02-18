@@ -47,7 +47,7 @@ public class CmdTest extends SshTestBase {
       state.set("BAR", "2");
       state.set("BIZ", "3");
 
-      String response = Cmd.populateStateVariables("${{FOO * (BAR + BIZ)}}", null, state);
+      String response = Cmd.populateStateVariables("${{=${{FOO}} * (${{BAR}} + ${{BIZ}})}}", null, state);
       assertEquals("expected value", "10", response);
    }
 
@@ -55,9 +55,9 @@ public class CmdTest extends SshTestBase {
    public void populateStateVariables_arithmetic_time() {
       State state = new State("");
       state.set("FOO", "10");
-      state.set("BAR", "1m");
+      state.set("BAR", "'1m'");
 
-      String response = Cmd.populateStateVariables("${{ 2*(seconds(BAR)+FOO) :-1}}", null, state);
+      String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state);
       assertEquals("expected value with seconds()", "140", response);
    }
 
@@ -111,7 +111,7 @@ public class CmdTest extends SshTestBase {
    public void populateStateVariables_arithmetic_strings() {
       State state = new State("");
       state.set("FOO", "10");
-      String response = Cmd.populateStateVariables("${{ (2*FOO)+'m' :5m}}", null, state);
+      String response = Cmd.populateStateVariables("${{= (2*${{FOO}})+'m' :5m}}", null, state);
       assertEquals("expected string concat after maths", "20m", response);
    }
 
@@ -154,6 +154,14 @@ public class CmdTest extends SshTestBase {
 
       String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}", cmd, state);
       assertEquals("cmd override state", "foo.foo.BAR", populated);
+   }
+
+   @Test
+   public void populateStateVariables_javascript_regex(){
+      State parent = new State("RUN.");
+      String populated;
+      populated = Cmd.populateStateVariables("${{='<foo>'.match(/<(.*?)>/)[1]}}", null, parent);
+      assertEquals("expect to match","foo",populated);
    }
 
    @Test
@@ -433,7 +441,6 @@ public class CmdTest extends SshTestBase {
       Script runSignal = new Script("run-signal");
       runSignal.then(Cmd.sleep("2s"));
       runSignal.then(Cmd.signal("signalFoo"));
-
 
       builder.addScript(runSignal);
       builder.addScript(runSleep);

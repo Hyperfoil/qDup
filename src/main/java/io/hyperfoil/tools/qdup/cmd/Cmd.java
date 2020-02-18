@@ -56,17 +56,6 @@ import java.util.regex.Pattern;
  * Base for all the commands than can be added to a Script. Commands are created through the static methods.
  */
 public abstract class Cmd {
-   //private static final JexlEngine jexl = new JexlBuilder().cache(512).strict(true).silent(false).create();
-   private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-
-   static {
-      try {
-         engine.eval("function milliseconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)}");
-         engine.eval("function seconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)/1000}");
-      } catch (ScriptException e) {
-         e.printStackTrace();
-      }
-   }
 
    private static class JexlStateContext implements JexlContext {
 
@@ -208,7 +197,6 @@ public abstract class Cmd {
       @Override
       protected void setSkip(Cmd skip) {
          //prevent propagating skip to last then because it needs to skip to this
-
          this.forceSkip(skip);
       }
 
