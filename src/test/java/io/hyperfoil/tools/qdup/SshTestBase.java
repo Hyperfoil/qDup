@@ -74,47 +74,23 @@ public class SshTestBase {
         container = new GenericContainer(new ImageFromDockerfile()
            .withDockerfileFromBuilder(builder ->
               builder
-
                  //.from("alpine:3.2")
                  .from("ubuntu:16.04")
-                 .run("apt-get update && apt-get install -y openssh-server openssh-client rsync")
-
+                 .run("apt-get update && apt-get install -y openssh-server openssh-client rsync && apt-get clean")
                  .run("mkdir /var/run/sshd")
                  .run("(umask 077 && test -d /root/.ssh || mkdir /root/.ssh)")
                  .run("(umask 077 && touch /root/.ssh/authorized_keys)")
                  .run(" echo \""+pubKey+"\" >> /root/.ssh/authorized_keys")
-
-//                 .run("mkdir -p /root/.ssh/auth")
-
                  .run("chmod 700 /root/.ssh")
                  .run("chmod 600 /root/.ssh/authorized_keys")
-
-                 //.run("chown root /root/.ssh/authorized_keys")
-                 //.run("chmod 600 /root/.ssh/authorized_keys")
-
                  .run("echo 'root:password' | chpasswd")
                  .run("sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config")
                  .run("sed -i 's/#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\\/authorized_keys/g' /etc/ssh/sshd_config")
                  .run("sed 's@session\\s*required\\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd")
-
-                 //.run("cat /root/.ssh/id_rsa.pub > /root/.ssh/authorized_keys")
-                 //.run("chown -R root /root/.ssh/")
-
-                 //.run("cp","/root/.ssh/auth/*","/root/.ssh/")
-                 //.run("cp /root/.ssh/auth/id_rsa /root/.ssh/id_rsa")
-                 ///.run("echo \"export VISIBLE=now\" >> /etc/profile")
                  .expose(22)
                  .entryPoint("/usr/sbin/sshd -D")
-                 //.cmd("/usr/sbin/sshd", "-D")
                  .build()))
-//           .withFileSystemBind(Paths.get(
-//              getClass().getProtectionDomain().getCodeSource().getLocation().getPath()
-//           ).toAbsolutePath().toString(),"/root/.ssh",BindMode.READ_WRITE)
-//           .withClasspathResourceMapping("qdup", "/root/.ssh/id_rsa", BindMode.READ_ONLY)
-//           .withClasspathResourceMapping("qdup.pub", "/root/.ssh/id_rsa.pub", BindMode.READ_WRITE)
-//           .withClasspathResourceMapping("authorized_keys", "/root/.ssh/authorized_keys", BindMode.READ_ONLY)
            .withExposedPorts(22);
-
         container.start();
         String hostname="localhost";
         try {
