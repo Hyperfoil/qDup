@@ -38,7 +38,7 @@ public class ExitCodeTest extends SshTestBase {
             }))
         ));
 
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
 
         builder.addScript(runScript);
         builder.addHostAlias("local",getHost().toString());

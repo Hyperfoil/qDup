@@ -19,7 +19,7 @@ public class ScriptCmdTest extends SshTestBase {
    @Test
    public void async_using_with_on_phase(){
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
          "scripts:",
          "  update:",
@@ -58,7 +58,7 @@ public class ScriptCmdTest extends SshTestBase {
    @Test
    public void async_using_with_on_script(){
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
             "scripts:",
          "  update:",
@@ -90,7 +90,6 @@ public class ScriptCmdTest extends SshTestBase {
 
       doit.run();
       dispatcher.shutdown();
-      System.out.println(config.getState().get("FOO"));
       assertEquals("expect script:foo to finish before script:update starts","-SET-script",config.getState().get("FOO"));
    }
 
@@ -98,7 +97,7 @@ public class ScriptCmdTest extends SshTestBase {
    public void async(){
 
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
          "scripts:",
          "  update:",
@@ -134,7 +133,7 @@ public class ScriptCmdTest extends SshTestBase {
    @Test
    public void javascript_array_spread(){
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
          "scripts:",
          "  update:",

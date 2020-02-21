@@ -53,10 +53,10 @@ public class StateTest extends SshTestBase{
         ),true));
 
         RunConfig config = builder.buildConfig();
-
-        String populated = Cmd.populateStateVariables("${{{...inline.one}}}",null,config.getState());
-
-        System.out.println("populated="+populated);
+        String one = Cmd.populateStateVariables("${{inline.one}}",null,config.getState());
+        assertEquals("inline.one","{\"name\":\"uno\"}",one);
+        String populated = Cmd.populateStateVariables("${{={...${{inline.one}} } }}",null,config.getState());
+        assertEquals("spread inline.one","{\"name\":\"uno\"}",populated);
     }
 
     @Test
@@ -83,10 +83,7 @@ public class StateTest extends SshTestBase{
         RunConfig config = builder.buildConfig();
 
         String populated = Cmd.populateStateVariables("${{inline[1]}}",null,config.getState());
-
-        System.out.println(populated);
         assertEquals("{\"name\":\"native\"}",populated);
-
     }
 
     @Test
@@ -113,8 +110,6 @@ public class StateTest extends SshTestBase{
         RunConfig config = builder.buildConfig();
 
         String populated = Cmd.populateStateVariables("${{inline[1]}}",null,config.getState());
-
-        System.out.println(populated);
         assertEquals("two",populated);
     }
 

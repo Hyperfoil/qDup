@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class LocalTest extends SshTestBase{
 
@@ -18,18 +19,16 @@ public class LocalTest extends SshTestBase{
         File toRead = null;
         try {
             toSend = File.createTempFile("tmp","local");
+            toSend.deleteOnExit();
             Files.write(toSend.toPath(),"foo".getBytes());
 
-            Local local = new Local(null);
+            Local local = new Local(getBuilder().buildConfig());
 
             local.upload(toSend.getPath(),"/tmp/destination.txt",host);
 
+            assertTrue("/tmp/destination.txt exists",exists("/tmp/destination.txt"));
 
-            toRead = new File("/tmp/destination.txt");
-
-
-            String read = new String(Files.readAllBytes(toRead.toPath()));
-
+            String read = readFile("/tmp/destination.txt");
             assertEquals("foo",read);
 
         } catch (IOException e) {

@@ -459,7 +459,7 @@ public class RunConfigBuilder {
     public void setKnownHosts(String knownHosts){
         this.knownHosts = knownHosts;
     }
-    private String getIdentity(){return identity;}
+    public String getIdentity(){return identity;}
     public void setIdentity(String identity){
         this.identity = identity;
     }

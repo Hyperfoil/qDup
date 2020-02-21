@@ -13,19 +13,22 @@ import static org.junit.Assert.assertTrue;
 
 public class SshSessionTest extends SshTestBase{
 
+    static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(2);
+
     @Test
     public void echo_dollar_pwd(){
         String userHome = System.getProperty("user.home");
         String currentDir = System.getProperty("user.dir");
         String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
+
         SshSession sshSession = new SshSession(
                 getHost(),
                 userHome+"/.ssh/known_hosts",
-                userHome+"/.ssh/id_rsa",
+                getIdentity(),
                 null,
                 5,
                 setupCommand,
-                null,
+                executor,
            false
         );
         String foo = sshSession.shSync("echo \"pwd is: $(pwd)\"");
@@ -39,11 +42,11 @@ public class SshSessionTest extends SshTestBase{
         SshSession sshSession = new SshSession(
                 getHost(),
                 userHome+"/.ssh/known_hosts",
-                userHome+"/.ssh/id_rsa",
+                getIdentity(),
                 null,
                 5,
                 setupCommand,
-                null,
+                executor,
            false
         );
         String foo = sshSession.shSync("echo $FOO");
@@ -60,11 +63,11 @@ public class SshSessionTest extends SshTestBase{
         SshSession sshSession = new SshSession(
                 getHost(),
                 userHome+"/.ssh/known_hosts",
-                userHome+"/.ssh/id_rsa",
+                getIdentity(),
                 null,
                 5,
                 "echo 'fooooo'",
-                null,
+                executor,
            false
         );
         assertTrue("SshSession should be open after init",sshSession.isOpen());
@@ -78,11 +81,11 @@ public class SshSessionTest extends SshTestBase{
         SshSession sshSession = new SshSession(
                 getHost(),
                 userHome+"/.ssh/known_hosts",
-                userHome+"/.ssh/id_rsa",
+                getIdentity(),
                 null,
                 5,
                 "",
-                new ScheduledThreadPoolExecutor(5),
+                executor,
            false
         );
 
@@ -100,6 +103,7 @@ public class SshSessionTest extends SshTestBase{
 
     }
 
+    //using docker test container requires executor or export PS1 is releasing semaphore
     @Test
     public void testConnect_shSync(){
         String userHome = System.getProperty("user.home");
@@ -107,19 +111,22 @@ public class SshSessionTest extends SshTestBase{
         SshSession sshSession = new SshSession(
                 getHost(),
                 userHome+"/.ssh/known_hosts",
-                userHome+"/.ssh/id_rsa",
+                getIdentity(),
                 null,
                 5,
                 "",
-                null,
+                executor,
            false
         );
+
         assertTrue("SshSession should be open after init",sshSession.isOpen());
         String pwdOutput = sshSession.shSync("pwd");
 
         //NOTE: expect userHome when using sshd but expect currentDir if using a TestServer
         //Test server is not working at the moment so we test for userHome
-        assertEquals("pwd should be the current working directory",userHome,pwdOutput);
+        //TODO expected home folder depends on target system, add to Base?
+        //sometimes pwdOutput is empty string
+        assertEquals("pwd should be the current working directory","/root",pwdOutput);
         sshSession.close();
         assertFalse("SshSession should be closed",sshSession.isOpen());
     }
@@ -138,38 +145,34 @@ public class SshSessionTest extends SshTestBase{
             e.printStackTrace();
         }
         assertEquals("expect 1 permit",1,session.permits());
-
-
-
-
     }
 
     @Test
     public void echo_PS1(){
-        SshSession sshSession = new SshSession(getHost());
-
+        SshSession sshSession = new SshSession(getHost(),
+           "/dev/null",
+           getIdentity(),
+           null,
+           5,
+           "",
+           executor,
+           false);
         String out = sshSession.shSync("echo \""+SshSession.PROMPT+"\"");
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         assertEquals("output should only be prompt",SshSession.PROMPT,out);
         assertEquals("one prompt permit expected",1,sshSession.permits());
-
-
         out = sshSession.shSync("echo foo");
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         assertEquals("output should only be foo","foo",out);
         assertEquals("one foo permit expected",1,sshSession.permits());
-
-
     }
 
 }

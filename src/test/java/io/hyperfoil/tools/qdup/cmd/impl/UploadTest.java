@@ -29,7 +29,7 @@ public class UploadTest extends SshTestBase {
         try {
             File tmpFile = File.createTempFile("UploadTest",".txt",new File("/tmp"));
 
-            RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+            RunConfigBuilder builder = getBuilder();
 
             File destination = new File("/tmp/destination");
             if(destination.exists()){
@@ -57,12 +57,9 @@ public class UploadTest extends SshTestBase {
             Run run = new Run("/tmp",config,dispatcher);
             run.run();
 
-            File uploadedFile = new File("/tmp/destination/"+tmpFile.getName());
-            assertTrue("file should have been uploaded after test run",uploadedFile.exists());
-
+            //File uploadedFile = new File("/tmp/destination/"+tmpFile.getName());
+            assertTrue("file should have been uploaded after test run",exists("/tmp/destination/"+tmpFile.getName()));
             tmpFile.delete();
-            boolean uploadDeleted = uploadedFile.delete();
-            boolean destinationDeleted = uploadedFile.getParentFile().delete();
 
         } catch (IOException e) {
             e.printStackTrace();

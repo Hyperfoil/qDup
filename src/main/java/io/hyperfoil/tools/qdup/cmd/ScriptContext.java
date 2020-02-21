@@ -406,7 +406,6 @@ public class ScriptContext implements Context, Runnable{
                         assert lineQueueSemaphore.availablePermits() == 0;
 
                         cmd.doRun(input, this);
-
                         while (!CLOSE_QUEUE.equals(line = lineQueue.take())) {
                             logger.trace("watch.line: {}",line);
                             for (Cmd watcher : cmd.getWatchers()) {

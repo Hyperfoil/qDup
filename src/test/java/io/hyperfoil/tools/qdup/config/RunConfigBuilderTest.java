@@ -25,13 +25,10 @@ import static org.junit.Assert.assertTrue;
 
 public class RunConfigBuilderTest extends SshTestBase {
 
-    private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-
-
     @Test
     public void testScriptWithCtrlC(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("ctrlC",stream(""+
             "scripts:",
             "  foo:",
@@ -79,7 +76,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "            GIT_COMMIT : ${{AGROAL_TAG}}",
             "      - setup-wildfly"
         ));
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
 
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
@@ -116,7 +113,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "  WAIT_NAME : waiter"
         ));
 
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
 
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
@@ -137,7 +134,7 @@ public class RunConfigBuilderTest extends SshTestBase {
     @Test
     public void testImplicitRunState(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("implicitState",stream("",
            "states:",
            "  foo : foo",
@@ -180,7 +177,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "    BAR : BAR"
         ));
 
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
 
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
@@ -217,7 +214,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "    - sh: echo BAR",
             ""
         ));
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
 
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
@@ -241,7 +238,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         ));
 
 
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
@@ -273,7 +270,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "          - abort: fatal"
         ));
 
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
@@ -302,7 +299,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "          - signal: 30_seconds_later",
             "          - abort: not good"
         ));
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
@@ -336,7 +333,7 @@ public class RunConfigBuilderTest extends SshTestBase {
     @Test
     public void test_merge_role_across_waml(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("scriptDef",stream(""+
           "scripts:",
            "  first:",
@@ -377,7 +374,7 @@ public class RunConfigBuilderTest extends SshTestBase {
     @Test @Ignore
     public void testRoleExpession(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("roleExpression",stream(""+
            "hosts:",
            "  foo : user@foo",
@@ -432,7 +429,7 @@ public class RunConfigBuilderTest extends SshTestBase {
     @Test
     public void testOldNestSyntax(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("oldSyntax",stream("",
            "name: oldSyntax",
            "scripts:",

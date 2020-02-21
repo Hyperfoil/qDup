@@ -22,7 +22,7 @@ public class QueueDownloadTest extends SshTestBase {
 
     @Test
     public void stateToLocalEnv(){
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
 
         String timestamp = ""+System.currentTimeMillis();
 
@@ -67,7 +67,7 @@ public class QueueDownloadTest extends SshTestBase {
 
     @Test
     public void populateLocalEnv(){
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
 
         String timestamp = ""+System.currentTimeMillis();
 

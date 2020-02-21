@@ -19,7 +19,7 @@ public class SetStateTest extends SshTestBase {
    @Test
    public void javascript_spread_append_object_to_array(){
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
          "scripts:",
          "  foo:",

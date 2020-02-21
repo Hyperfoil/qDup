@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -55,7 +56,7 @@ public class SshSession {
 
    public enum Stream {Escape, Semaphore, Filtered, Prompt}
 
-   ;
+
 
    private static final String SH_CALLBACK = "qdup-sh-callback";
    private static final String SH_BLOCK_CALLBACK = "qdup-sh-block-callback";
@@ -183,7 +184,7 @@ public class SshSession {
       this.timeout = timeout;
       this.setupCommand = setupCommand;
       this.trace = trace;
-//      this.trace = true;
+      this.trace = true;
 
       shellLock = new Semaphore(1);
 
@@ -343,7 +344,15 @@ public class SshSession {
                .replaceAll("\r\n", "\n"); //change \r\n to just \n
             //shStream.reset();
             shConsumers(output);
+            //TODO use atomic boolean to set expecting response and check for true bfore release?
             shellLock.release();
+            if(isTracing() && traceStream != null){
+               try {
+                  traceStream.write("RELEASE".getBytes());
+               } catch (IOException e) {
+                  e.printStackTrace();
+               }
+            }
             if (permits() > 1) {
                logger.error("ShSession " + getName() + " " + getLastCommand() + " release -> permits==" + permits() + "\n" + output);
             }
@@ -378,10 +387,12 @@ public class SshSession {
 
          commandStream = new PrintStream(channelShell.getInvertedIn());
 
+         //TODO do we wait 1s for slow connections?
+
          sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
          //shSync("pwd");
          sh("");//forces the thread to wait for the previous sh to complete
-         if (setupCommand != null && !setupCommand.isEmpty()) {
+         if (setupCommand != null && !setupCommand.trim().isEmpty()) {
             sh(setupCommand);
          } else {
 
@@ -420,6 +431,9 @@ public class SshSession {
          lineEmittingStream.addConsumer(this::lineConsumers);
 
       }
+
+      assert permits() == 1; //only one permit available for next sh(...)
+
       return rtrn;
    }
 
@@ -565,14 +579,16 @@ public class SshSession {
 
    public String shSync(String command, Map<String, String> prompt) {
       addShObserver(SH_BLOCK_CALLBACK, blockingConsumer);
+      assert blockingSemaphore.availablePermits() == 0;
       sh(command, prompt);
       try {
          blockingSemaphore.acquire();//released in the observer
-         removeShObserver(SH_BLOCK_CALLBACK);
-
       } catch (InterruptedException e) {
          logger.error("Interrupted waiting for shSync " + command, e);
+      } finally{
+         removeShObserver(SH_BLOCK_CALLBACK);
       }
+      assert blockingSemaphore.availablePermits() == 0;
       return blockingResponse.toString();
    }
 
@@ -726,10 +742,8 @@ public class SshSession {
             //channelShell.getIn().close();//testing invertedIn
             suffixStream.close();
             channelShell.close();
-
             clientSession.close();
             sshClient.stop();
-
          } catch (IOException e) {
             e.printStackTrace();
          }

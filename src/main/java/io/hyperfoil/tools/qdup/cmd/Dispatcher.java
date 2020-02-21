@@ -364,8 +364,16 @@ public class Dispatcher {
                 ctx.getSession().close(wait);
             });
             scriptContexts.clear();
-            dispatchObservers.forEach(c -> c.postStop());
 
+           dispatchObservers.forEach(c -> {
+               try{
+                  c.postStop();
+               }catch(Exception e){
+                  e.printStackTrace();
+               }
+           });
+        }else{
+            logger.warn("ignoring stop call when already stopped");
         }
     }
 

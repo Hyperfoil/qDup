@@ -14,12 +14,14 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,7 +35,6 @@ public class RunTest extends SshTestBase {
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
-
    @Test(timeout = 10_000)
    public void watch_signal() {
       AtomicBoolean stopped = new AtomicBoolean(false);
@@ -45,7 +46,7 @@ public class RunTest extends SshTestBase {
       Script sendSignal = new Script("sendSignal");
       sendSignal.then(Cmd.sleep("2s").then(Cmd.signal("stop")));
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.addHostAlias("local", getHost().toString());
       builder.addScript(onSignal);
       builder.addScript(sendSignal);
@@ -76,7 +77,7 @@ public class RunTest extends SshTestBase {
       Script runScript = new Script("localScript")
          .then(Cmd.sh("pwd"));
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.addHostAlias("local", getHost().toString());
       builder.addScript(runScript);
       builder.addScript(allScript);
@@ -96,7 +97,7 @@ public class RunTest extends SshTestBase {
    @Test
    public void pwd_in_dollar() {
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("pwd", stream("" +
             "scripts:",
          "  foo:",
@@ -121,7 +122,7 @@ public class RunTest extends SshTestBase {
    @Test
    public void invoke_with_state_script_name() {
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       WamlParser wamlParser = new WamlParser();
 
       StringBuilder sb = new StringBuilder();
@@ -167,7 +168,8 @@ public class RunTest extends SshTestBase {
    @Test
    public void json_state_array() {
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
+
       builder.loadYaml(parser.loadFile("json", stream("" +
             "scripts:",
          "  foo:",
@@ -211,7 +213,7 @@ public class RunTest extends SshTestBase {
    @Test
    public void signal_in_watch() {
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("signal", stream("" +
             "scripts:",
          "  foo:",
@@ -246,7 +248,7 @@ public class RunTest extends SshTestBase {
    @Test
    public void signal_in_previous_stage() {
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("signal", stream("" +
             "scripts:",
          "  foo:",
@@ -271,24 +273,9 @@ public class RunTest extends SshTestBase {
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run("/tmp", config, dispatcher);
-
-      File bar = new File("/tmp/bar.txt");
-      File biz = new File("/tmp/biz.txt");
-
-      bar.delete();
-      biz.delete();
-
       doit.run();
-
-      try {
-         assertTrue("bar did not run", bar.exists());
-         assertTrue("biz did not run", biz.exists());
-      } finally {
-         bar.delete();
-         biz.delete();
-      }
-
-
+      assertTrue("bar did not run", exists("/tmp/bar.txt"));
+      assertTrue("biz did not run", exists("/tmp/biz.txt"));
    }
 
    @Test
@@ -303,9 +290,13 @@ public class RunTest extends SshTestBase {
 
       Script tail = new Script("tail");
       tail.then(Cmd.sh("echo '' > /tmp/foo.txt"));
-      tail.then(Cmd.signal("FOO_READY"));
+      //tail.then(Cmd.signal("FOO_READY")); //BUG signalling before tail -f is a race!
       tail.then(
          Cmd.sh("tail -f /tmp/foo.txt")
+            .addTimer(10_000,
+               Cmd.code((input,state)->{
+                  return Result.next(input);
+               }).then(Cmd.signal("FOO_READY")))
             .watch(Cmd.code((input, state)->{
                return Result.next(input);
             }))
@@ -314,6 +305,7 @@ public class RunTest extends SshTestBase {
                   Thread.sleep(5_000);
                } catch (InterruptedException e) {
                   e.printStackTrace();
+                  Thread.interrupted();
                }
                fooOutput.append(input);
                return Result.next(input);
@@ -321,7 +313,8 @@ public class RunTest extends SshTestBase {
             .onSignal("FOO_DONE", Cmd.code((input,state)->{
                return Result.next(input);
             }).then(Cmd.ctrlC()))
-      );
+
+      ).then(Cmd.sh("cat /tmp/foo.txt"));
 
       tail.then(Cmd.sh("echo '' > /tmp/bar.txt"));
       tail.then(Cmd.signal("BAR_READY"));
@@ -341,14 +334,16 @@ public class RunTest extends SshTestBase {
       echo.then(Cmd.sh("echo 'foo1' >> /tmp/foo.txt"));
       echo.then(Cmd.sh("echo 'foo2' >> /tmp/foo.txt"));
       echo.then(Cmd.sh("echo 'foo3' >> /tmp/foo.txt"));
+      echo.then(Cmd.sleep("5s")); // added because docker doesnt update tail before DONE sends CtrlC
       echo.then(Cmd.signal("FOO_DONE"));
       echo.then(Cmd.waitFor("BAR_READY"));
       echo.then(Cmd.sh("echo 'bar1' >> /tmp/bar.txt"));
       echo.then(Cmd.sh("echo 'bar2' >> /tmp/bar.txt"));
       echo.then(Cmd.sh("echo 'bar3' >> /tmp/bar.txt"));
+      echo.then(Cmd.sleep("5s")); // added because docker doesnt update tail before DONE sends CtrlC
       echo.then(Cmd.signal("BAR_DONE"));
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.addHostAlias("local", getHost().toString());
       builder.addScript(tail);
       builder.addScript(echo);
@@ -378,7 +373,7 @@ public class RunTest extends SshTestBase {
                return Result.next(input);
             }))
          );
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.addHostAlias("local", getHost().toString());
       builder.addScript(runScript);
       builder.addHostToRole("role", "local");
@@ -397,12 +392,17 @@ public class RunTest extends SshTestBase {
 
    @Test
    public void echo_exitStatus() {
+      StringBuilder pwdFirstChildInput = new StringBuilder();
       StringBuilder echoChildInput = new StringBuilder();
       StringBuilder pwdChildInput = new StringBuilder();
       StringBuilder pwdSiblingInput = new StringBuilder();
       Script runScript = new Script("run-echo-exitStatus");
       runScript
          .then(Cmd.sh("pwd")
+            .then(Cmd.code((input, state) ->{
+               pwdFirstChildInput.append(input);
+               return Result.next(input);
+            }))
             .then(Cmd.sh("echo $?")
                .then(Cmd.code((input, state) -> {
                   echoChildInput.append(input);
@@ -419,7 +419,7 @@ public class RunTest extends SshTestBase {
          return Result.next(input);
       }));
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.addHostAlias("local", getHost().toString());
       builder.addScript(runScript);
       builder.addHostToRole("role", "local");
@@ -430,7 +430,7 @@ public class RunTest extends SshTestBase {
       doit.run();
       assertEquals("echo child should see echo output", "0", echoChildInput.toString());
       assertEquals("pwd child should see echo output", "0", pwdChildInput.toString());
-      assertEquals("pwd sibling should see pwd", System.getProperty("user.home"), pwdSiblingInput.toString());
+      assertEquals("pwd sibling should see pwd", pwdFirstChildInput.toString(), pwdSiblingInput.toString());
    }
 
    //fails the first time it is run after sshd restart?
@@ -449,7 +449,7 @@ public class RunTest extends SshTestBase {
             }))
          );
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
 
       builder.addHostAlias("local", getHost().toString());
       builder.addScript(runScript);
@@ -477,7 +477,7 @@ public class RunTest extends SshTestBase {
       );
 
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
 
 
       builder.addHostAlias("local", getHost().toString());
@@ -523,7 +523,7 @@ public class RunTest extends SshTestBase {
          cleanup.append(System.currentTimeMillis());
          return Result.next("invoked cleanup-abort " + System.currentTimeMillis());
       }));
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
 
 
       builder.addHostAlias("local", getHost().toString());
@@ -570,7 +570,7 @@ public class RunTest extends SshTestBase {
          cleanup.append(System.currentTimeMillis());
          return Result.next(input);
       }));
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
 
 
       builder.addHostAlias("local", getHost().toString());
@@ -598,7 +598,7 @@ public class RunTest extends SshTestBase {
    @Test
    public void watch_only_signal_if_active(){
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
          "scripts:",
          "  foo:",
@@ -659,13 +659,7 @@ public class RunTest extends SshTestBase {
    public void watch_invoke_count() {
 
       List<String> lines = new ArrayList<>();
-
       StringBuilder tailed = new StringBuilder();
-
-      File tmpFoo = new File("/tmp/foo.txt");
-      if (tmpFoo.exists()) {
-         tmpFoo.delete();
-      }
 
       Script tail = new Script("tail");
       tail.then(Cmd.sh("echo '!' > /tmp/foo.txt"));
@@ -695,7 +689,7 @@ public class RunTest extends SshTestBase {
       send.then(Cmd.sleep("2s"));
       send.then(Cmd.sh("echo 'biz' >> /tmp/foo.txt"));
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
 
       builder.addHostAlias("local", getHost().toString());
       builder.addScript(tail);
@@ -711,9 +705,6 @@ public class RunTest extends SshTestBase {
 
       run.run();
       run.writeRunJson();
-      if (tmpFoo.exists()) {
-         tmpFoo.delete();
-      }
 
       assertFalse("should stop tail before biz", tailed.toString().contains("biz"));
       //TODO fix the 4th entry is empty that occurs when SuffixStream removes prompt but not preceeding \r\n
@@ -729,13 +720,7 @@ public class RunTest extends SshTestBase {
    @Test
    public void ctrlCTail() {
       List<String> lines = new ArrayList<>();
-
       StringBuilder tailed = new StringBuilder();
-
-      File tmpFoo = new File("/tmp/foo.txt");
-      if (tmpFoo.exists()) {
-         tmpFoo.delete();
-      }
 
       Script tail = new Script("tail");
       tail.then(Cmd.sh("echo '!' > /tmp/foo.txt"));
@@ -760,7 +745,7 @@ public class RunTest extends SshTestBase {
       send.then(Cmd.sleep("2s"));
       send.then(Cmd.sh("echo 'biz' >> /tmp/foo.txt"));
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
 
       builder.addHostAlias("local", getHost().toString());
       builder.addScript(tail);
@@ -791,7 +776,7 @@ public class RunTest extends SshTestBase {
       final StringBuilder first = new StringBuilder();
       final StringBuilder second = new StringBuilder();
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
 
       Script firstScript = new Script("first");
       firstScript.then(Cmd.code((input, state) -> {
@@ -833,7 +818,13 @@ public class RunTest extends SshTestBase {
       final StringBuilder first = new StringBuilder();
       final AtomicLong cleanupTimer = new AtomicLong();
       final AtomicBoolean staysFalse = new AtomicBoolean(false);
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
+
+      Script runSetup = new Script("run-setup");
+      runSetup
+         .then(Cmd.sh("pwd"))
+         .then(Cmd.sh("ls -al ~/.ssh/"));
+
       Script runDone = new Script("run-done");
 
       runDone
@@ -859,6 +850,7 @@ public class RunTest extends SshTestBase {
          return Result.next(input);
       }));
 
+      builder.addScript(runSetup);
       builder.addScript(runDone);
       builder.addScript(runWait);
       builder.addScript(runSignal);
@@ -867,29 +859,33 @@ public class RunTest extends SshTestBase {
       builder.addHostAlias("local", getHost().toString());//+testServer.getPort());
       builder.addHostToRole("role", "local");
 
+      builder.addRoleSetup("role","run-setup",new HashMap<>());
       builder.addRoleRun("role", "run-done", new HashMap<>());
       builder.addRoleRun("role", "run-wait", new HashMap<>());
       builder.addRoleRun("role", "run-signal", new HashMap<>());
 
       builder.addRoleCleanup("role", "post-run-cleanup", new HashMap<>());
 
+
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run("/tmp", config, dispatcher);
       long start = System.currentTimeMillis();
+
+      JsonServer server = new JsonServer(run);
+      server.start();
       run.run();
+      server.stop();
 
       assertFalse("script should not invoke beyond a done", staysFalse.get());
       assertTrue("cleanupTimer should be > 0", cleanupTimer.get() > 0);
       assertTrue("done should stop before NEVER is signalled", cleanupTimer.get() - start < 30_000);
 
-      File foo = new File("/tmp/foo.txt");
       File outputPath = new File(run.getOutputPath());
       File downloaded = new File(outputPath.getAbsolutePath(), getHost().getHostName() + "/foo.txt");
 
       assertTrue("queue-download should execute despite done", downloaded.exists());
-
-      foo.delete();
+//
       downloaded.delete();
       downloaded.getParentFile().delete();
    }
@@ -898,7 +894,7 @@ public class RunTest extends SshTestBase {
    public void testTimer() {
       final StringBuilder first = new StringBuilder();
       final StringBuilder second = new StringBuilder();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       Script script = new Script("run-timer");
       script.then(
          Cmd.sleep("4_000").addTimer(2_000, Cmd.code(((input, state) -> {
@@ -933,7 +929,7 @@ public class RunTest extends SshTestBase {
 
       final StringBuilder runEnvBuffer = new StringBuilder();
 
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
 
 
 //"${JAVA_OPTS} ${{OPTS:}}"

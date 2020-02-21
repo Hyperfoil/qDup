@@ -33,7 +33,7 @@ public class XmlCmdTest extends SshTestBase {
         if(fooXml.exists()){
             fooXml.delete();
         }
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         Script runScript = new Script("run-xml");
         runScript.then(Cmd.sh("echo '<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo><bar message=\"uno\"></bar><biz>buz</biz></foo>' > /tmp/foo.xml"));
         runScript.then(
@@ -92,7 +92,7 @@ public class XmlCmdTest extends SshTestBase {
     @Test
     public void setState(){
         StringBuilder first = new StringBuilder();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         Script runScript = new Script("run-xml");
         runScript.then(Cmd.sh("echo '<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo><bar message=\"uno\"></bar><biz>buz</biz></foo>' > /tmp/foo.xml"));
         runScript.then(

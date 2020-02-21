@@ -32,7 +32,7 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void javascript_array_spread(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("",stream(""+
            "scripts:",
            "  foo:",
@@ -60,15 +60,13 @@ public class ForEachTest extends SshTestBase {
         Run doit = new Run("/tmp", config, dispatcher);
         doit.run();
         dispatcher.shutdown();
-
-        System.out.println(config.getState().get("FOO"));
-
+        assertEquals("input should include alpha, bravo, and charlie","-cat-ant-apple-bear-bull",config.getState().get("FOO"));
     }
 
     @Test
-    public void asMap(){
+    public void foreach_input_entry_asMap(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("",stream(""+
            "scripts:",
            "  foo:",
@@ -76,7 +74,7 @@ public class ForEachTest extends SshTestBase {
            "      name: FOO",
            "      input: [{ name: \"hibernate\", pattern: \"hibernate-core*jar\" }, { name: \"logging\", pattern: \"jboss-logging*jar\" }]",
            "    then:",
-           "    - sh: find ${{RUNTIMES}}/${{RUNTIME_NAME}}/system/layers/base -name \"${{enhanceDependency.pattern}}jar\"",
+           "    - set-state: RUN.BAR ${{RUN.BAR:}}-${{FOO.name}}",
            "hosts:",
            "  local: " + getHost(),
            "roles:",
@@ -89,13 +87,13 @@ public class ForEachTest extends SshTestBase {
         Cmd foo = config.getScript("foo");
         Cmd forEach = foo.getNext();
 
-        System.out.println(forEach);
+        assertEquals("for-each should run two times","-hibernate-logging",config.getState().get("FOO"));
 
     }
     @Test
-    public void nested_loop_objects(){
+    public void nested_loop_objects_from_state(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("",stream(""+
            "scripts:",
            "  foo:",
@@ -121,14 +119,13 @@ public class ForEachTest extends SshTestBase {
         Run doit = new Run("/tmp", config, dispatcher);
         doit.run();
         dispatcher.shutdown();
-        System.out.println(config.getState().get("LOG"));
         assertEquals("FOO should loop over bar entries"," one=1 one=2 one=3 two=2 two=4 two=6 three=3 three=6 three=9",config.getState().get("LOG"));
     }
 
     @Test
     public void nested_loop_count(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("",stream(""+
               "scripts:",
            "  foo:",
@@ -163,7 +160,7 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void definedLoopCount(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("",stream(""+
            "scripts:",
            "  foo:",
@@ -534,7 +531,7 @@ public class ForEachTest extends SshTestBase {
             return Result.next(input);
         })));
 
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
 
         builder.addScript(runScript);
         builder.addHostAlias("local",getHost().toString());
@@ -577,7 +574,7 @@ public class ForEachTest extends SshTestBase {
                     return Result.next(input);
                 })));
 
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
 
         builder.addScript(runScript);
         builder.addHostAlias("local",getHost().toString());
@@ -599,7 +596,7 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void waml_state_from_with(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("foreach",stream(""+
               "scripts:",
            "  foo:",
@@ -645,7 +642,7 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void yaml_state_quoted(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("foreach",stream(""+
               "scripts:",
            "  foo:",
@@ -680,7 +677,7 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void yaml_state(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("foreach",stream(""+
            "scripts:",
            "  foo:",
@@ -718,7 +715,7 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void yaml_declared(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("foreach",stream(""+
            "scripts:",
            "  foo:",
@@ -777,7 +774,7 @@ public class ForEachTest extends SshTestBase {
                 .then(Cmd.sh("rm -r /tmp/foo"))
         ;
 
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
 
         builder.addScript(runScript);
         builder.addHostAlias("local",getHost().toString());

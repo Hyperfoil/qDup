@@ -273,7 +273,7 @@ public class CmdTest extends SshTestBase {
    @Test
    public void with_json_from_state() {
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("", stream("" +
             "scripts:",
          "  foo:",
@@ -308,7 +308,7 @@ public class CmdTest extends SshTestBase {
    @Test
    public void with_json() {
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("", stream("" +
             "scripts:",
          "  foo:",
@@ -385,7 +385,7 @@ public class CmdTest extends SshTestBase {
 
    @Test
    public void test_on_signal_variable() {
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       StringBuilder first = new StringBuilder();
 
       Script runSleep = new Script("run-sleep");
@@ -424,7 +424,7 @@ public class CmdTest extends SshTestBase {
 
    @Test
    public void test_on_signal() {
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       StringBuilder first = new StringBuilder();
 
       Script runSleep = new Script("run-sleep");
@@ -460,7 +460,7 @@ public class CmdTest extends SshTestBase {
 
    @Test
    public void testWith() {
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
 
       StringBuilder first = new StringBuilder();
       StringBuilder second = new StringBuilder();

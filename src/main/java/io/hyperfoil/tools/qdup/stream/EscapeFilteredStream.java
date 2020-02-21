@@ -77,9 +77,7 @@ public class EscapeFilteredStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-
-
-        //logger.info(getClass().getName()+".write("+off+","+len+")\n"+MultiStream.printByteCharacters(b,off,len));
+        logger.trace(AsciiArt.ANSI_RED+getClass().getName()+".write("+off+","+len+")\n"+AsciiArt.ANSI_RESET+MultiStream.printByteCharacters(b,off,len));
         try {
             int flushIndex = 0;
             int trailingEscapeIndex = Integer.MAX_VALUE;

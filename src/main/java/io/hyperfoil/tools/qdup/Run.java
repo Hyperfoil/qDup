@@ -161,7 +161,6 @@ public class Run implements Runnable, DispatchObserver {
         timestamps.put(stage.getName()+"Stop",System.currentTimeMillis());
         nextStage();
         //this.setupEnvDiff.clear();//why are we clearing the setup env diff? don't we need it for cleanup too?
-
     }
     private boolean nextStage(){
         boolean startDispatcher = false;
@@ -214,8 +213,7 @@ public class Run implements Runnable, DispatchObserver {
         pendingDownloads.put(host,new PendingDownload(path,destination));
     }
     public void runPendingDownloads(){
-
-        //TODO synchronize so only one threads tries the downloads (run ending while being aborted?)
+        //TODO synchronize so only one thread tries the downloads (run ending while being aborted?)
         logger.info("{} runPendingDownloads",config.getName());
         if(!pendingDownloads.isEmpty()){
             timestamps.put("downloadStart",System.currentTimeMillis());
@@ -237,7 +235,7 @@ public class Run implements Runnable, DispatchObserver {
     }
     public void done(){
         coordinator.clearWaiters();
-        dispatcher.stop();
+        dispatcher.stop(false);
     }
     public Json pendingDownloadJson(){
         Json rtrn = new Json();

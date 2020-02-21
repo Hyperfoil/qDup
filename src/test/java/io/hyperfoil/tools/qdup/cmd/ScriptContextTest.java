@@ -42,7 +42,7 @@ public class ScriptContextTest extends SshTestBase {
 
     private ScriptContext getContext(Cmd command){
 
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = getBuilder();
         RunConfig runConfig = builder.buildConfig();
         Run run = new Run(
                 "/tmp/",

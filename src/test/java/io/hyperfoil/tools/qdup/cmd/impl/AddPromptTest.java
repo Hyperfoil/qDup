@@ -19,7 +19,7 @@ public class AddPromptTest extends SshTestBase {
    @Test(timeout = 10_000)
    public void export_PS1(){
       Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+      RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
          "scripts:",
          "  foo:",
