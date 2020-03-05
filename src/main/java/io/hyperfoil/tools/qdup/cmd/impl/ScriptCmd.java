@@ -18,9 +18,13 @@ Injecting when referenced inside a script causes it to break when the injection 
  */
 
 public class ScriptCmd extends Cmd {
+
     private final String name;
     private final boolean async;
     private final boolean addToCmdTree;
+
+    private Cmd foundScript = null;
+
     private String populatedName = null;
     public ScriptCmd(String name){
         this(name,false,false);
@@ -37,7 +41,42 @@ public class ScriptCmd extends Cmd {
     public String toString(){return "script: "+name;}
 
     @Override
+    public Cmd getNext() {
+
+        //Exception e = new RuntimeException("");
+        //e.printStackTrace();
+        Cmd rtrn = null;
+
+        boolean fromParent = false;
+
+        if(hasToCall()){
+            rtrn = getToCall();
+            //clearToCall();
+            Cmd next = super.getNext();
+            if(next == null){
+
+            }
+            //rtrn.getTail().thenOrphaned(next);
+            rtrn.thenOrphaned(next);
+
+        }else{
+            rtrn = super.getNext();
+            fromParent = true;
+        }
+
+        return rtrn;
+    }
+
+    private void clearToCall(){this.foundScript = null;}
+    private boolean hasToCall(){return foundScript!=null;}
+    private Cmd getToCall(){return foundScript;}
+    private void setToCall(Cmd cmd){
+        this.foundScript = cmd;
+    }
+
+    @Override
     public void run(String input, Context context) {
+        clearToCall();
         populatedName = populateStateVariables(name,this,context.getState());
         Script toCall = context.getScript(populatedName,this);
         Cmd originalNext = getNext();
@@ -52,7 +91,8 @@ public class ScriptCmd extends Cmd {
                 Run run = context instanceof ScriptContext ? ((ScriptContext)context).getRun() : null;
 
                 //copy withs because it will not be inherited
-                copyCmd.with(getWith(true));
+                copyCmd.loadWith(this);
+                //copyCmd.with(getWith(true,true));
 
                 ScriptContext scriptContext = new ScriptContext(ssh,state,run,context.getProfiler(),copyCmd);
                 if(run!=null){ //register context so phase does not end before script completes
@@ -60,7 +100,10 @@ public class ScriptCmd extends Cmd {
                     run.getDispatcher().addScriptContext(scriptContext);
                 }
             }else{
-                injectThen(copyCmd, context);
+                //injectThen(copyCmd, context);
+                copyCmd.loadWith(this);
+
+                setToCall(copyCmd);
             }
         }
         context.next(input);

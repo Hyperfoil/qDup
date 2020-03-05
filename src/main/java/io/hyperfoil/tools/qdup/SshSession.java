@@ -608,6 +608,7 @@ public class SshSession {
       sh(command, true, callback, prompt);
    }
 
+   //TODO clear the buffers before sending the current command?
    private void sh(String command, boolean acquireLock, Consumer<String> callback, Map<String, String> prompt) {
       command = command.replaceAll("[\r\n]+$", ""); //replace trailing newlines
       logger.trace("{} sh: {}, lock: {}", host, command, acquireLock);

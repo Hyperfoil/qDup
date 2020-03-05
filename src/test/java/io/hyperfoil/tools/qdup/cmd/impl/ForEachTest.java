@@ -87,7 +87,12 @@ public class ForEachTest extends SshTestBase {
         Cmd foo = config.getScript("foo");
         Cmd forEach = foo.getNext();
 
-        assertEquals("for-each should run two times","-hibernate-logging",config.getState().get("FOO"));
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run("/tmp", config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        assertEquals("for-each should run two times","-hibernate-logging",config.getState().get("BAR"));
 
     }
     @Test

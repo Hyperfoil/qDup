@@ -784,7 +784,6 @@ public class RunTest extends SshTestBase {
          return Result.skip(input);
       }));
 
-
       Script secondScript = new Script("second");
       secondScript.then(Cmd.sleep("500"));//to ensure second is > first if called
       secondScript.then(Cmd.code((input, state) -> {
@@ -794,7 +793,6 @@ public class RunTest extends SshTestBase {
 
       builder.addScript(firstScript);
       builder.addScript(secondScript);
-
       builder.addHostAlias("local", getHost().toString());//+testServer.getPort());
       builder.addHostToRole("role", "local");
       builder.addRoleSetup("role", "first", new HashMap<>());
@@ -804,11 +802,10 @@ public class RunTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run("/tmp", config, dispatcher);
-
       run.run();
 
-      assertFalse("first should be called", first.toString().isEmpty());
-      assertFalse("second should be called", second.toString().isEmpty());
+      assertFalse("first should be called but isEmpty", first.toString().isEmpty());
+      assertFalse("second should be called but isEmtpy", second.toString().isEmpty());
 
       assertTrue("first should be called before second: first=" + first.toString() + " second=" + second.toString(), first.toString().compareTo(second.toString()) < 0);
    }

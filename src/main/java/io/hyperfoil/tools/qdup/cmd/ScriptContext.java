@@ -238,7 +238,6 @@ public class ScriptContext implements Context, Runnable{
 
         getProfiler().start("next");
         Cmd cmd = getCurrentCmd();
-
         log(cmd,output);
         if(!signalCmds.isEmpty()){
             signalCmds.forEach((name,onsignal)->{
@@ -252,7 +251,8 @@ public class ScriptContext implements Context, Runnable{
                 closeLineQueue();
             }
             cmd.setOutput(output);
-            boolean changed = setCurrentCmd(cmd,cmd.getNext());
+            Cmd toCall = cmd.getNext();
+            boolean changed = setCurrentCmd(cmd,toCall);
             if(changed) {
                 startCurrentCmd();
             }else{}

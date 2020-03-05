@@ -26,6 +26,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.Sleep;
 import io.hyperfoil.tools.qdup.cmd.impl.Upload;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import io.hyperfoil.tools.qdup.cmd.impl.XmlCmd;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -89,110 +90,6 @@ public abstract class Cmd {
       }
    }
 
-   private static class NashornStateContext implements javax.script.ScriptContext {
-
-      private final State state;
-      private final ScriptContext parent;
-
-      private Object fromState(String key) {
-         Object val = state.get(key);
-         if (val instanceof String && ((String) val).matches("\\d+")) {
-            return Long.parseLong((String) val);
-         } else if (val instanceof String && ((String) val).matches("\\d+\\.\\d+")) {
-            return Double.parseDouble((String) val);
-         } else {
-            return val;
-         }
-      }
-
-      public NashornStateContext(State state) {
-         this(state, new SimpleScriptContext());
-      }
-
-      public NashornStateContext(State state, javax.script.ScriptContext parent) {
-         this.state = state;
-         this.parent = parent;
-      }
-
-      @Override
-      public void setBindings(Bindings bindings, int i) {
-         parent.setBindings(bindings, i);
-      }
-
-      @Override
-      public Bindings getBindings(int i) {
-         return parent.getBindings(i);
-      }
-
-      @Override
-      public void setAttribute(String s, Object o, int i) {
-
-         parent.setAttribute(s, o, i);
-      }
-
-      @Override
-      public Object getAttribute(String s, int i) {
-         if (state.has(s, true)) {
-            return fromState(s);
-         } else {
-            return parent.getAttribute(s, i);
-         }
-      }
-
-      @Override
-      public Object removeAttribute(String s, int i) {
-         return parent.removeAttribute(s, i);
-      }
-
-      @Override
-      public Object getAttribute(String s) {
-         if (state.has(s, true)) {
-            return fromState(s);
-         }
-         return parent.getAttribute(s);
-      }
-
-      @Override
-      public int getAttributesScope(String s) {
-         return 0;
-      }
-
-      @Override
-      public Writer getWriter() {
-         return parent.getWriter();
-      }
-
-      @Override
-      public Writer getErrorWriter() {
-         return parent.getWriter();
-      }
-
-      @Override
-      public void setWriter(Writer writer) {
-         parent.setWriter(writer);
-      }
-
-      @Override
-      public void setErrorWriter(Writer writer) {
-         parent.setErrorWriter(writer);
-      }
-
-      @Override
-      public Reader getReader() {
-         return parent.getReader();
-      }
-
-      @Override
-      public void setReader(Reader reader) {
-         parent.setReader(reader);
-      }
-
-      @Override
-      public List<Integer> getScopes() {
-         return parent.getScopes();
-      }
-   }
-
    public abstract static class LoopCmd extends Cmd {
       @Override
       protected void setSkip(Cmd skip) {
@@ -204,7 +101,7 @@ public abstract class Cmd {
       public Cmd then(Cmd command) {
          Cmd commandTail = command.getTail();
          Cmd currentTail = this.getTail();
-         Cmd rtrn = super.then(command, true);
+         Cmd rtrn = super.then(command, true, true);
 
 
          if(currentTail==this){
@@ -661,6 +558,7 @@ public abstract class Cmd {
       return !timers.isEmpty();
    }
 
+
    public void injectThen(Cmd command) {
       injectThen(command, null);
    }
@@ -732,30 +630,40 @@ public abstract class Cmd {
       return this;
    }
 
+
    public Json getWith() {
       return withDef;
    }
-   public Json getWith(boolean recursive){
-      if(!recursive){
-         return withDef.clone();
-      }else{
-         Json rtrn = new Json();
-         Cmd target = this;
-         while(target!=null){
-            target.getWith().forEach((key,value)->{
-               if(!rtrn.has(key)){
-                  if(value instanceof Json){
-                     rtrn.set(key,((Json)value).clone()); //clone to avoid parallel modification
-                  }else {
-                     rtrn.set(key, value);
-                  }
-               }
-            });
-            target = target.getParent();
-         }
-         return rtrn;
-      }
+   public void loadWith(Cmd cmd){
+      Cmd target = cmd;
+      do{
+         this.withDef.merge(target.withDef,true);
+         this.withActive.merge(target.withActive,true);
+      }while( (target = target.getParent()) != null);
+//      this.withDef.merge(cmd.withDef);
+//      this.withActive.merge(cmd.withActive);
    }
+//   public Json getWith(boolean recursive,boolean active){
+//      if(!recursive){
+//         return active ? withActive.clone() : withDef.clone();
+//      }else{
+//         Json rtrn = new Json();
+//         Cmd target = this;
+//         while(target!=null){
+//            target.getWith().forEach((key,value)->{
+//               if(!rtrn.has(key)){
+//                  if(value instanceof Json){
+//                     rtrn.set(key,((Json)value).clone()); //clone to avoid parallel modification
+//                  }else {
+//                     rtrn.set(key, value);
+//                  }
+//               }
+//            });
+//            target = target.getParent();
+//         }
+//         return rtrn;
+//      }
+//   }
 
 
    public int getUid() {
@@ -775,7 +683,7 @@ public abstract class Cmd {
    private void tree(StringBuffer rtrn, int indent, String prefix, boolean debug) {
       final int correctedIndent = indent == 0 ? 1 : indent;
       if (debug) {
-         rtrn.append(String.format("%" + correctedIndent + "s%s%s next=%s skp=%s prv=%s%n", "", prefix, this.getUid() + ":" + this, this.getNext(), this.getSkip(), this.getPrevious()));
+         rtrn.append(String.format("%" + correctedIndent + "s%s%s next=%s skp=%s prv=%s%n", "", prefix, this.getUid() + ":" + this, this.next, this.skip, this.prev));
       } else {
          rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this.toString()));
       }
@@ -851,10 +759,15 @@ public abstract class Cmd {
    }
 
    public Cmd then(Cmd command) {
-      return then(command, true);
+      return then(command, true, true);
    }
-
-   protected Cmd then(Cmd command, boolean setSkip) {
+   public Cmd thenOrphaned(Cmd command){
+      return then(command, true, false);
+   }
+   protected Cmd then(Cmd command, boolean setSkip,boolean setParent) {
+      if(command == null){
+         return this;
+      }
       if(isLoopBack()) {
          Cmd loopCmd = getSkip();
          assert loopCmd instanceof LoopCmd;
@@ -893,7 +806,9 @@ public abstract class Cmd {
          } else {
             command.setPrevious(this);
          }
-         command.parent = this;
+         if(setParent) {
+            command.parent = this;
+         }
          this.thens.add(command);
       }
       return this;
@@ -923,7 +838,6 @@ public abstract class Cmd {
 
 
    protected final void doRun(String input, Context context) {
-
       if (!withDef.isEmpty()) {
          //replace with values if they have ${{
          withDef.forEach((k,v)->{
@@ -1010,8 +924,9 @@ public abstract class Cmd {
    public Cmd getTail() {
       Cmd rtrn = this;
 
-      while (!rtrn.getThens().isEmpty()) {
+      while (!rtrn.getThens().isEmpty() ) {
          rtrn = rtrn.thens.getLast();
+
       }
       return rtrn;
    }

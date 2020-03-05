@@ -82,8 +82,7 @@ public class ForEach extends Cmd.LoopCmd {
             String populatedDeclaredInput = Cmd.populateStateVariables(declaredInput,this,context.getState());
             //if we need to load from declaredInput
             if( !declaredInput.isEmpty() && !populatedDeclaredInput.isEmpty() && (split.isEmpty() || !this.loadedInput.equalsIgnoreCase(populatedDeclaredInput)) ) {
-                split.clear();
-                index=-1;
+                clearLoopState();
                 split.addAll(split(populatedDeclaredInput));
                 this.loadedInput = populatedDeclaredInput;//set loadedInput to the string rep of what we loaded
                 logger.debug("for-each:{} input={} split={}", name, input, split);
