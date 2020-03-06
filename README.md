@@ -154,7 +154,7 @@ log the input to console
 * `for-each: <variableName> [values]` re-run the children with `variableName`
 set to each entry in `values` or the input from the previous command if `values`
 is not provided
-* `invoke: <name>`
+* `script: <name>`
 Invoke the `name` script as part of the current script
 * `js: <javascript (input,state)=>{...}>` invoke javascript function with
 `input` and `state` as inputs. The command will invoke the next command
