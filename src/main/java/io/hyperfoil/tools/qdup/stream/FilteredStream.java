@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -19,12 +20,15 @@ public class FilteredStream extends MultiStream{
 
     private byte[] buffered;
     private int writeIndex = 0;
+    private int postFilterDrop = 0;
     private final Map<String,byte[]> filters;
     private final Map<String,byte[]> replacements;
 
     private final List<Consumer<String>> observers;
 
-    public FilteredStream(){
+    public FilteredStream(){this("");}
+    public FilteredStream(String name){
+        super(name);
         buffered = new byte[20*1024];//4k was growing with most runs, 20k seems to work better
         filters = new LinkedHashMap<>();//to ensure key order
         replacements = new HashMap<>();
@@ -117,6 +121,14 @@ public class FilteredStream extends MultiStream{
         try{
             int flushIndex = 0;
             int trailingPrefixIndex = Integer.MAX_VALUE;
+
+
+            while(postFilterDrop > 0 && len > 0 && (b[off] == '\r' || b[off] == '\n') ){
+                off++;
+                len--;
+                postFilterDrop--;
+            }
+
             if(filters.isEmpty()){
                 if(writeIndex > 0){//something was buffered, probably back when there were filters
 
@@ -136,7 +148,7 @@ public class FilteredStream extends MultiStream{
                 //copy the content to write into the buffered content
                 System.arraycopy(b,off,buffered, writeIndex,len);
                 writeIndex +=len;
-
+                boolean filteredAtLeastOnce = false;
                 for(int currentIndex = 0; currentIndex < writeIndex; currentIndex++){
                     boolean filtered = false;
                     do{
@@ -154,6 +166,7 @@ public class FilteredStream extends MultiStream{
                                     if(filter.length > dropLength){
                                         dropLength=filter.length;
                                         filtered=true;
+                                        filteredAtLeastOnce=true;
                                         matchedName = name;
                                     }
                                 }else if (prefixLength > 0) {
@@ -165,6 +178,7 @@ public class FilteredStream extends MultiStream{
                         }
                         if(filtered){
                             tellObservers(matchedName);
+                            postFilterDrop += 2;
                             if ( flushIndex < currentIndex) {
                                 superWrite(buffered,flushIndex, currentIndex - flushIndex);
                             }
@@ -174,11 +188,14 @@ public class FilteredStream extends MultiStream{
                             int nextIndex = currentIndex + filters.get(matchedName).length;
                             //trap the potential \r\n if we filtered the entire write / line
                             //TODO BUG, this can increment currentIndex && flushIndex beyondWriteIndex
-                            if(currentIndex == off && nextIndex < writeIndex && (buffered[nextIndex]=='\n' || buffered[nextIndex]=='\r') ){
+                            //TODO BUG, this only works if /r/n are on the same write, what about a subsequent call to write
+                            if(postFilterDrop > 0 && currentIndex == off && nextIndex < writeIndex && (buffered[nextIndex]=='\n' || buffered[nextIndex]=='\r') ){
                                 nextIndex++;
+                                postFilterDrop--;
                             }
-                            if(currentIndex == off && nextIndex < writeIndex &&  (buffered[nextIndex]=='\n' || buffered[nextIndex]=='\r') ){
+                            if(postFilterDrop > 0 && currentIndex == off && nextIndex < writeIndex &&  (buffered[nextIndex]=='\n' || buffered[nextIndex]=='\r') ){
                                 nextIndex++;
+                                postFilterDrop--;
                             }
                             //currentIndex += filters.get(matchedName).length;
                             currentIndex = nextIndex;
@@ -188,23 +205,26 @@ public class FilteredStream extends MultiStream{
                     }while(filtered);
                 }
 
-                if(trailingPrefixIndex < Integer.MAX_VALUE){//flush from flushIndex to trailingPrefixIndex
+                if (trailingPrefixIndex < Integer.MAX_VALUE) { // flush from flushIndex to trailingPrefixIndex
                     if(trailingPrefixIndex-flushIndex>0) {
                         superWrite(buffered, flushIndex, trailingPrefixIndex - flushIndex);
                     }
                     flushIndex = trailingPrefixIndex;
-                }else{// no matches and no potential matches, flush everything
-                    superWrite(buffered,flushIndex,writeIndex-flushIndex);//here is where writeIndex-flushIndex == -2
+                } else { // no matches and no potential matches, flush everything
+                    if (flushIndex < writeIndex) { //fix #44 to only write empty
+                        superWrite(buffered,flushIndex,writeIndex-flushIndex);//here is where writeIndex-flushIndex == -2
+                    }
+
                     //flushIndex = writeIndex-1;
                     flushIndex = writeIndex;//TODO testing if fixes double write
                 }
                 //compact the buffer if we haven't flushed everything
-                if(flushIndex > 0 ) {
+                if (flushIndex > 0 ) {
                     System.arraycopy(buffered, flushIndex, buffered, 0, writeIndex-flushIndex);
                     writeIndex=writeIndex-flushIndex;
                 }
             }
-        }catch(Exception e){
+        } catch(Exception e) {
             logger.error(e.getMessage(),e);
             throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);//System.exit(-1);
         }

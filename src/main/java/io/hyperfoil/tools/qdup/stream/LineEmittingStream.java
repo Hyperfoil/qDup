@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.stream;
 
+import io.hyperfoil.tools.yaup.AsciiArt;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -19,12 +20,17 @@ import java.util.stream.Collectors;
 public class LineEmittingStream extends OutputStream {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
+
+    private String name = "";
     int writeIndex = 0;
     byte buffered[] = new byte[4*1024];
 
     private List<Consumer<String>> consumers = new LinkedList<>();
 
-    public LineEmittingStream(){}
+    public LineEmittingStream(){this(""+System.currentTimeMillis());}
+    public LineEmittingStream(String name){
+        this.name = name;
+    }
 
     public boolean addConsumer(Consumer<String> consumer){
         return consumers.add(consumer);
@@ -40,6 +46,13 @@ public class LineEmittingStream extends OutputStream {
             emit(buffered, 0, writeIndex);
             reset();
         }
+    }
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Override

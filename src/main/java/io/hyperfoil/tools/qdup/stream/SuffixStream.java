@@ -37,11 +37,13 @@ public class SuffixStream extends MultiStream {
         @Override
         public void run() {
             if(lastIndex == writeIndex){//if there has not been a subsequent write
+                foundSuffix(name,writeIndex);
                 callConsumers(name);
             }
         }
     }
 
+    private String name="";
     private byte[] buffered;
     private int writeIndex = 0;
     private Map<String,byte[]> suffixes;
@@ -54,10 +56,11 @@ public class SuffixStream extends MultiStream {
     private FoundRunnable foundRunnable;
 
     public SuffixStream(){
-        this(null);
+        this("",null);
 
     }
-    public SuffixStream(ScheduledThreadPoolExecutor threadPool){
+    public SuffixStream(String name,ScheduledThreadPoolExecutor threadPool){
+        super(name);
         buffered = new byte[20*1024];
         suffixes = new LinkedHashMap<>();
         replacements = new LinkedHashMap<>();
@@ -65,6 +68,13 @@ public class SuffixStream extends MultiStream {
         executor = threadPool;
         future = null;
         foundRunnable = new FoundRunnable("",-1);
+    }
+
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
     }
 
     public int getExecutorDelay(){
@@ -185,7 +195,7 @@ public class SuffixStream extends MultiStream {
                     }
                 }
                 if (found) {
-                    foundSuffix(foundName,writeIndex);
+
                     if(executor!=null && executorDelay>=0){
                         if(future!=null){
                             future.cancel(true);
@@ -193,6 +203,7 @@ public class SuffixStream extends MultiStream {
                         foundRunnable.reset(foundName,writeIndex);
                         future = executor.schedule(foundRunnable, executorDelay,TimeUnit.MILLISECONDS);
                     } else {
+                        foundSuffix(foundName,writeIndex);
                         callConsumers(foundName);
                     }
 

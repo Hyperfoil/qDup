@@ -5,7 +5,7 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.stream.EscapeFilteredStream;
 import io.hyperfoil.tools.qdup.stream.FilteredStream;
 import io.hyperfoil.tools.qdup.stream.LineEmittingStream;
-import io.hyperfoil.tools.qdup.stream.MultiStream;
+import io.hyperfoil.tools.qdup.stream.SessionStreams;
 import io.hyperfoil.tools.qdup.stream.SuffixStream;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -49,14 +48,9 @@ public class SshSession {
    public String getLastCommand() {
       return lastCommand;
    }
-
    public void setLastCommand(String lastCommand) {
       this.lastCommand = lastCommand;
    }
-
-   public enum Stream {Escape, Semaphore, Filtered, Prompt}
-
-
 
    private static final String SH_CALLBACK = "qdup-sh-callback";
    private static final String SH_BLOCK_CALLBACK = "qdup-sh-block-callback";
@@ -112,22 +106,21 @@ public class SshSession {
    private Properties sshConfig;
 
    private PrintStream commandStream;
-   private ByteArrayOutputStream shStream;
 
    private Semaphore shellLock;
 
-   //private PipedInputStream pipeIn;
-   //private PipedOutputStream pipeOut;
+//   private ByteArrayOutputStream shStream;
+//   private EscapeFilteredStream escapeFilteredStream;
+//   private SuffixStream suffixStream;
+//   private FilteredStream filteredStream;
+//   private SuffixStream promptStream;
+//
+//   private FileOutputStream traceStream;
+//   private String tracePath;
+//
+//   private LineEmittingStream lineEmittingStream;
 
-   private EscapeFilteredStream escapeFilteredStream;
-   private SuffixStream suffixStream;
-   private FilteredStream filteredStream;
-   private SuffixStream promptStream;
-
-   private FileOutputStream traceStream;
-   private String tracePath;
-
-   private LineEmittingStream lineEmittingStream;
+   SessionStreams sessionStreams;
 
    private Host host;
    private String knownHosts;
@@ -149,18 +142,13 @@ public class SshSession {
       return name;
    }
    public boolean isTracing(){
-      return traceStream!=null && tracePath!=null;
-   }
-   public String getTracePath(){
-      return tracePath;
+      return sessionStreams.hasTrace();
    }
    public boolean hasName(){return name!=null && !name.isEmpty();}
 
    public void setName(String name) {
       this.name = name;
-      if (escapeFilteredStream != null) {
-         escapeFilteredStream.setName(name);
-      }
+      sessionStreams.setName(name);
    }
 
    private String name = "";
@@ -195,7 +183,9 @@ public class SshSession {
       PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO_WORKERS, 1);
 
       sshClient.start();
-      //StrictHostKeyChecking=no
+      // StrictHostKeyChecking=no
+      //        sshConfig = new Properties();
+      //        sshConfig.put("StrictHostKeyChecking", "no");
       sshClient.setServerKeyVerifier((clientSession1, remoteAddress, serverKey) -> {
          return true;
       });
@@ -214,8 +204,6 @@ public class SshSession {
       this.executor = executor;
       connected = connect(this.timeout*1_000, setupCommand, this.trace);
 
-//        sshConfig = new Properties();
-//        sshConfig.put("StrictHostKeyChecking", "no");
    }
 
    public SshSession openCopy(){
@@ -250,11 +238,8 @@ public class SshSession {
       }
    }
 
-   public Set<String> getPrompts(){
-      return suffixStream.getSuffixes();
-   }
    public void addPrompt(String prommpt){
-      suffixStream.addSuffix(prommpt,prommpt,"");
+      sessionStreams.addPrompt(prommpt);
    }
 
    private void shConsumers(String output) {
@@ -289,93 +274,46 @@ public class SshSession {
          if(host.hasPassword()){
             clientSession.addPasswordIdentity(host.getPassword());
          }
-//            clientSession.addPublicKeyIdentity(SecurityUtils.loadKeyPairIdentities(
-//                    identity,
-//                    Files.newInputStream((new File(identity)).toPath()),
-//
-//                    (resourceKey)->{return passphrase;}
-//            ));
          clientSession.auth().verify(this.timeout * 1_000);
          //setup all the streams
 
-         //pipeIn = new PipedInputStream();//testing invertedIn
-         //pipeOut = new PipedOutputStream(pipeIn);//testing invertedIn
          //the output of the current sh command
-         shStream = new ByteArrayOutputStream();
+         if(sessionStreams != null){
+            sessionStreams.close();
+         }
 
-         //commandStream = new PrintStream(pipeOut);//testing invertedIn
-
-         escapeFilteredStream = new EscapeFilteredStream();
-         filteredStream = new FilteredStream();
-
-         suffixStream = executor == null ? new SuffixStream() : new SuffixStream(executor);
-         promptStream = new SuffixStream();
-         lineEmittingStream = new LineEmittingStream();
-
-         escapeFilteredStream.addStream("semaphore", suffixStream);
-
-         suffixStream.addStream("filtered", filteredStream);
-         suffixStream.addStream("prompt-callback", promptStream);
-
-         //move before opening connection or sending
-         //was getting a ConcurrentModificationException with this after the setup sh() calls
-         filteredStream.addStream("lines", lineEmittingStream);
-         filteredStream.addStream("sh", shStream);
-
-
-         filteredStream.addFilter("^C", new byte[]{0, 0, 0, 3});
-         filteredStream.addFilter("echo-^C", "^C");
-         filteredStream.addFilter("^D", new byte[]{0, 0, 0, 4});
-         filteredStream.addFilter("echo-^D", "^D");
-         filteredStream.addFilter("^P", new byte[]{0, 0, 0, 16});
-         filteredStream.addFilter("^T", new byte[]{0, 0, 0, 20});
-         filteredStream.addFilter("^X", new byte[]{0, 0, 0, 24});
-         filteredStream.addFilter("^@", new byte[]{0, 0, 0});
+         sessionStreams = new SessionStreams(getName(),executor);
 
          semaphoreCallback = (name) -> {
 
-            filteredStream.flushBuffer();
-            lineEmittingStream.forceEmit();
-            String streamString = shStream.toString();
+            sessionStreams.flushBuffer();
+            String streamString = sessionStreams.currentOutput();
 
             String output = streamString
                .replaceAll("^[\r\n]+", "")  //replace leading newlines
                .replaceAll("[\r\n]+$", "") //replace trailing newlines
                .replaceAll("\r\n", "\n"); //change \r\n to just \n
-            //shStream.reset();
             shConsumers(output);
             //TODO use atomic boolean to set expecting response and check for true bfore release?
             shellLock.release();
-            if(isTracing() && traceStream != null){
-               try {
-                  traceStream.write("RELEASE".getBytes());
-               } catch (IOException e) {
-                  e.printStackTrace();
-               }
-            }
             if (permits() > 1) {
                logger.error("ShSession " + getName() + " " + getLastCommand() + " release -> permits==" + permits() + "\n" + output);
             }
          };
-         //lineEmittingStream.addConsumer(this::lineConsumers);
-
-         suffixStream.addSuffix("PROMPT", PROMPT, "");
-         suffixStream.addConsumer(this.semaphoreCallback);
+         sessionStreams.addPrompt("PROMPT",PROMPT,"");
+         sessionStreams.addPromptCallback(this.semaphoreCallback);
 
          channelShell = clientSession.createShellChannel();
          channelShell.getPtyModes().put(PtyMode.ECHO, 1);//need echo for \n from real SH but adds gargage chars for test :(
-         channelShell.setPtyType("vt100");
-         //channelShell.setPtyType("xterm");
+         channelShell.setPtyType("vt100"); // channelShell.setPtyType("xterm");
          channelShell.setPtyColumns(10 * 1024);//hack to get around " \r" when line is longer than shell width
          channelShell.setPtyWidth(10 * 1024);//TODO add " \r" to the suffix stream?
          channelShell.setPtyHeight(80);
          channelShell.setPtyLines(80);
          channelShell.setUsePty(true);
 
-         //channelShell.setIn(pipeIn);//testing invertedIn instead
-
-         channelShell.setOut(escapeFilteredStream);//efs or ss
-         channelShell.setErr(escapeFilteredStream);//PROMPT goes to error stream so have to listen there too
+         channelShell.setOut(sessionStreams);//efs or ss
+         channelShell.setErr(sessionStreams);//PROMPT goes to error stream so have to listen there too
 
          setTrace(trace);
 
@@ -390,7 +328,6 @@ public class SshSession {
          //TODO do we wait 1s for slow connections?
 
          sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
-         //shSync("pwd");
          sh("");//forces the thread to wait for the previous sh to complete
          if (setupCommand != null && !setupCommand.trim().isEmpty()) {
             sh(setupCommand);
@@ -427,66 +364,16 @@ public class SshSession {
          rtrn = isOpen();
       }
       //allow session to be fully setup before adding watcher support to lineEmittingStream
-      if (lineEmittingStream != null) {
-         lineEmittingStream.addConsumer(this::lineConsumers);
-
-      }
-
+      sessionStreams.addLineConsumer(this::lineConsumers);
       assert permits() == 1; //only one permit available for next sh(...)
-
       return rtrn;
    }
 
    public void setTrace(boolean trace) throws IOException {
-      if(trace){
-         if(traceStream == null){
-            tracePath = Files.createTempFile(getHost().toString()+(hasName()?"."+getName():""),".log").toAbsolutePath().toString();
-            traceStream = new FileOutputStream(tracePath);
-            escapeFilteredStream.addStream("trace",traceStream);
-         }else{
-            //already tracing, do nothing
-         }
-
-      }else{
-         if(traceStream != null){
-            traceStream.close();
-            escapeFilteredStream.removeStream("trace");
-         }
+      if(trace) {
+         String path = getHost().toString() + (hasName() ? "." + getName() : "");
+         sessionStreams.setTrace(path);
       }
-   }
-
-   public void addStreamObserver(Stream target, String key, OutputStream stream) {
-      MultiStream targetStream = getTarget(target);
-      if (targetStream != null) {
-         targetStream.addStream(key, stream);
-      }
-   }
-
-   public void removeStreamObserver(Stream target, String key) {
-      MultiStream targetStream = getTarget(target);
-      if (targetStream != null) {
-         targetStream.removeStream(key);
-      }
-   }
-
-   private MultiStream getTarget(Stream target) {
-      MultiStream targetStream;
-      switch (target) {
-         case Prompt:
-            targetStream = promptStream;
-            break;
-         case Filtered:
-            targetStream = filteredStream;
-            break;
-         case Semaphore:
-            targetStream = suffixStream;
-            break;
-         case Escape:
-         default:
-            targetStream = escapeFilteredStream;
-            break;
-      }
-      return targetStream;
    }
 
    public boolean isOpen() {
@@ -495,15 +382,15 @@ public class SshSession {
    }
 
    public boolean usesDelay() {
-      return this.suffixStream.usesExecutor();
+      return sessionStreams.getDelay() > 0;
    }
 
    public int getDelay() {
-      return this.suffixStream.getExecutorDelay();
+      return sessionStreams.getDelay();
    }
 
    public void setDelay(int delay) {
-      this.suffixStream.setExecutorDelay(delay);
+      sessionStreams.setDelay(delay);
    }
 
    public boolean isConnected() {
@@ -637,11 +524,10 @@ public class SshSession {
                   e.printStackTrace();
                   Thread.interrupted();
                }
-               promptStream.clear();
-               promptStream.clearConsumers();
+               sessionStreams.clearInline();
+
                if (prompt != null && !prompt.isEmpty()) {
-                  prompt.keySet().forEach(promptStream::addSuffix);
-                  promptStream.addConsumer((name) -> {
+                  sessionStreams.addInlinePrompts(prompt.keySet(),(name)->{
                      if (prompt.containsKey(name)) {
                         String response = prompt.get(name);
                         this.response(response);
@@ -650,8 +536,7 @@ public class SshSession {
                }
             }
             //moved stream reset to after acquiring lock
-            lineEmittingStream.reset();
-            shStream.reset();
+            sessionStreams.reset();
             removeShObserver(SH_CALLBACK);
             if (callback != null) {
                addShObserver(SH_CALLBACK, callback);
@@ -660,11 +545,8 @@ public class SshSession {
                //TODO race between this and FilteredStream.write before we changed FilterStream to copy the keys into a new Set
                //Are we releasing the lock too soon in the stream chain?
                //test with a stream that sleeps in the write?
-               filteredStream.addFilter("command", command, "");
+               sessionStreams.setCommand(command);
             }
-//                if(acquireLock) {
-//                    shStream.reset();
-//                }
             commandStream.println(command);
             commandStream.flush();
          }
@@ -696,7 +578,7 @@ public class SshSession {
    }
 
    public String peekOutput() {
-      return shStream.toString();
+      return sessionStreams.currentOutput();
    }
 
    public String peekOutputTail() {
@@ -707,13 +589,6 @@ public class SshSession {
       return rtrn;
    }
 
-   //    public String peekCleanedOutput(){
-//        String output = shStream.toString()
-//                .replaceAll("^[\r\n]+","")  //replace leading newlines
-//                .replaceAll("[\r\n]+$","") //replace trailing newlines
-//                .replaceAll("\r\n","\n"); //change \r\n to just \n
-//        return output;
-//    }
    public void close() {
       close(true);
    }
@@ -739,9 +614,7 @@ public class SshSession {
                   Thread.interrupted();
                }
             }
-
-            //channelShell.getIn().close();//testing invertedIn
-            suffixStream.close();
+            sessionStreams.close();
             channelShell.close();
             clientSession.close();
             sshClient.stop();

@@ -17,7 +17,9 @@ public class SemaphoreStream extends MultiStream {
     private AtomicInteger promptIndex = new AtomicInteger(0);
     private Runnable runnable;
 
-    public SemaphoreStream(Semaphore lock, byte bytes[]){
+    public SemaphoreStream(Semaphore lock, byte bytes[]){this("",lock,bytes);}
+    public SemaphoreStream(String name,Semaphore lock, byte bytes[]){
+        super(name);
         this.lock = lock;
         this.prompt = bytes;
     }

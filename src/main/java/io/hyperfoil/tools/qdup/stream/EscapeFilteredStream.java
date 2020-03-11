@@ -44,9 +44,10 @@ public class EscapeFilteredStream extends MultiStream {
 
     private byte[] buffered;
     private int writeIndex = 0;
-    private String name = "";
 
-    public EscapeFilteredStream(){
+    public EscapeFilteredStream(){this("");}
+    public EscapeFilteredStream(String name){
+        super(name);
         buffered = new byte[20*1024];
     }
     protected void superWrite(byte b[], int off, int len) throws IOException {
@@ -71,13 +72,16 @@ public class EscapeFilteredStream extends MultiStream {
     }
 
 
+    public void reset(){
+        writeIndex = 0;
+    }
+
     @Override
     public void write(byte b[]) throws IOException {
         write(b,0,b.length);
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-        logger.trace(AsciiArt.ANSI_RED+getClass().getName()+".write("+off+","+len+")\n"+AsciiArt.ANSI_RESET+MultiStream.printByteCharacters(b,off,len));
         try {
             int flushIndex = 0;
             int trailingEscapeIndex = Integer.MAX_VALUE;
@@ -194,13 +198,5 @@ public class EscapeFilteredStream extends MultiStream {
             rtrn = 0;
         }
         return rtrn;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }

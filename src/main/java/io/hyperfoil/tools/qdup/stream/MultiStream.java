@@ -62,11 +62,24 @@ public class MultiStream extends OutputStream{
         return "bytes="+bytes.toString()+System.lineSeparator()+"chars="+chars.toString()+System.lineSeparator()+"indxs="+indxs.toString();
     }
 
+    private String name = "";
     private Map<String,OutputStream> streams;
 
-    public MultiStream(){
+    public MultiStream(){this(""+System.currentTimeMillis());}
+    public MultiStream(String name){
+        this.name = name;
         this.streams = new HashMap<>();
     }
+
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
 
     @Override
     public void close() throws IOException {
@@ -88,6 +101,9 @@ public class MultiStream extends OutputStream{
     }
     public boolean hasStream(String key){
         return streams.containsKey(key);
+    }
+    public OutputStream getStream(String key){
+        return streams.get(key);
     }
 
     @Override

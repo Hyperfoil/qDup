@@ -147,32 +147,33 @@ public class SshSessionTest extends SshTestBase{
         assertEquals("expect 1 permit",1,session.permits());
     }
 
+    //failing sometimes?
     @Test
     public void echo_PS1(){
-        SshSession sshSession = new SshSession(getHost(),
-           "/dev/null",
-           getIdentity(),
-           null,
-           5,
-           "",
-           executor,
-           false);
-        String out = sshSession.shSync("echo \""+SshSession.PROMPT+"\"");
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        assertEquals("output should only be prompt",SshSession.PROMPT,out);
-        assertEquals("one prompt permit expected",1,sshSession.permits());
-        out = sshSession.shSync("echo foo");
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        assertEquals("output should only be foo","foo",out);
-        assertEquals("one foo permit expected",1,sshSession.permits());
+            SshSession sshSession = new SshSession(getHost(),
+               "/dev/null",
+               getIdentity(),
+               null,
+               5,
+               "",
+               executor,
+               false);
+            String out = sshSession.shSync("echo \""+SshSession.PROMPT+"\"");
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            assertEquals("output should only be prompt",SshSession.PROMPT,out);
+            assertEquals("one prompt permit expected",1,sshSession.permits());
+            out = sshSession.shSync("echo foo");
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            assertEquals("output should only be foo","foo",out);
+            assertEquals("one foo permit expected",1,sshSession.permits());
     }
 
 }

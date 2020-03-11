@@ -70,7 +70,7 @@ public class SuffixStreamTest {
         ScheduledThreadPoolExecutor sfe = new ScheduledThreadPoolExecutor(2);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        SuffixStream stream = new SuffixStream(sfe);
+        SuffixStream stream = new SuffixStream("",sfe);
         stream.setExecutorDelay(0);
         stream.addSuffix("FOO","FOO","");
         stream.addStream("baos",baos);
@@ -96,7 +96,7 @@ public class SuffixStreamTest {
         ScheduledThreadPoolExecutor sfe = new ScheduledThreadPoolExecutor(2);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        SuffixStream stream = new SuffixStream(sfe);
+        SuffixStream stream = new SuffixStream("",sfe);
         stream.addSuffix("FOO","FOO","");
         stream.addStream("baos",baos);
         AtomicBoolean called = new AtomicBoolean(false);
