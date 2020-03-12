@@ -25,7 +25,9 @@ import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +43,22 @@ public class JarMain {
     private static final XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     public static void main(String[] args) {
+        Properties properties = new Properties();
+        try(InputStream is = JarMain.class.getResourceAsStream("/META-INF/MANIFEST.MF")){
+            if(is != null) {
+                properties.load(is);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try(InputStream is = JarMain.class.getResourceAsStream("/META-INF/maven/io.hyperfoil.tools/qDup/pom.properties")){
+            if(is != null){
+                properties.load(is);
 
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Options options = new Options();
 
         OptionGroup basePathGroup = new OptionGroup();
@@ -465,6 +482,7 @@ public class JarMain {
 
         long start = System.currentTimeMillis();
 
+        run.getRunLogger().info("Running qDup version %s @ %s",properties.getProperty("version","unkonown"),properties.getProperty("hash","unknown"));
         run.run();
         run.writeRunJson();
 
