@@ -287,7 +287,7 @@ public class Dispatcher {
             logger.info("queueing\n  host={}\n  script={}",
                     contextResult.getSession().getHost().getHostName(),
                     context.getRootCmd());
-            context.getProfiler().start("waiting in run queue");
+            context.getTimer().start("waiting in run queue");
             getExecutor().submit(context);
         }
     }
@@ -318,7 +318,7 @@ public class Dispatcher {
                     logger.trace("queueing\n  host={}\n  script={}",
                             contextResult.getSession().getHost().getHostName(),
                             script);
-                    contextResult.getProfiler().start("waiting in run queue");
+                    contextResult.getTimer().start("waiting in run queue");
                     getExecutor().submit(contextResult);
                 }
             }else{

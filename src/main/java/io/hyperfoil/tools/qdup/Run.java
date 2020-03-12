@@ -16,6 +16,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.StageSummary;
+import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -134,7 +135,9 @@ public class Run implements Runnable, DispatchObserver {
 
         runLogger = (Logger) LoggerFactory.getLogger("activeRun");
         runLogger.addAppender(fileAppender);
-        runLogger.addAppender(consoleAppender);
+        if(!runLogger.isAttached(consoleAppender)) {
+            runLogger.addAppender(consoleAppender);
+        }
         runLogger.setLevel(Level.DEBUG);
         runLogger.setAdditive(false); /* set to true if root should log too */
         coordinator.addObserver((signal_name)->{
@@ -434,7 +437,7 @@ public class Run implements Runnable, DispatchObserver {
                        session.setName(name);
                        if ( session.isConnected() ) {
                            //TODO configure session delay
-                           session.setDelay(SuffixStream.NO_DELAY);
+                           //session.setDelay(SuffixStream.NO_DELAY);
                            ScriptContext scriptContext = new ScriptContext(
                                    session,
                                    config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
@@ -480,7 +483,7 @@ public class Run implements Runnable, DispatchObserver {
                     for (Host host : role.getHosts()) {
                         State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
                         State scriptState = hostState.getChild(script.getName()).getChild("id=" + script.getUid());
-                        Profiler profiler = profiles.get(script.getName() + "-" + script.getUid() + "@" + host);
+                        SystemTimer timer = profiles.get(script.getName() + "-" + script.getUid() + "@" + host);
                         Env env = role.hasEnvironment(host) ? role.getEnv(host) : new Env();
                         if(!role.getName().equals(RunConfigBuilder.ALL_ROLE) && allRole!=null && allRole.hasEnvironment(host)){
                             env.merge(allRole.getEnv(host));
@@ -488,7 +491,7 @@ public class Run implements Runnable, DispatchObserver {
                         String setupCommand = env.getDiff().getCommand();
                         connectSessions.add(() -> {
                             String name = script.getName() + "@" + host.getShortHostName();
-                            profiler.start("connect:" + host.toString());
+                            timer.start("connect:" + host.toString());
                             SshSession session = new SshSession(
                                     host,
                                     config.getKnownHosts(),
@@ -502,19 +505,19 @@ public class Run implements Runnable, DispatchObserver {
                             );
                             session.setName(name);
                             if (session.isConnected()) {
-                                session.setDelay(SuffixStream.NO_DELAY);
-                                profiler.start("context:" + host.toString());
+                                //session.setDelay(SuffixStream.NO_DELAY);
+                                timer.start("context:" + host.toString());
                                 ScriptContext scriptContext = new ScriptContext(
                                         session,
                                         scriptState,
                                         this,
-                                        profiler,
+                                        timer,
                                         script
                                 );
 
                                 getDispatcher().addScriptContext(scriptContext);
                                 boolean rtrn = session.isOpen();
-                                profiler.start("waiting for start");
+                                timer.start("waiting for start");
                                 return rtrn;
                             } else {
                                 session.close();
@@ -589,7 +592,7 @@ public class Run implements Runnable, DispatchObserver {
                         session.setName(name);
                         if ( session.isConnected() ) {
 
-                            session.setDelay(SuffixStream.NO_DELAY);
+                            //session.setDelay(SuffixStream.NO_DELAY);
                             ScriptContext scriptContext = new ScriptContext(
                                     session,
                                     config.getState(),

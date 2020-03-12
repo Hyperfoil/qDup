@@ -7,13 +7,12 @@ import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
-import org.slf4j.profiler.Profiler;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -61,7 +60,8 @@ public class ScriptContext implements Context, Runnable{
 
     private final State state;
     private final Run run;
-    private final Profiler profiler;
+    ///private final Profiler profiler;
+    private final SystemTimer timer;
     private ContextObserver observer = null;
     private Semaphore lineQueueSemaphore;
     private BlockingQueue<String> lineQueue;
@@ -90,17 +90,17 @@ public class ScriptContext implements Context, Runnable{
         return (cmdName.isEmpty() ? "" : cmdName+":"+getRootCmd().getUid()+"@") + (getSession()!=null ? getSession().getHost().toString() : "");
     }
 
-    public ScriptContext(SshSession session, State state, Run run, Profiler profiler, Cmd rootCmd){
-        this(session,state,run,profiler,rootCmd.deepCopy(),null);
+    public ScriptContext(SshSession session, State state, Run run, SystemTimer timer, Cmd rootCmd){
+        this(session,state,run,timer,rootCmd.deepCopy(),null);
     }
-    private ScriptContext(SshSession session, State state, Run run, Profiler profiler, Cmd rootCmd,Cmd setCurrentCmd){
+    private ScriptContext(SshSession session, State state, Run run, SystemTimer timer, Cmd rootCmd,Cmd setCurrentCmd){
         this.session = session;
         this.rootCmd = rootCmd;
         this.currentCmd = null;
         setCurrentCmd(null,setCurrentCmd==null?rootCmd:setCurrentCmd);
         this.state = state;
         this.run = run;
-        this.profiler = profiler;
+        this.timer = timer;
 
         if(this.session!=null){
             session.addLineObserver(
@@ -136,7 +136,7 @@ public class ScriptContext implements Context, Runnable{
     public Run getRun(){return run;}
 
     public Logger getRunLogger(){return run.getRunLogger();}
-    public Profiler getProfiler(){return profiler;}
+    public SystemTimer getTimer(){return timer;}
     public String getRunOutputPath(){
         return run.getOutputPath();
     }
@@ -236,7 +236,7 @@ public class ScriptContext implements Context, Runnable{
     @Override
     public void next(String output) {
 
-        getProfiler().start("next");
+        getTimer().start("next");
         Cmd cmd = getCurrentCmd();
         log(cmd,output);
         if(!signalCmds.isEmpty()){
@@ -261,7 +261,7 @@ public class ScriptContext implements Context, Runnable{
 
     @Override
     public void skip(String output) {
-        getProfiler().start("skip");
+        getTimer().start("skip");
         Cmd cmd = getCurrentCmd();
         log(cmd,output);
         if(!signalCmds.isEmpty()){
@@ -289,7 +289,7 @@ public class ScriptContext implements Context, Runnable{
     protected void startCurrentCmd(){
         Run run = getRun();
         if(run!=null) {
-            getProfiler().start("waiting in run queue");
+            getTimer().start("waiting in run queue");
             run.getDispatcher().submit(this);
         }
     }
@@ -332,7 +332,7 @@ public class ScriptContext implements Context, Runnable{
                     this.getSession(),
                     this.getState(),
                     this.getRun(),
-                    this.getProfiler(),
+                    this.getTimer(),
                     toRun,
                    this
                 ));
@@ -347,7 +347,7 @@ public class ScriptContext implements Context, Runnable{
                 observerDone();//this context is finished
             } else {
                 observerPreStart(cmd);
-                getProfiler().start(cmd.toString());
+                getTimer().start(cmd.toString());
                 if (!lineQueue.isEmpty()) {//clear any unhandled output lines
                     //TODO log that we are clearing orphaned lines
                     //need to make sure we don't clear if another thread needs to pickup up the CLOSE_QUEUE
@@ -379,7 +379,7 @@ public class ScriptContext implements Context, Runnable{
                         }
                         List<Cmd> toCall = cmd.getSignal(name);
                         Cmd root = new ActiveCheckCmd(getCurrentCmd());
-                        SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getProfiler(),root,this);
+                        SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getTimer(),root,this);
                         toCall.forEach(root::then);
                         signalCmds.put(name,root);
                         getCoordinator().waitFor(populatedName,root,syncContext,inputSupplier);
@@ -400,9 +400,9 @@ public class ScriptContext implements Context, Runnable{
                 if (cmd.hasWatchers()) {
                     String line = "";
                     try {
-                        getProfiler().start("watch.acquire:"+cmd.toString());
+                        getTimer().start("watch.acquire:"+cmd.toString());
                         lineQueueSemaphore.acquire();
-                        getProfiler().start("watch.start:"+cmd.toString());
+                        getTimer().start("watch.start:"+cmd.toString());
                         assert lineQueueSemaphore.availablePermits() == 0;
 
                         cmd.doRun(input, this);
@@ -413,7 +413,7 @@ public class ScriptContext implements Context, Runnable{
                                    this.getSession(),
                                    this.getState(),
                                    this.getRun(),
-                                   this.getProfiler(),
+                                   this.getTimer(),
                                    cmd,
                                    this
                                 );
@@ -429,7 +429,7 @@ public class ScriptContext implements Context, Runnable{
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } finally {
-                        getProfiler().start("watch.release:"+cmd.toString());
+                        getTimer().start("watch.release:"+cmd.toString());
                         lineQueueSemaphore.release();
                         assert lineQueueSemaphore.availablePermits() == 1;
                     }

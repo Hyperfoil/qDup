@@ -1,11 +1,13 @@
 package io.hyperfoil.tools.qdup;
 
+import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.profiler.Profiler;
 import org.slf4j.profiler.ProfilerRegistry;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wreicher
@@ -14,49 +16,21 @@ import java.util.Set;
  */
 public class Profiles {
 
-    private ProfilerRegistry registry;
-    private Set<String> names;
+    private ConcurrentHashMap<String,SystemTimer> names;
 
     public Profiles(){
-        registry = new  ProfilerRegistry();
-        names = new HashSet<>();
+        names = new ConcurrentHashMap<>();
     }
 
-    public Profiler get(String name){
-        names.add(name);
-        Profiler rtrn = registry.get(name);
-        if(rtrn==null){
-            rtrn = new Profiler(name);
-            rtrn.registerWith(registry);
-        }
-        return rtrn;
+    public SystemTimer get(String name){
+        return names.computeIfAbsent(name,(v)-> new SystemTimer(v));
     }
 
     public Json getJson(){
         Json rtrn = new Json();
-        names.forEach(name->{
-            rtrn.set(name,toJson(registry.get(name)));
+        names.forEach((name,timer)->{
+            rtrn.set(name,timer.getJson());
         });
-
-        return rtrn;
-    }
-
-    private Json toJson(Profiler profile){
-        Json rtrn = new Json();
-        if(profile!=null) {
-            profile.getCopyOfChildTimeInstruments().forEach(timeInstrument -> {
-                if(timeInstrument!=null) {
-                    Json toAdd = new Json();
-                    toAdd.set("name", timeInstrument.getName()!=null ? timeInstrument.getName():"");
-                    toAdd.set("ns", timeInstrument.elapsedTime());
-                    rtrn.add(toAdd);
-                }
-
-            });
-        }else{
-            
-        }
-
         return rtrn;
     }
 }

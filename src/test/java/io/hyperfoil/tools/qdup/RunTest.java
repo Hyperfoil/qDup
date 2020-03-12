@@ -67,12 +67,9 @@ public class RunTest extends SshTestBase {
    public void run_ALL_role() {
       AtomicBoolean allRan = new AtomicBoolean(false);
       Script allScript = new Script("allScript")
-         .then(Cmd.code(new Code() {
-            @Override
-            public Result run(String input, State state) {
-               allRan.set(true);
-               return Result.next(input);
-            }
+         .then(Cmd.code((input, state) -> {
+            allRan.set(true);
+            return Result.next(input);
          }));
       Script runScript = new Script("localScript")
          .then(Cmd.sh("pwd"));
@@ -716,59 +713,62 @@ public class RunTest extends SshTestBase {
    }
 
 
+   //Can fail when adding empty string before or after end of input
    //@Test(timeout = 45_000)
    @Test
    public void ctrlCTail() {
-      List<String> lines = new ArrayList<>();
-      StringBuilder tailed = new StringBuilder();
+      for(int i=0; i<1; i++) {
+         List<String> lines = new ArrayList<>();
+         StringBuilder tailed = new StringBuilder();
 
-      Script tail = new Script("tail");
-      tail.then(Cmd.sh("echo '!' > /tmp/foo.txt"));
-      tail.then(Cmd.signal("ready"));
-      tail.then(Cmd.sh("tail -f /tmp/foo.txt")
-         .watch(Cmd.code((input, state) -> {
-            lines.add(input);
+         Script tail = new Script("tail");
+         tail.then(Cmd.sh("echo '!' > /tmp/foo.txt"));
+         tail.then(Cmd.signal("ready"));
+         tail.then(Cmd.sh("tail -f /tmp/foo.txt")
+            .watch(Cmd.code((input, state) -> {
+               lines.add(input);
+               return Result.next(input);
+            }))
+            .watch(Cmd.regex("bar").then(Cmd.ctrlC()))
+         );
+         tail.then(Cmd.code(((input, state) -> {
+            tailed.append(input);
             return Result.next(input);
-         }))
-         .watch(Cmd.regex("bar").then(Cmd.ctrlC()))
-      );
-      tail.then(Cmd.code(((input, state) -> {
-         tailed.append(input);
-         return Result.next(input);
-      })));
+         })));
 
-      Script send = new Script("send");
-      send.then(Cmd.waitFor("ready"));
-      send.then(Cmd.sh("echo 'foo' >> /tmp/foo.txt"));
-      send.then(Cmd.sleep("1s"));
-      send.then(Cmd.sh("echo 'bar' >> /tmp/foo.txt"));
-      send.then(Cmd.sleep("2s"));
-      send.then(Cmd.sh("echo 'biz' >> /tmp/foo.txt"));
+         Script send = new Script("send");
+         send.then(Cmd.waitFor("ready"));
+         send.then(Cmd.sh("echo 'foo' >> /tmp/foo.txt"));
+         send.then(Cmd.sleep("1s"));
+         send.then(Cmd.sh("echo 'bar' >> /tmp/foo.txt"));
+         send.then(Cmd.sleep("2s"));
+         send.then(Cmd.sh("echo 'biz' >> /tmp/foo.txt"));
 
-      RunConfigBuilder builder = getBuilder();
+         RunConfigBuilder builder = getBuilder();
 
-      builder.addHostAlias("local", getHost().toString());
-      builder.addScript(tail);
-      builder.addScript(send);
+         builder.addHostAlias("local", getHost().toString());
+         builder.addScript(tail);
+         builder.addScript(send);
 
-      builder.addHostToRole("role", "local");
-      builder.addRoleRun("role", "tail", new HashMap<>());
-      builder.addRoleRun("role", "send", new HashMap<>());
+         builder.addHostToRole("role", "local");
+         builder.addRoleRun("role", "tail", new HashMap<>());
+         builder.addRoleRun("role", "send", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+         RunConfig config = builder.buildConfig();
 
-      Dispatcher dispatcher = new Dispatcher();
-      Run run = new Run("/tmp", config, dispatcher);
+         Dispatcher dispatcher = new Dispatcher();
+         Run run = new Run("/tmp", config, dispatcher);
 
-      run.run();
+         run.run();
 
 
-      assertFalse("should stop tail before biz", tailed.toString().contains("biz"));
-      //TODO fix the 4th entry is empty that occurs when SuffixStream removes prompt but not preceeding \r\n
-      assertTrue("lines should have 3+ entries:" + lines, lines.size() >= 3);
-      assertEquals("lines[0] should be !:" + lines, "!", lines.get(0));
-      assertEquals("lines[1] should be foo:" + lines, "foo", lines.get(1));
-      assertEquals("lines[2] should be bar:" + lines, "bar", lines.get(2));
+         assertFalse("should stop tail before biz", tailed.toString().contains("biz"));
+         //TODO fix the 4th entry is empty that occurs when SuffixStream removes prompt but not preceeding \r\n
+         assertTrue("lines should have 3+ entries:" + lines, lines.size() >= 3);
+         assertEquals("lines[0] should be !:" + lines, "!", lines.get(0));
+         assertEquals("lines[1] should be foo:" + lines, "foo", lines.get(1));
+         assertEquals("lines[2] should be bar:" + lines, "bar", lines.get(2));
+      }
    }
 
    @Test

@@ -7,6 +7,7 @@ import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
+import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -26,18 +27,18 @@ public class SyncContext implements Context, Runnable{
     private final SshSession session;
     private final State state;
     private final Run run;
-    private final Profiler profiler;
+    private final SystemTimer timer;
 
     private volatile Cmd currentCmd;
 
     private final ScriptContext scriptContext;
     private final Cmd scriptActiveCmd;
 
-    public SyncContext(SshSession session, State state, Run run, Profiler profiler, Cmd currentCmd, ScriptContext scriptContext){
+    public SyncContext(SshSession session, State state, Run run, SystemTimer timer, Cmd currentCmd, ScriptContext scriptContext){
         this.session = session;
         this.state = state;
         this.run = run;
-        this.profiler = profiler;
+        this.timer = timer;
         this.currentCmd = currentCmd;
         this.scriptContext = scriptContext;
         this.scriptActiveCmd = scriptContext.getCurrentCmd();
@@ -128,8 +129,8 @@ public class SyncContext implements Context, Runnable{
     }
 
     @Override
-    public Profiler getProfiler() {
-        return profiler;
+    public SystemTimer getTimer() {
+        return timer;
     }
 
     @Override
