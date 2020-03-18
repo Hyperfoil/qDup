@@ -47,7 +47,7 @@ public class JsCmdTest {
 
     @Test
     public void testReadState(){
-        JsCmd jsCmd = new JsCmd("function(input,state){return state.get('foo');}");
+        JsCmd jsCmd = new JsCmd("function testme(input,state){return state.get('foo');}");
         SpyContext context = new SpyContext();
         context.getState().set("foo","FOO");
         jsCmd.run("input",context);

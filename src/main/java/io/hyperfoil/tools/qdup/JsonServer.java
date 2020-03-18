@@ -96,6 +96,9 @@ public class JsonServer implements RunObserver, ContextObserver {
 
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
+        router.route("/state").produces("application/json").handler(rc->{
+           rc.response().end(run.getConfig().getState().toJson().toString());
+        });
         router.route("/stage").produces("application/json").handler(rc->{
             Json rtrn = new Json();
             if(this.run!=null){

@@ -62,6 +62,13 @@ public class RegexTest extends SshTestBase {
     }
 
     @Test
+    public void regex_ip_pattern(){
+       Cmd regex = Cmd.regex("(?<ip>\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})");
+       SpyContext context = new SpyContext();
+       regex.run("192.168.0.1",context);
+       assertEquals("capture ip","192.168.0.1",context.getState().get("ip"));
+    }
+    @Test
     public void one_line_in_multi_line(){
        Cmd regex = Cmd.regex("(?<date>\\d{4}-\\d{2}-\\d{2})\\s+(?<time>\\d{2}:\\d{2}:\\d{2})\\s+(?<offset>[+-]\\d{4})");
        SpyContext context = new SpyContext();

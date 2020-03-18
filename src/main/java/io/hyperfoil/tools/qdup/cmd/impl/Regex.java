@@ -51,6 +51,7 @@ public class Regex extends Cmd {
         }
         try {
             Pattern pattern = Pattern.compile(newPattern, Pattern.DOTALL);
+
         Matcher matcher = pattern.matcher(input);
 
         //full line matching only if the pattern specifies start of line
@@ -94,7 +95,7 @@ public class Regex extends Cmd {
         return new Regex(this.patternString,this.miss);
     }
 
-    @Override public String toString(){return "regex: "+(miss? "! ":" ")+replaceEscapes(patternString);}
+    @Override public String toString(){return "regex:"+(miss? "! ":" ")+replaceEscapes(patternString);}
 
     private String replaceEscapes(String input){
         return input.replace("\n","\\n")
@@ -111,7 +112,8 @@ public class Regex extends Cmd {
     public String getLogOutput(String output,Context context){
         if(matched){
             StringBuffer sb = new StringBuffer();
-            sb.append("regex: ");
+            sb.append("regex:");
+            sb.append((miss? "! ":" "));
             sb.append(replaceEscapes(patternString));
             if(!matches.isEmpty()) {
                 for (String key : matches.keySet()) {
