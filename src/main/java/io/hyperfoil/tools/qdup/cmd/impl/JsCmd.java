@@ -40,7 +40,7 @@ public class JsCmd extends Cmd {
                     (rtrn instanceof String && ((String)rtrn).toUpperCase().equals("FALSE"))
                 ){
                     context.skip(input);
-                }else if (rtrn == null || (rtrn instanceof Value && ((Value)rtrn).isNull()) || rtrn instanceof Boolean){
+                }else if (rtrn == null || (rtrn instanceof String && ((String)rtrn).isBlank()) || rtrn instanceof Boolean){
                     //TODO potentially log that the js function should have an explicit return message
                     context.next(input);
                 }else {
