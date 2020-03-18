@@ -482,7 +482,7 @@ public class JarMain {
 
         long start = System.currentTimeMillis();
 
-        run.getRunLogger().info("Running qDup version %s @ %s",properties.getProperty("version","unkonown"),properties.getProperty("hash","unknown"));
+        run.getRunLogger().info("Running qDup version {} @ {}",properties.getProperty("version","unkonown"),properties.getProperty("hash","unknown"));
         run.run();
         run.writeRunJson();
 
