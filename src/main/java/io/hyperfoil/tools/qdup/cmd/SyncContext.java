@@ -66,7 +66,13 @@ public class SyncContext implements Context, Runnable{
             Cmd next = cmd.getNext();
             cmd.setOutput(output);
             if(next!=null) {
-                while(next!=null && (next instanceof CtrlSignal) && scriptContext!=null && scriptActiveCmd != null && !scriptActiveCmd.equals(scriptContext.getCurrentCmd())){
+                while(
+                   next!=null &&
+                   (next instanceof CtrlSignal) &&
+                   scriptContext!=null &&
+                   scriptActiveCmd != null &&
+                   !scriptActiveCmd.equals(scriptContext.getCurrentCmd())
+                ){
                     logger.trace("not running {} because completed active command {}",next,scriptActiveCmd);
                     next = next.getSkip();
                 }

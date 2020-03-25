@@ -448,6 +448,7 @@ public class RunTest extends SshTestBase {
 
       RunConfigBuilder builder = getBuilder();
 
+
       builder.addHostAlias("local", getHost().toString());
       builder.addScript(runScript);
       builder.addHostToRole("role", "local");
@@ -593,12 +594,13 @@ public class RunTest extends SshTestBase {
    }
 
    @Test
-   public void watch_only_signal_if_active(){
+   public void watch_only_ctrlC_if_active(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
          "scripts:",
          "  foo:",
+         "  - sleep: 1s",
          "  - sh: ",
          "      command: top",
          "      silent: true",
@@ -626,6 +628,7 @@ public class RunTest extends SshTestBase {
       ),false));
 
       RunConfig config = builder.buildConfig();
+
       Dispatcher dispatcher = new Dispatcher();
 
       List<String> signals = new ArrayList<>();

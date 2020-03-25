@@ -13,7 +13,7 @@ public class InvokeCmd extends Cmd {
     @Override
     public void run(String input, Context context) {
         //move  to constructor to avoid issue where dispatcher has the wrong tail cmd?
-        injectThen(this.command,null);//null context so we don't updated tail change
+        injectThen(this.command);//null context so we don't updated tail change
         context.next(input);
     }
 

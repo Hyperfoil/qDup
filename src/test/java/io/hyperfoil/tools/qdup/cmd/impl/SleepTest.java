@@ -1,10 +1,23 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.Run;
+import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.qdup.cmd.ContextObserver;
+import io.hyperfoil.tools.qdup.cmd.Dispatcher;
+import io.hyperfoil.tools.qdup.config.RunConfig;
+import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import java.util.ArrayList;
+import java.util.List;
 
-public class SleepTest {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class SleepTest extends SshTestBase {
 
     @Test
     public void parseMs(){
@@ -18,5 +31,42 @@ public class SleepTest {
         assertEquals("1h 2m3s",(60*60*1000 + 120_000 + 3000),Sleep.parseToMs("1h 2m3s"));
         assertEquals("1ms2m3s",(1+120_000+3_000),Sleep.parseToMs("1ms2m3s"));
 
+    }
+
+    @Test
+    public void sleep_call_next(){
+        String sleep = "10s";
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",stream(""+
+           "scripts:",
+           "  foo:",
+           "  - sleep: "+sleep,
+           "  - set-state: RUN.FOO worked",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+           "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+           "  charlie: {name: \"cat\"}"
+        ),false));
+
+        RunConfig config = builder.buildConfig();
+        Dispatcher dispatcher = new Dispatcher();
+
+        List<String> signals = new ArrayList<>();
+
+        Run doit = new Run("/tmp", config, dispatcher);
+        long start = System.currentTimeMillis();
+        doit.run();
+        long stop = System.currentTimeMillis();
+        dispatcher.shutdown();
+
+        assertEquals("FOO should be set","worked",doit.getConfig().getState().get("FOO"));
+        assertTrue((stop-start)+" runtime should be >= "+sleep,Sleep.parseToMs(sleep) <= (stop-start));
     }
 }

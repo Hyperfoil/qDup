@@ -133,18 +133,18 @@ public class SshSessionTest extends SshTestBase{
 
     @Test
     public void ctrlC_release_permit(){
-        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(4);
         SshSession session = getSession();
-        executor.schedule(()->{
+        executor.schedule(() -> {
             session.ctrlC();
-        },1_000,TimeUnit.MILLISECONDS);
+        }, 1_000, TimeUnit.MILLISECONDS);
+        assertEquals("expect 1 permit", 1, session.permits());
         session.sh("sleep 1h");//
         try {
             Thread.sleep(2_000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        assertEquals("expect 1 permit",1,session.permits());
+        assertEquals("expect 1 permit", 1, session.permits());
     }
 
     //failing sometimes?

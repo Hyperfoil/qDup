@@ -26,24 +26,15 @@ import io.hyperfoil.tools.qdup.cmd.impl.Sleep;
 import io.hyperfoil.tools.qdup.cmd.impl.Upload;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import io.hyperfoil.tools.qdup.cmd.impl.XmlCmd;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
-import org.apache.commons.jexl3.JexlContext;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
-import javax.script.Bindings;
-import javax.script.ScriptContext;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import javax.script.SimpleScriptContext;
-import java.io.Reader;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,109 +42,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
  * Base for all the commands than can be added to a Script. Commands are created through the static methods.
  */
 public abstract class Cmd {
-
-   private static class JexlStateContext implements JexlContext {
-
-      private State state;
-
-      public JexlStateContext(State state) {
-         this.state = state;
-      }
-
-      @Override
-      public Object get(String name) {
-         if (state.has(name)) {
-            Object value = state.get(name);
-            if (value instanceof String && ((String) value).matches("\\d+")) {
-               return Long.parseLong((String) value);
-            } else if (value instanceof String && ((String) value).matches("\\d+\\.\\d+")) {
-               return Double.parseDouble((String) value);
-            }
-         }
-         return null;
-      }
-
-      @Override
-      public void set(String name, Object value) {
-
-      }
-
-      @Override
-      public boolean has(String name) {
-         return state.has(name, true);
-      }
-   }
-
-   public abstract static class LoopCmd extends Cmd {
-      @Override
-      protected void setSkip(Cmd skip) {
-         //prevent propagating skip to last then because it needs to skip to this
-         this.forceSkip(skip);
-      }
-
-      @Override
-      public Cmd then(Cmd command) {
-         Cmd commandTail = command.getTail();
-         Cmd currentTail = this.getTail();
-         Cmd rtrn = super.then(command, true, true);
-
-
-         if(currentTail==this){
-            forceNext(command);//setting loopback will happen later
-         }else if(currentTail.isLoopBack()){//
-            //if this is making the  current tail a loop back then it needs to no longer be a loopback
-            if(currentTail.getNext() == this){
-               currentTail.clearLoopBack();
-               currentTail.forceNext(command);
-            }else{
-               //the currentTail is the end of a different loop, set the other LoopCmd to skip to command
-               assert currentTail.getSkip() instanceof LoopCmd;
-               currentTail.getSkip().forceSkip(command);
-            }
-         }else{
-            //TODO I think this is an error, how could the tail of a loop not be loopback
-            System.out.printf("Not sure how LoopCmd.tail !isLoopBack "+currentTail);
-         }
-
-         if(!commandTail.isLoopBack()){//if the command is not part of a loop add it to this loop
-            commandTail.setLoopBack(this);
-         }else{
-            Cmd commandTailSkip = commandTail.getSkip();
-            assert commandTailSkip instanceof LoopCmd;
-
-            Cmd target = commandTailSkip;
-            while(target != null && target != this){
-               if( !target.hasSkip() ){
-                  target.forceSkip(this);
-               }else {
-                  if(target.getSkip() instanceof LoopCmd){
-
-                  }else{
-
-                  }
-               }
-
-               target = target.getParent();
-            }
-            //commandTailSkip.forceSkip(this);//if the other loop exits it should go back to this loop
-
-
-//            while(target!=null && !target.hasSkip() && target !=this){
-//               target.forceSkip(this);
-//               target = target.getParent();
-//            }
-         }
-
-         return rtrn;
-      }
-
-   }
 
    public static class Ref {
       private Ref parent;
@@ -417,16 +312,45 @@ public abstract class Cmd {
 
    protected Json withDef;
    protected Json withActive;
-   private LinkedList<Cmd> thens;
+   private int thenIndex = 0;
+   protected LinkedList<Cmd> thens;
    private LinkedList<Cmd> watchers;
    private HashedLists<Long, Cmd> timers;
    private HashedLists<String, Cmd> onSignal;
-
 
    private String patternPrefix = StringUtil.PATTERN_PREFIX;
    private String patternSuffix = StringUtil.PATTERN_SUFFIX;
    private String patternSeparator = StringUtil.PATTERN_DEFAULT_SEPARATOR;
    private String patternJavascriptPrefix = StringUtil.PATTERN_JAVASCRIPT_PREFIX;
+
+   private Cmd parent;
+
+   int uid;
+   protected boolean silent = false;
+   private String output;
+
+   protected Cmd() {
+      this(false);
+   }
+
+   protected Cmd(boolean silent) {
+      this.silent = silent;
+      this.withDef = new Json();
+      this.withActive = new Json();
+      this.thens = new LinkedList<>();
+      this.watchers = new LinkedList<>();
+      this.timers = new HashedLists<>();
+      this.onSignal = new HashedLists<>();
+      this.parent = null;
+      this.uid = uidGenerator.incrementAndGet();
+   }
+
+
+   private void preChild(Cmd child){
+      if(thenIndex< thens.size() && thens.get(thenIndex).equals(child)){
+         thenIndex++;
+      }
+   }
 
    public boolean hasPatternPrefix(){
       return !StringUtil.PATTERN_PREFIX.equals(getPatternPrefix());
@@ -472,56 +396,6 @@ public abstract class Cmd {
       this.patternJavascriptPrefix = patternJavascriptPrefix;
    }
 
-   private Cmd parent;
-   private Cmd prev;
-   private Cmd next;
-   private Cmd skip;
-
-   private boolean isLoopBack = false;
-
-   int uid;
-
-   protected boolean silent = false;
-
-   private String output;
-
-   protected Cmd() {
-      this(false);
-   }
-
-   protected Cmd(boolean silent) {
-      this.silent = silent;
-      this.withDef = new Json();
-      this.withActive = new Json();
-      this.thens = new LinkedList<>();
-      this.watchers = new LinkedList<>();
-      this.timers = new HashedLists<>();
-      this.onSignal = new HashedLists<>();
-      this.next = null;
-      this.skip = null;
-      this.prev = null;
-      this.parent = null;
-      this.uid = uidGenerator.incrementAndGet();
-   }
-
-   public boolean isLoopBack(){return isLoopBack;}
-   public void setLoopBack(LoopCmd loopCmd){
-      if(!isLoopBack){
-         isLoopBack=true;
-         forceNext(loopCmd);
-         forceSkip(loopCmd);
-         //set the parent skip if it isn't set so that they don't skip out of the loop
-         Cmd pnt = this.getParent();
-         while(pnt!=null && !pnt.hasSkip() && pnt!=loopCmd){
-            pnt.forceSkip(loopCmd);
-            pnt = pnt.getParent();
-         }
-      }
-   }
-   public void clearLoopBack(){
-      isLoopBack=false;
-   }
-
 
    public Cmd onSignal(String name, Cmd command) {
       onSignal.put(name, command);
@@ -560,43 +434,10 @@ public abstract class Cmd {
 
 
    public void injectThen(Cmd command) {
-      injectThen(command, null);
-   }
-
-   public void injectThen(Cmd command, Context context) {
-      thens.addFirst(command);
-      forceParent(command,context);
-      this.next = command;
-   }
-   public void forceParent(Cmd command, Context context) {
-      Cmd next = this.getNext();
-      Cmd skip = this.getSkip();
-      if (next != null) {
-         command.setSkip(next);
-         Cmd commandTailNext = command.getTail().getNext();
-         if (commandTailNext == null || !(commandTailNext instanceof LoopCmd)) {
-            command.getTail().forceNext(next);
-         } else {
-
-         }
-      } else {
-         //we are potentially changing the getScript tail, need to inform context
-         //this should no longer be necessary because Dispatcher tracks the head cmd not tail
-         //if(context!=null){
-         //context.notifyTailMod(this,command.getTail());
-         //}
+      if(command!=null){
+         command.setParent(this);
+         thens.addFirst(command);
       }
-      Cmd toForce = command.getTail();
-
-      //make sure that any abnormal exits from the previous script will go to the next command
-      if (skip != null) {
-         do {
-            toForce.forceSkip(skip);
-            toForce = toForce.getPrevious();
-         } while (toForce != null && toForce.getSkip() == null);
-      }
-      command.parent = this;
-      command.prev = this;
    }
 
    public boolean isSilent() {
@@ -640,31 +481,7 @@ public abstract class Cmd {
          this.withDef.merge(target.withDef,true);
          this.withActive.merge(target.withActive,true);
       }while( (target = target.getParent()) != null);
-//      this.withDef.merge(cmd.withDef);
-//      this.withActive.merge(cmd.withActive);
    }
-//   public Json getWith(boolean recursive,boolean active){
-//      if(!recursive){
-//         return active ? withActive.clone() : withDef.clone();
-//      }else{
-//         Json rtrn = new Json();
-//         Cmd target = this;
-//         while(target!=null){
-//            target.getWith().forEach((key,value)->{
-//               if(!rtrn.has(key)){
-//                  if(value instanceof Json){
-//                     rtrn.set(key,((Json)value).clone()); //clone to avoid parallel modification
-//                  }else {
-//                     rtrn.set(key, value);
-//                  }
-//               }
-//            });
-//            target = target.getParent();
-//         }
-//         return rtrn;
-//      }
-//   }
-
 
    public int getUid() {
       return uid;
@@ -683,7 +500,7 @@ public abstract class Cmd {
    private void tree(StringBuffer rtrn, int indent, String prefix, boolean debug) {
       final int correctedIndent = indent == 0 ? 1 : indent;
       if (debug) {
-         rtrn.append(String.format("%" + correctedIndent + "s%s%s next=%s skp=%s prv=%s%n", "", prefix, this.getUid() + ":" + this, this.next, this.skip, this.prev));
+         rtrn.append(String.format("%" + correctedIndent + "s%s%s parent=%s skip=%s next=%s%n", "", prefix, this.getUid() + ":" + this, this.parent, this.getSkip(),this.getNext()));
       } else {
          rtrn.append(String.format("%" + correctedIndent + "s%s%s %n", "", prefix, this.toString()));
       }
@@ -720,102 +537,84 @@ public abstract class Cmd {
    }
 
    public Cmd getPrevious() {
-      return prev;
-   }
-
-   public void setPrevious(Cmd previous) {
-      prev = previous;
-   }
-
-   public Cmd getNext() {
-      return next;
-   }
-
-   private void setNext(Cmd next) {
-      if (this.next == null) {
-         this.next = next;
+      Cmd rtrn = null;
+      if(hasParent()){
+         rtrn = getParent().previousChildOrParent(this);
       }
+      return rtrn;
    }
 
-   public void forceNext(Cmd next) {
-      this.next = next;
+   public boolean hasParent(){return parent!=null;}
+   public Cmd getParent(){return parent;}
+   public void setParent(Cmd command){
+      this.parent = command;
    }
 
-   public void forceSkip(Cmd skip) {
-      this.skip = skip;
+
+   public final Cmd getSkip() {
+      Cmd rtrn = null;
+      if(hasParent()){
+         Cmd target = this;
+         while(rtrn == null && target.hasParent()){
+            rtrn = target.getParent().nextChild(target);
+            target = target.getParent();
+         }
+      }
+      return rtrn;
+   }
+   public Cmd getNext() {
+      Cmd rtrn = null;
+      if(hasThens()){
+         rtrn = thens.getFirst();
+      }else{
+         Cmd target = this;
+         while(rtrn == null && target.hasParent()){
+            rtrn = target.getParent().nextChild(target);
+            target = target.getParent();
+         }
+      }
+      return rtrn;
    }
 
-   public boolean hasSkip(){return skip!=null;}
-   public Cmd getSkip() {
-      return skip;
-   }
+   public Cmd nextChild(Cmd child){
+      Cmd rtrn = null;
+      int cmdIndex = thens.indexOf(child);
+      if(cmdIndex < 0){
+         //TODO throw error because current command is not a child?
 
-   protected void setSkip(Cmd skip) {
-      this.skip = skip;
-      if (!this.thens.isEmpty()) {
-         this.thens.getLast().setNext(skip);
-         this.thens.getLast().setSkip(skip);
+      }else if (cmdIndex == thens.size() -1 ){
+      }else{
+         rtrn = thens.get(cmdIndex+1);
+      }
+      return rtrn;
+   }
+   public Cmd previousChildOrParent(Cmd child){
+      int cmdIndex = thens.indexOf(child);
+      if(cmdIndex < 0){
+         return null;
+      }else if (cmdIndex == 0){
+         return this;
+      }else{
+         return thens.get(cmdIndex-1);
       }
    }
 
    public Cmd then(Cmd command) {
-      return then(command, true, true);
+      if(command!=null){
+         command.setParent(this);
+         thens.add(command);
+      }
+      return this;
    }
    public Cmd thenOrphaned(Cmd command){
-      return then(command, true, false);
-   }
-   protected Cmd then(Cmd command, boolean setSkip,boolean setParent) {
-      if(command == null){
-         return this;
-      }
-      if(isLoopBack()) {
-         Cmd loopCmd = getSkip();
-         assert loopCmd instanceof LoopCmd;
-
-         command.parent = this;
-         this.thens.add(command);
-
-         clearLoopBack();
-         forceNext(command);
-         command.getTail().setLoopBack((LoopCmd) loopCmd);
-
-      }else if (getTail().isLoopBack() && getTail().getSkip() == this.getSkip()){
-         //if tail is a loop back to the same loop this is probably within
-         Cmd loopCmd = this.getSkip();
-         assert loopCmd instanceof LoopCmd;
-
-         command.parent = this;
-
-         getTail().clearLoopBack();
-         getTail().forceNext(command);
-
-         this.thens.add(command);
-
-         command.getTail().setLoopBack((LoopCmd)loopCmd);
-
-
-
-      }else {
-         setNext(command);
-         if (setSkip && !this.thens.isEmpty()) {
-            Cmd previousThen = this.thens.getLast();
-            previousThen.setSkip(command);
-            previousThen.setNext(command);
-
-            command.setPrevious(previousThen);
-         } else {
-            command.setPrevious(this);
-         }
-         if(setParent) {
-            command.parent = this;
-         }
-         this.thens.add(command);
+      if(command!=null){
+         thens.add(command);
       }
       return this;
    }
 
    public Cmd watch(Cmd command) {
-      command.parent = this;
+      //command.parent = this;
       this.watchers.add(command);
       return this;
    }
@@ -853,6 +652,11 @@ public abstract class Cmd {
 //                context.getState().set(key,with.get(key));
 //            }
       }
+      //reset the child index each time it runs
+      thenIndex=0;
+      if(hasParent()){
+         getParent().preChild(this);
+      }
       try {
          run(input, context);
       }catch(Exception e){
@@ -873,33 +677,36 @@ public abstract class Cmd {
    }
 
    public Cmd deepCopy() {
-      Cmd clone = this.copy().with(this.getWith());
-      if(this.hasPatternPrefix()){
-         clone.setPatternPrefix(this.getPatternPrefix());
-      }
-      if(this.hasPatternSuffix()){
-         clone.setPatternSuffix(this.getPatternSuffix());
-      }
-      if(this.hasPatternSeparator()){
-         clone.setPatternSeparator(this.getPatternSeparator());
-      }
-      if(this.hasPatternJavascriptPrefix()){
-         clone.setPatternJavascriptPrefix(this.getPatternJavascriptPrefix());
-      }
-      for (Cmd watcher : this.getWatchers()) {
-         clone.watch(watcher.deepCopy());
-      }
-      for (Cmd then : this.getThens()) {
-         clone.then(then.deepCopy());
-      }
-      for (long timeout : this.getTimeouts()) {
-         for (Cmd timed : this.getTimers(timeout)) {
-            clone.addTimer(timeout, timed.deepCopy());
+      Cmd clone = this.copy();
+      if(clone !=null){
+       clone.with(this.getWith());
+         if(this.hasPatternPrefix()){
+            clone.setPatternPrefix(this.getPatternPrefix());
          }
-      }
-      for (String name : this.getSignalNames()) {
-         for (Cmd signaled : this.getSignal(name)) {
-            clone.onSignal(name, signaled);
+         if(this.hasPatternSuffix()){
+            clone.setPatternSuffix(this.getPatternSuffix());
+         }
+         if(this.hasPatternSeparator()){
+            clone.setPatternSeparator(this.getPatternSeparator());
+         }
+         if(this.hasPatternJavascriptPrefix()){
+            clone.setPatternJavascriptPrefix(this.getPatternJavascriptPrefix());
+         }
+         for (Cmd watcher : this.getWatchers()) {
+            clone.watch(watcher.deepCopy());
+         }
+         for (Cmd then : this.getThens()) {
+            clone.then(then.deepCopy());
+         }
+         for (long timeout : this.getTimeouts()) {
+            for (Cmd timed : this.getTimers(timeout)) {
+               clone.addTimer(timeout, timed.deepCopy());
+            }
+         }
+         for (String name : this.getSignalNames()) {
+            for (Cmd signaled : this.getSignal(name)) {
+               clone.onSignal(name, signaled);
+            }
          }
       }
       return clone;
@@ -937,10 +744,6 @@ public abstract class Cmd {
          rtrn = rtrn.parent;
       }
       return rtrn;
-   }
-
-   public Cmd getParent() {
-      return parent;
    }
 
    @Override

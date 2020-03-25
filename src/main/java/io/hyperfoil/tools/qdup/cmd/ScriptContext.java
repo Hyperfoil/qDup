@@ -235,7 +235,6 @@ public class ScriptContext implements Context, Runnable{
 
     @Override
     public void next(String output) {
-
         getTimer().start("next");
         Cmd cmd = getCurrentCmd();
         log(cmd,output);

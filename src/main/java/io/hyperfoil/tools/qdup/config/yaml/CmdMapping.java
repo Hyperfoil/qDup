@@ -39,7 +39,9 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
 
 
     private void addCmd(Cmd cmd,List<Object> encoded){
-        if(cmd instanceof Cmd.NO_OP){
+        if(cmd.copy() == null){
+            //commands that do not clone should not be included
+        }else if(cmd instanceof Cmd.NO_OP){
             Queue<Cmd> toAdd = new LinkedBlockingQueue<>();
             toAdd.add(cmd);
             while(!toAdd.isEmpty()){
@@ -131,7 +133,9 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
         if(cmd.hasThens()){
             List<Object> thens = new ArrayList<>();
             cmd.getThens().forEach(then->{
-                thens.add(defer(then));
+                if(then.copy()!=null) {//a command that does not copy should not be saved
+                    thens.add(defer(then));
+                }
             });
             rtrn.put(THEN,thens);
         }

@@ -2,12 +2,14 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.qdup.cmd.LoopCmd;
 
-public class RepeatUntilSignal extends Cmd.LoopCmd {
+public class RepeatUntilSignal extends LoopCmd {
     private String name;
     private String populatedName;
     private int amount=-1;
     public RepeatUntilSignal(String name){
+        super(false);
         this.name = name;
     }
     public String getName(){return name;}
@@ -25,12 +27,6 @@ public class RepeatUntilSignal extends Cmd.LoopCmd {
         }else{
             context.skip(input);
         }
-    }
-
-    @Override
-    protected void setSkip(Cmd skip){
-        //prevent propegating skip to last then because it needs to skip to this
-        this.forceSkip(skip);
     }
 
     @Override

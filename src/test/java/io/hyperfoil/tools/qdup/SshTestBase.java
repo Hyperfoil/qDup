@@ -40,6 +40,7 @@ public class SshTestBase {
 //    }
     private static GenericContainer container;
 
+    private static final ScheduledThreadPoolExecutor SCHEDULED_THREAD_POOL_EXECUTOR = new ScheduledThreadPoolExecutor(2);
 
     public RunConfigBuilder getBuilder(){
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
@@ -129,10 +130,10 @@ public class SshTestBase {
     }
 
     public SshSession getSession(){
-        return getSession(null,false);
+        return getSession(SCHEDULED_THREAD_POOL_EXECUTOR,false);
     }
     public SshSession getSession(boolean trace){
-        return getSession(null,trace);
+        return getSession(SCHEDULED_THREAD_POOL_EXECUTOR,trace);
     }
     public SshSession getSession(ScheduledThreadPoolExecutor executor, boolean trace){
         String userHome = System.getProperty("user.home");

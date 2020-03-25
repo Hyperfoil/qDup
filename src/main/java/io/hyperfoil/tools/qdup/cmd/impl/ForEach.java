@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.cmd.LoopCmd;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
@@ -12,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ForEach extends Cmd.LoopCmd {
+public class ForEach extends LoopCmd {
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
@@ -29,6 +30,7 @@ public class ForEach extends Cmd.LoopCmd {
         this(name,"");
     }
     public ForEach(String name,String input){
+        super(false);
         this.name = name;
         this.populatedName = name;
         this.declaredInput = input==null?"":input;

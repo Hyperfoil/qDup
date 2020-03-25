@@ -423,6 +423,7 @@ public class Run implements Runnable, DispatchObserver {
                    setup.then(cmd);
                });
                setup.then(new RoleEnv(role,false));
+
                role.getHosts().forEach(host->{
                    connectSessions.add(()->{
                        String name = roleName+"-setup@"+host.getShortHostName();

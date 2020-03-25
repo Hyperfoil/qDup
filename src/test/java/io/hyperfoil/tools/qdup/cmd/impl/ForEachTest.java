@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
+import io.hyperfoil.tools.qdup.cmd.LoopCmd;
 import io.hyperfoil.tools.qdup.cmd.Result;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
@@ -230,9 +231,9 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void nest_3_then_sequence(){
         Script first = new Script("first");
-        Cmd arg1 = Cmd.forEach("ARG1 ${{FIRST}}");
-        Cmd arg2 = Cmd.forEach("ARG2 ${{SECOND}}");
-        Cmd arg3 = Cmd.forEach("ARG3 ${{THIRD}}");
+        Cmd loop1 = Cmd.forEach("ARG1 ${{FIRST}}");
+        Cmd loop2 = Cmd.forEach("ARG2 ${{SECOND}}");
+        Cmd loop3 = Cmd.forEach("ARG3 ${{THIRD}}");
         Cmd log1 = Cmd.log("one");
         Cmd log2 = Cmd.log("two");
         Cmd log3a = Cmd.log("threeA");
@@ -240,9 +241,9 @@ public class ForEachTest extends SshTestBase {
         Cmd log4 = Cmd.log("four");
 
         first.then(
-           arg1.then(
-              arg2.then(
-                 arg3
+           loop1.then(
+              loop2.then(
+                 loop3
                     .then(log1)
                     .then(log2)
                     .then(log3a.then(log3b))
@@ -250,11 +251,11 @@ public class ForEachTest extends SshTestBase {
               )
            )
         );
-        assertEquals("log4 should next back to arg3",arg3,log4.getNext());
-        assertEquals("log4 should skip back to arg3",arg3,log4.getSkip());
+        assertEquals("log4 should next back to loop3",loop3,log4.getNext().getNext());
+        assertEquals("log4 should skip back to loop3",loop3,log4.getSkip().getNext());
 
-        assertEquals("arg2 should skip back to arg1",arg1,arg2.getSkip());
-        assertEquals("arg3 should skip back to arg2",arg2,arg3.getSkip());
+        assertEquals("loop2 should skip back to loop1",loop1,loop2.getSkip().getNext());
+        assertEquals("loop3 should skip back to loop2",loop2,loop3.getSkip().getNext());
 
 
     }
@@ -262,39 +263,39 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void inject_nested_loop_with_after(){
         Script first = new Script("first");
-        Cmd arg1 = Cmd.forEach("ARG1");
-        Cmd arg2 = Cmd.forEach("ARG2");
-        Cmd log = Cmd.log("args");
-        Cmd logThen = Cmd.log("then");
+        Cmd loop1 = Cmd.forEach("ARG1");
+        Cmd loop2 = Cmd.forEach("ARG2");
+        Cmd logOne = Cmd.log("one");
+        Cmd logTwo = Cmd.log("two");
         Cmd after1 = Cmd.log("after1");
         Cmd after2 = Cmd.log("after2");
         first.then(
-           arg1
+           loop1
               .then(
-                 arg2.then(
-                    log.then(logThen)))
+                 loop2.then(
+                    logOne.then(logTwo)))
               .then(after1)
               .then(after2)
         );
 
-        assertEquals("after2 should next to arg1",arg1,after2.getNext());
-        assertEquals("after2 should skip to arg1",arg1,after2.getSkip());
-        assertEquals("log should skip to arg2",arg2,log.getSkip());
-        assertEquals("then should skip to arg2",arg2,logThen.getSkip());
-        assertEquals("then should next to arg2",arg2,logThen.getNext());
+        assertEquals("after2's next should be loop1",loop1,after2.getNext().getNext());
+        assertEquals("after2 should skip to loop1",loop1,after2.getSkip().getNext());
+        assertEquals("logOne should skip to loop2",loop2,logOne.getSkip().getNext());
+        assertEquals("then should skip to loop2",loop2,logTwo.getSkip().getNext());
+        assertEquals("then should next to loop2",loop2,logTwo.getNext().getNext());
 
 
         Cmd injected = Cmd.log("injected");
 
-        log.then(injected);
+        logOne.then(injected);
 
-        assertEquals("after2 should next to arg1",arg1,after2.getNext());
-        assertEquals("after2 should skip to arg1",arg1,after2.getSkip());
-        assertEquals("log should skip to arg2",arg2,log.getSkip());
-        assertEquals("then should skip to arg2",arg2,logThen.getSkip());
-        assertEquals("then should next to injected",injected,logThen.getNext());
-        assertEquals("injected should skip to arg2",arg2,injected.getSkip());
-        assertEquals("injected should next to arg2",arg2,injected.getNext());
+        assertEquals("after2 should next to loop1",loop1,after2.getNext().getNext());
+        assertEquals("after2 should skip to loop1",loop1,after2.getSkip().getNext());
+        assertEquals("log: one should skip to loop2",loop2,logOne.getSkip().getNext());
+        assertEquals("log: two should skip to injected",injected,logTwo.getSkip());
+        assertEquals("log: two should next to injected",injected,logTwo.getNext());
+        assertEquals("injected should skip to loop2",loop2,injected.getSkip().getNext());
+        assertEquals("injected should next to loop2",loop2,injected.getNext().getNext());
 
     }
 
@@ -302,22 +303,26 @@ public class ForEachTest extends SshTestBase {
     @Test
     public void inject_nested_loop(){
         Script first = new Script("first");
-        Cmd arg1 = Cmd.forEach("ARG1");
-        Cmd arg2 = Cmd.forEach("ARG2");
-        Cmd log = Cmd.log("${{ARG1}}.${{ARG2}}");
-        Cmd logThen = Cmd.log("then-${{ARG1}}.${{ARG2}}");
+        Cmd loop1 = Cmd.forEach("ARG1");
+        Cmd loop2 = Cmd.forEach("ARG2");
+        Cmd logOne = Cmd.log("one");
+        Cmd logTwo = Cmd.log("two");
         first.then(
-           arg1
-            .then(arg2.then(log.then(logThen)))
+           loop1
+            .then(loop2
+               .then(logOne
+                  .then(logTwo)
+               )
+            )
         );
 
-        assertEquals("ARG1 next is ARG2",arg2,arg1.getNext());
-        assertEquals("ARG2 next is log",log,arg2.getNext());
-        assertEquals("ARG2 skip is ARG1",arg1,arg2.getSkip());
-        assertEquals("log next is logThen",logThen,log.getNext());
-        assertEquals("log skip is ARG2",arg2,log.getSkip());
-        assertEquals("logThen next is ARG2",arg2,logThen.getNext());
-        assertEquals("logThen skip is ARG2",arg2,logThen.getSkip());
+        assertEquals("loop1 next is loop2",loop2,loop1.getNext());
+        assertEquals("loop2 next is logOne",logOne,loop2.getNext());
+        assertEquals("loop2 skip is loop1",loop1,loop2.getSkip().getNext());
+        assertEquals("logOne next is logTwo",logTwo,logOne.getNext());
+        assertEquals("logOne skip is loop2",loop2,logOne.getSkip().getNext());
+        assertEquals("logTwo next is loop2",loop2,logTwo.getNext().getNext());
+        assertEquals("logTwo skip is loop2",loop2,logTwo.getSkip().getNext());
     }
 
     @Test
@@ -332,14 +337,15 @@ public class ForEachTest extends SshTestBase {
         second.then(Cmd.sh("foo"));
 
         Cmd copy = first.deepCopy();
-        second.injectThen(copy,null);
+        second.injectThen(copy);
 
         Cmd firstCopy = second.getNext();
 
         assertTrue("first next should be for-each",firstCopy.getNext().toString().contains("for-each"));
-        assertTrue("first skip is foo",firstCopy.getSkip().toString().contains("foo"));
+        //getSkip now depends on the state of parent.getNext() which cannot be checked statically
+        //assertTrue("first skip is foo",firstCopy.getSkip().toString().contains("foo"));
         Cmd forEach = firstCopy.getNext();
-        assertTrue("for-each skip is foo",forEach.getSkip().toString().contains("foo"));
+        //assertTrue("for-each skip is foo",forEach.getSkip().toString().contains("foo"));
     }
 
     //created for https://github.com/RedHatPerf/qDup/issues/8
@@ -364,7 +370,8 @@ public class ForEachTest extends SshTestBase {
             )
             .then(child);
 
-        assertEquals("for-each skip should be child\n"+forEach.tree(2,true),child,forEach.getSkip());
+        //getSkip now depends on the state of the parent getNext so it won't work statically
+        //assertEquals("for-each skip should be child\n"+forEach.tree(2,true),child,forEach.getSkip());
     }
     @Test
     public void run_defined_spaces(){

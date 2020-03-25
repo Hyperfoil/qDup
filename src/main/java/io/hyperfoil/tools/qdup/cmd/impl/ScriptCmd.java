@@ -37,32 +37,18 @@ public class ScriptCmd extends Cmd {
     public boolean isAsync(){return async;}
     public String getName(){return name;}
     @Override
-    public String toString(){return "script: "+name;}
+    public String toString(){return "script-cmd: "+name;}
 
     @Override
     public Cmd getNext() {
-
-        //Exception e = new RuntimeException("");
-        //e.printStackTrace();
         Cmd rtrn = null;
-
         boolean fromParent = false;
-
         if(hasToCall()){
             rtrn = getToCall();
             //clearToCall();
-            Cmd next = super.getNext();
-            if(next == null){
-
-            }
-            //rtrn.getTail().thenOrphaned(next);
-            rtrn.thenOrphaned(next);
-
         }else{
             rtrn = super.getNext();
-            fromParent = true;
         }
-
         return rtrn;
     }
 
@@ -100,16 +86,12 @@ public class ScriptCmd extends Cmd {
                 }
             }else{
                 //injectThen(copyCmd, context);
-                copyCmd.loadWith(this);
-
+                copyCmd.setParent(this);
                 setToCall(copyCmd);
             }
         }
         context.next(input);
-        if(!addToCmdTree && !async){
-            //remove the injected command from the tree after it was picked up by context.next
-            forceNext(originalNext);
-        }
+
     }
 
     @Override

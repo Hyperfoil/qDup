@@ -296,8 +296,16 @@ public class SshSession {
             shConsumers(output);
             //TODO use atomic boolean to set expecting response and check for true bfore release?
             shellLock.release();
+            if(isTracing()){
+               try {
+                  sessionStreams.getTrace().write("RELEASE".getBytes());
+               } catch (IOException e) {
+                  e.printStackTrace();
+               }
+            }
             if (permits() > 1) {
                logger.error("ShSession " + getName() + " " + getLastCommand() + " release -> permits==" + permits() + "\n" + output);
+               assert permits() == 1;
             }
          };
          sessionStreams.addPrompt("PROMPT",PROMPT,"");
@@ -346,6 +354,7 @@ public class SshSession {
                shellLock.release();
                if (permits() != 1) {
                   logger.error("ShSession " + getName() + " connect.release --> permits==" + permits());
+                  assert permits() == 1;
                }
             }
          } catch (InterruptedException e) {
@@ -425,8 +434,6 @@ public class SshSession {
             try {
                commandStream.write(ctrlInt(key));//b3 works for real qdup, not TestServer
                commandStream.flush();
-
-
             } catch (Exception e) {
                e.printStackTrace();
             }
