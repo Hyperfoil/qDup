@@ -9,7 +9,11 @@ import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.json;
@@ -19,18 +23,25 @@ public class CmdConstruct extends DeferableConstruct {
     private String tag;
     private Function<String, Cmd> fromString;
     private Function<Json, Cmd> fromJson;
+    private Map<String, BiConsumer<Cmd,Node>> topLevelKeys;
     private final List<String> expectedKeys = new ArrayList<>();
 
     public CmdConstruct(String tag,Function<String,Cmd> fromString,Function<Json,Cmd> fromJson,String...keys){
         this.tag = tag;
         this.fromString = fromString;
         this.fromJson = fromJson;
+        this.topLevelKeys = new HashMap<>();
         expectedKeys.addAll(Arrays.asList(keys));
         this.validate();
     }
 
     protected void setTag(String tag){
         this.tag = tag;
+    }
+
+
+    public void addTopLevelkey(String key,BiConsumer<Cmd,Node> consumer){
+       topLevelKeys.put(key,consumer);
     }
 
     public void validate(){
@@ -47,6 +58,18 @@ public class CmdConstruct extends DeferableConstruct {
         for(NodeTuple nodeTuple : mappingNode.getValue()){
             populate(cmd, nodeTuple);
         }
+    }
+    public List<Cmd> sequenceToCmds(SequenceNode thenNodes){
+       List<Cmd> rtrn = new LinkedList<>();
+       thenNodes.getValue().forEach(then->{
+          Object built = then instanceof ScalarNode ? deferAs(then,new Tag("cmd")) : defer(then);
+          if(built != null && built instanceof Cmd){
+             rtrn.add((Cmd)built);
+          }else{
+             throw new YAMLException("failed to construct Cmd"+then.getStartMark());
+          }
+       });
+       return rtrn;
     }
     public void populate(final Cmd cmd, NodeTuple nodeTuple){
         String key = ((ScalarNode)nodeTuple.getKeyNode()).getValue();
@@ -76,14 +99,7 @@ public class CmdConstruct extends DeferableConstruct {
             case CmdMapping.WATCH:
                 if(valueNode instanceof SequenceNode){
                     SequenceNode thenNodes = (SequenceNode)valueNode;
-                    thenNodes.getValue().forEach(task->{
-                        Object built = task instanceof ScalarNode ? deferAs(task,new Tag("cmd")) : defer(task);
-                        if(built != null && built instanceof Cmd){
-                            cmd.watch((Cmd)built);
-                        }else{
-                            throw new YAMLException("failed to construct Cmd"+task.getStartMark());
-                        }
-                    });
+                   sequenceToCmds(thenNodes).forEach(cmd::watch);
                 }else{
                     throw new YAMLException(CmdMapping.WATCH+" requires a list of commands "+valueNode.getStartMark());
                 }
@@ -91,14 +107,7 @@ public class CmdConstruct extends DeferableConstruct {
             case CmdMapping.THEN:
                 if(valueNode instanceof SequenceNode){
                     SequenceNode thenNodes = (SequenceNode)valueNode;
-                    thenNodes.getValue().forEach(then->{
-                        Object built = then instanceof ScalarNode ? deferAs(then,new Tag("cmd")) : defer(then);
-                        if(built != null && built instanceof Cmd){
-                            cmd.then((Cmd)built);
-                        }else{
-                            throw new YAMLException("failed to construct Cmd"+then.getStartMark());
-                        }
-                    });
+                   sequenceToCmds(thenNodes).forEach(cmd::then);
                 }else{
                     throw new YAMLException(CmdMapping.THEN+" requires a list of commands "+valueNode.getStartMark());
                 }
@@ -111,15 +120,7 @@ public class CmdConstruct extends DeferableConstruct {
                             String signalName = ((ScalarNode)signalTuple.getKeyNode()).getValue();
                             if(signalTuple.getValueNode() instanceof SequenceNode){
                                 SequenceNode signalSequence = (SequenceNode)signalTuple.getValueNode();
-                                signalSequence.getValue().forEach(task->{
-                                    Object built = task instanceof ScalarNode ? deferAs(task,new Tag("cmd")) : defer(task);
-                                    if(built !=null && built instanceof Cmd){
-                                        //TODO add signal when merge onsignal branch (forgot and started working it already)
-                                        cmd.onSignal(signalName,(Cmd)built);
-                                    }else{
-                                        throw new YAMLException("failed to construct Cmd"+task.getStartMark());
-                                    }
-                                });
+                                sequenceToCmds(signalSequence).forEach(built->cmd.onSignal(signalName,built));
                             }else{
                                 throw new YAMLException(CmdMapping.ON_SIGNAL +" "+signalName+" value must be a sequence"+signalTuple.getValueNode().getStartMark());
                             }
@@ -139,16 +140,8 @@ public class CmdConstruct extends DeferableConstruct {
                         long timeoutMs = Sleep.parseToMs(timeout);
                         Node timerTasks = timerTuple.getValueNode();
                         if(timerTasks instanceof SequenceNode){
-
                             SequenceNode timerTaskList = (SequenceNode)timerTasks;
-                            timerTaskList.getValue().forEach(task->{
-                                Object built = task instanceof ScalarNode ? deferAs(task,new Tag("cmd")) : defer(task);
-                                if(built !=null && built instanceof Cmd){
-                                    cmd.addTimer(timeoutMs,(Cmd)built);
-                                }else{
-                                    throw new YAMLException("failed to construct Cmd"+task.getStartMark());
-                                }
-                            });
+                            sequenceToCmds(timerTaskList).forEach(built->cmd.addTimer(timeoutMs,built));
                         }else{
                             throw new YAMLException(timeout+" timer requires a list of Cmds "+timerTasks.getStartMark());
                         }
@@ -193,11 +186,14 @@ public class CmdConstruct extends DeferableConstruct {
                 if(getTag().equals(key) || expectedKeys.contains(key)){
                     //ignore
                 }else{
-                    throw new YAMLException("unsupported key "+key+" "+nodeTuple.getKeyNode().getStartMark());
+                   if(topLevelKeys.containsKey(key)){
+                      topLevelKeys.get(key).accept(cmd,valueNode);
+                   } else {
+                      throw new YAMLException("unsupported key " + key + " " + nodeTuple.getKeyNode().getStartMark());
+                   }
                 }
         }
     }
-
     @Override
     public Object construct(Node node) {
         if(node instanceof MappingNode){

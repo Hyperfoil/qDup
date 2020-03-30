@@ -488,7 +488,7 @@ public class JarMain {
 
         long stop = System.currentTimeMillis();
 
-        System.out.printf("Finished in %s at %s",StringUtil.durationToString(stop-start),run.getOutputPath());
+        System.out.printf("Finished in %s at %s%n",StringUtil.durationToString(stop-start),run.getOutputPath());
 
         jsonServer.stop();
 

@@ -37,6 +37,7 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
         this.encoder = encoder;
     }
 
+    public String getKey(){return key;}
 
     private void addCmd(Cmd cmd,List<Object> encoded){
         if(cmd.copy() == null){

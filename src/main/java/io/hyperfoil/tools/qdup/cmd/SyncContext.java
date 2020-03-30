@@ -65,6 +65,7 @@ public class SyncContext implements Context, Runnable{
         if(cmd!=null) {
             Cmd next = cmd.getNext();
             cmd.setOutput(output);
+            cmd.postRun(output,this);
             if(next!=null) {
                 while(
                    next!=null &&
@@ -104,6 +105,7 @@ public class SyncContext implements Context, Runnable{
         if(cmd!=null) {
             Cmd next = cmd.getSkip();
             cmd.setOutput(output);
+            cmd.postRun(output,this);
             if(next!=null) {
                 while(next!=null && (next instanceof CtrlSignal) && scriptContext!=null && scriptActiveCmd != null && !scriptActiveCmd.equals(scriptContext.getCurrentCmd())){
                     logger.info("not running {} because completed active command {}",next,scriptActiveCmd);
@@ -130,7 +132,17 @@ public class SyncContext implements Context, Runnable{
     }
 
     @Override
-    public Logger getRunLogger() {
+    public void log(String message) {
+        getRunLogger().info(message);
+    }
+
+    @Override
+    public void error(String message) {
+        getRunLogger().error(message);
+    }
+
+
+    private Logger getRunLogger() {
         return run.getRunLogger();
     }
 

@@ -50,5 +50,5 @@ public class CodeCmd extends Cmd {
         return new CodeCmd(code);
     }
     @Override
-    public String toString(){return "code: "+( className==null? code.toString() : className );}
+    public String toString(){return "code: "+( className==null? Integer.toHexString(code.hashCode()) : className );}
 }

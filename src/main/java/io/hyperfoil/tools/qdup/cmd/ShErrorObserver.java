@@ -63,7 +63,7 @@ public class ShErrorObserver implements ContextObserver {
             commandNames.forEach(commandName->errors.addAll(commandErrors.get(commandName)));
             errors.forEach(error -> {
                 if (output.contains(error)) {
-                    context.getRunLogger().error("{}\n{}", command, error);
+                    context.error(command+"\n"+error);
                     context.abort(false);
                 }
             });

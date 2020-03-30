@@ -312,7 +312,7 @@ public abstract class Cmd {
 
    protected Json withDef;
    protected Json withActive;
-   private int thenIndex = 0;
+   //private int thenIndex = 0;
    protected LinkedList<Cmd> thens;
    private LinkedList<Cmd> watchers;
    private HashedLists<Long, Cmd> timers;
@@ -346,11 +346,7 @@ public abstract class Cmd {
    }
 
 
-   private void preChild(Cmd child){
-      if(thenIndex< thens.size() && thens.get(thenIndex).equals(child)){
-         thenIndex++;
-      }
-   }
+   private void preChild(Cmd child){}
 
    public boolean hasPatternPrefix(){
       return !StringUtil.PATTERN_PREFIX.equals(getPatternPrefix());
@@ -652,10 +648,13 @@ public abstract class Cmd {
 //                context.getState().set(key,with.get(key));
 //            }
       }
-      //reset the child index each time it runs
-      thenIndex=0;
       if(hasParent()){
          getParent().preChild(this);
+      }
+      try{
+         preRun(input,context);
+      }catch (Exception e){
+         context.error("Error: "+e.getMessage()+"\n  "+this);
       }
       try {
          run(input, context);
@@ -668,11 +667,20 @@ public abstract class Cmd {
    public abstract void run(String input, Context context);
    public abstract Cmd copy();
 
+   public void preRun(String input,Context context){}
+   public void postRun(String output,Context context){
+      String toLog = getLogOutput(output,context);
+      if(toLog != null && !toLog.isBlank()){
+         context.log(toLog);
+      }
+   }
+
+
    public String getLogOutput(String output, Context context) {
       if (output == null || isSilent() || (getPrevious() != null && output.equals(getPrevious().getOutput()))) {
          return this.toString();
       } else {
-         return this.toString() + "\n" + output;
+         return this.toString() + ((output!=null && !output.isBlank()) ? ("\n" + output) : "");
       }
    }
 

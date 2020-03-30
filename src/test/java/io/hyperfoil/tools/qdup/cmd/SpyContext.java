@@ -50,13 +50,13 @@ public class SpyContext implements Context {
     }
 
     @Override
-    public Logger getRunLogger() {
-        return null;
-    }
+    public void log(String message) {}
 
     @Override
-    public void terminal(String output) {
-    }
+    public void error(String message) {}
+
+    @Override
+    public void terminal(String output) {}
 
     @Override
     public boolean isColorTerminal() {

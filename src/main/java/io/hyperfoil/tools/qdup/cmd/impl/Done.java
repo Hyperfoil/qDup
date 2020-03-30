@@ -7,7 +7,7 @@ import io.hyperfoil.tools.yaup.AsciiArt;
 public class Done extends Cmd {
     @Override
     public void run(String input, Context context) {
-        context.getRunLogger().info("done");
+        context.log("done");
         context.done();
     }
 

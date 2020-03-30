@@ -261,9 +261,8 @@ public class Parser {
         rtrn.addCmd(
             Regex.class,
             "regex",
-            (cmd)->cmd.getPattern(),
-            (str)->new Regex(str),
-            (json)-> new Regex(json.getString("pattern",""),json.getBoolean("miss",false))
+            new RegexMapping(),
+            new RegexConstruct()
         );
         rtrn.addCmd(
             RepeatUntilSignal.class,
@@ -515,33 +514,36 @@ public class Parser {
     public <T extends Cmd> void addCmd(Class<T> clazz, String tag, CmdEncoder<T> encoder, Function<String, Cmd> fromString,Function<Json,Cmd> fromJson,String...expectedKeys) {
         addCmd(clazz,tag,false,encoder,fromString,fromJson,expectedKeys);
     }
-    public <T extends Cmd> void addCmd(Class<T> clazz, String tag, boolean noArg,CmdEncoder<T> encoder, Function<String, Cmd> fromString,Function<Json,Cmd> fromJson,String...expectedKeys){
+    public <T extends Cmd> void addCmd(Class<T> clazz, String tag, boolean noArg,CmdEncoder<T> encoder, Function<String, Cmd> fromString,Function<Json,Cmd> fromJson,String...expectedKeys) {
+       Construct construct = new CmdConstruct(tag,fromString,fromJson,expectedKeys);
+       CmdMapping cmdMapping = new CmdMapping<T>(tag,encoder);
+       if(noArg){
+          this.noArgs.put(tag,fromString);
+          mapRepresenter.addEncoding(clazz, (t)->{
+             Map<Object,Object> map = cmdMapping.getMap(t);
+             if(map!=null && map.size()==1){
+                Object key = map.entrySet().iterator().next().getKey();
+                Object value = map.entrySet().iterator().next().getValue();
+                if(value==null || value.toString().isEmpty()){
+                   return tag;
+                }
+             }
+             return map;
+          });
+       }else {
+
+       }
+       addCmd(clazz,tag,cmdMapping,construct);
+    }
+    public <T extends Cmd> void addCmd(Class<T> clazz, String tag,CmdMapping cmdMapping, Construct construct){
         Tag nodeTag = new Tag(tag);
         Tag tagFullyQualified = new Tag(clazz);
 
-        Construct construct = new CmdConstruct(tag,fromString,fromJson,expectedKeys);
         constructor.addConstruct(tagFullyQualified,construct);
-        CmdMapping cmdMapping = new CmdMapping<T>(tag,encoder);
-        if(noArg){
-            this.noArgs.put(tag,fromString);
-            mapRepresenter.addEncoding(clazz, (t)->{
-                Map<Object,Object> map = cmdMapping.getMap(t);
-                if(map!=null && map.size()==1){
-                    Object key = map.entrySet().iterator().next().getKey();
-                    Object value = map.entrySet().iterator().next().getValue();
-                    if(value==null || value.toString().isEmpty()){
-                        return tag;
-                    }
-                }
-                return map;
-            });
-        }else {
 
-        }
         mapRepresenter.addMapping(clazz, cmdMapping);
         constructor.addConstruct(nodeTag,construct);
         constructor.addTargetTag(nodeTag,tag);
-        //constructor.addMapKeys(nodeTag,Sets.of(tag));
     }
     public void addValueType(String key,String valueTag){
         constructor.addValueTag(new Tag(valueTag),key);

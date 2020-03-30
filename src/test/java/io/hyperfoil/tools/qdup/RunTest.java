@@ -168,11 +168,11 @@ public class RunTest extends SshTestBase {
       RunConfigBuilder builder = getBuilder();
 
       builder.loadYaml(parser.loadFile("json", stream("" +
-            "scripts:",
+         "scripts:",
          "  foo:",
          "  - for-each: FOO ${{BAR}}",
          "    then:",
-         "    - read-state: FOO.biz.buz",
+         "    - read-state: ${{FOO.biz.buz}}",
          "hosts:",
          "  local: " + getHost(),
          "roles:",
@@ -205,6 +205,9 @@ public class RunTest extends SshTestBase {
       doit.run();
       dispatcher.shutdown();
       assertEquals("should see 3 entries:\n" + splits.stream().collect(Collectors.joining("\n")), 3, splits.size());
+      assertEquals("first entry should be one","one",splits.get(0));
+      assertEquals("second entry should be two","two",splits.get(1));
+      assertEquals("third entry should be three","three",splits.get(2));
    }
 
    @Test

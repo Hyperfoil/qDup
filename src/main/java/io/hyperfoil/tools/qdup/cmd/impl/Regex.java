@@ -15,6 +15,7 @@ public class Regex extends Cmd {
     private String patternString;
     private boolean matched = false;
     private boolean miss = false;
+    private List<Cmd> onMiss;
     private Map<String,String> matches;
     public Regex(String pattern){
         this(pattern,false);
@@ -24,8 +25,18 @@ public class Regex extends Cmd {
         this.miss = miss;
         this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW\\(\\)remo])","\\\\");
         this.matches = new HashMap<>();
+        this.onMiss = new LinkedList<>();
     }
-
+    public boolean isMiss(){return miss;}
+    public boolean hasOnMiss(){return !onMiss.isEmpty();}
+    public List<Cmd> onMiss(){
+       return Collections.unmodifiableList(onMiss);
+    }
+    public Regex onMiss(Cmd command){
+       command.setParent(this);
+       onMiss.add(command);
+       return this;
+    }
 
     public String getPattern(){return patternString;}
     @Override
@@ -84,7 +95,7 @@ public class Regex extends Cmd {
             context.skip(input);
         }
         }catch(PatternSyntaxException e){
-            context.getRunLogger().error("failed to parse regex pattern from {}\n{}", newPattern, e.getMessage());
+            context.error("failed to parse regex pattern from "+newPattern+"\n"+e.getMessage());
             context.abort(false);
         }
 
@@ -110,7 +121,7 @@ public class Regex extends Cmd {
 
     @Override
     public String getLogOutput(String output,Context context){
-        if(matched){
+        if(matched=!miss){
             StringBuffer sb = new StringBuffer();
             sb.append("regex:");
             sb.append((miss? "! ":" "));
@@ -124,7 +135,7 @@ public class Regex extends Cmd {
             }
             return sb.toString();
         }else{
-            return "regex: "+replaceEscapes(patternString);
+            return "";
         }
     }
 }

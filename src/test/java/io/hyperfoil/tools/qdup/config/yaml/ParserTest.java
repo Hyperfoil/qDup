@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlC;
 import io.hyperfoil.tools.qdup.cmd.impl.Echo;
 
+import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -19,6 +20,38 @@ public class ParserTest extends SshTestBase {
         return Arrays.asList(args).stream().collect(Collectors.joining("\n"));
     }
 
+
+    @Test
+    public void load_regex_else(){
+        Parser parser = Parser.getInstance();
+        YamlFile loaded = parser.loadFile("test",join(""+
+              "scripts:",
+           "  foo:",
+           "  - regex: foo",
+           "    else:",
+           "    - echo",
+           "    then:",
+           "    - done"
+        ),true);
+
+        assertNotNull(loaded);
+        assertTrue(loaded.getScripts().containsKey("foo"));
+        Script script = loaded.getScripts().get("foo");
+
+        Cmd next = script.getNext();
+
+        assertTrue("command should be a regex "+next,next instanceof Regex);
+        Regex r = (Regex)next;
+        assertTrue("regex should have commands on miss",r.hasOnMiss());
+        assertFalse("regex should not be for miss",r.isMiss());
+        assertTrue("regex should have then commands",r.hasThens());
+
+        String output = parser.dump(loaded);
+
+        assertTrue("yaml contains else",output.contains("else"));
+        assertTrue("yaml contains then",output.contains("then"));
+        assertFalse("yaml should not contain miss",output.contains("miss"));
+    }
 
     @Test
     public void load_sh_all_opts(){

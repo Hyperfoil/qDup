@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.qdup.stream.MultiStream;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -29,6 +30,20 @@ import static org.junit.Assert.*;
 
 public class ForEachTest extends SshTestBase {
 
+
+    @Test
+    public void javascript_from_input(){
+        ForEach forEach = new ForEach("FOO");
+        SpyContext context = new SpyContext();
+        Json input = new Json(true);
+        input.add("one");
+        input.add("two");
+        input.add("three");
+
+        forEach.run(input.toString(),context);
+
+        assertEquals("first run should see one","one",context.getNext());
+    }
 
     @Test
     public void javascript_array_spread(){
@@ -162,6 +177,7 @@ public class ForEachTest extends SshTestBase {
 
 
     }
+
 
     @Test
     public void definedLoopCount(){
@@ -474,6 +490,430 @@ public class ForEachTest extends SshTestBase {
         assertEquals("1",split.get(0));
         assertEquals("2",split.get(1));
     }
+
+    @Test
+    public void split_json_array(){
+        String json = "[\n" +
+           "  {\n" +
+           "    \"apiVersion\": \"v1\",\n" +
+           "    \"kind\": \"Pod\",\n" +
+           "    \"metadata\": {\n" +
+           "      \"annotations\": {\n" +
+           "        \"k8s.v1.cni.cncf.io/networks-status\": \"[{\\n    \\\"name\\\": \\\"openshift-sdn\\\",\\n    \\\"interface\\\": \\\"eth0\\\",\\n    \\\"ips\\\": [\\n        \\\"10.130.5.48\\\"\\n    ],\\n    \\\"dns\\\": {},\\n    \\\"default-route\\\": [\\n        \\\"10.130.4.1\\\"\\n    ]\\n}]\",\n" +
+           "        \"openshift.io/scc\": \"restricted\",\n" +
+           "        \"serving.knative.dev/creator\": \"scalelab\",\n" +
+           "        \"traffic.sidecar.istio.io/includeOutboundIPRanges\": \"172.30.0.0/16\"\n" +
+           "      },\n" +
+           "      \"creationTimestamp\": \"2020-03-30T15:26:00Z\",\n" +
+           "      \"generateName\": \"getting-started-dcx5d-deployment-96f7f7bf9-\",\n" +
+           "      \"labels\": {\n" +
+           "        \"app\": \"getting-started-dcx5d\",\n" +
+           "        \"pod-template-hash\": \"96f7f7bf9\",\n" +
+           "        \"serving.knative.dev/configuration\": \"getting-started\",\n" +
+           "        \"serving.knative.dev/configurationGeneration\": \"2\",\n" +
+           "        \"serving.knative.dev/revision\": \"getting-started-dcx5d\",\n" +
+           "        \"serving.knative.dev/revisionUID\": \"809c6ae8-7161-47ff-a8b6-12c6cf74b111\",\n" +
+           "        \"serving.knative.dev/service\": \"getting-started\"\n" +
+           "      },\n" +
+           "      \"name\": \"getting-started-dcx5d-deployment-96f7f7bf9-ntzb7\",\n" +
+           "      \"namespace\": \"quarkus-serverless\",\n" +
+           "      \"ownerReferences\": [\n" +
+           "        {\n" +
+           "          \"apiVersion\": \"apps/v1\",\n" +
+           "          \"blockOwnerDeletion\": true,\n" +
+           "          \"controller\": true,\n" +
+           "          \"kind\": \"ReplicaSet\",\n" +
+           "          \"name\": \"getting-started-dcx5d-deployment-96f7f7bf9\",\n" +
+           "          \"uid\": \"6b7651cb-06ac-4d69-a9e7-07443eff6496\"\n" +
+           "        }\n" +
+           "      ],\n" +
+           "      \"resourceVersion\": \"41167838\",\n" +
+           "      \"selfLink\": \"/api/v1/namespaces/quarkus-serverless/pods/getting-started-dcx5d-deployment-96f7f7bf9-ntzb7\",\n" +
+           "      \"uid\": \"d9bc0597-6c9f-430f-9879-fdfb9f247908\"\n" +
+           "    },\n" +
+           "    \"spec\": {\n" +
+           "      \"containers\": [\n" +
+           "        {\n" +
+           "          \"env\": [\n" +
+           "            {\n" +
+           "              \"name\": \"PORT\",\n" +
+           "              \"value\": \"8080\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"K_REVISION\",\n" +
+           "              \"value\": \"getting-started-dcx5d\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"K_CONFIGURATION\",\n" +
+           "              \"value\": \"getting-started\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"K_SERVICE\",\n" +
+           "              \"value\": \"getting-started\"\n" +
+           "            }\n" +
+           "          ],\n" +
+           "          \"image\": \"image-registry.openshift-image-registry.svc:5000/quarkus-serverless/getting-started@sha256:6cbb1db17921335db3b4d9f8a421b026c660bd32957abbdf15cc77e4387ee4c8\",\n" +
+           "          \"imagePullPolicy\": \"IfNotPresent\",\n" +
+           "          \"lifecycle\": {\n" +
+           "            \"preStop\": {\n" +
+           "              \"httpGet\": {\n" +
+           "                \"path\": \"/wait-for-drain\",\n" +
+           "                \"port\": 8022,\n" +
+           "                \"scheme\": \"HTTP\"\n" +
+           "              }\n" +
+           "            }\n" +
+           "          },\n" +
+           "          \"name\": \"user-container\",\n" +
+           "          \"ports\": [\n" +
+           "            {\n" +
+           "              \"containerPort\": 8080,\n" +
+           "              \"name\": \"user-port\",\n" +
+           "              \"protocol\": \"TCP\"\n" +
+           "            }\n" +
+           "          ],\n" +
+           "          \"resources\": {},\n" +
+           "          \"securityContext\": {\n" +
+           "            \"capabilities\": {\n" +
+           "              \"drop\": [\n" +
+           "                \"KILL\",\n" +
+           "                \"MKNOD\",\n" +
+           "                \"SETGID\",\n" +
+           "                \"SETUID\"\n" +
+           "              ]\n" +
+           "            },\n" +
+           "            \"runAsUser\": 1000620000\n" +
+           "          },\n" +
+           "          \"terminationMessagePath\": \"/dev/termination-log\",\n" +
+           "          \"terminationMessagePolicy\": \"FallbackToLogsOnError\",\n" +
+           "          \"volumeMounts\": [\n" +
+           "            {\n" +
+           "              \"mountPath\": \"/var/log\",\n" +
+           "              \"name\": \"knative-var-log\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"mountPath\": \"/var/run/secrets/kubernetes.io/serviceaccount\",\n" +
+           "              \"name\": \"default-token-4fscf\",\n" +
+           "              \"readOnly\": true\n" +
+           "            }\n" +
+           "          ]\n" +
+           "        },\n" +
+           "        {\n" +
+           "          \"env\": [\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_NAMESPACE\",\n" +
+           "              \"value\": \"quarkus-serverless\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_SERVICE\",\n" +
+           "              \"value\": \"getting-started\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_CONFIGURATION\",\n" +
+           "              \"value\": \"getting-started\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_REVISION\",\n" +
+           "              \"value\": \"getting-started-dcx5d\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"QUEUE_SERVING_PORT\",\n" +
+           "              \"value\": \"8012\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"CONTAINER_CONCURRENCY\",\n" +
+           "              \"value\": \"0\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"REVISION_TIMEOUT_SECONDS\",\n" +
+           "              \"value\": \"300\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_POD\",\n" +
+           "              \"valueFrom\": {\n" +
+           "                \"fieldRef\": {\n" +
+           "                  \"apiVersion\": \"v1\",\n" +
+           "                  \"fieldPath\": \"metadata.name\"\n" +
+           "                }\n" +
+           "              }\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_POD_IP\",\n" +
+           "              \"valueFrom\": {\n" +
+           "                \"fieldRef\": {\n" +
+           "                  \"apiVersion\": \"v1\",\n" +
+           "                  \"fieldPath\": \"status.podIP\"\n" +
+           "                }\n" +
+           "              }\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_LOGGING_CONFIG\",\n" +
+           "              \"value\": \"{\\n  \\\"level\\\": \\\"info\\\",\\n  \\\"development\\\": false,\\n  \\\"outputPaths\\\": [\\\"stdout\\\"],\\n  \\\"errorOutputPaths\\\": [\\\"stderr\\\"],\\n  \\\"encoding\\\": \\\"json\\\",\\n  \\\"encoderConfig\\\": {\\n    \\\"timeKey\\\": \\\"ts\\\",\\n    \\\"levelKey\\\": \\\"level\\\",\\n    \\\"nameKey\\\": \\\"logger\\\",\\n    \\\"callerKey\\\": \\\"caller\\\",\\n    \\\"messageKey\\\": \\\"msg\\\",\\n    \\\"stacktraceKey\\\": \\\"stacktrace\\\",\\n    \\\"lineEnding\\\": \\\"\\\",\\n    \\\"levelEncoder\\\": \\\"\\\",\\n    \\\"timeEncoder\\\": \\\"iso8601\\\",\\n    \\\"durationEncoder\\\": \\\"\\\",\\n    \\\"callerEncoder\\\": \\\"\\\"\\n  }\\n}\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_LOGGING_LEVEL\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_REQUEST_LOG_TEMPLATE\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_REQUEST_METRICS_BACKEND\",\n" +
+           "              \"value\": \"prometheus\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"TRACING_CONFIG_BACKEND\",\n" +
+           "              \"value\": \"none\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"TRACING_CONFIG_ZIPKIN_ENDPOINT\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"TRACING_CONFIG_STACKDRIVER_PROJECT_ID\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"TRACING_CONFIG_DEBUG\",\n" +
+           "              \"value\": \"false\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"TRACING_CONFIG_SAMPLE_RATE\",\n" +
+           "              \"value\": \"0.100000\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"USER_PORT\",\n" +
+           "              \"value\": \"8080\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SYSTEM_NAMESPACE\",\n" +
+           "              \"value\": \"knative-serving\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"METRICS_DOMAIN\",\n" +
+           "              \"value\": \"knative.dev/internal/serving\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"USER_CONTAINER_NAME\",\n" +
+           "              \"value\": \"user-container\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"ENABLE_VAR_LOG_COLLECTION\",\n" +
+           "              \"value\": \"false\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"VAR_LOG_VOLUME_NAME\",\n" +
+           "              \"value\": \"knative-var-log\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"INTERNAL_VOLUME_PATH\",\n" +
+           "              \"value\": \"/var/knative-internal\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_READINESS_PROBE\",\n" +
+           "              \"value\": \"{\\\"tcpSocket\\\":{\\\"port\\\":8080,\\\"host\\\":\\\"127.0.0.1\\\"},\\\"successThreshold\\\":1}\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"ENABLE_PROFILING\",\n" +
+           "              \"value\": \"false\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"name\": \"SERVING_ENABLE_PROBE_REQUEST_LOG\",\n" +
+           "              \"value\": \"false\"\n" +
+           "            }\n" +
+           "          ],\n" +
+           "          \"image\": \"registry.redhat.io/openshift-serverless-1-tech-preview/serving-queue-rhel8@sha256:f9ea8bd70789e67ff00cc134cd966fda8d9e7a764926551d650acc71776db73c\",\n" +
+           "          \"imagePullPolicy\": \"IfNotPresent\",\n" +
+           "          \"name\": \"queue-proxy\",\n" +
+           "          \"ports\": [\n" +
+           "            {\n" +
+           "              \"containerPort\": 8022,\n" +
+           "              \"name\": \"http-queueadm\",\n" +
+           "              \"protocol\": \"TCP\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"containerPort\": 9090,\n" +
+           "              \"name\": \"queue-metrics\",\n" +
+           "              \"protocol\": \"TCP\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"containerPort\": 9091,\n" +
+           "              \"name\": \"http-usermetric\",\n" +
+           "              \"protocol\": \"TCP\"\n" +
+           "            },\n" +
+           "            {\n" +
+           "              \"containerPort\": 8012,\n" +
+           "              \"name\": \"queue-port\",\n" +
+           "              \"protocol\": \"TCP\"\n" +
+           "            }\n" +
+           "          ],\n" +
+           "          \"readinessProbe\": {\n" +
+           "            \"exec\": {\n" +
+           "              \"command\": [\n" +
+           "                \"/ko-app/queue\",\n" +
+           "                \"-probe-period\",\n" +
+           "                \"0\"\n" +
+           "              ]\n" +
+           "            },\n" +
+           "            \"failureThreshold\": 3,\n" +
+           "            \"periodSeconds\": 1,\n" +
+           "            \"successThreshold\": 1,\n" +
+           "            \"timeoutSeconds\": 10\n" +
+           "          },\n" +
+           "          \"resources\": {\n" +
+           "            \"requests\": {\n" +
+           "              \"cpu\": \"25m\"\n" +
+           "            }\n" +
+           "          },\n" +
+           "          \"securityContext\": {\n" +
+           "            \"allowPrivilegeEscalation\": false,\n" +
+           "            \"capabilities\": {\n" +
+           "              \"drop\": [\n" +
+           "                \"KILL\",\n" +
+           "                \"MKNOD\",\n" +
+           "                \"SETGID\",\n" +
+           "                \"SETUID\"\n" +
+           "              ]\n" +
+           "            },\n" +
+           "            \"runAsUser\": 1000620000\n" +
+           "          },\n" +
+           "          \"terminationMessagePath\": \"/dev/termination-log\",\n" +
+           "          \"terminationMessagePolicy\": \"File\",\n" +
+           "          \"volumeMounts\": [\n" +
+           "            {\n" +
+           "              \"mountPath\": \"/var/run/secrets/kubernetes.io/serviceaccount\",\n" +
+           "              \"name\": \"default-token-4fscf\",\n" +
+           "              \"readOnly\": true\n" +
+           "            }\n" +
+           "          ]\n" +
+           "        }\n" +
+           "      ],\n" +
+           "      \"dnsPolicy\": \"ClusterFirst\",\n" +
+           "      \"enableServiceLinks\": true,\n" +
+           "      \"imagePullSecrets\": [\n" +
+           "        {\n" +
+           "          \"name\": \"default-dockercfg-68wrb\"\n" +
+           "        }\n" +
+           "      ],\n" +
+           "      \"nodeName\": \"f03-h25-000-r620.rdu2.scalelab.redhat.com\",\n" +
+           "      \"priority\": 0,\n" +
+           "      \"restartPolicy\": \"Always\",\n" +
+           "      \"schedulerName\": \"default-scheduler\",\n" +
+           "      \"securityContext\": {\n" +
+           "        \"fsGroup\": 1000620000,\n" +
+           "        \"seLinuxOptions\": {\n" +
+           "          \"level\": \"s0:c25,c10\"\n" +
+           "        }\n" +
+           "      },\n" +
+           "      \"serviceAccount\": \"default\",\n" +
+           "      \"serviceAccountName\": \"default\",\n" +
+           "      \"terminationGracePeriodSeconds\": 300,\n" +
+           "      \"tolerations\": [\n" +
+           "        {\n" +
+           "          \"effect\": \"NoExecute\",\n" +
+           "          \"key\": \"node.kubernetes.io/not-ready\",\n" +
+           "          \"operator\": \"Exists\",\n" +
+           "          \"tolerationSeconds\": 300\n" +
+           "        },\n" +
+           "        {\n" +
+           "          \"effect\": \"NoExecute\",\n" +
+           "          \"key\": \"node.kubernetes.io/unreachable\",\n" +
+           "          \"operator\": \"Exists\",\n" +
+           "          \"tolerationSeconds\": 300\n" +
+           "        },\n" +
+           "        {\n" +
+           "          \"effect\": \"NoSchedule\",\n" +
+           "          \"key\": \"node.kubernetes.io/memory-pressure\",\n" +
+           "          \"operator\": \"Exists\"\n" +
+           "        }\n" +
+           "      ],\n" +
+           "      \"volumes\": [\n" +
+           "        {\n" +
+           "          \"emptyDir\": {},\n" +
+           "          \"name\": \"knative-var-log\"\n" +
+           "        },\n" +
+           "        {\n" +
+           "          \"name\": \"default-token-4fscf\",\n" +
+           "          \"secret\": {\n" +
+           "            \"defaultMode\": 420,\n" +
+           "            \"secretName\": \"default-token-4fscf\"\n" +
+           "          }\n" +
+           "        }\n" +
+           "      ]\n" +
+           "    },\n" +
+           "    \"status\": {\n" +
+           "      \"conditions\": [\n" +
+           "        {\n" +
+           "          \"lastProbeTime\": null,\n" +
+           "          \"lastTransitionTime\": \"2020-03-30T15:26:00Z\",\n" +
+           "          \"status\": \"True\",\n" +
+           "          \"type\": \"Initialized\"\n" +
+           "        },\n" +
+           "        {\n" +
+           "          \"lastProbeTime\": null,\n" +
+           "          \"lastTransitionTime\": \"2020-03-30T15:26:04Z\",\n" +
+           "          \"status\": \"True\",\n" +
+           "          \"type\": \"Ready\"\n" +
+           "        },\n" +
+           "        {\n" +
+           "          \"lastProbeTime\": null,\n" +
+           "          \"lastTransitionTime\": \"2020-03-30T15:26:04Z\",\n" +
+           "          \"status\": \"True\",\n" +
+           "          \"type\": \"ContainersReady\"\n" +
+           "        },\n" +
+           "        {\n" +
+           "          \"lastProbeTime\": null,\n" +
+           "          \"lastTransitionTime\": \"2020-03-30T15:26:00Z\",\n" +
+           "          \"status\": \"True\",\n" +
+           "          \"type\": \"PodScheduled\"\n" +
+           "        }\n" +
+           "      ],\n" +
+           "      \"containerStatuses\": [\n" +
+           "        {\n" +
+           "          \"containerID\": \"cri-o://9b51ebe63f345235477dd491cb1ca4545a96780001c44f6991b233876db024b4\",\n" +
+           "          \"image\": \"registry.redhat.io/openshift-serverless-1-tech-preview/serving-queue-rhel8@sha256:f9ea8bd70789e67ff00cc134cd966fda8d9e7a764926551d650acc71776db73c\",\n" +
+           "          \"imageID\": \"registry.redhat.io/openshift-serverless-1-tech-preview/serving-queue-rhel8@sha256:f9ea8bd70789e67ff00cc134cd966fda8d9e7a764926551d650acc71776db73c\",\n" +
+           "          \"lastState\": {},\n" +
+           "          \"name\": \"queue-proxy\",\n" +
+           "          \"ready\": true,\n" +
+           "          \"restartCount\": 0,\n" +
+           "          \"started\": true,\n" +
+           "          \"state\": {\n" +
+           "            \"running\": {\n" +
+           "              \"startedAt\": \"2020-03-30T15:26:03Z\"\n" +
+           "            }\n" +
+           "          }\n" +
+           "        },\n" +
+           "        {\n" +
+           "          \"containerID\": \"cri-o://c636a91eec6cce7f7471586df6ce10e7aa50cf11e618a213277a5d1542d75cec\",\n" +
+           "          \"image\": \"image-registry.openshift-image-registry.svc:5000/quarkus-serverless/getting-started@sha256:6cbb1db17921335db3b4d9f8a421b026c660bd32957abbdf15cc77e4387ee4c8\",\n" +
+           "          \"imageID\": \"image-registry.openshift-image-registry.svc:5000/quarkus-serverless/getting-started@sha256:6cbb1db17921335db3b4d9f8a421b026c660bd32957abbdf15cc77e4387ee4c8\",\n" +
+           "          \"lastState\": {},\n" +
+           "          \"name\": \"user-container\",\n" +
+           "          \"ready\": true,\n" +
+           "          \"restartCount\": 0,\n" +
+           "          \"started\": true,\n" +
+           "          \"state\": {\n" +
+           "            \"running\": {\n" +
+           "              \"startedAt\": \"2020-03-30T15:26:03Z\"\n" +
+           "            }\n" +
+           "          }\n" +
+           "        }\n" +
+           "      ],\n" +
+           "      \"hostIP\": \"172.16.0.12\",\n" +
+           "      \"phase\": \"Running\",\n" +
+           "      \"podIP\": \"10.130.5.48\",\n" +
+           "      \"podIPs\": [\n" +
+           "        {\n" +
+           "          \"ip\": \"10.130.5.48\"\n" +
+           "        }\n" +
+           "      ],\n" +
+           "      \"qosClass\": \"Burstable\",\n" +
+           "      \"startTime\": \"2020-03-30T15:26:00Z\"\n" +
+           "    }\n" +
+           "  }\n" +
+           "]\n";
+
+
+        Object result = ForEach.split(json);
+    }
+
     @Test
     public void split_quoted_comma(){
         List<Object> split = ForEach.split("['1,1', 2]");

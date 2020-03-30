@@ -16,9 +16,11 @@ public interface Context {
     void skip(String output);
     void update(String output);
 
-    Logger getRunLogger();
-
+    //Logger getRunLogger();
+    void log(String message);
+    void error(String message);
     void terminal(String output);
+
     boolean isColorTerminal();
     SystemTimer getTimer();
 

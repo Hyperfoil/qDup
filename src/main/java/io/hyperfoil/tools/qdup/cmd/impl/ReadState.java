@@ -41,6 +41,6 @@ public class ReadState extends Cmd {
 
     @Override
     public String getLogOutput(String output,Context context){
-        return "read-state: "+ populatedKey == null ? key : populatedKey;
+        return "read-state: "+ (populatedKey == null ? key : populatedKey);
     }
 }

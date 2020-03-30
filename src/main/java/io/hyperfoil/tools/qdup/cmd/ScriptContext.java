@@ -7,6 +7,7 @@ import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
@@ -120,6 +121,8 @@ public class ScriptContext implements Context, Runnable{
 
     }
 
+
+
     public void setObserver(ContextObserver observer){
         this.observer = observer;
     }
@@ -135,7 +138,8 @@ public class ScriptContext implements Context, Runnable{
 
     public Run getRun(){return run;}
 
-    public Logger getRunLogger(){return run.getRunLogger();}
+    private Logger getRunLogger(){return run.getRunLogger();}
+
     public SystemTimer getTimer(){return timer;}
     public String getRunOutputPath(){
         return run.getOutputPath();
@@ -208,7 +212,30 @@ public class ScriptContext implements Context, Runnable{
         return run.getConfig().isColorTerminal();
     }
 
-    private void log(Cmd command,String output){
+    public void log(String message){
+        String rootString;
+        if(rootCmd instanceof Script){
+            rootString = ((Script)rootCmd).getName();
+        }else if (rootCmd instanceof ScriptCmd){
+            rootString = ((ScriptCmd)rootCmd).getName();
+        }else{
+            rootString = rootCmd.toString();
+        }
+        getRunLogger().info("{}@{}:{}",rootString,getHost().getShortHostName(),message);
+    }
+    public void error(String message){
+        String rootString;
+        if(rootCmd instanceof Script){
+            rootString = ((Script)rootCmd).getName();
+        }else if (rootCmd instanceof ScriptCmd){
+            rootString = ((ScriptCmd)rootCmd).getName();
+        }else{
+            rootString = rootCmd.toString();
+        }
+        getRunLogger().error("{}@{}:{}",rootString,getHost().getShortHostName(),message);
+    }
+
+    private void log(Cmd command,String output,Context context){
         String cmdLogOuptut = command == null ? output : command.getLogOutput(output,this);
         String populatedCommand = Cmd.populateStateVariables(cmdLogOuptut, command, state);
         String rootString;
@@ -230,14 +257,13 @@ public class ScriptContext implements Context, Runnable{
         //only close if something is listening
         //may need to send close before listener has the semaphore (e.g. tests)
         lineQueue.add(CLOSE_QUEUE);
-
     }
 
     @Override
     public void next(String output) {
         getTimer().start("next");
         Cmd cmd = getCurrentCmd();
-        log(cmd,output);
+
         if(!signalCmds.isEmpty()){
             signalCmds.forEach((name,onsignal)->{
                 getCoordinator().removeWaiter(name,onsignal);
@@ -250,6 +276,7 @@ public class ScriptContext implements Context, Runnable{
                 closeLineQueue();
             }
             cmd.setOutput(output);
+            cmd.postRun(output,this);
             Cmd toCall = cmd.getNext();
             boolean changed = setCurrentCmd(cmd,toCall);
             if(changed) {
@@ -262,7 +289,7 @@ public class ScriptContext implements Context, Runnable{
     public void skip(String output) {
         getTimer().start("skip");
         Cmd cmd = getCurrentCmd();
-        log(cmd,output);
+
         if(!signalCmds.isEmpty()){
             signalCmds.forEach((name,onsignal)->{
                 getCoordinator().removeWaiter(name,onsignal);
@@ -275,7 +302,9 @@ public class ScriptContext implements Context, Runnable{
                 closeLineQueue();
             }
             cmd.setOutput(output);
+            cmd.postRun(output,this);
             boolean changed = setCurrentCmd(cmd,cmd.getSkip());
+
             if(changed) {
                 startCurrentCmd();
             }else{
