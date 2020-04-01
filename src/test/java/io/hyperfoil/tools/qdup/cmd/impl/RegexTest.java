@@ -23,6 +23,60 @@ import static org.junit.Assert.*;
 
 public class RegexTest extends SshTestBase {
 
+   @Test
+   public void getNext_isMiss_onMiss_misses(){
+      Regex regex = new Regex("foo",true).onMiss(Cmd.log("miss"));
+      regex.then(Cmd.log("matches"));
+
+      SpyContext context = new SpyContext();
+
+      regex.run("bar",context);
+      Cmd next = regex.getNext();
+
+      assertTrue("context should have called next",context.hasNext());
+      assertEquals("context should have called next","bar",context.getNext());
+      assertNotNull("next should not be null",next);
+      assertTrue("next should be a log command",next instanceof Log);
+      Log log = (Log)next;
+      assertTrue("next should log matches",log.getMessage().contains("matches"));
+   }
+
+    @Test
+    public void getNext_onMiss_misses(){
+       Regex regex = new Regex("foo").onMiss(Cmd.log("miss"));
+       regex.then(Cmd.log("matches"));
+
+       SpyContext context = new SpyContext();
+
+       regex.run("bar",context);
+       Cmd next = regex.getNext();
+
+       assertTrue("context should have called next",context.hasNext());
+       assertEquals("context should have called next","bar",context.getNext());
+       assertNotNull("next should not be null",next);
+       assertTrue("next should be a log command",next instanceof Log);
+       Log log = (Log)next;
+       assertTrue("next should log miss",log.getMessage().contains("miss"));
+    }
+   @Test
+   public void getNext_onMiss_matches(){
+      Regex regex = new Regex("foo").onMiss(Cmd.log("miss"));
+      regex.then(Cmd.log("matches"));
+
+      SpyContext context = new SpyContext();
+
+      regex.run("foo",context);
+      Cmd next = regex.getNext();
+
+      assertTrue("context should have called next",context.hasNext());
+      assertEquals("context should have called next","foo",context.getNext());
+      assertNotNull("next should not be null",next);
+      assertTrue("next should be a log command",next instanceof Log);
+      Log log = (Log)next;
+      assertTrue("next should log miss",log.getMessage().contains("matches"));
+   }
+
+
     @Test @Ignore
     public void systemctlBug(){
        Parser parser = Parser.getInstance();

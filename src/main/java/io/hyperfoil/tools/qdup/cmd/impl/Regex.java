@@ -11,131 +11,168 @@ import java.util.regex.PatternSyntaxException;
 
 public class Regex extends Cmd {
 
-    private String pattern;
-    private String patternString;
-    private boolean matched = false;
-    private boolean miss = false;
-    private List<Cmd> onMiss;
-    private Map<String,String> matches;
-    public Regex(String pattern){
-        this(pattern,false);
-    }
-    public Regex(String pattern, boolean miss){
-        this.pattern = pattern;
-        this.miss = miss;
-        this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW\\(\\)remo])","\\\\");
-        this.matches = new HashMap<>();
-        this.onMiss = new LinkedList<>();
-    }
-    public boolean isMiss(){return miss;}
-    public boolean hasOnMiss(){return !onMiss.isEmpty();}
-    public List<Cmd> onMiss(){
-       return Collections.unmodifiableList(onMiss);
-    }
-    public Regex onMiss(Cmd command){
-       command.setParent(this);
-       onMiss.add(command);
-       return this;
-    }
+   private String pattern;
+   private String patternString;
+   private boolean matched = false;
+   private boolean miss = false;
+   private List<Cmd> onMiss;
+   private Map<String, String> matches;
+   private boolean ran = false;
 
-    public String getPattern(){return patternString;}
-    @Override
-    public void run(String input, Context context) {
+   public Regex(String pattern) {
+      this(pattern, false);
+   }
 
-        String populatedPattern = populateStateVariables(patternString,this,context.getState());
-        String newPattern = populatedPattern;
+   public Regex(String pattern, boolean miss) {
+      this.pattern = pattern;
+      this.miss = miss;
+      this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW\\(\\)remo])", "\\\\");
+      this.matches = new HashMap<>();
+      this.onMiss = new LinkedList<>();
+   }
 
-        matches.clear();
+   public boolean isMiss() {
+      return miss;
+   }
 
-        //key is a regex friendly capture name and message is the user provided capture name
-        LinkedHashMap<String,String> renames = new LinkedHashMap<>();
-        Matcher fieldMatcher = NAMED_CAPTURE.matcher(populatedPattern);
+   public boolean hasOnMiss() {
+      return !onMiss.isEmpty();
+   }
 
-        while(fieldMatcher.find()){
-            String realName = fieldMatcher.group(1);
-            String compName = realName.replaceAll("[\\.\\\\_]","x");
-            if(!compName.equals(realName)){
-                newPattern = newPattern.replace(realName,compName);
+   public List<Cmd> onMiss() {
+      return Collections.unmodifiableList(onMiss);
+   }
+
+   public Regex onMiss(Cmd command) {
+      command.setParent(this);
+      onMiss.add(command);
+      return this;
+   }
+
+   public String getPattern() {
+      return patternString;
+   }
+
+   @Override
+   public void run(String input, Context context) {
+      ran = true;
+      String populatedPattern = populateStateVariables(patternString, this, context.getState());
+      String newPattern = populatedPattern;
+
+      matches.clear();
+
+      //key is a regex friendly capture name and message is the user provided capture name
+      LinkedHashMap<String, String> renames = new LinkedHashMap<>();
+      Matcher fieldMatcher = NAMED_CAPTURE.matcher(populatedPattern);
+
+      while (fieldMatcher.find()) {
+         String realName = fieldMatcher.group(1);
+         String compName = realName.replaceAll("[\\.\\\\_]", "x");
+         if (!compName.equals(realName)) {
+            newPattern = newPattern.replace(realName, compName);
+         }
+         renames.put(compName, realName);
+
+      }
+      try {
+         Pattern pattern = Pattern.compile(newPattern, Pattern.DOTALL);
+
+         Matcher matcher = pattern.matcher(input);
+
+         //full line matching only if the pattern specifies start of line
+         matched = newPattern.startsWith("^") ? matcher.matches() : matcher.find();
+         if (matched == !miss) {//if matched and !miss or miss and !match
+            logger.trace("{} match {} ", this, input);
+            if (!miss) { //cannot populate name capture groups for miss becasue it didn't match
+               fieldMatcher = NAMED_CAPTURE.matcher(newPattern);
+               List<String> names = new LinkedList<>();
+               while (fieldMatcher.find()) {
+                  names.add(fieldMatcher.group(1));
+               }
+               if (!names.isEmpty()) {
+                  for (String name : names) {
+                     String capturedValue = matcher.group(name);
+                     String realName = renames.get(name);
+                     matches.put(realName, capturedValue);
+                     //context.getState().set(realName,capturedValue);
+                  }
+               }
+               if (!matches.isEmpty()) {
+                  for (String key : matches.keySet()) {
+                     context.getState().set(key, matches.get(key));
+                  }
+               }
             }
-            renames.put(compName,realName);
-
-        }
-        try {
-            Pattern pattern = Pattern.compile(newPattern, Pattern.DOTALL);
-
-        Matcher matcher = pattern.matcher(input);
-
-        //full line matching only if the pattern specifies start of line
-        matched = newPattern.startsWith("^") ? matcher.matches() : matcher.find();
-        if(matched == !miss){//if matched and !miss or miss and !match
-            logger.trace("{} match {} ",this,input);
-            if( !miss ) { //cannot populate name capture groups for miss becasue it didn't match
-                fieldMatcher = NAMED_CAPTURE.matcher(newPattern);
-                List<String> names = new LinkedList<>();
-                while (fieldMatcher.find()) {
-                    names.add(fieldMatcher.group(1));
-                }
-                if (!names.isEmpty()) {
-                    for (String name : names) {
-                        String capturedValue = matcher.group(name);
-                        String realName = renames.get(name);
-                        matches.put(realName, capturedValue);
-                        //context.getState().set(realName,capturedValue);
-                    }
-                }
-                if (!matches.isEmpty()) {
-                    for (String key : matches.keySet()) {
-                        context.getState().set(key, matches.get(key));
-                    }
-                }
-            }
+            String logOutput = getLogOutput(input, context);
+            context.log(logOutput);
             context.next(input);
-        }else{
-            logger.trace("{} NOT match {} ",this,input);
-            context.skip(input);
-        }
-        }catch(PatternSyntaxException e){
-            context.error("failed to parse regex pattern from "+newPattern+"\n"+e.getMessage());
-            context.abort(false);
-        }
+         } else {
+            logger.trace("{} NOT match {} ", this, input);
 
-    }
+            if (hasOnMiss()) {
 
-    @Override
-    public Cmd copy() {
-        return new Regex(this.patternString,this.miss);
-    }
 
-    @Override public String toString(){return "regex:"+(miss? "! ":" ")+replaceEscapes(patternString);}
-
-    private String replaceEscapes(String input){
-        return input.replace("\n","\\n")
-                .replace("\r","\\r")
-                .replace("\t","\\t")
-                .replace("\b","\\b")
-                .replace("\f","\\f")
-                .replace("\"","\\\"")
-                .replace("\\","\\\\");
-
-    }
-
-    @Override
-    public String getLogOutput(String output,Context context){
-        if(matched=!miss){
-            StringBuffer sb = new StringBuffer();
-            sb.append("regex:");
-            sb.append((miss? "! ":" "));
-            sb.append(replaceEscapes(patternString));
-            if(!matches.isEmpty()) {
-                for (String key : matches.keySet()) {
-                    sb.append("\n");
-                    sb.append("  " + key + "=" + matches.get(key));
-
-                }
+            } else {
+               context.skip(input);
             }
-            return sb.toString();
-        }else{
-            return "";
-        }
-    }
+         }
+      } catch (PatternSyntaxException e) {
+         context.error("failed to parse regex pattern from " + newPattern + "\n" + e.getMessage());
+         context.abort(false);
+      }
+
+   }
+
+   @Override //disables default logging after the command finishes
+   public void postRun(String output, Context context) { }
+
+   @Override
+   public Cmd getNext() {
+      if (ran && matched == miss && hasOnMiss()) {
+         return onMiss.get(0);
+      } else {
+         return super.getNext();
+      }
+   }
+
+   @Override
+   public Cmd copy() {
+      return new Regex(this.patternString, this.miss);
+   }
+
+   @Override
+   public String toString() {
+      return "regex:" + (miss ? "! " : " ") + replaceEscapes(patternString);
+   }
+
+   private String replaceEscapes(String input) {
+      return input.replace("\n", "\\n")
+         .replace("\r", "\\r")
+         .replace("\t", "\\t")
+         .replace("\b", "\\b")
+         .replace("\f", "\\f")
+         .replace("\"", "\\\"")
+         .replace("\\", "\\\\");
+
+   }
+
+   @Override
+   public String getLogOutput(String output, Context context) {
+      if (matched = !miss) {
+         StringBuffer sb = new StringBuffer();
+         sb.append("regex:");
+         sb.append((miss ? "! " : " "));
+         sb.append(replaceEscapes(patternString));
+         if (!matches.isEmpty()) {
+            for (String key : matches.keySet()) {
+               sb.append("\n");
+               sb.append("  " + key + "=" + matches.get(key));
+
+            }
+         }
+         return sb.toString();
+      } else {
+         return "";
+      }
+   }
 }

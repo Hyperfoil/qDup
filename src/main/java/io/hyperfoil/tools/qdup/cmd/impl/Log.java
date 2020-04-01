@@ -26,4 +26,8 @@ public class Log extends Cmd {
     }
     @Override
     public String toString(){return "log: "+this.message;}
+
+
+    @Override //disables default logging after the command finishes
+    public void postRun(String output,Context context){}
 }
