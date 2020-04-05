@@ -124,6 +124,7 @@ public class Dispatcher {
             }
             if(context instanceof ScriptContext){
                 ScriptContext scriptContext = (ScriptContext)context;
+                scriptContext.getTimer().stop(); //fix bug where last timer has stop = 0
                 scriptContexts.remove(scriptContext.getRootCmd());
                 scriptObservers.forEach(observer -> observer.onStop(scriptContext));
                 context.getSession().close();
