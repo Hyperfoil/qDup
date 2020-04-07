@@ -125,6 +125,9 @@ public class SpyContext implements Context {
         return null;
     }
 
+    @Override
+    public void close() { }
+
     public String getNext(){return next;}
     public boolean hasNext(){return next!=null;}
     public String getSkip(){return skip;}

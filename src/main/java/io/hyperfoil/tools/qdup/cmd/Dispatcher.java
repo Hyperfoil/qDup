@@ -125,9 +125,11 @@ public class Dispatcher {
             if(context instanceof ScriptContext){
                 ScriptContext scriptContext = (ScriptContext)context;
                 scriptContext.getTimer().stop(); //fix bug where last timer has stop = 0
+
                 scriptContexts.remove(scriptContext.getRootCmd());
                 scriptObservers.forEach(observer -> observer.onStop(scriptContext));
-                context.getSession().close();
+                context.close();
+                //context.getSession().close(); //using close on context to only close base context
                 checkActiveCount();
             }
         }
@@ -267,8 +269,10 @@ public class Dispatcher {
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> toCall) throws InterruptedException{
         return getExecutor().invokeAll(toCall);
     }
-
     public void addScriptContext(ScriptContext context){
+       addScriptContext(context,true);
+    }
+    public void addScriptContext(ScriptContext context, boolean autoRun){
         logger.trace("add script {} to {}",context.getRootCmd(),context.getSession().getHost().getHostName());
 
         context.setObserver(observer);
@@ -284,12 +288,13 @@ public class Dispatcher {
         if(isRunning.get()){
             ScriptContext contextResult = scriptContexts.get(context.getRootCmd());
             scriptObservers.forEach(observer -> observer.onStart(contextResult));
-
-            logger.info("queueing\n  host={}\n  script={}",
-                    contextResult.getSession().getHost().getHostName(),
-                    context.getRootCmd());
-            context.getTimer().start("waiting in run queue");
-            getExecutor().submit(context);
+            if(autoRun) {
+               logger.info("queueing\n  host={}\n  script={}",
+                  contextResult.getSession().getHost().getHostName(),
+                  context.getRootCmd());
+               context.getTimer().start("waiting in run queue");
+               getExecutor().submit(context);
+            }
         }
     }
     public String debug(){

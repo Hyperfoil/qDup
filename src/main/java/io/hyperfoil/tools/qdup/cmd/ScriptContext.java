@@ -18,6 +18,7 @@ import org.slf4j.ext.XLoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
@@ -28,6 +29,20 @@ import java.util.function.Supplier;
 public class ScriptContext implements Context, Runnable{
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+
+    private class SharedScriptContext extends ScriptContext{
+        public SharedScriptContext(SystemTimer timer,Cmd root){
+            super(ScriptContext.this.getSession(),
+               ScriptContext.this.getState(),
+               ScriptContext.this.getRun(),
+               timer,
+               root);
+        }
+        @Override
+        public void close(){
+            ScriptContext.this.checkClose();
+        }
+    }
 
     private class ActiveCheckCmd extends Cmd{
 
@@ -67,6 +82,8 @@ public class ScriptContext implements Context, Runnable{
     private Semaphore lineQueueSemaphore;
     private BlockingQueue<String> lineQueue;
 
+    private AtomicInteger sessionCounter = new AtomicInteger(1);
+
     private List<ScheduledFuture<?>> timeouts;
 
     private volatile Cmd currentCmd;
@@ -74,6 +91,8 @@ public class ScriptContext implements Context, Runnable{
 
     long startTime = -1;
     long updateTime = -1;
+
+
 
     public String getContextId(){
         //TODO use a StringBuilder to correctly handle missing session or root
@@ -122,6 +141,11 @@ public class ScriptContext implements Context, Runnable{
     }
 
 
+    public ScriptContext newChildContext(SystemTimer timer,Cmd root){
+        sessionCounter.incrementAndGet();
+        return new SharedScriptContext(timer,root);
+    }
+
 
     public void setObserver(ContextObserver observer){
         this.observer = observer;
@@ -157,6 +181,20 @@ public class ScriptContext implements Context, Runnable{
     }
 
     public Coordinator getCoordinator(){return run.getCoordinator();}
+
+    @Override
+    public void close() {
+        checkClose();
+    }
+
+    private void checkClose(){
+        int currentCount = this.sessionCounter.decrementAndGet();
+        if(currentCount==0) {
+            session.close();
+        }
+    }
+
+
     public State getState(){return state;}
     public void addPendingDownload(String path,String destination){
         run.addPendingDownload(session.getHost(),path,destination);
@@ -259,6 +297,10 @@ public class ScriptContext implements Context, Runnable{
         lineQueue.add(CLOSE_QUEUE);
     }
 
+
+
+
+
     @Override
     public void next(String output) {
         getTimer().start("next");
@@ -332,7 +374,7 @@ public class ScriptContext implements Context, Runnable{
             lineQueue.add(output);
         }
     }
-    protected boolean setCurrentCmd(Cmd current,Cmd next){
+    public boolean setCurrentCmd(Cmd current,Cmd next){
         currentCmd = next;
         boolean changed = true;//currentCmdUpdater.compareAndSet(this,current,next);
 

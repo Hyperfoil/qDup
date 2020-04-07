@@ -39,5 +39,6 @@ public interface Context {
     void schedule(Runnable runnable, long delayMs);
     Coordinator getCoordinator();
 
+    void close();
 
 }

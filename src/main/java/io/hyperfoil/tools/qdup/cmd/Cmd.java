@@ -547,7 +547,7 @@ public abstract class Cmd {
    }
 
 
-   public final Cmd getSkip() {
+   public Cmd getSkip() {
       Cmd rtrn = null;
       if(hasParent()){
          Cmd target = this;
@@ -632,7 +632,7 @@ public abstract class Cmd {
    }
 
 
-   protected final void doRun(String input, Context context) {
+   public final void doRun(String input, Context context) {
       if (!withDef.isEmpty()) {
          //replace with values if they have ${{
          withDef.forEach((k,v)->{

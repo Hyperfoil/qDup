@@ -7,6 +7,8 @@ import io.hyperfoil.tools.yaup.json.Json;
 
 public class SetState extends Cmd {
 
+    private static final String STATE_LOCK = "STATE_LOCK";
+
     String key;
     String value;
     String populatedKey;
@@ -44,20 +46,22 @@ public class SetState extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context.getState());
-        if(StringUtil.isQuoted(populatedValue) && (StringUtil.removeQuotes(populatedValue)).trim().isEmpty()){
-            populatedValue="";
-        }
-        populatedKey = Cmd.populateStateVariables(this.key, this, context.getState());
-        if(Json.isJsonLike(populatedValue) && value.contains(StringUtil.PATTERN_PREFIX) && value.contains(StringUtil.PATTERN_SUFFIX)){
-            Json fromPopulatedValue = Json.fromString(populatedValue);
-            if(!fromPopulatedValue.isEmpty()){
-                context.getState().set(populatedKey,fromPopulatedValue);
+        synchronized (STATE_LOCK){
+            populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context.getState());
+            if(StringUtil.isQuoted(populatedValue) && (StringUtil.removeQuotes(populatedValue)).trim().isEmpty()){
+                populatedValue="";
+            }
+            populatedKey = Cmd.populateStateVariables(this.key, this, context.getState());
+            if(Json.isJsonLike(populatedValue) && value.contains(StringUtil.PATTERN_PREFIX) && value.contains(StringUtil.PATTERN_SUFFIX)){
+                Json fromPopulatedValue = Json.fromString(populatedValue);
+                if(!fromPopulatedValue.isEmpty()){
+                    context.getState().set(populatedKey,fromPopulatedValue);
+                }else{
+                    context.getState().set(populatedKey, populatedValue);
+                }
             }else{
                 context.getState().set(populatedKey, populatedValue);
             }
-        }else{
-            context.getState().set(populatedKey, populatedValue);
         }
         context.next(input);
     }

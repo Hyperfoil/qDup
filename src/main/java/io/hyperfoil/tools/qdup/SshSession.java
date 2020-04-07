@@ -5,17 +5,21 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.stream.EscapeFilteredStream;
 import io.hyperfoil.tools.qdup.stream.FilteredStream;
 import io.hyperfoil.tools.qdup.stream.LineEmittingStream;
+import io.hyperfoil.tools.qdup.stream.MultiStream;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
 import io.hyperfoil.tools.qdup.stream.SuffixStream;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.resource.URLResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -59,13 +63,16 @@ public class SshSession {
 
       Consumer<String> callback;
       ByteArrayOutputStream baos;
+      String name;
 
-      public ExecWatcher(Runnable callback) {
+      public ExecWatcher(String name,Runnable callback) {
+         this.name = name;
          this.callback = a -> callback.run();
          this.baos = null;
       }
 
-      public ExecWatcher(Consumer<String> callback, ByteArrayOutputStream baos) {
+      public ExecWatcher(String name,Consumer<String> callback, ByteArrayOutputStream baos) {
+         this.name = name;
          this.callback = callback;
          this.baos = baos;
       }
@@ -80,6 +87,9 @@ public class SshSession {
 
       @Override
       public void channelOpenFailure(Channel channel, Throwable reason) {
+         if(callback!=null){
+
+         }
       }
 
       @Override
@@ -573,11 +583,17 @@ public class SshSession {
             ChannelExec channelExec = clientSession.createExecChannel(command);
             if (callback != null) {
                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-               ExecWatcher watcher = new ExecWatcher(callback, baos);
-               channelExec.setOut(baos);
+               ExecWatcher watcher = new ExecWatcher(command, callback, baos);
+               MultiStream stream = new MultiStream();
+               stream.addStream("baos",baos);
+               stream.addStream("sout",System.err);
+               channelExec.setOut(stream);
+               //channelExec.setErr(baos); //added to try and catch echo output
                channelExec.addChannelListener(watcher);
+
             }
-            channelExec.open();
+            channelExec.open().verify(9L, TimeUnit.SECONDS);
+
          } catch (IOException e) {
             e.printStackTrace();
          }

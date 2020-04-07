@@ -207,6 +207,11 @@ public class SyncContext implements Context, Runnable{
     }
 
     @Override
+    public void close() {
+        //TODO should this also close the session
+    }
+
+    @Override
     public void run() {
 
     }

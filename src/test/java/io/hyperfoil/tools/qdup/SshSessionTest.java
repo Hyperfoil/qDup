@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -13,7 +14,30 @@ import static org.junit.Assert.assertTrue;
 
 public class SshSessionTest extends SshTestBase{
 
-    static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(2);
+    static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(4);
+
+    @Test
+    public void parallel_exec(){
+
+        List<String> outputs = new ArrayList<>();
+        SshSession sshSession = getSession(false);
+        executor.submit(()->{
+            sshSession.exec("echo 'first'",(out)->{
+                outputs.add(out);
+            });
+        });
+        executor.submit(()->{
+            sshSession.exec("echo 'second'",(out)->{
+                outputs.add(out);
+            });
+        });
+        executor.submit(()->{
+            sshSession.exec("echo 'third'",(out)->{
+                outputs.add(out);
+            });
+        });
+        assertEquals("expect 3 values "+outputs,3,outputs.size());
+    }
 
     @Test
     public void echo_dollar_pwd(){

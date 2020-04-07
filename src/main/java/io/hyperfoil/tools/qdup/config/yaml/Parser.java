@@ -173,7 +173,9 @@ public class Parser {
             "exec",
             (cmd)->cmd.getCommand(),
             (str)->new Exec(str),
-            (json)->new Exec(json.getString("command"),json.getBoolean("silent",false))
+            (json)->{
+               return new Exec(json.getString("command"),json.getBoolean("async",false),json.getBoolean("silent",false));
+            }
         );
         //ExitCode
         rtrn.addCmd(
