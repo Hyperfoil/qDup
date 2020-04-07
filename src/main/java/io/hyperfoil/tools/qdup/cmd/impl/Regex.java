@@ -110,8 +110,9 @@ public class Regex extends Cmd {
             logger.trace("{} NOT match {} ", this, input);
 
             if (hasOnMiss()) {
-
-
+               String logOutput = getLogOutput(input, context);
+               context.log(logOutput);
+               context.next(input);
             } else {
                context.skip(input);
             }
@@ -128,11 +129,16 @@ public class Regex extends Cmd {
 
    @Override
    public Cmd getNext() {
-      if (ran && matched == miss && hasOnMiss()) {
+      if(ran && !miss && !matched && hasOnMiss()){
          return onMiss.get(0);
-      } else {
+      }else{
          return super.getNext();
       }
+//      if (ran && matched == miss && hasOnMiss()) {
+//         return onMiss.get(0);
+//      } else {
+//         return super.getNext();
+//      }
    }
 
    @Override
@@ -158,7 +164,7 @@ public class Regex extends Cmd {
 
    @Override
    public String getLogOutput(String output, Context context) {
-      if (matched = !miss) {
+      if (matched == !miss) {
          StringBuffer sb = new StringBuffer();
          sb.append("regex:");
          sb.append((miss ? "! " : " "));

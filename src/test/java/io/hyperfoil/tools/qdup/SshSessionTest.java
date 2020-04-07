@@ -36,7 +36,12 @@ public class SshSessionTest extends SshTestBase{
                 outputs.add(out);
             });
         });
-        assertEquals("expect 3 values "+outputs,3,outputs.size());
+       try {
+          Thread.sleep(5_000);
+       } catch (InterruptedException e) {
+          e.printStackTrace();
+       }
+       assertEquals("expect 3 values "+outputs,3,outputs.size());
     }
 
     @Test

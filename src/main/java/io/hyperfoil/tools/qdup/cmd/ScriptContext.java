@@ -412,7 +412,11 @@ public class ScriptContext implements Context, Runnable{
 
     @Override
     public void run() {
-            Cmd cmd = getCurrentCmd();
+        Cmd cmd = getCurrentCmd();
+        String input = cmd != null && cmd.getPrevious() != null ? cmd.getPrevious().getOutput() : "";
+        run(cmd,input);
+    }
+    public void run(Cmd cmd,String input){
             if (cmd == null) {
                 observerDone();//this context is finished
             } else {
@@ -435,7 +439,7 @@ public class ScriptContext implements Context, Runnable{
                 long timestamp = System.currentTimeMillis();
                 setStartTime(timestamp);
                 setUpdateTime(timestamp);
-                String input = cmd != null && cmd.getPrevious() != null ? cmd.getPrevious().getOutput() : "";
+
 
                 if (cmd.hasSignalWatchers()){
                     Supplier<String> inputSupplier = ()->getSession().peekOutput();

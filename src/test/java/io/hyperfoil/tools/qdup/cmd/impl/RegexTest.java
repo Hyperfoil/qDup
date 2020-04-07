@@ -48,15 +48,17 @@ public class RegexTest extends SshTestBase {
 
        SpyContext context = new SpyContext();
 
+
        regex.run("bar",context);
+
        Cmd next = regex.getNext();
 
-       assertTrue("context should have called next",context.hasNext());
-       assertEquals("context should have called next","bar",context.getNext());
-       assertNotNull("next should not be null",next);
-       assertTrue("next should be a log command",next instanceof Log);
+       assertTrue("context should have called next "+context,context.hasNext());
+       assertEquals("context should have called next "+context,"bar",context.getNext());
+       assertNotNull("next should not be null "+context,next);
+       assertTrue("next should be a log command "+context,next instanceof Log);
        Log log = (Log)next;
-       assertTrue("next should log miss",log.getMessage().contains("miss"));
+       assertTrue("next should log miss "+log.getMessage(),log.getMessage().contains("miss"));
     }
    @Test
    public void getNext_onMiss_matches(){

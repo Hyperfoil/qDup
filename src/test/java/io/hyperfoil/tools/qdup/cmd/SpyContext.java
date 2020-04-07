@@ -133,4 +133,7 @@ public class SpyContext implements Context {
     public String getSkip(){return skip;}
     public boolean hasSkip(){return skip!=null;}
     public List<String> getUpdates(){return updates;}
+
+    @Override
+    public String toString(){return "SpyContext next="+next+" skip="+skip;}
 }

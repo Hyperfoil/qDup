@@ -72,7 +72,7 @@ public class Exec extends Cmd {
             });
             if (skip != null) {
                 scriptContext.setCurrentCmd(this,skip);
-                scriptContext.run();
+                scriptContext.run(skip,input);
             }else{
                 //noting to skip to so just be done
                 scriptContext.setCurrentCmd(this,null);
