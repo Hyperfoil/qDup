@@ -33,12 +33,17 @@ public class QueueDownload extends Cmd {
         String resolvedPath = Cmd.populateStateVariables(getPath(),this,context.getState());
         String resolvedDestination = Cmd.populateStateVariables(basePath + File.separator + getDestination(),this,context.getState());
 
+
         if(resolvedPath.matches("[^\\$]*\\$(?!\\{\\{).*")){//if the source path has $name or ${name}
-            resolvedPath = context.getSession().shSync("echo "+resolvedPath);
+            resolvedPath = context.getSession().execSync("echo "+resolvedPath);
+        }
+        if(!resolvedPath.startsWith("/")){//relative path
+            //TODO can download paths be relative? probably best if no
         }
         if(resolvedDestination.matches("[^\\$]*\\$(?!\\{\\{).*")){//if the destination path has $name or ${name}
-            resolvedDestination = context.getSession().shSync("echo "+resolvedDestination);
+            resolvedDestination = context.getSession().execSync("echo "+resolvedDestination);
         }
+
         populatedPath = resolvedPath;
         populatedDestination = resolvedDestination;
         context.addPendingDownload(resolvedPath,resolvedDestination);
@@ -48,7 +53,6 @@ public class QueueDownload extends Cmd {
             destinationFile.mkdirs();
         }
         context.next(input);
-
     }
 
     @Override

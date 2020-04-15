@@ -180,6 +180,10 @@ public class SyncContext implements Context, Runnable{
     public void addPendingDownload(String path, String destination) {
         run.addPendingDownload(session.getHost(),path,destination);
     }
+    @Override
+    public void addPendingDelete(String path){
+        run.addPendingDelete(session.getHost(),path);
+    }
 
     @Override
     public void abort(Boolean skipCleanup) {

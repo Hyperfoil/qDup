@@ -573,6 +573,22 @@ public class SshSession {
       }
    }
 
+   public String execSync(String command){
+      Semaphore semaphore = new Semaphore(0);
+      StringBuilder sb = new StringBuilder();
+      exec(command,(output)->{
+         sb.append(output);
+         semaphore.release();
+      });
+      try{
+         assert semaphore.availablePermits()==0;
+         semaphore.acquire();
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      }
+      return sb.toString();
+   }
+
    public void exec(String command) {
       exec(command, null);
    }

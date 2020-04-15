@@ -14,7 +14,19 @@ public class QueueDelete extends Cmd {
 
     @Override
     public void run(String input, Context context) {
+        String resolvedPath = Cmd.populateStateVariables(getPath(),this,context.getState());
+        if(resolvedPath.matches("[^\\$]*\\$(?!\\{\\{).*")){//if the source path has $name or ${name}
+            resolvedPath = context.getSession().execSync("echo "+resolvedPath);
+        }
+        if(!resolvedPath.startsWith("/")){//relative path
+            //TODO can delete paths be relative? probably best if no
+        }
+        populatedPath = resolvedPath;
+        context.addPendingDelete(populatedPath);
+    }
 
+    private String getPath() {
+        return path;
     }
 
     @Override

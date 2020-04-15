@@ -27,6 +27,9 @@ public class YamlFileConstruct extends DeferableConstruct {
 
     public static final Mapping<YamlFile>   MAPPING = (yaml)->{
         Map<Object,Object> map = new LinkedHashMap<>();
+        if(!yaml.getSettings().isEmpty()){
+            map.put("settings",Json.toObjectMap(yaml.getSettings()));
+        }
         if(yaml.getName()!=null && !yaml.getName().isEmpty()) {
             map.put("name", yaml.getName());
         }
@@ -100,6 +103,16 @@ public class YamlFileConstruct extends DeferableConstruct {
                 String key = ((ScalarNode)nodeTuple.getKeyNode()).getValue();
                 Node valueNode = nodeTuple.getValueNode();
                 switch (key){
+                    case "settings":
+                        if(valueNode instanceof MappingNode){
+                            Json settings = OverloadConstructor.json(valueNode);
+                            settings.forEach((k,v)->{
+                                yamlFile.addSetting(k.toString(),v);
+                            });
+                        }else{
+                            throw new YAMLException("settings must be a mapping"+valueNode.getStartMark());
+                        }
+                        break;
                     case "name":
                         if(!(valueNode instanceof ScalarNode)){
                             throw new YAMLException("name must be scalar "+valueNode.getStartMark());

@@ -84,6 +84,7 @@ public class Run implements Runnable, DispatchObserver {
     private Local local;
 
     private HashedSets<Host,PendingDownload> pendingDownloads;
+    private HashedSets<Host,String> pendingDeletes;
 
     private CountDownLatch runLatch = new CountDownLatch(1);
     private Logger runLogger;
@@ -149,6 +150,7 @@ public class Run implements Runnable, DispatchObserver {
             );
         });
         this.pendingDownloads = new HashedSets<>();
+        this.pendingDeletes = new HashedSets<>();
     }
 
     public void addRunObserver(RunObserver observer){this.runObservers.add(observer);}
@@ -193,6 +195,7 @@ public class Run implements Runnable, DispatchObserver {
             case Cleanup:
                 if(stageUpdated.compareAndSet(this,Stage.Cleanup,Stage.Done)) {
                     runPendingDownloads();//download anything queued during cleanup
+                    runPendingDeletes();
                     postRun();//release any latches blocking a call to run()
                 }
                 break;
@@ -212,8 +215,32 @@ public class Run implements Runnable, DispatchObserver {
     public RunConfig getConfig(){return config;}
     public boolean isAborted(){return aborted.get();}
     public Logger getRunLogger(){return runLogger;}
+
+    public void addPendingDelete(Host host,String path){
+        pendingDeletes.put(host,path);
+    }
     public void addPendingDownload(Host host,String path,String destination){
         pendingDownloads.put(host,new PendingDownload(path,destination));
+    }
+    public void runPendingDeletes(){
+        if(!pendingDeletes.isEmpty()){
+            for(Host host : pendingDeletes.keys()){
+                SshSession sshSession = new SshSession(host,
+                   config.getKnownHosts(),
+                   config.getIdentity(),
+                   config.getPassphrase(),
+                   config.getTimeout(),
+                   "",
+                   getDispatcher().getScheduler(),
+                   false
+                );
+
+                Set<String> deleteList = pendingDeletes.get(host);
+                for(String delete : deleteList){
+                    sshSession.execSync("rm "+delete);
+                }
+            }
+        }
     }
     public void runPendingDownloads(){
         //TODO synchronize so only one thread tries the downloads (run ending while being aborted?)

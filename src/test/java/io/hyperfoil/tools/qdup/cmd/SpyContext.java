@@ -99,7 +99,10 @@ public class SpyContext implements Context {
     public void addPendingDownload(String path, String destination) {
 
     }
+    @Override
+    public void addPendingDelete(String path){
 
+    }
     @Override
     public void abort(Boolean skipCleanup) {
 

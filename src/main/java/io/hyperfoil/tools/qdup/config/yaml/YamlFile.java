@@ -5,6 +5,7 @@ import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.File;
 import java.util.Collections;
@@ -17,6 +18,7 @@ public class YamlFile {
     private String name;
     private Map<String, Script> scripts;
     private Map<String, String> hosts;
+    private Json settings;
     private State state;
     private Map<String, Role> roles;
 
@@ -26,8 +28,19 @@ public class YamlFile {
         hosts = new LinkedHashMap<>();
         state = new State(State.RUN_PREFIX);
         roles = new LinkedHashMap<>();
+        settings = new Json(false);
     }
 
+    public void addSetting(String key,Object value){
+        settings.set(key,value);
+    }
+    public Json getSettings(){return settings;}
+    public boolean hasSetting(String key){
+        return settings.has(key);
+    }
+    public <T> T getSetting(String key, T defaultValue){
+        return settings.has(key) ? (T)settings.get(key) : defaultValue;
+    }
     public void addHost(String name,String host){
         hosts.put(name,host);
     }

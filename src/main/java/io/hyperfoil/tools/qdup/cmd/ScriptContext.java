@@ -196,8 +196,13 @@ public class ScriptContext implements Context, Runnable{
 
 
     public State getState(){return state;}
+    @Override
     public void addPendingDownload(String path,String destination){
         run.addPendingDownload(session.getHost(),path,destination);
+    }
+    @Override
+    public void addPendingDelete(String path){
+        run.addPendingDelete(session.getHost(),path);
     }
     public void abort(Boolean skipCleanup){
         run.abort(skipCleanup);

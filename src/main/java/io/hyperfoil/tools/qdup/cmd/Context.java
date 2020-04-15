@@ -33,6 +33,7 @@ public interface Context {
     Host getHost();
     State getState();
     void addPendingDownload(String path,String destination);
+    void addPendingDelete(String path);
     void abort(Boolean skipCleanup);
     void done();
     Local getLocal();

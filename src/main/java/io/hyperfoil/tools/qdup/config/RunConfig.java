@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.config;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
+import io.hyperfoil.tools.yaup.json.Json;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -65,6 +66,8 @@ public class RunConfig {
     private List<String> errors;
 
 
+    private Json settings;
+
     private Set<String> tracePatterns;
 
     private int timeout = 10;
@@ -85,7 +88,8 @@ public class RunConfig {
             String identity,
             String passphrase,
             Integer timeout,
-            Set<String> tracePatterns){
+            Set<String> tracePatterns,
+            Json settings){
         this.name = name;
         this.scripts = scripts;
         this.state = state;
@@ -101,6 +105,8 @@ public class RunConfig {
             this.timeout = timeout;
         }
         this.tracePatterns = new HashSet<>(tracePatterns);
+        this.settings = new Json(false);
+        this.settings.merge(settings);
     }
 
     public Set<String> getTracePatterns(){return tracePatterns;}

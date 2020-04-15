@@ -1,23 +1,14 @@
-# Qdup
-Running benchmarks requires opening several
-terminals and monitoring the output of one terminal to time the start
-a command in another terminal. This project provides a way to script
-multiple shells and coordinate between them so that timings are
-consistent and runs can be queued.
+# Qdup 
+The Qdup project provides a way to coordinate multiple terminal shell connections for queuing performance tests and collecting output files.
 
 ## Example
-The main way to use qDup is with yaml-esque* configuration files passed to the executable jar.
-We say yaml-esque because yaml parsers do not support key value pairs with nested lists or maps.
-It can help to think of the config as yaml but not all yaml features are supported. See the yaml section
-for more details
-
+The main way to use qDup is with yaml configuration files passed to the executable jar.
 Let's look at a sample yaml.
 ```YAML
 name: example                                # the name of the test we plan to run
 scripts:                                     # scripts are the series of commands to run a test
   sync-time:                                 # the unique script name
   - sh: ntpdate -u time.google.com           # runs ntpdate in the remote shell
-
   widflyScript:                              # the name of a new script
   - sh: cd ${{WF_HOME}}                      # cd to the WF_HOME state variable
   - sh: rm ./standalone/log/*                # remove the old logs
@@ -74,7 +65,7 @@ states:
 ```
 The main workflow is broken into 3 stages: setup, run, cleanup
 
-Setup scripts sequentially execute with a shared ssh session to help
+Setup scripts execute sequentially with a shared ssh session to help
 capture all the changes and ensure a consistent state for the run stage.
 Any environment changes to the setup ssh session will be copied to all
 the run stage sessions.
@@ -132,12 +123,6 @@ This is the least ambiguous but most verbose and is rarely necessary.
 * `abort: <message>`
 Abort the current run and log the message. Aborted runs will still
 downlaod any files from `queue-download` and will still run cleanup scripts
-* `code: <className>`
-create an instance of `className` which implements `Code` using the
-default constructor and execute the `run(...)` method.
-Note: This command is best suited for the Java API. Please share your
-use case if you find you need this command for the YAML API and we can
-see if a new command is warranted
 * `countdown: <name> <initial>`
 decrease a `name` counter which starts with `initial`.
 Child commands will be invoked each time after `name` counter reaches 0.
@@ -149,34 +134,55 @@ and any remaining active commands should end (including `wait-for`)
 * `download: <path> ?<destination>`
 download `path` from the connected host and save the output to the
 run output path + `destination`
+```yaml
+download:
+  path: /absoulte/path/to/file
+  destination: path/relative/to/qdup/base/directory
+```
 * `echo:`
 log the input to console
 * `for-each: <variableName> [values]` re-run the children with `variableName`
 set to each entry in `values` or the input from the previous command if `values`
 is not provided
+```yaml
+for-each:
+  name: variableName #the variable name for children commands
+  input: ${{input}} #reference to something iterable or it will use the command input
+```
 * `script: <name>`
-Invoke the `name` script as part of the current script
+Invoke the `name` script as part of the current script (or independently if `async`).
+```yaml
+script:
+  name: doSomething
+  async: true #run the script without pausing the current script 
+```
 * `js: <javascript (input,state)=>{...}>` invoke javascript function with
 `input` and `state` as inputs. The command will invoke the next command
 if either the function does not have a return value or if it returns a
-value that is truthy (not null and not false, "false")
+value that is truthy (not null and not `false` or `"false"`)
+```yaml
+js: |
+  (input,state)=>{
+    //calculate something to update state based on input
+    //decide to skip children
+    return false; //skips children
+  }
+```
 * `log: <message>`
 log `message` to the run log
 * `queue-download: <path> ?<destination>`
 queue the download action for after the run finishes. The download will
 occur if the run completes or aborts
-* `reboot: <kernel>` Reboot the server to the target kernel. Kernel can
-either be an index in `/etc/grub2-efi.cfg`
-or a pattern to find in `/etc/grub2-efi.cfg`
 * `read-state: <name>`
 read the current value of the named state variable
 and pass it as input to the next command. Child commands will only be
 called if the state exists and is not empty
 * `regex: <pattern>`
 try to match the input to a regular expression and add any named
-capture groups to the current state at the named scope.
+capture groups to the current state at the named scope. `else`child commands
+will invoke if the pattern does not match. 
 * `repeat-until: <name>`
-repeat the child commands until `name` is signalled.
+repeat the child commands until `name` is fully signalled.
 Be sure to add a `sleep` to prevent a tight loop and pick a `name` that
 is signalled in all runs (e.g. be careful of error conditions)
 * `set-state <name> ?<value>`
@@ -255,7 +261,7 @@ A `:` can also be used to define a default value should any of the state variabl
 ```YAML
  - sh: tail -f /tmp/server.log
    timer: 
-     ${{ ${{RAMP_UP}} + ${{MEASURE}} + ${{RAMP_DOWN}} : 100}}:
+     ${{= ${{RAMP_UP}} + ${{MEASURE}} + ${{RAMP_DOWN}} : 100}}:
      - echo : ${{ (RAMP_UP+MEASURE+RAMP_DOWN)+'s'}} have has lapsed
 ```
 State references also have built in functions for time conversion
