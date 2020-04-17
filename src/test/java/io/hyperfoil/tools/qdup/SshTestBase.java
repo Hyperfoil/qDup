@@ -47,7 +47,7 @@ public class SshTestBase {
         builder.setIdentity(Paths.get(
            getClass().getProtectionDomain().getCodeSource().getLocation().getPath()
         ).resolve(
-           Paths.get("qdup")
+           Paths.get("../../src/test/resources/qdup")
         ).toFile().getPath());
         return builder;
     }
@@ -55,7 +55,7 @@ public class SshTestBase {
         return Paths.get(
            getClass().getProtectionDomain().getCodeSource().getLocation().getPath()
         ).resolve(
-           Paths.get("qdup")
+           Paths.get("../../src/test/resources/qdup")
         ).toFile().getPath();
     }
     @BeforeClass
@@ -66,7 +66,7 @@ public class SshTestBase {
             pub = Files.readString(Paths.get(
                SshTestBase.class.getProtectionDomain().getCodeSource().getLocation().getPath()
             ).resolve(
-               Paths.get("qdup.pub")
+               Paths.get("../../src/test/resources/qdup.pub")
             ));
         } catch (IOException e) {
             e.printStackTrace();
