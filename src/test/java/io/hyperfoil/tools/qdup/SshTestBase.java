@@ -1,26 +1,22 @@
 package io.hyperfoil.tools.qdup;
 
-import com.github.dockerjava.api.exception.DockerException;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.yaup.AsciiArt;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.stream.Collectors;
 
@@ -44,30 +40,74 @@ public class SshTestBase {
 
     public RunConfigBuilder getBuilder(){
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
-        builder.setIdentity(Paths.get(
-           getClass().getProtectionDomain().getCodeSource().getLocation().getPath()
-        ).resolve(
-           Paths.get("qdup")
-        ).toFile().getPath());
+        builder.setIdentity(getIdentity());
+
+        setIdentityFilePerms(getPath("keys"), getKeyDirPerms());
+        setIdentityFilePerms(getPath("keys/qdup"), getPrivKeyPerms());
+
+        //set perms
         return builder;
     }
-    public String getIdentity(){
-        return Paths.get(
-           getClass().getProtectionDomain().getCodeSource().getLocation().getPath()
-        ).resolve(
-           Paths.get("qdup")
-        ).toFile().getPath();
+
+    private static void setIdentityFilePerms(Path identityFilePath, Set<PosixFilePermission> perms){
+        try {
+            Files.setPosixFilePermissions(identityFilePath, perms);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
+    private static Set<PosixFilePermission> getKeyDirPerms(){
+        Set<PosixFilePermission> perms = new HashSet<>();
+        //add owners permission
+        perms.add(PosixFilePermission.OWNER_READ);
+        perms.add(PosixFilePermission.OWNER_WRITE);
+        perms.add(PosixFilePermission.OWNER_EXECUTE);
+        perms.add(PosixFilePermission.GROUP_READ);
+        perms.add(PosixFilePermission.GROUP_WRITE);
+        perms.add(PosixFilePermission.GROUP_EXECUTE);
+        perms.add(PosixFilePermission.OTHERS_READ);
+        perms.add(PosixFilePermission.OTHERS_EXECUTE);
+
+        return perms;
+    }
+
+    private static Set<PosixFilePermission> getPrivKeyPerms(){
+        Set<PosixFilePermission> perms = new HashSet<>();
+        //add owners permission
+        perms.add(PosixFilePermission.OWNER_READ);
+        perms.add(PosixFilePermission.OWNER_WRITE);
+
+        return perms;
+    }
+
+
+    public static String getIdentity() {
+        return getIdentityPath().toFile().getPath();
+    }
+
+    public static Path getIdentityPubPath(){
+        return getPath("keys/qdup.pub");
+    }
+
+    public static Path getIdentityPath(){
+        return getPath("keys/qdup");
+    }
+
+    private static Path getPath(String subDir){
+        return  Paths.get(
+                SshTestBase.class.getProtectionDomain().getCodeSource().getLocation().getPath()
+        ).resolve(
+                Paths.get(subDir)
+        );
+    }
+
     @BeforeClass
     public static void createContainer() {
 
         String pub = "";
         try {
-            pub = Files.readString(Paths.get(
-               SshTestBase.class.getProtectionDomain().getCodeSource().getLocation().getPath()
-            ).resolve(
-               Paths.get("qdup.pub")
-            ));
+            pub = Files.readString(getIdentityPubPath());
         } catch (IOException e) {
             e.printStackTrace();
         }
