@@ -35,13 +35,13 @@ public class QueueDownload extends Cmd {
 
 
         if(resolvedPath.matches("[^\\$]*\\$(?!\\{\\{).*")){//if the source path has $name or ${name}
-            resolvedPath = context.getSession().execSync("echo "+resolvedPath);
+            resolvedPath = context.getSession().shSync("echo "+resolvedPath);
         }
         if(!resolvedPath.startsWith("/")){//relative path
             //TODO can download paths be relative? probably best if no
         }
         if(resolvedDestination.matches("[^\\$]*\\$(?!\\{\\{).*")){//if the destination path has $name or ${name}
-            resolvedDestination = context.getSession().execSync("echo "+resolvedDestination);
+            resolvedDestination = context.getSession().shSync("echo "+resolvedDestination);
         }
 
         populatedPath = resolvedPath;
