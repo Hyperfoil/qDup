@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 /**
- * @arthur wreicher
+ * @author wreicher
  * Stores the results of validating the RunConfig
  */
 public class StageSummary {

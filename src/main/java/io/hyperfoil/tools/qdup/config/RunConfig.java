@@ -197,8 +197,8 @@ public class RunConfig {
 
     /**
      * get a script using the global state and no command variables
-     * @param name
-     * @return
+     * @param name name of script to retrieve
+     * @return {@link io.hyperfoil.tools.qdup.cmd.Script} matching name
      */
     public Script getScript(String name){
         return getScript(name,null,state);
@@ -206,9 +206,9 @@ public class RunConfig {
 
     /**
      * get a script using the target state but no command variables
-     * @param name
-     * @param state
-     * @return
+     * @param name name of script to retrieve
+     * @param state target {@link io.hyperfoil.tools.qdup.State} to populate command
+     * @return {@link io.hyperfoil.tools.qdup.cmd.Script} matching name and target {@link  io.hyperfoil.tools.qdup.State}
      */
     public Script getScript(String name,State state){
         return getScript(name,null,state);
@@ -216,10 +216,10 @@ public class RunConfig {
 
     /**
      * get a script using the target state and the commands variables
-     * @param name
-     * @param command
-     * @param state
-     * @return
+     * @param name name of script to retrieve
+     * @param command {@link io.hyperfoil.tools.qdup.cmd.Cmd}
+     * @param state target {@link io.hyperfoil.tools.qdup.State} to populate command
+     * @return {@link io.hyperfoil.tools.qdup.cmd.Script} matching name, target {@link io.hyperfoil.tools.qdup.State} and {@link io.hyperfoil.tools.qdup.cmd.Cmd}
      */
     public Script getScript(String name,Cmd command,State state){
 
