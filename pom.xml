@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.hyperfoil.tools</groupId>
     <artifactId>qDup</artifactId>
-    <version>0.4</version>
+    <version>0.5-SNAPSHOT</version>
     <properties>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,7 +19,7 @@
         <connection>scm:git:git://github.com/Hyperfoil/qDup.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/Hyperfoil/qDup.git</developerConnection>
         <url>https://github.com/Hyperfoil/qDup</url>
-        <tag>release-0.4</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <licenses>
