@@ -4,6 +4,9 @@
     <groupId>io.hyperfoil.tools</groupId>
     <artifactId>qDup</artifactId>
     <version>0.5-SNAPSHOT</version>
+    <name>Hyperfoil qDup</name>
+    <description>Coordinate multiple terminal shell connections for queuing performance tests and collecting output files</description>
+    <url>https://github.com/Hyperfoil/qDup</url>
     <properties>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
