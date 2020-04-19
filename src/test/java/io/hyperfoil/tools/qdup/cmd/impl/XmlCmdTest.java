@@ -1,13 +1,14 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Result;
 import io.hyperfoil.tools.qdup.cmd.Script;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import org.junit.Assert;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 
@@ -78,12 +79,15 @@ public class XmlCmdTest extends SshTestBase {
         File tmpXml = new File("/tmp/foo.xml");
 
         try {
+            new Local(getBuilder().buildConfig())
+                    .download(tmpXml.getAbsolutePath(), tmpXml.getAbsolutePath(), getHost());
             String content = new String(Files.readAllBytes(tmpXml.toPath()));
             assertFalse("content should not contain uno",content.contains("uno"));
             assertFalse("content should not contain buz",content.contains("buz"));
             assertTrue("content should not contain biz",content.contains("biz"));
         } catch (IOException e) {
             e.printStackTrace();
+            Assert.fail("Error reading file: ".concat(tmpXml.getAbsolutePath()));
         }
         tmpXml.delete();
     }
@@ -94,6 +98,7 @@ public class XmlCmdTest extends SshTestBase {
         StringBuilder first = new StringBuilder();
         RunConfigBuilder builder = getBuilder();
         Script runScript = new Script("run-xml");
+        runScript.then(Cmd.sh("rm -Rf /tmp/foo.xml"));
         runScript.then(Cmd.sh("echo '<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo><bar message=\"uno\"></bar><biz>buz</biz></foo>' > /tmp/foo.xml"));
         runScript.then(
                 Cmd.xml("/tmp/foo.xml>/foo/biz "+XmlCmd.SET_STATE_KEY+" BIZ")///text()
@@ -113,10 +118,6 @@ public class XmlCmdTest extends SshTestBase {
         Run run = new Run("/tmp",config,dispatcher);
         run.run();
         dispatcher.shutdown();
-        File tmpXml = new File("/tmp/foo.xml");
-
-        tmpXml.delete();
-
 
         assertEquals("/foo/biz message set to BIZ","buz",first.toString());
     }
