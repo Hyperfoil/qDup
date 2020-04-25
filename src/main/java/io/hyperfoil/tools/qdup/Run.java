@@ -14,28 +14,33 @@ import io.hyperfoil.tools.qdup.cmd.ScriptContext;
 import io.hyperfoil.tools.qdup.cmd.impl.RoleEnv;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.Role;
+import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.StageSummary;
+import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.HashedSets;
+import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
-import org.slf4j.profiler.Profiler;
-import io.hyperfoil.tools.qdup.config.RunConfig;
-import io.hyperfoil.tools.qdup.stream.SuffixStream;
-import io.hyperfoil.tools.yaup.AsciiArt;
-import io.hyperfoil.tools.yaup.HashedSets;
-import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
@@ -50,6 +55,31 @@ public class Run implements Runnable, DispatchObserver {
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
     private final static AtomicReferenceFieldUpdater<Run,Stage> stageUpdated = AtomicReferenceFieldUpdater.newUpdater(Run.class,Run.Stage.class,"stage");
+
+
+    class JitterCheck implements Runnable{
+
+        @Override
+        public void run() {
+            long period = 50;
+            long threshold = 100;
+            long lastTimestamp = System.nanoTime();
+            while (true) {
+                try {
+                    Thread.sleep(period);
+                } catch (InterruptedException e) {
+                    logger.debug("Interrupted, terminating jitter watchdog");
+                    return;
+                }
+                long currentTimestamp = System.nanoTime();
+                long delay = TimeUnit.NANOSECONDS.toMillis(currentTimestamp - lastTimestamp);
+                if (delay > threshold) {
+                    logger.error("Jitter watchdog was not invoked for {} ms (threshold is {} ms); please check your GC settings.", delay, threshold);
+                }
+                lastTimestamp = currentTimestamp;
+            }
+        }
+    }
 
     class PendingDownload {
         private String path;
@@ -379,6 +409,12 @@ public class Run implements Runnable, DispatchObserver {
     @Override
     public void run() {
         if(Stage.Pending.equals(stage)){
+
+            //TODO enable jitter check? what amount of jitter matters for qDup?
+//            Thread jitterThread = new Thread(new JitterCheck(),"jitter-check");
+//            jitterThread.setDaemon(true);
+//            jitterThread.start();
+
             timestamps.put("start",System.currentTimeMillis());
             if(config.hasErrors()){
                 config.getErrors().forEach(logger::error);
@@ -625,7 +661,7 @@ public class Run implements Runnable, DispatchObserver {
                                     session,
                                     config.getState(),
                                     this,
-                                    profiles.get(roleName + "-setup@" + host.getShortHostName()),
+                                    profiles.get(roleName + "-cleanup@" + host.getShortHostName()),
                                     cleanup
                             );
                             getDispatcher().addScriptContext(scriptContext);
