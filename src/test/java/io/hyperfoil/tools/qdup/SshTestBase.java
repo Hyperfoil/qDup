@@ -168,10 +168,22 @@ public class SshTestBase {
     public SshTestBase(){}
 
     public String readFile(String path){
+
         String response = exec("/bin/sh","-c","cat "+path);
         return response;
     }
-    public boolean exists(String path){
+
+    public String readFile(Path path) {
+        StringBuilder contents = new StringBuilder();
+        try {
+            Files.lines(path).forEach(line -> contents.append(line));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return contents.toString();
+
+    }
+        public boolean exists(String path){
         String response = exec("/bin/sh","-c","test -f "+path+" && echo \"exists\"").trim();
         return response != null && response.contains("exists");
     }

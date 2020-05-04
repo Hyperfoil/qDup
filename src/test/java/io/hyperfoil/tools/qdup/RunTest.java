@@ -8,6 +8,7 @@ import io.hyperfoil.tools.qdup.cmd.Result;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
+import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
@@ -243,6 +244,65 @@ public class RunTest extends SshTestBase {
       ),true));
       RunConfig config = builder.buildConfig();
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+   }
+
+   @Test
+   public void array_state_with_watch_in_yaml(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+                      "scripts:",
+              "  setSignals:",
+              "  - for-each: OBJ ${{OBJS}}",
+              "    then:",
+              "    - set-signal: ${{OBJ.name}}-started 1",
+              "  foo:",
+              "  - sh: echo 'Starting!'",
+              "  - for-each: OBJ ${{OBJS}}",
+              "    then:",
+              "      - sh: echo ${{OBJ.name}}-started",
+              "        watch:",
+              "          - regex: started",
+              "            then:",
+              "             - signal: ${{OBJ.name}}-started",
+              "      - sleep: 2s",
+              "  - sh: echo 'End!'",
+              "  bar:",
+              "  - for-each: OBJ ${{OBJS}}",
+              "    then:",
+              "    - wait-for: ${{OBJ.name}}-started",
+              "    - sh: 'echo ${{OBJ.name}}-started has started!'",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    setup-scripts: [setSignals]",
+              "    run-scripts: [foo, bar]",
+              "states:",
+              "  OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]"
+      ),false));
+      RunConfig config = builder.buildConfig();
+
+      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Script foo = config.getScript("foo");
+
+      assertTrue("Script should contain 3 top level commands", foo.getThens().size() == 3 );
+      assertTrue("Last command should be a Sh cmd", foo.getLastThen() instanceof Sh);
+      assertTrue("Last command should not have any thens", foo.getLastThen().hasThens() == false);
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      String logContents = readFile(tmpDir.getPath().resolve("run.log"));
+      assertTrue("run log is empty", logContents.length() > 0);
+      Boolean containsUnsubstituted = logContents.contains("signal: ${{OBJ.name}}-started");
+      assertTrue("File contains ${{OBJ.name}}-started", !containsUnsubstituted);
+
+
+
    }
 
    @Test
