@@ -49,7 +49,7 @@ public class ExitCodeTest extends SshTestBase {
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
         Dispatcher dispatcher = new Dispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
 
         assertTrue("imlicit called",implicitCalled.get());

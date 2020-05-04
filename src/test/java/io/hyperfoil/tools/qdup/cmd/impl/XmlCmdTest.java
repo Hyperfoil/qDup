@@ -71,7 +71,7 @@ public class XmlCmdTest extends SshTestBase {
 
         RunConfig config = builder.buildConfig();
         Dispatcher dispatcher = new Dispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
         assertEquals("/tmp/foo.xml>/foo/biz/text() should be buz","buz",first.toString());
         assertEquals("/tmp/foo.xml>/foo/biz/text() should be biz after xml","biz",second.toString());
@@ -115,7 +115,7 @@ public class XmlCmdTest extends SshTestBase {
 
         RunConfig config = builder.buildConfig();
         Dispatcher dispatcher = new Dispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
         dispatcher.shutdown();
 

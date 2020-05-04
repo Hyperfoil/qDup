@@ -2,11 +2,14 @@ package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
@@ -15,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -24,7 +28,21 @@ import static org.junit.Assert.assertTrue;
 
 public class SshTestBase {
 
-//    static {
+
+    protected TmpDir tmpDir;
+
+    @Before
+    public void setup(){
+        tmpDir = TmpDir.instance();
+    }
+
+    @After
+    public void cleanUp(){
+        tmpDir.removeDir();
+        tmpDir = null;
+    }
+
+    //    static {
 //        try {
 //            DockerClientFactory.instance().client();
 //        } catch (DockerException e) {
@@ -204,4 +222,39 @@ public class SshTestBase {
         );
     }
 
+    protected static class TmpDir{
+        final Path tempDirWithPrefix;
+
+        private TmpDir() throws IOException {
+            tempDirWithPrefix = Files.createTempDirectory("qdup");
+        }
+
+        public static TmpDir instance(){
+            try {
+                return  new TmpDir();
+            } catch (IOException e) {
+                return null;
+            }
+        }
+
+        public Path getPath(){
+            return this.tempDirWithPrefix;
+        }
+
+        public void removeDir(){
+            try {
+                Files.walk(tempDirWithPrefix)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public String toString() {
+            return tempDirWithPrefix.toString();
+        }
+    }
 }

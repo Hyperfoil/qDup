@@ -1,32 +1,32 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.Run;
+import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
-import io.hyperfoil.tools.qdup.cmd.LoopCmd;
 import io.hyperfoil.tools.qdup.cmd.Result;
 import io.hyperfoil.tools.qdup.cmd.Script;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
+import io.hyperfoil.tools.qdup.cmd.SpyContext;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
-import io.hyperfoil.tools.qdup.stream.MultiStream;
+import io.hyperfoil.tools.yaup.Sets;
+import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import io.hyperfoil.tools.qdup.SshTestBase;
-import io.hyperfoil.tools.qdup.cmd.SpyContext;
-import io.hyperfoil.tools.yaup.Sets;
-import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ForEachTest extends SshTestBase {
 
@@ -73,7 +73,8 @@ public class ForEachTest extends SshTestBase {
         Dispatcher dispatcher = new Dispatcher();
 
         Cmd foo = config.getScript("foo");
-        Run doit = new Run("/tmp", config, dispatcher);
+
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
         dispatcher.shutdown();
         assertEquals("input should include alpha, bravo, and charlie","-cat-ant-apple-bear-bull",config.getState().get("FOO"));
@@ -104,7 +105,7 @@ public class ForEachTest extends SshTestBase {
         Cmd forEach = foo.getNext();
 
         Dispatcher dispatcher = new Dispatcher();
-        Run doit = new Run("/tmp", config, dispatcher);
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
         dispatcher.shutdown();
 
@@ -137,7 +138,7 @@ public class ForEachTest extends SshTestBase {
         Cmd foo = config.getScript("foo");
 
         Dispatcher dispatcher = new Dispatcher();
-        Run doit = new Run("/tmp", config, dispatcher);
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
         dispatcher.shutdown();
         assertEquals("FOO should loop over bar entries"," one=1 one=2 one=3 two=2 two=4 two=6 three=3 three=6 three=9",config.getState().get("LOG"));
@@ -170,7 +171,7 @@ public class ForEachTest extends SshTestBase {
         Cmd foo = config.getScript("foo");
 
         Dispatcher dispatcher = new Dispatcher();
-        Run doit = new Run("/tmp", config, dispatcher);
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
         dispatcher.shutdown();
         assertEquals("ARG1 and ARG2 should each loop 3 times","-1.1-1.2-1.3-2.1-2.2-2.3-3.1-3.2-3.3",config.getState().get("LOG"));
@@ -212,7 +213,7 @@ public class ForEachTest extends SshTestBase {
         Cmd foo = config.getScript("foo");
 
         Dispatcher dispatcher = new Dispatcher();
-        Run doit = new Run("/tmp", config, dispatcher);
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
         dispatcher.shutdown();
 
@@ -994,7 +995,7 @@ public class ForEachTest extends SshTestBase {
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
         Dispatcher dispatcher = new Dispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
 
         assertEquals("lines contains 3 entries",3,lines.size());
@@ -1037,7 +1038,7 @@ public class ForEachTest extends SshTestBase {
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
         Dispatcher dispatcher = new Dispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
 
         assertEquals("lines contains 3 entries:\n"+lines,4,lines.size());
@@ -1084,7 +1085,7 @@ public class ForEachTest extends SshTestBase {
 
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
-        Run doit = new Run("/tmp",config,dispatcher);
+        Run doit = new Run(tmpDir.toString(),config,dispatcher);
 
         doit.run();
 
@@ -1121,7 +1122,7 @@ public class ForEachTest extends SshTestBase {
         })));
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
-        Run doit = new Run("/tmp",config,dispatcher);
+        Run doit = new Run(tmpDir.toString(),config,dispatcher);
         doit.run();
         assertEquals("for-each should not split quoted string:\n"+splits.stream().collect(Collectors.joining("\n")),1,splits.size());
 
@@ -1156,7 +1157,7 @@ public class ForEachTest extends SshTestBase {
         })));
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
-        Run doit = new Run("/tmp",config,dispatcher);
+        Run doit = new Run(tmpDir.toString(),config,dispatcher);
 
         doit.run();
 
@@ -1192,7 +1193,7 @@ public class ForEachTest extends SshTestBase {
         })));
         assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
-        Run doit = new Run("/tmp",config,dispatcher);
+        Run doit = new Run(tmpDir.toString(),config,dispatcher);
 
         doit.run();
 
@@ -1237,7 +1238,7 @@ public class ForEachTest extends SshTestBase {
         assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
         Dispatcher dispatcher = new Dispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
 
         assertEquals("lines contains 3 entries:\n"+lines,4,lines.size());

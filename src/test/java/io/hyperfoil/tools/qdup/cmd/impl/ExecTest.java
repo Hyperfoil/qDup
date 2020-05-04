@@ -41,7 +41,7 @@ public class ExecTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       assertEquals("expect FOO to be 1", 1L, config.getState().get("FOO"));
       assertNotNull("expect PWD", config.getState().get("PWD"));
@@ -86,7 +86,7 @@ public class ExecTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       JsonServer jsonServer = new JsonServer(doit, 31337);
       jsonServer.start();
       doit.run();

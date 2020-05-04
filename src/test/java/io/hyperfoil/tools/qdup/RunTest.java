@@ -1,7 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.Code;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.ContextObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
@@ -9,25 +8,26 @@ import io.hyperfoil.tools.qdup.cmd.Result;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 
 public class RunTest extends SshTestBase {
@@ -56,7 +56,7 @@ public class RunTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
 
@@ -84,7 +84,7 @@ public class RunTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
 
@@ -110,7 +110,7 @@ public class RunTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
    }
@@ -156,7 +156,7 @@ public class RunTest extends SshTestBase {
          return Result.next(input);
       })));
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       dispatcher.shutdown();
       assertEquals("biz should be called with biz", "biz", sb.toString());
@@ -200,7 +200,7 @@ public class RunTest extends SshTestBase {
       }
 
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
       dispatcher.shutdown();
@@ -272,7 +272,7 @@ public class RunTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
       assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       assertTrue("bar did not run", exists("/tmp/bar.txt"));
       assertTrue("biz did not run", exists("/tmp/biz.txt"));
@@ -354,7 +354,7 @@ public class RunTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
 
       assertEquals("foo buffer should see all 3 lines","foo1foo2foo3",fooOutput.toString());
@@ -380,7 +380,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleRun("role", "cmd-output-trim", new HashMap<>());
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       boolean hasNewLine = false;
       for (int i = 0; i < output.length(); i++) {
@@ -426,7 +426,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleRun("role", "run-echo-exitStatus", new HashMap<>());
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       assertEquals("echo child should see echo output", "0", echoChildInput.toString());
       assertEquals("pwd child should see echo output", "0", pwdChildInput.toString());
@@ -460,7 +460,7 @@ public class RunTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
 
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
 
@@ -489,7 +489,7 @@ public class RunTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
 
@@ -539,7 +539,7 @@ public class RunTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
 
@@ -586,7 +586,7 @@ public class RunTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
 
@@ -649,7 +649,7 @@ public class RunTest extends SshTestBase {
 
          }
       });
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       dispatcher.shutdown();
 
@@ -704,7 +704,7 @@ public class RunTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run run = new Run("/tmp", config, dispatcher);
+      Run run = new Run(tmpDir.toString(), config, dispatcher);
 
       run.run();
       run.writeRunJson();
@@ -763,7 +763,7 @@ public class RunTest extends SshTestBase {
          RunConfig config = builder.buildConfig();
 
          Dispatcher dispatcher = new Dispatcher();
-         Run run = new Run("/tmp", config, dispatcher);
+         Run run = new Run(tmpDir.toString(), config, dispatcher);
 
          run.run();
 
@@ -807,7 +807,7 @@ public class RunTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run run = new Run("/tmp", config, dispatcher);
+      Run run = new Run(tmpDir.toString(), config, dispatcher);
       run.run();
 
       assertFalse("first should be called but isEmpty", first.toString().isEmpty());
@@ -872,7 +872,7 @@ public class RunTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run run = new Run("/tmp", config, dispatcher);
+      Run run = new Run(tmpDir.toString(), config, dispatcher);
       long start = System.currentTimeMillis();
 
       JsonServer server = new JsonServer(run);
@@ -888,9 +888,6 @@ public class RunTest extends SshTestBase {
       File downloaded = new File(outputPath.getAbsolutePath(), getHost().getHostName() + "/foo.txt");
 
       assertTrue("queue-download should execute despite done", downloaded.exists());
-//
-      downloaded.delete();
-      downloaded.getParentFile().delete();
    }
 
    @Test
@@ -917,7 +914,7 @@ public class RunTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
 
       Dispatcher dispatcher = new Dispatcher();
-      Run run = new Run("/tmp", config, dispatcher);
+      Run run = new Run(tmpDir.toString(), config, dispatcher);
 
       run.run();
 
@@ -960,7 +957,7 @@ public class RunTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
 
       Dispatcher dispatcher = new Dispatcher();
-      Run run = new Run("/tmp", config, dispatcher);
+      Run run = new Run(tmpDir.toString(), config, dispatcher);
 
       run.run();
 

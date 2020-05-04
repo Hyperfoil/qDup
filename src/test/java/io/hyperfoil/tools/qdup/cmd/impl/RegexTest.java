@@ -10,6 +10,8 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
@@ -23,7 +25,7 @@ import static org.junit.Assert.*;
 
 public class RegexTest extends SshTestBase {
 
-   @Test
+    @Test
    public void getNext_isMiss_onMiss_misses(){
       Regex regex = new Regex("foo",true).onMiss(Cmd.log("miss"));
       regex.then(Cmd.log("matches"));
@@ -109,7 +111,7 @@ public class RegexTest extends SshTestBase {
           return Result.next(input);
        })));
 
-       Run doit = new Run("/tmp",config,dispatcher);
+       Run doit = new Run(tmpDir.toString(),config,dispatcher);
 
        JsonServer jsonServer = new JsonServer(doit);
        jsonServer.start();

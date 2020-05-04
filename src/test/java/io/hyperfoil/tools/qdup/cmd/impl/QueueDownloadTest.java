@@ -44,12 +44,12 @@ public class QueueDownloadTest extends SshTestBase {
 
         config.getState().set("FOO","$(echo /tmp/date)");
         Dispatcher dispatcher = new Dispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
 
-        File downloadFile = new File("/tmp/"+getHost().getHostName()+"/date.txt");
+        File downloadFile = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/date.txt");
 
-        assertTrue("/tmp/download.txt should exist",downloadFile.exists());
+        assertTrue(tmpDir.toString() + "/download.txt should exist",downloadFile.exists());
 
         try {
             String content = new String(Files.readAllBytes(downloadFile.toPath())).trim();
@@ -87,12 +87,12 @@ public class QueueDownloadTest extends SshTestBase {
 
         RunConfig config = builder.buildConfig();
         Dispatcher dispatcher = new Dispatcher();
-        Run run = new Run("/tmp",config,dispatcher);
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
 
-        File downloadFile = new File("/tmp/"+getHost().getHostName()+"/date.txt");
+        File downloadFile = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/date.txt");
 
-        assertTrue("/tmp/download.txt should exist",downloadFile.exists());
+        assertTrue(tmpDir.toString() + "/download.txt should exist",downloadFile.exists());
 
         try {
             String content = new String(Files.readAllBytes(downloadFile.toPath())).trim();

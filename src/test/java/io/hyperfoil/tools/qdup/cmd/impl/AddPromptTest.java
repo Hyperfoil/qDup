@@ -46,7 +46,7 @@ public class AddPromptTest extends SshTestBase {
          })));
 
          Dispatcher dispatcher = new Dispatcher();
-         Run doit = new Run("/tmp", config, dispatcher);
+         Run doit = new Run(tmpDir.toString(), config, dispatcher);
          doit.run();
          dispatcher.shutdown();
          assertEquals("PS1=[FOO]",sb.toString());

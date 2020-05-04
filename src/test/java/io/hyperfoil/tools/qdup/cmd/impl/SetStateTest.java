@@ -43,7 +43,7 @@ public class SetStateTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
       dispatcher.shutdown();

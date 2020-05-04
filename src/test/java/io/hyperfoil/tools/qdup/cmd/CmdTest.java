@@ -1,14 +1,13 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.Run;
+import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.State;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Assert;
 import org.junit.Test;
-import io.hyperfoil.tools.qdup.SshTestBase;
 
 import java.util.HashMap;
 
@@ -298,7 +297,7 @@ public class CmdTest extends SshTestBase {
 
       Cmd foo = config.getScript("foo");
 
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       dispatcher.shutdown();
 
@@ -333,7 +332,7 @@ public class CmdTest extends SshTestBase {
 
       Cmd foo = config.getScript("foo");
 
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       dispatcher.shutdown();
 
@@ -416,7 +415,7 @@ public class CmdTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run run = new Run("/tmp", config, dispatcher);
+      Run run = new Run(tmpDir.toString(), config, dispatcher);
       run.run();
 
       assertEquals("on-signal should be called", "called", first.toString());
@@ -452,7 +451,7 @@ public class CmdTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run run = new Run("/tmp", config, dispatcher);
+      Run run = new Run(tmpDir.toString(), config, dispatcher);
       run.run();
 
       assertEquals("on-signal signalFoo should be called", "called", first.toString());
@@ -489,7 +488,7 @@ public class CmdTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run run = new Run("/tmp", config, dispatcher);
+      Run run = new Run(tmpDir.toString(), config, dispatcher);
       run.run();
 
       assertEquals("first should see FOO=BAR", "1-BAR", first.toString());

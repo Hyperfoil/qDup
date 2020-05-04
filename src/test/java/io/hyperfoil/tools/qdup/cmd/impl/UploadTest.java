@@ -54,7 +54,7 @@ public class UploadTest extends SshTestBase {
 
 
             Dispatcher dispatcher = new Dispatcher();
-            Run run = new Run("/tmp",config,dispatcher);
+            Run run = new Run(tmpDir.toString(),config,dispatcher);
             run.run();
 
             //File uploadedFile = new File("/tmp/destination/"+tmpFile.getName());

@@ -1,11 +1,9 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
-import io.hyperfoil.tools.qdup.JsonServer;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
@@ -51,7 +49,7 @@ public class ScriptCmdTest extends SshTestBase {
          RunConfig config = builder.buildConfig();
          Dispatcher dispatcher = new Dispatcher();
          Cmd foo = config.getScript("foo");
-         Run doit = new Run("/tmp", config, dispatcher);
+         Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
          doit.run();
          dispatcher.shutdown();
@@ -89,7 +87,7 @@ public class ScriptCmdTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
       Cmd foo = config.getScript("foo");
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
       dispatcher.shutdown();
@@ -126,7 +124,7 @@ public class ScriptCmdTest extends SshTestBase {
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
       Cmd foo = config.getScript("foo");
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
       dispatcher.shutdown();
@@ -173,7 +171,7 @@ public class ScriptCmdTest extends SshTestBase {
 
          RunConfig config = builder.buildConfig();
          Dispatcher dispatcher = new Dispatcher();
-         Run doit = new Run("/tmp", config, dispatcher);
+         Run doit = new Run(tmpDir.toString(), config, dispatcher);
          doit.run();
          dispatcher.shutdown();
          foo = config.getState().get("FOO").toString();
@@ -211,7 +209,7 @@ public class ScriptCmdTest extends SshTestBase {
 
       RunConfig config = builder.buildConfig();
       Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run("/tmp", config, dispatcher);
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       dispatcher.shutdown();
 

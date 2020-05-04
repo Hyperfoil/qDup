@@ -60,7 +60,7 @@ public class SleepTest extends SshTestBase {
 
         List<String> signals = new ArrayList<>();
 
-        Run doit = new Run("/tmp", config, dispatcher);
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
         long start = System.currentTimeMillis();
         doit.run();
         long stop = System.currentTimeMillis();
