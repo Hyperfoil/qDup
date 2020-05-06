@@ -312,6 +312,7 @@ public class Run implements Runnable, DispatchObserver {
         }
         return rtrn;
     }
+    public Json getProfiles(){return profiles.getJson();}
     public void writeRunJson(){
         try (FileOutputStream out = new FileOutputStream(this.outputPath+File.separator+"run.json")) {
 
@@ -335,7 +336,7 @@ public class Run implements Runnable, DispatchObserver {
             toWrite.set("timestamps",timestamps);
             toWrite.set("latches",latches);
             toWrite.set("counters",counters);
-            toWrite.set("profiles",profiles.getJson());
+            toWrite.set("profiles",getProfiles());
 
             out.write(toWrite.toString(2).getBytes());
             out.flush();
@@ -454,7 +455,11 @@ public class Run implements Runnable, DispatchObserver {
             ok = getDispatcher().invokeAll(toCall/*,timeout, TimeUnit.SECONDS*/).stream().map((f) -> {
                 boolean rtrn = false;
                 try {
-                    rtrn = f.get();
+                    if(f != null) { //can be null when failed to authenticate
+                        rtrn = f.get();
+                    }else{
+
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (ExecutionException e) {

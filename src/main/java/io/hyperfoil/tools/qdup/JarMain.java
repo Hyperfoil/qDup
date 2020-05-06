@@ -190,6 +190,16 @@ public class JarMain {
                 .build()
         );
 
+        options.addOption(
+            Option.builder("j")
+                .longOpt("jsonport")
+                .argName("port")
+                .hasArg()
+                .desc("preferred port for json server [31337]")
+                .type(Integer.class)
+                .build()
+        );
+
         //logging
         options.addOption(
                 Option.builder("l")
@@ -363,9 +373,11 @@ public class JarMain {
             runConfigBuilder.setKnownHosts(commandLine.getOptionValue("knownHosts"));
         }
         if (commandLine.hasOption("identity") ){
+            System.out.printf("setting custom identity %s%n",commandLine.getOptionValue("identity"));
             runConfigBuilder.setIdentity(commandLine.getOptionValue("identity"));
         }
         if (commandLine.hasOption("passphrase") && !commandLine.getOptionValue("passphrase").equals( RunConfigBuilder.DEFAULT_PASSPHRASE) ){
+            System.out.printf("setting passpharse for identity file%n");
             runConfigBuilder.setPassphrase(commandLine.getOptionValue("passphrase"));
         }
 
@@ -476,7 +488,9 @@ public class JarMain {
             }
         },"shutdown-abort"));
 
-        JsonServer jsonServer = new JsonServer(run);
+
+        int port = Integer.parseInt(commandLine.getOptionValue("jsonport",""+JsonServer.DEFAULT_PORT));
+        JsonServer jsonServer = new JsonServer(run,port);
 
         jsonServer.start();
 

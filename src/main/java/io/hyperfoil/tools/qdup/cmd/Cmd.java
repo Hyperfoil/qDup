@@ -656,6 +656,7 @@ public abstract class Cmd {
       if(hasParent()){
          getParent().preChild(this);
       }
+      //TODO move to ScriptContext.run() so it is called before timer.start(cmd.toString())
       try{
          preRun(input,context);
       }catch (Exception e){

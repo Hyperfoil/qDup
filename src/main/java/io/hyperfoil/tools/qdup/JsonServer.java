@@ -17,10 +17,21 @@ import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.DatagramSocket;
+import java.net.ServerSocket;
+import java.net.SocketException;
 import java.util.Map;
 
 public class JsonServer implements RunObserver, ContextObserver {
+
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+
+    public static int DEFAULT_PORT = 31337;
 
     private final int port;
     private Run run;
@@ -30,7 +41,7 @@ public class JsonServer implements RunObserver, ContextObserver {
     private Coordinator coordinator;
 
     public JsonServer(Run run){
-        this(run,31337);
+        this(run,DEFAULT_PORT);
     }
     public JsonServer(Run run, int port){
         this.port = port;
@@ -42,7 +53,6 @@ public class JsonServer implements RunObserver, ContextObserver {
             this.run = run;
             this.dispatcher = run.getDispatcher();
             this.coordinator = run.getCoordinator();
-
             this.run.addRunObserver(this);
             this.dispatcher.addContextObserver(this);
         }
@@ -88,6 +98,22 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("stage",stage.toString());
             vertx.eventBus().publish("observer",event.toString());
         }
+    }
+
+    public int getPort(int startingPort){
+       int currentPort = startingPort > 0 && startingPort < 65535 ? startingPort : 31337;
+       boolean available = true;
+       do {
+          try (ServerSocket ss = new ServerSocket(currentPort) ; DatagramSocket ds = new DatagramSocket(currentPort)){
+             ss.setReuseAddress(true);
+             ds.setReuseAddress(true);
+             available = true;
+          } catch (IOException e) {
+             available = false;
+             currentPort++;
+          }
+       }while (!available && currentPort < 65535);
+       return currentPort;
     }
 
     public void start(){
@@ -207,6 +233,10 @@ public class JsonServer implements RunObserver, ContextObserver {
               rc.response().setStatusCode(400).end("missing signal name");
            }
         });
+        router.route("/timer").produces("applicaiton/json").handler(rc->{
+           String response = run != null ? run.getProfiles().toString() : "{}";
+           rc.response().end(response);
+        });
         router.route("/waiter").produces("application/json").handler(rc->{
             String response = coordinator.getWaitJson().toString(2);
             rc.response().end(response);
@@ -233,7 +263,10 @@ public class JsonServer implements RunObserver, ContextObserver {
         });
         router.route("/observe").handler(sockJSHandler);
 
-        server.requestHandler(router::accept).listen(port/*, InetAddress.getLocalHost().getHostName()*/);
+        int foundPort = getPort(port);
+        logger.info("listening on port {}",foundPort);
+
+        server.requestHandler(router::accept).listen(foundPort/*, InetAddress.getLocalHost().getHostName()*/);
     }
 
     public void stop(){

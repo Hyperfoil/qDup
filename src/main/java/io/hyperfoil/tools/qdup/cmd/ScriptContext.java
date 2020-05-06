@@ -328,7 +328,10 @@ public class ScriptContext implements Context, Runnable{
             boolean changed = setCurrentCmd(cmd,toCall);
             if(changed) {
                 startCurrentCmd();
-            }else{}
+            }else{
+                //TODO how to handle failing to change?
+                System.out.println(AsciiArt.ANSI_RED+"failed to change to "+toCall+AsciiArt.ANSI_RESET);
+            }
         }
     }
 

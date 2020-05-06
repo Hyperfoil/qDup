@@ -158,7 +158,9 @@ public class SshSession {
 
    public void setName(String name) {
       this.name = name;
-      sessionStreams.setName(name);
+      if(sessionStreams!=null) { //can be null if this failed to connect
+         sessionStreams.setName(name);
+      }
    }
 
    private String name = "";
@@ -192,13 +194,14 @@ public class SshSession {
       PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO2_READ_TIMEOUT, Long.MAX_VALUE);
       PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO_WORKERS, 1);
 
-      sshClient.start();
       // StrictHostKeyChecking=no
       //        sshConfig = new Properties();
       //        sshConfig.put("StrictHostKeyChecking", "no");
       sshClient.setServerKeyVerifier((clientSession1, remoteAddress, serverKey) -> {
          return true;
       });
+
+      sshClient.start();
 
       lineObservers = new ConcurrentHashMap<>();
       shObservers = new ConcurrentHashMap<>();
@@ -283,6 +286,7 @@ public class SshSession {
          }
          if(host.hasPassword()){
             clientSession.addPasswordIdentity(host.getPassword());
+
          }
          clientSession.auth().verify(this.timeout * 1_000);
          //setup all the streams
@@ -369,11 +373,11 @@ public class SshSession {
             }
          } catch (InterruptedException e) {
             logger.warn("{}@{} interrupted while waiting for initial PROMPT", host.getUserName(), host.getHostName());
-            e.printStackTrace();
+            //e.printStackTrace();
             Thread.interrupted();
          }
       } catch (GeneralSecurityException | IOException e) {
-         logger.error("Exception while connecting to {}@{}\n{}", host.getUserName(), host.getHostName(), e.getMessage(), e);
+         logger.error("Exception while connecting to {}@{}\n{}", host.getUserName(), host.getHostName(), e.getMessage() , e );
       } finally {
          logger.trace("{} session.isOpen={} shell.isOpen={}",
             this.getHost().getHostName(),
@@ -382,9 +386,14 @@ public class SshSession {
          );
          rtrn = isOpen();
       }
-      //allow session to be fully setup before adding watcher support to lineEmittingStream
-      sessionStreams.addLineConsumer(this::lineConsumers);
+      if(sessionStreams!=null) { //sessionStreams can be null if an exception was thrown trying to connect
+         //allow session to be fully setup before adding watcher support to lineEmittingStream
+         sessionStreams.addLineConsumer(this::lineConsumers);
+      }else{
+         logger.error("failed to setup terminal streams for {}",host);
+      }
       assert permits() == 1; //only one permit available for next sh(...)
+      connected = rtrn; //set connected in case something external calls connect(...)
       return rtrn;
    }
 
