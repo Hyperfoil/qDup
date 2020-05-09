@@ -248,7 +248,8 @@ public class ScriptContext implements Context, Runnable{
     }
     @Override
     public void terminal(String output){
-        run.getRunLogger().info(output);
+        String filteredMessage = state.getSecretFilter().filter(output);
+        run.getRunLogger().info(filteredMessage);
     }
     @Override
     public boolean isColorTerminal(){
@@ -264,7 +265,8 @@ public class ScriptContext implements Context, Runnable{
         }else{
             rootString = rootCmd.toString();
         }
-        getRunLogger().info("{}@{}:{}",rootString,getHost().getShortHostName(),message);
+        String filteredMessage = state.getSecretFilter().filter(message);
+        getRunLogger().info("{}@{}:{}",rootString,getHost().getShortHostName(),filteredMessage);
     }
     public void error(String message){
         String rootString;
@@ -275,26 +277,28 @@ public class ScriptContext implements Context, Runnable{
         }else{
             rootString = rootCmd.toString();
         }
-        getRunLogger().error("{}@{}:{}",rootString,getHost().getShortHostName(),message);
+        String filteredMessage = state.getSecretFilter().filter(message);
+        getRunLogger().error("{}@{}:{}",rootString,getHost().getShortHostName(),filteredMessage);
     }
 
-    private void log(Cmd command,String output,Context context){
-        String cmdLogOuptut = command == null ? output : command.getLogOutput(output,this);
-        String populatedCommand = Cmd.populateStateVariables(cmdLogOuptut, command, state);
-        String rootString;
-        if(rootCmd instanceof Script){
-            rootString = ((Script)rootCmd).getName();
-        }else if (rootCmd instanceof ScriptCmd){
-            rootString = ((ScriptCmd)rootCmd).getName();
-        }else{
-            rootString = rootCmd.toString();
-        }
-        getRunLogger().info("{}@{}:{}",
-            rootString,
-            getHost().getShortHostName(),
-            populatedCommand
-        );
-    }
+    //was unused, delete in next update
+//    private void log(Cmd command,String output,Context context){
+//        String cmdLogOuptut = command == null ? output : command.getLogOutput(output,this);
+//        String populatedCommand = Cmd.populateStateVariables(cmdLogOuptut, command, state);
+//        String rootString;
+//        if(rootCmd instanceof Script){
+//            rootString = ((Script)rootCmd).getName();
+//        }else if (rootCmd instanceof ScriptCmd){
+//            rootString = ((ScriptCmd)rootCmd).getName();
+//        }else{
+//            rootString = rootCmd.toString();
+//        }
+//        getRunLogger().info("{}@{}:{}",
+//            rootString,
+//            getHost().getShortHostName(),
+//            populatedCommand
+//        );
+//    }
 
     public void closeLineQueue(){
         //only close if something is listening
@@ -330,7 +334,7 @@ public class ScriptContext implements Context, Runnable{
                 startCurrentCmd();
             }else{
                 //TODO how to handle failing to change?
-                System.out.println(AsciiArt.ANSI_RED+"failed to change to "+toCall+AsciiArt.ANSI_RESET);
+                System.out.printf("%s%n",AsciiArt.ANSI_RED+"failed to change to "+toCall+AsciiArt.ANSI_RESET);
             }
         }
     }

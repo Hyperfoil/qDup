@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd;
 
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.Abort;
 import io.hyperfoil.tools.qdup.cmd.impl.CodeCmd;
@@ -639,12 +640,27 @@ public abstract class Cmd {
 
    public final void doRun(String input, Context context) {
       if (!withDef.isEmpty()) {
-         //replace with values if they have ${{
+
+         //replace with values if they have ${{ and check for secrets
+
          withDef.forEach((k,v)->{
+            boolean isSecret = false;
+            if(k.toString().startsWith(SecretFilter.SECRET_NAME_PREFIX)){
+               k = k.toString().substring(SecretFilter.SECRET_NAME_PREFIX.length());
+               isSecret = true;
+            }
             if(v instanceof String && ((String) v).indexOf(StringUtil.PATTERN_PREFIX) > -1){
                String populatedV =populateStateVariables((String)v,this,context.getState(),new Ref(this));
                Object convertedV = State.convertType(populatedV);
                withActive.set(k,convertedV);
+               if(isSecret){
+                  context.getState().getSecretFilter().addSecret(convertedV.toString());
+               }
+            }else{
+               withActive.set(k,v);
+               if(isSecret){
+                  context.getState().getSecretFilter().addSecret(v.toString());
+               }
             }
          });
          //TODO the is currently being handles by populateStateVariables

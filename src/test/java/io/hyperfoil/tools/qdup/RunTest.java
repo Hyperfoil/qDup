@@ -251,7 +251,7 @@ public class RunTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
-                      "scripts:",
+              "scripts:",
               "  setSignals:",
               "  - for-each: OBJ ${{OBJS}}",
               "    then:",

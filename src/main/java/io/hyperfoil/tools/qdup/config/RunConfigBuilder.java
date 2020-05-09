@@ -96,7 +96,7 @@ public class RunConfigBuilder {
       this.name = name;
       this.cmdBuilder = cmdBuilder;
       scripts = new LinkedHashMap<>();
-      state = new State(null, State.RUN_PREFIX);
+      state = new State(State.RUN_PREFIX);
       roleHosts = new HashedSets<>();
       roleSetup = new HashedLists<>();
       roleRun = new HashedLists<>();

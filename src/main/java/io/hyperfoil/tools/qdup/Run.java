@@ -338,7 +338,9 @@ public class Run implements Runnable, DispatchObserver {
             toWrite.set("counters",counters);
             toWrite.set("profiles",getProfiles());
 
-            out.write(toWrite.toString(2).getBytes());
+            String filtered = getConfig().getState().getSecretFilter().filter(toWrite.toString(2));
+
+            out.write(filtered.getBytes());
             out.flush();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -428,7 +430,10 @@ public class Run implements Runnable, DispatchObserver {
                 timestamps.put("stop",System.currentTimeMillis());
                 return;
             }
-            runLogger.info("{} starting state:\n{}",config.getName(),config.getState().tree());
+            String tree = config.getState().tree();
+
+            String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
+            runLogger.info("{} starting state:\n{}",config.getName(),filteredTree);
             boolean ok = nextStage();
             if(ok) {
                 try {
@@ -445,8 +450,10 @@ public class Run implements Runnable, DispatchObserver {
 
             }
             //moved to here because abort would avoid the cleanup in postRun()
+            //will need to move if runLatch becomes optional
             fileAppender.stop();
             consoleAppender.stop();
+            writeRunJson();
         }
     }
     private boolean connectAll(List<Callable<Boolean>> toCall,int timeout){
@@ -694,7 +701,11 @@ public class Run implements Runnable, DispatchObserver {
     }
     private void postRun(){
         logger.debug("{}.postRun",this);
-        runLogger.info("{} closing state:\n{}",config.getName(),config.getState().tree());
+        String tree = config.getState().tree();
+
+        String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
+
+        runLogger.info("{} closing state:\n{}",config.getName(),filteredTree);
 
         runLatch.countDown();
     }

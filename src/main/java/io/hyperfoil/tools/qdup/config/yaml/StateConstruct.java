@@ -13,7 +13,7 @@ import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.json;
 public class StateConstruct extends DeferableConstruct {
     @Override
     public Object construct(Node node) {
-        State rtrn = new State(null,State.RUN_PREFIX);
+        State rtrn = new State(State.RUN_PREFIX);
         if(node instanceof ScalarNode && ((ScalarNode)node).getValue().trim().isEmpty()){
             //empty state is fine
         }else if(node instanceof MappingNode){

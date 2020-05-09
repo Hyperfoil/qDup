@@ -67,7 +67,7 @@ public class Regex extends Cmd {
 
       while (fieldMatcher.find()) {
          String realName = fieldMatcher.group(1);
-         String compName = realName.replaceAll("[\\.\\\\_]", "x");
+         String compName = realName.replaceAll("[\\*\\.\\\\_]", "x");
          if (!compName.equals(realName)) {
             newPattern = newPattern.replace(realName, compName);
          }

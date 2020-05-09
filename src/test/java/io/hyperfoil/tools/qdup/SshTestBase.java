@@ -38,7 +38,7 @@ public class SshTestBase {
 
     @After
     public void cleanUp(){
-        tmpDir.removeDir();
+        //tmpDir.removeDir();
         tmpDir = null;
     }
 

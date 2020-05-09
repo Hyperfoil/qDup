@@ -33,6 +33,9 @@ public class JsonServer implements RunObserver, ContextObserver {
 
     public static int DEFAULT_PORT = 31337;
 
+
+
+
     private final int port;
     private Run run;
     private final Vertx vertx;
@@ -58,13 +61,21 @@ public class JsonServer implements RunObserver, ContextObserver {
         }
     }
 
+    private String filter(Object o){
+       if(o!=null && run!=null){
+          String rtrn = run.getConfig().getState().getSecretFilter().filter(o.toString());
+          return rtrn;
+       }
+       return "";
+    }
+
     @Override
     public void preStart(Context context, Cmd command){
         if(server!=null && command!=null){
             Json event = new Json();
             event.set("type","cmd.start");
             event.set("cmdUid",command.getUid());
-            event.set("cmd",command.toString());
+            event.set("cmd",filter(command.toString()));
             event.set("contextUid",context.hashCode());
             vertx.eventBus().publish("observer",event.toString());
         }
@@ -75,9 +86,9 @@ public class JsonServer implements RunObserver, ContextObserver {
             Json event = new Json();
             event.set("type","cmd.stop");
             event.set("cmdUid",command.getUid());
-            event.set("cmd",command.toString());
+            event.set("cmd",filter(command.toString()));
             event.set("contextUid",context.hashCode());
-            event.set("output",output);
+            event.set("output",filter(output));
             vertx.eventBus().publish("observer",event.toString());
         }
     }
@@ -123,7 +134,7 @@ public class JsonServer implements RunObserver, ContextObserver {
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
         router.route("/state").produces("application/json").handler(rc->{
-           rc.response().end(run.getConfig().getState().toJson().toString());
+           rc.response().end(filter(run.getConfig().getState().toJson().toString()));
         });
         router.route("/stage").produces("application/json").handler(rc->{
             Json rtrn = new Json();
@@ -134,13 +145,13 @@ public class JsonServer implements RunObserver, ContextObserver {
         });
         router.route("/active").produces("application/json").handler(rc->{
             String response = dispatcher.getActiveJson().toString(2);
-            rc.response().end(response);
+            rc.response().end(filter(response));
         });
         router.get("/session").handler(rc->{
            try {
               if (dispatcher != null) {
                  Json response = dispatcher.getContexts();
-                 rc.response().end(response.toString());
+                 rc.response().end(filter(response.toString()));
               } else {
                  rc.response().setStatusCode(400).end("unable to get sessions");
               }
@@ -235,7 +246,7 @@ public class JsonServer implements RunObserver, ContextObserver {
         });
         router.route("/timer").produces("applicaiton/json").handler(rc->{
            String response = run != null ? run.getProfiles().toString() : "{}";
-           rc.response().end(response);
+           rc.response().end(filter(response));
         });
         router.route("/waiter").produces("application/json").handler(rc->{
             String response = coordinator.getWaitJson().toString(2);

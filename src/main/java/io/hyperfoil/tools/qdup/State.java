@@ -38,6 +38,7 @@ public class State {
     private Json json;
     private Map<String,State> childStates;
     private String prefix;
+    private SecretFilter secretFilter;
 
 
     public static class CmdState extends State {
@@ -81,14 +82,21 @@ public class State {
     State parent(){return parent;}
 
     public State(String prefix){
-        this(null,prefix);
+        this(null,new SecretFilter(),prefix);
     }
     public State(State parent,String prefix){
+        //assert  parent != null;
+        this(parent,parent.secretFilter,prefix);
+    }
+    private State(State parent, SecretFilter filter, String prefix){
         this.parent = parent;
+        this.secretFilter = filter;
         this.json = new Json();
         this.childStates = new ConcurrentHashMap<>();
         this.prefix = prefix;
     }
+
+    public SecretFilter getSecretFilter(){return secretFilter;}
 
     public void merge(State state){
         if(this.prefix == state.prefix){
@@ -107,6 +115,7 @@ public class State {
             //WTF to do with a miss-match prefix
 
         }
+        secretFilter.loadSecrets(state.getSecretFilter());
     }
     public void load(Json json){
         json.forEach((key,value)->{
@@ -155,8 +164,16 @@ public class State {
         return childStates.get(name);
     }
     public void set(String key,Object value){
+
+
         value = convertType(value);
         State target = this;
+        boolean isSecret = key.startsWith(SecretFilter.SECRET_NAME_PREFIX);
+
+        if(isSecret){
+            key = key.substring(SecretFilter.SECRET_NAME_PREFIX.length());
+            secretFilter.addSecret(value.toString());
+        }
         do {
             if(target.prefix!=null && key.startsWith(target.prefix)){
                 String newKey = key.substring(target.prefix.length());
@@ -170,7 +187,9 @@ public class State {
         //should a state be able to push to children???
         for(String childName : childStates.keySet()){
             if(key.startsWith(childName+CHILD_DELIMINATOR)){
-                childStates.get(childName).set(key.substring(childName.length()+CHILD_DELIMINATOR.length()),value);
+                String childKey =  key.substring(childName.length()+CHILD_DELIMINATOR.length());
+                childStates.get(childName).set(childKey,value);
+                return; //Added because should only set value on target state
             }
         }
         //at this point there wasn't a prefix match

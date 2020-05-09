@@ -91,7 +91,8 @@ public class SyncContext implements Context, Runnable{
 
     @Override
     public void terminal(String output){
-        run.getRunLogger().info(output);
+        String filteredMessage = state.getSecretFilter().filter(output);
+        run.getRunLogger().info(filteredMessage);
     }
     @Override
     public boolean isColorTerminal(){
@@ -133,12 +134,14 @@ public class SyncContext implements Context, Runnable{
 
     @Override
     public void log(String message) {
-        getRunLogger().info(message);
+        String filteredMessage = state.getSecretFilter().filter(message);
+        getRunLogger().info(filteredMessage);
     }
 
     @Override
     public void error(String message) {
-        getRunLogger().error(message);
+        String filteredMessage = state.getSecretFilter().filter(message);
+        getRunLogger().error(filteredMessage);
     }
 
 
