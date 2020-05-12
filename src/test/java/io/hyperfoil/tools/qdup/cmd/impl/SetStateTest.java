@@ -16,6 +16,46 @@ import static org.junit.Assert.assertTrue;
 
 public class SetStateTest extends SshTestBase {
 
+
+   @Test(timeout = 10_000)
+   public void javascript_spread_missing_arg(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+            "scripts:",
+         "  foo:",
+         "  - set-state:",
+         "      key: RUN.FOO ",
+         "      value: ${{= [...${{RUN.FOO}},new String(${{BAR}}) ] }}",
+         "      separator: _",
+         "  - set-state: RUN.ARGS ${{= ${{FOO}}.join(' ')}}",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts:",
+         "      - foo:",
+         "states:",
+         "  FOO: [ \"ant\", \"apple\" ]"
+      ),false));
+
+      RunConfig config = builder.buildConfig();
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+
+      Object FOO = config.getState().get("FOO");
+
+      //TODO should FOO be set when BAR is missing?
+      System.out.println(FOO);
+      //assertTrue("FOO should be json but was "+(FOO==null ? "null" : FOO.getClass().getSimpleName()),FOO instanceof Json);
+
+
+   }
+
    @Test
    public void javascript_spread_append_object_to_array(){
       Parser parser = Parser.getInstance();
