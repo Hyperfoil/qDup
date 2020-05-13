@@ -230,11 +230,12 @@ public class Dispatcher {
                         if (command.getParent() instanceof Script)
                             parentName = ((Script) (command).getParent()).getName();
                         if(!command.isSilent()){
-                            logger.warn("{}Nanny found idle{}\n  command={}\n  host={}\n  script={}\n  idle={}\n  lastLine={}",
+                            logger.warn("{}Nanny found idle{}\n  command={}\n  host={}\n  contextId={} script={}\n  idle={}\n  lastLine={}",
                                     context.isColorTerminal() ? AsciiArt.ANSI_RED : "",
                                     context.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
                                     command,
                                     context.getSession().getHost().getHostName(),
+                                    context.getContextId(),
                                     script + (parentName.equals(null)? "" : ":" + parentName),
                                     String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000),
                                     context.getSession().peekOutputTail());

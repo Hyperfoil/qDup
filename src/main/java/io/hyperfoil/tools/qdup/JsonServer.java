@@ -159,9 +159,9 @@ public class JsonServer implements RunObserver, ContextObserver {
               e.printStackTrace();
            }
         });
-        router.post("/session/:cmdUid").handler(rc->{
+        router.post("/session/:sessionId").handler(rc->{
 
-            String cmdUid = rc.request().getParam("cmdUid");
+            String cmdUid = rc.request().getParam("sessionId");
             Context found = dispatcher.getContext(cmdUid);
             if(found != null){
                 String send  = rc.getBodyAsString();

@@ -23,7 +23,7 @@ public class ReadState extends Cmd {
         //use getStateValue in case it is in WITH or contest
         Object value = Cmd.getStateValue(key, this, context.getState(), null);
         populatedKey = value == null ? "" : value.toString();
-        if(populatedKey == null || populatedKey.isEmpty()){
+        if(populatedKey == null || populatedKey.isEmpty() || Cmd.hasStateReference(populatedKey,this)){
             context.skip(input);
         }else{
 //TODO should we also support read-state: KEY in addition to read-state: ${{KEY}}
