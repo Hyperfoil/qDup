@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.CmdStateRefMap;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.yaup.StringUtil;
 import org.graalvm.polyglot.Value;
@@ -21,6 +22,8 @@ import java.lang.invoke.MethodHandles;
 public class JsCmd extends Cmd {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
+
+
     private String codeString;
 
     public JsCmd(String code){
@@ -34,19 +37,29 @@ public class JsCmd extends Cmd {
     @Override
     public void run(String input, Context context) {
             try{
-                Object rtrn = StringUtil.jsEval(codeString,input,context.getState());
+                CmdStateRefMap csrm = new CmdStateRefMap(this,context.getState(),new Ref(this));
+                String populatedCodeString = Cmd.populateStateVariables(codeString,this,context.getState());
+                Object rtrn = StringUtil.jsEval(populatedCodeString,input,csrm);
                 if( rtrn==null ||
                     (rtrn instanceof Boolean && !((Boolean)rtrn)) ||
                     (rtrn instanceof String && ((String)rtrn).toUpperCase().equals("FALSE"))
-                ){
+                ) {
                     context.skip(input);
-                }else if (rtrn == null || (rtrn instanceof String && ((String)rtrn).isBlank()) || rtrn instanceof Boolean){
+                }else if (rtrn instanceof String && ((String)rtrn).isBlank()){
+                    //if we think the function tried to return something
+                    if(populatedCodeString.contains("return ") || (populatedCodeString.contains("=>") && !populatedCodeString.contains("=>{"))){
+                        context.skip(input);
+                    }else{
+                        context.next(input);
+                    }
+                }else if ( rtrn instanceof Boolean){
                     //TODO potentially log that the js function should have an explicit return message
                     context.next(input);
                 }else {
                     context.next(rtrn.toString());
                 }
             }catch (Exception e){
+                e.printStackTrace();
                 //TODO log the failure
                 context.skip(input);
             }

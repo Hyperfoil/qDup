@@ -476,6 +476,17 @@ public abstract class Cmd {
    public Json getWith() {
       return withDef;
    }
+   public Json getVisibleWith(){
+      Cmd target = this;
+      Json rtrn = new Json(false);
+
+      do{
+         rtrn.merge(target.withActive,false);
+         rtrn.merge(target.withDef,false);
+      }while ( (target = target.getStateParent()) != null);
+
+      return rtrn;
+   }
    public void loadWith(Cmd cmd){
       Cmd target = cmd;
       do{
@@ -547,6 +558,8 @@ public abstract class Cmd {
 
    public boolean hasParent(){return parent!=null;}
    public Cmd getParent(){return parent;}
+   public boolean hasStateParent(){return stateParent!=null;}
+   public Cmd getStateParent(){return stateParent;}
    public void setParent(Cmd command){
       this.parent = command;
       this.stateParent = command;

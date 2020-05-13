@@ -265,6 +265,14 @@ public class State {
             return defaultValue;
         }
     }
+    public Set<String> getVisibleKeys(){
+        Set<String> rtrn = new HashSet<>();
+        State target = this;
+        do {
+            rtrn.addAll(getKeys());
+        }while ( (target=target.parent) != null);
+        return rtrn;
+    }
     public Set<String> allKeys(){
         Set<String> rtrn = new HashSet<>();
         rtrn.addAll(getKeys());

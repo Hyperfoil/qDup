@@ -1,17 +1,17 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class JsCmdTest {
 
 
     @Test
-    public void testReturnTrue(){
+    public void return_true(){
         JsCmd jsCmd = new JsCmd("function(a,b){ return true;}");
         SpyContext context = new SpyContext();
         jsCmd.run("input",context);
@@ -21,7 +21,7 @@ public class JsCmdTest {
     }
 
     @Test
-    public void testReturnString(){
+    public void return_string(){
         JsCmd jsCmd = new JsCmd("function(a,b){ return 'passed';}");
         State state = new State(State.RUN_PREFIX);
 
@@ -33,11 +33,12 @@ public class JsCmdTest {
         assertEquals("result should be passed","passed",context.getNext());
     }
     @Test
-    public void testNoReturn(){
+    public void no_return(){
         JsCmd jsCmd = new JsCmd("function(a,b){}");
         State state = new State(State.RUN_PREFIX);
 
         SpyContext context = new SpyContext();
+
 
         jsCmd.run("input",context);
 
@@ -46,8 +47,109 @@ public class JsCmdTest {
     }
 
     @Test
+    public void add_to_state_array(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO", Json.fromString("[\"one\",\"two\"]"));
+        JsCmd jsCmd = new JsCmd("(input,state)=>{state['FOO'].push(\'three\'); return 'three'}");
+        jsCmd.run("input",context);
+        assertEquals("jscmd should pass 'three to next","three",context.getNext());
+        assertTrue("state.FOO should be json",context.getState().get("FOO") instanceof Json);
+        assertTrue("state.FOO should be an array",((Json)context.getState().get("FOO")).isArray());
+        assertEquals("state.FOO should contain 3 entries",3,((Json)context.getState().get("FOO")).size());
+
+
+    }
+    @Test
+    public void javascript_object_keys(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO","foo");
+        JsCmd jsCmd = new JsCmd("(input,state)=>state['keys']=Object.keys(state)");
+        jsCmd.with("BAR","bar");
+
+        jsCmd.doRun("input",context);
+        assertFalse("context should not call skip",context.hasSkip());
+    }
+    @Test
+    public void state_from_with(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO","BAR");
+        JsCmd jsCmd = new JsCmd("(input,state)=>state['FOO']");
+        jsCmd.with("FOO","BIZ");
+        jsCmd.run("input",context);
+        assertEquals("js should return value from with not context state","BIZ",context.getNext());
+    }
+
+    @Test
+    public void state_from_dot_notation(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO","BAR");
+        JsCmd jsCmd = new JsCmd("(input,state)=>state.FOO");
+        jsCmd.run("input",context);
+        assertEquals("js should return value from state","BAR",context.getNext());
+    }
+
+    @Test
+    public void state_from_nested_dot_notation(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO",Json.fromString("{\"BAR\":\"buz\"}"));
+        JsCmd jsCmd = new JsCmd("(input,state)=>state.FOO.BAR");
+        jsCmd.run("input",context);
+        assertEquals("js should return value from state","buz",context.getNext());
+    }
+
+
+    @Test
+    public void state_set_value_as_json_array(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO","BAR");
+        JsCmd jsCmd = new JsCmd("(input,state)=>{state['BIZ']=['one','two']; return state['FOO']}");
+        jsCmd.doRun("input",context);
+        Object biz = context.getState().get("BIZ");
+        assertNotNull("state should contain BIZ",biz);
+        assertTrue("biz should be json "+(biz.getClass().getSimpleName()),biz instanceof Json);
+        Json json = (Json)biz;
+        assertTrue("biz should be an array "+json,json.isArray());
+        assertEquals("biz should have 2 entries: "+json,2,json.size());
+    }
+    @Test
+    public void state_set_value_as_json_map(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO","BAR");
+        JsCmd jsCmd = new JsCmd("(input,state)=>{state['BIZ']={one:'one',two:'two'}; return state['FOO']}");
+        jsCmd.doRun("input",context);
+        Object biz = context.getState().get("BIZ");
+        assertNotNull("state should contain BIZ",biz);
+        assertTrue("biz should be json "+(biz.getClass().getSimpleName()),biz instanceof Json);
+        Json json = (Json)biz;
+        assertFalse("biz should be an object "+json,json.isArray());
+        assertEquals("biz should have 2 entries: "+json,2,json.size());
+    }
+
+    @Test
+    public void state_set_value_as_constant(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO","BAR");
+        JsCmd jsCmd = new JsCmd("(input,state)=>{state['BIZ']='BUZ'; return state['FOO']}");
+        jsCmd.run("input",context);
+
+
+        assertTrue("state should include BIZ\n"+context.getState().tree(),context.getState().has("BIZ"));
+        assertEquals("BIZ should be BUZ","BUZ",context.getState().get("BIZ"));
+        assertEquals("JsCmd should call next with javascript output","BAR",context.getNext());
+    }
+
+    @Test
+    public void state_pattern_in_function(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO","BAR");
+        JsCmd jsCmd = new JsCmd("(input,state)=>'${{FOO}}'");
+        jsCmd.run("input",context);
+        assertEquals("context should call next with BAR","BAR",context.getNext());
+    }
+
+    @Test
     public void testReadState(){
-        JsCmd jsCmd = new JsCmd("function(input,state){return state.get('foo');}");
+        JsCmd jsCmd = new JsCmd("function(input,state){return state['foo'];}");
         SpyContext context = new SpyContext();
         context.getState().set("foo","FOO");
         jsCmd.run("input",context);
@@ -57,16 +159,17 @@ public class JsCmdTest {
     }
     @Test
     public void testMissingState(){
-        JsCmd jsCmd = new JsCmd("function(input,state){return state.get('foo');}");
+        JsCmd jsCmd = new JsCmd("function(input,state){return state['foo'];}");
         State state = new State(State.RUN_PREFIX);
 
         SpyContext context = new SpyContext();
-        jsCmd.run("input",context);
-        assertTrue("returning a missing state should skip",context.hasSkip());
+        jsCmd.doRun("input",context);
+        assertFalse("missing state should not go to next: "+context.getNext(),context.hasNext());
+        assertTrue("returning a missing state should skip: "+context.getSkip(),context.hasSkip());
     }
     @Test
     public void testSetState(){
-        JsCmd jsCmd = new JsCmd("function(input,state){state.set('foo','FOO');return true;}");
+        JsCmd jsCmd = new JsCmd("function(input,state){state['foo']='FOO';return true;}");
 
         SpyContext context = new SpyContext();
         jsCmd.run("input",context);

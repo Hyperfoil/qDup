@@ -1,16 +1,29 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.ValueConverter;
+import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
+import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyObject;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class CmdStateRefMap implements Map<Object, Object> {
+/**
+ * Provides a Map or Graaljs ProxyObject facade over the command's state and with variables
+ * This supports Graaljs treating state as a simple javascript object and lets yaup StringUtil.populatePattern
+ * use the current variables from any scope (State or with's)
+ */
+//TODO support javascript map and array functions (push, pop, map, filter, etc)
+public class CmdStateRefMap implements Map<Object, Object>  ,ProxyObject {
 
    private Cmd cmd;
    private State state;
@@ -92,9 +105,15 @@ public class CmdStateRefMap implements Map<Object, Object> {
       return null;
    }
 
+
    @Override
    public Object put(Object key, Object value) {
-      throw new UnsupportedOperationException("this is a read only map");
+      if(state!=null){
+         state.set(key.toString(),value);
+         return null;
+      } else {
+         throw new UnsupportedOperationException("this is a read only map");
+      }
    }
 
    @Override
@@ -114,7 +133,21 @@ public class CmdStateRefMap implements Map<Object, Object> {
 
    @Override
    public Set<Object> keySet() {
-      return Collections.EMPTY_SET;
+      Set<Object> rtrn = new HashSet<>();
+      if(cmd!=null){
+         cmd.getVisibleWith().keySet().forEach(key->rtrn.add(key));
+      }
+      if(state!=null){
+         rtrn.addAll(state.getVisibleKeys());
+      }
+      if(ref!=null){
+         Cmd.Ref target = ref;
+         do {
+            rtrn.addAll(target.getCommand().getWith().keys());
+         }while( (target=ref.getParent())!=null);
+      }
+
+      return rtrn;
    }
 
    @Override
@@ -185,4 +218,34 @@ public class CmdStateRefMap implements Map<Object, Object> {
    public Object merge(Object key, Object value, BiFunction<? super Object, ? super Object, ?> remappingFunction) {
       throw new UnsupportedOperationException("this is a read only map");
    }
+
+   // ProxyObject
+   //
+   @Override
+   public Object getMember(String key) {
+      Object rtrn = get(key);
+      if(rtrn instanceof Json){
+         rtrn = JsonProxy.create((Json) rtrn);
+      }
+      return rtrn;
+   }
+
+   @Override
+   public Object getMemberKeys() {
+      Set rtrn = keySet();
+      return rtrn.toArray(new Object[0]);
+   }
+
+   @Override
+   public boolean hasMember(String key) {
+      return containsKey(key);
+   }
+
+   @Override
+   public void putMember(String key, Value value) {
+      state.set(key, ValueConverter.convert(value));
+   }
+
+
+
 }

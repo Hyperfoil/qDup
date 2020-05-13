@@ -50,10 +50,7 @@ public class SetStateTest extends SshTestBase {
       Object FOO = config.getState().get("FOO");
 
       //TODO should FOO be set when BAR is missing?
-      System.out.println(FOO);
       //assertTrue("FOO should be json but was "+(FOO==null ? "null" : FOO.getClass().getSimpleName()),FOO instanceof Json);
-
-
    }
 
    @Test
