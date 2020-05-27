@@ -81,7 +81,10 @@ public class CmdStateRefMap implements Map<Object, Object>  ,ProxyObject {
    @Override
    public Object get(Object key) {
       if (cmd != null) {
-         if (cmd.hasWith(key.toString())) {
+         //only use value from with if it does not contain a reference back to the same key
+         //this support with: {FOO: ${{FOO}} } so script variables can be mapped to a state variable with the same name
+         //technically that does not need to happen but it should be supported
+         if (cmd.hasWith(key.toString()) && ! cmd.getWith(key.toString()).toString().contains(cmd.getPatternPrefix()+key.toString())) {
             return cmd.getWith(key.toString());
          }
       }

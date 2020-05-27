@@ -270,6 +270,44 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
+   public void with_same_name_from_state(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("", stream("" +
+         "scripts:",
+         "  foo:",
+         "  - set-state: RUN.resolved ${{value}}",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts:",
+         "    - foo:",
+         "        with:",
+         "          value: ${{value}}",
+         "states:",
+         "  value: worked"
+      ), false));
+
+      RunConfig config = builder.buildConfig();
+      Dispatcher dispatcher = new Dispatcher();
+
+      Cmd foo = config.getScript("foo");
+
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+
+
+      State s = config.getState();
+      System.out.println(s.tree());
+
+      assertTrue("state should contain resolved",s.has("resolved"));
+      assertEquals("resolved should get value from state","worked",s.get("resolved"));
+   }
+
+   @Test
    public void with_json_from_state() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
