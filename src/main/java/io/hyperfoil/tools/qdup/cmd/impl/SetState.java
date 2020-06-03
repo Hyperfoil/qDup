@@ -85,7 +85,7 @@ public class SetState extends Cmd {
         String useValue = populatedValue != null ? populatedValue : value;
 
         if(isSilent()){
-            return "set-state: "+key+" "+value;
+            return "set-state: " + useKey;
         }
         return "set-state: " + useKey + " " + (useValue.trim().isEmpty() ? "\"\"" : useValue);
     }
