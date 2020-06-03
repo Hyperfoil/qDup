@@ -221,6 +221,14 @@ public class JarMain {
             .build()
       );
 
+      options.addOption(
+        Option.builder(null)
+                .longOpt("quietstate")
+                .hasArg(false)
+                .desc("Supress output of state variables from run log")
+                .build()
+      );
+
 
       CommandLineParser parser = new DefaultParser();
       HelpFormatter formatter = new HelpFormatter();
@@ -394,6 +402,10 @@ public class JarMain {
 
       if (commandLine.hasOption("trace")) {
          runConfigBuilder.trace(commandLine.getOptionValue("trace"));
+      }
+
+      if (commandLine.hasOption("quietstate")) {
+         runConfigBuilder.supressStateOutput(true);
       }
 
       RunConfig config = runConfigBuilder.buildConfig();

@@ -7,6 +7,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /**
@@ -40,6 +41,15 @@ public class State {
     private String prefix;
     private SecretFilter secretFilter;
 
+    private AtomicBoolean supressOutput = new AtomicBoolean(false);
+
+    public void setSuppressOutput(boolean suppress) {
+        this.supressOutput.set(suppress);
+    }
+
+    public boolean isSuppressed(){
+        return this.supressOutput.get();
+    }
 
     public static class CmdState extends State {
         private final Cmd cmd;

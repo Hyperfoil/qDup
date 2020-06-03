@@ -112,6 +112,9 @@ public class RunConfigBuilder {
       traceTargets.add(pattern);
    }
 
+   public void supressStateOutput(boolean supress) {
+      this.state.setSuppressOutput(supress);
+   }
    public Set<String> getTracePatterns() {
       return traceTargets;
    }

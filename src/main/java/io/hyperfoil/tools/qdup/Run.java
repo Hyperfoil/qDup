@@ -432,8 +432,10 @@ public class Run implements Runnable, DispatchObserver {
             }
             String tree = config.getState().tree();
 
-            String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
-            runLogger.info("{} starting state:\n{}",config.getName(),filteredTree);
+            if (!getConfig().getState().isSuppressed()) {
+                String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
+                runLogger.info("{} starting state:\n{}", config.getName(), filteredTree);
+            }
             boolean ok = nextStage();
             if(ok) {
                 try {
@@ -703,9 +705,10 @@ public class Run implements Runnable, DispatchObserver {
         logger.debug("{}.postRun",this);
         String tree = config.getState().tree();
 
-        String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
-
-        runLogger.info("{} closing state:\n{}",config.getName(),filteredTree);
+        if(!getConfig().getState().isSuppressed()) {
+            String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
+            runLogger.info("{} closing state:\n{}", config.getName(), filteredTree);
+        }
 
         runLatch.countDown();
     }

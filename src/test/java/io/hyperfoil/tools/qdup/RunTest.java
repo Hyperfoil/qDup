@@ -306,6 +306,50 @@ public class RunTest extends SshTestBase {
    }
 
    @Test
+   public void suppress_state_logging(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+                      "scripts:",
+              "  setStates:",
+              "  - for-each: OBJ ${{OBJS}}",
+              "    then:",
+              "    - set-state: ${{OBJ.name}}-started 1",
+              "  foo:",
+              "  - sh: echo 'Starting!'",
+              "  - for-each: OBJ ${{OBJS}}",
+              "    then:",
+              "      - sh: echo state ${{OBJ.name}}-started ${{${{OBJ.name}}-started}}",
+              "  - sh: echo 'End!'",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    setup-scripts: [setSignals]",
+              "    run-scripts: [foo]",
+              "states:",
+              "  OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]"
+      ),false));
+      builder.supressStateOutput(true);
+      RunConfig config = builder.buildConfig();
+
+      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      String logContents = readFile(tmpDir.getPath().resolve("run.log"));
+
+      Boolean containsStrartingState = logContents.contains("starting state:");
+      Boolean containsOutputState = logContents.contains("closing state:");
+      assertTrue("File contains starting state", !containsStrartingState);
+      assertTrue("File contains closing state", !containsOutputState);
+
+   }
+
+   @Test
    public void signal_in_previous_stage() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
