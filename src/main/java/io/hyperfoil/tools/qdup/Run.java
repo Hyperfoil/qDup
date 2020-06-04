@@ -56,6 +56,8 @@ public class Run implements Runnable, DispatchObserver {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
     private final static AtomicReferenceFieldUpdater<Run,Stage> stageUpdated = AtomicReferenceFieldUpdater.newUpdater(Run.class,Run.Stage.class,"stage");
 
+    public static final String RUN_LOGGER_NAME = "activeRun";
+    public static final String STATE_LOGGER_NAME = "stateLogger";
 
     class JitterCheck implements Runnable{
 
@@ -118,6 +120,7 @@ public class Run implements Runnable, DispatchObserver {
 
     private CountDownLatch runLatch = new CountDownLatch(1);
     private Logger runLogger;
+    private Logger stateLogger;
     private ConsoleAppender<ILoggingEvent> consoleAppender;
     private FileAppender<ILoggingEvent> fileAppender;
 
@@ -164,7 +167,8 @@ public class Run implements Runnable, DispatchObserver {
         fileAppender.setContext(lc);
         fileAppender.start();
 
-        runLogger = (Logger) LoggerFactory.getLogger("activeRun");
+        stateLogger = (Logger) LoggerFactory.getLogger(STATE_LOGGER_NAME);
+        runLogger = (Logger) LoggerFactory.getLogger(RUN_LOGGER_NAME);
         runLogger.addAppender(fileAppender);
         if(!runLogger.isAttached(consoleAppender)) {
             runLogger.addAppender(consoleAppender);
@@ -245,6 +249,7 @@ public class Run implements Runnable, DispatchObserver {
     public RunConfig getConfig(){return config;}
     public boolean isAborted(){return aborted.get();}
     public Logger getRunLogger(){return runLogger;}
+    public Logger getStateLogger(){return stateLogger;}
 
     public void addPendingDelete(Host host,String path){
         pendingDeletes.put(host,path);
@@ -433,7 +438,7 @@ public class Run implements Runnable, DispatchObserver {
             String tree = config.getState().tree();
 
             String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
-            runLogger.info("{} starting state:\n{}",config.getName(),filteredTree);
+            stateLogger.debug("{} starting state:\n{}",config.getName(),filteredTree);
             boolean ok = nextStage();
             if(ok) {
                 try {
@@ -705,7 +710,7 @@ public class Run implements Runnable, DispatchObserver {
 
         String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
 
-        runLogger.info("{} closing state:\n{}",config.getName(),filteredTree);
+        stateLogger.debug("{} closing state:\n{}",config.getName(),filteredTree);
 
         runLatch.countDown();
     }

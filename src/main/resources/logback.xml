@@ -17,6 +17,7 @@
     </appender>
     <logger name="io.hyperfoil.tools.qdup.Local" level="INFO"/>
     <logger name="io.hyperfoil.tools.qdup.cmd.Dispatcher" level="INFO"/>
+    <logger name="stateLogger" level="DEBUG"/>
 <!--    <logger name="org.apache.sshd" level="debug"/>-->
 
     <root level="info">
