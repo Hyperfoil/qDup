@@ -1,5 +1,9 @@
 package io.hyperfoil.tools.qdup;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.LoggingEvent;
+import ch.qos.logback.core.AppenderBase;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.ContextObserver;
@@ -14,6 +18,7 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -302,6 +307,60 @@ public class RunTest extends SshTestBase {
       assertTrue("File contains ${{OBJ.name}}-started", !containsUnsubstituted);
 
 
+
+   }
+
+   @Test
+   public void suppress_state_logging(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+                      "scripts:",
+              "  setStates:",
+              "  - for-each: OBJ ${{OBJS}}",
+              "    then:",
+              "    - set-state: ${{OBJ.name}}-started 1",
+              "  foo:",
+              "  - sh: echo 'Starting!'",
+              "  - for-each: OBJ ${{OBJS}}",
+              "    then:",
+              "      - sh: echo state ${{OBJ.name}}-started ${{${{OBJ.name}}-started}}",
+              "  - sh: echo 'End!'",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    setup-scripts: [setStates]",
+              "    run-scripts: [foo]",
+              "states:",
+              "  OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]"
+      ),false));
+
+      Logger root = (Logger) LoggerFactory.getLogger(Run.STATE_LOGGER_NAME);
+      //set log level to INFO to disable STATE logger
+      root.setLevel(Level.INFO);
+
+      RunConfig config = builder.buildConfig();
+
+      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      //Instantiate a StringBuilderAppender to capture state logger output
+      StringBuilderAppender stringWriterAppender = new StringBuilderAppender();
+      stringWriterAppender.start();
+      doit.getStateLogger().addAppender(stringWriterAppender);
+
+      doit.run();
+
+      String logContents = stringWriterAppender.getLog();
+
+      Boolean containsStrartingState = logContents.contains("starting state:");
+      Boolean containsOutputState = logContents.contains("closing state:");
+      assertTrue("File contains starting state", !containsStrartingState);
+      assertTrue("File contains closing state", !containsOutputState);
 
    }
 
@@ -1026,5 +1085,18 @@ public class RunTest extends SshTestBase {
       assertTrue("run-env output should contain FOO=FOO but was\n" + runEnv, runEnv.contains("FOO=FOO"));
       assertTrue("run-env output should contain VERTX_HOME=/tmp", runEnv.contains("VERTX_HOME=/tmp"));
       assertTrue("run-env output should contain JAVA_OPTS", runEnv.contains("JAVA_OPTS"));
+   }
+
+   private class StringBuilderAppender extends AppenderBase {
+      private StringBuilder inMemLog = new StringBuilder();
+
+      @Override
+      protected void append(Object eventObject) {
+         inMemLog.append( ((LoggingEvent) eventObject).getMessage());
+      }
+
+      public String getLog(){
+          return inMemLog.toString();
+      }
    }
 }
