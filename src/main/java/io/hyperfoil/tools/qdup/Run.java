@@ -168,6 +168,7 @@ public class Run implements Runnable, DispatchObserver {
         fileAppender.start();
 
         stateLogger = (Logger) LoggerFactory.getLogger(STATE_LOGGER_NAME);
+        stateLogger.addAppender(fileAppender);
         runLogger = (Logger) LoggerFactory.getLogger(RUN_LOGGER_NAME);
         runLogger.addAppender(fileAppender);
         if(!runLogger.isAttached(consoleAppender)) {

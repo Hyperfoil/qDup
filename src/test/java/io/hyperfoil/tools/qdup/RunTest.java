@@ -348,14 +348,9 @@ public class RunTest extends SshTestBase {
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
-      //Instantiate a StringBuilderAppender to capture state logger output
-      StringBuilderAppender stringWriterAppender = new StringBuilderAppender();
-      stringWriterAppender.start();
-      doit.getStateLogger().addAppender(stringWriterAppender);
-
       doit.run();
 
-      String logContents = stringWriterAppender.getLog();
+      String logContents = readFile(tmpDir.getPath().resolve("run.log"));
 
       Boolean containsStrartingState = logContents.contains("starting state:");
       Boolean containsOutputState = logContents.contains("closing state:");
@@ -1087,16 +1082,4 @@ public class RunTest extends SshTestBase {
       assertTrue("run-env output should contain JAVA_OPTS", runEnv.contains("JAVA_OPTS"));
    }
 
-   private class StringBuilderAppender extends AppenderBase {
-      private StringBuilder inMemLog = new StringBuilder();
-
-      @Override
-      protected void append(Object eventObject) {
-         inMemLog.append( ((LoggingEvent) eventObject).getMessage());
-      }
-
-      public String getLog(){
-          return inMemLog.toString();
-      }
-   }
 }
