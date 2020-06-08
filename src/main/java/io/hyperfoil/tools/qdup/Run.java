@@ -56,8 +56,8 @@ public class Run implements Runnable, DispatchObserver {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
     private final static AtomicReferenceFieldUpdater<Run,Stage> stageUpdated = AtomicReferenceFieldUpdater.newUpdater(Run.class,Run.Stage.class,"stage");
 
-    public static final String RUN_LOGGER_NAME = "activeRun";
-    public static final String STATE_LOGGER_NAME = "stateLogger";
+    public static final String RUN_LOGGER_NAME = "qdup.run";
+    public static final String STATE_LOGGER_NAME = "qdup.run.state";
 
     class JitterCheck implements Runnable{
 
@@ -168,7 +168,6 @@ public class Run implements Runnable, DispatchObserver {
         fileAppender.start();
 
         stateLogger = (Logger) LoggerFactory.getLogger(STATE_LOGGER_NAME);
-        stateLogger.addAppender(fileAppender);
         runLogger = (Logger) LoggerFactory.getLogger(RUN_LOGGER_NAME);
         runLogger.addAppender(fileAppender);
         if(!runLogger.isAttached(consoleAppender)) {
