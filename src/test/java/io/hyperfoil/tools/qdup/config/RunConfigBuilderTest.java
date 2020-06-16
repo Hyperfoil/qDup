@@ -85,7 +85,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         assertTrue("run should have wildfly role",runConfig.getRoleNames().contains("wildfly"));
         Role role = runConfig.getRole("wildfly");
-        assertEquals("hosts in wildfly role",1,role.getHosts().size());
+        assertEquals("hosts in wildfly role",1,role.getDeclaredHosts().size());
         List<ScriptCmd> setup = role.getSetup();
         assertEquals("two scripts in setup",2,setup.size());
     }
@@ -361,7 +361,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         assertEquals("role has setup script",1,role.getSetup().size());
         assertEquals("role has run script",1,role.getRun().size());
-        assertEquals("role has a host",1,role.getHosts().size());
+        assertEquals("role has a host",1,role.getDeclaredHosts().size());
 
         Cmd setupCmd = role.getSetup().get(0);
         List<ScriptCmd> runCmds = role.getRun();

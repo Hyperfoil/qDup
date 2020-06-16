@@ -321,9 +321,10 @@ public class JarMain {
       }
 
       String outputPath = null;
+      DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+      String uid = dt.format(LocalDateTime.now());
       if (commandLine.hasOption("basePath")) {
-         DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-         outputPath = commandLine.getOptionValue("basePath") + "/" + dt.format(LocalDateTime.now());
+         outputPath = commandLine.getOptionValue("basePath") + "/" + uid;
       } else if (commandLine.hasOption("fullPath")) {
          outputPath = commandLine.getOptionValue("fullPath");
       } else {

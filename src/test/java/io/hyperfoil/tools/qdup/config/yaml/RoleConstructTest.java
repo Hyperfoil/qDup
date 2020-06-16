@@ -45,7 +45,7 @@ public class RoleConstructTest {
         assertNotNull("should load  role",loaded);
         assertEquals("role name","roleName",loaded.getName());
         assertEquals("0 scripts\nrun:"+ loaded.getRun()+"\nsetup:"+loaded.getSetup()+"\ncleanup:"+loaded.getCleanup(),0,loaded.getSetup().size()+loaded.getRun().size()+loaded.getCleanup().size());
-        assertEquals("expect 0 hosts",0,loaded.getHosts().size());
+        assertEquals("expect 0 hosts",0,loaded.getDeclaredHosts().size());
         assertEquals("expect 1 hostRef",1,loaded.getHostRefs().size());
         assertEquals("hostRef[0]=hostName","hostName",loaded.getHostRefs().iterator().next());
     }

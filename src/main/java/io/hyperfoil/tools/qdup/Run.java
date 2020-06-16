@@ -56,6 +56,7 @@ public class Run implements Runnable, DispatchObserver {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
     private final static AtomicReferenceFieldUpdater<Run,Stage> stageUpdated = AtomicReferenceFieldUpdater.newUpdater(Run.class,Run.Stage.class,"stage");
 
+    //TODO does a static logger name retain file appenders from previous Runs?
     public static final String RUN_LOGGER_NAME = "qdup.run";
     public static final String STATE_LOGGER_NAME = "qdup.run.state";
 
@@ -94,7 +95,12 @@ public class Run implements Runnable, DispatchObserver {
         public String getDestination(){return destination;}
     }
 
-    enum Stage {Pending("pending"),Setup("setup"),Run("run"),Cleanup("cleanup"),Done("done");
+    enum Stage {
+        Pending("pending"),
+        Setup("setup"),
+        Run("run"),
+        Cleanup("cleanup"),
+        Done("done");
         String name;
         Stage(String name){
             this.name = name;
@@ -493,6 +499,8 @@ public class Run implements Runnable, DispatchObserver {
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
 
+
+
         //TODO don't run an ALL-setup but rather put it in the start of each connection?
         config.getRoleNames().stream().forEach(roleName->{
             final Role role = config.getRole(roleName);
@@ -504,7 +512,7 @@ public class Run implements Runnable, DispatchObserver {
                });
                setup.then(new RoleEnv(role,false));
 
-               role.getHosts().forEach(host->{
+               role.getHosts(config).forEach(host->{
                    connectSessions.add(()->{
                        String name = roleName+"-setup@"+host.getShortHostName();
                        SshSession session = new SshSession(
@@ -561,7 +569,7 @@ public class Run implements Runnable, DispatchObserver {
             Role role = config.getRole(roleName);
             if (!role.getRun().isEmpty()) {
                 for (ScriptCmd script : role.getRun()) {
-                    for (Host host : role.getHosts()) {
+                    for (Host host : role.getHosts(config)) {
                         State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
                         State scriptState = hostState.getChild(script.getName()).getChild("id=" + script.getUid());
                         SystemTimer timer = profiles.get(script.getName() + "-" + script.getUid() + "@" + host);
@@ -657,7 +665,7 @@ public class Run implements Runnable, DispatchObserver {
                 role.getCleanup().forEach(cmd->{
                     cleanup.then(cmd);
                 });
-                role.getHosts().forEach(host->{
+                role.getHosts(config).forEach(host->{
                     String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
                     connectSessions.add(()->{
                         String name = roleName + "-cleanup@" + host.getShortHostName();

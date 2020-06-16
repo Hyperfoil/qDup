@@ -56,7 +56,7 @@ public class SshTestBase {
 
     private static final ScheduledThreadPoolExecutor SCHEDULED_THREAD_POOL_EXECUTOR = new ScheduledThreadPoolExecutor(2);
 
-    public RunConfigBuilder getBuilder(){
+    public static RunConfigBuilder getBuilder(){
         RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
         builder.setIdentity(getIdentity());
 

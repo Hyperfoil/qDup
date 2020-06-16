@@ -51,6 +51,9 @@ public class RunConfigBuilder {
    private static final String RUN_STATE = "run";
    public static final String SCRIPT_DIR = "ENV.SCRIPT_DIR";
 
+   public static final String TEMP_DIR = "ENV.TMPDIR";
+   public static final String MAKE_TEMP_CMD = "mktemp -d -t qdup-XXXXXXXXXX";
+
    public static final String DEFAULT_KNOWN_HOSTS = System.getProperty("user.home") + "/.ssh/known_hosts";
    public static final String DEFAULT_IDENTITY = System.getProperty("user.home") + "/.ssh/id_rsa";
    public static final String DEFAULT_PASSPHRASE = null;
@@ -106,7 +109,9 @@ public class RunConfigBuilder {
       traceTargets = new HashSet<>();
       errors = new LinkedList<>();
       settings = new Json(false);
+      settings.set(RunConfig.MAKE_TEMP_KEY,MAKE_TEMP_CMD);
    }
+
 
    public void trace(String pattern) {
       traceTargets.add(pattern);
@@ -694,9 +699,7 @@ public class RunConfigBuilder {
                addError("host expressions should be = <role> [+-] <role>... but " + roleName + " could not parse " + token + " in: " + expession);
             }
          }
-
          toAdd.removeAll(toRemove);
-
          if (!toAdd.isEmpty()) {
             roleHosts.putAll(roleName, toAdd.stream().map(Host::toString).collect(Collectors.toList()));
          } else {
@@ -765,12 +768,11 @@ public class RunConfigBuilder {
 
 
       roles.values().forEach(role -> {
-         role.getHosts().forEach(host -> {
+         role.getDeclaredHosts().forEach(host -> {
             role.getSetup().forEach(c -> addCmd.accept(setupStage, c));
             role.getRun().forEach(c -> addCmd.accept(runStage, c));
             role.getCleanup().forEach(c -> addCmd.accept(cleanupStage, c));
          });
-
       });
 
       setupStage.getErrors().forEach(this::addError);

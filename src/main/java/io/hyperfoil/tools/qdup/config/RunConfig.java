@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.config;
 
+import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
@@ -17,6 +18,9 @@ import java.util.stream.Collectors;
  * This includes all Hosts, Scripts, and State
  */
 public class RunConfig {
+
+
+    public static final String MAKE_TEMP_KEY = "MKTEMP";
 
     private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
@@ -126,6 +130,18 @@ public class RunConfig {
         return roles.get(name);
     }
 
+
+    /**
+     * Gets all the hosts that are used in a role
+     * @return
+     */
+    public Set<Host> getAllHostsInRoles(){
+        return roles.values().stream().flatMap(role->role.getDeclaredHosts().stream()).collect(Collectors.toSet());
+    }
+
+
+
+
     public String debug(){
         return debug(false);
     }
@@ -161,9 +177,9 @@ public class RunConfig {
             for(String roleName : roles.keySet()){
                 sb.append("  "+roleName+"\n");
                 Role role = roles.get(roleName);
-                if(!role.getHosts().isEmpty()){
+                if(!role.getHosts(this).isEmpty()){
                     sb.append("    HOSTS\n");
-                    role.getHosts().forEach(host->{
+                    role.getHosts(this).forEach(host->{
                         sb.append("      "+host.toString()+"\n");
                     });
                 }else{

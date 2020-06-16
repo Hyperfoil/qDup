@@ -54,7 +54,25 @@ public class Role {
     public List<ScriptCmd> getRun(){return Collections.unmodifiableList(run);}
     public List<ScriptCmd> getCleanup(){return Collections.unmodifiableList(cleanup);}
 
-    public List<Host> getHosts(){return Collections.unmodifiableList(hosts);}
+    /**
+     * @return Hosts that are listed in the role. Empty if the role uses an expression
+     */
+    public List<Host> getDeclaredHosts(){
+        return Collections.unmodifiableList(hosts);
+    }
+
+    /**
+     * Get the hosts used by this role.
+     * @param runConfig the RunConfig to resolve role references
+     * @return all hosts that will be used for this role
+     */
+    public List<Host> getHosts(RunConfig runConfig) {
+        if (hasHostExpression()) {
+            return Collections.unmodifiableList(hostExpression.getHosts(runConfig));
+        } else {
+            return getDeclaredHosts();
+        }
+    }
 
     public void addSetup(ScriptCmd script){
         this.setup.add(script);
