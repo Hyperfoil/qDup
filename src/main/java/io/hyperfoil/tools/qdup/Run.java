@@ -7,6 +7,7 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.FileAppender;
+import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.DispatchObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Script;
@@ -19,6 +20,7 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.StageSummary;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedSets;
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.LoggerFactory;
@@ -97,9 +99,11 @@ public class Run implements Runnable, DispatchObserver {
 
     enum Stage {
         Pending("pending"),
+        PreSetup("pre-setup"),
         Setup("setup"),
         Run("run"),
         Cleanup("cleanup"),
+        PostCleanup("post-cleanup"),
         Done("done");
         String name;
         Stage(String name){
@@ -216,7 +220,13 @@ public class Run implements Runnable, DispatchObserver {
         }
         switch (stage){
             case Pending:
-                if(stageUpdated.compareAndSet(this,Stage.Pending, Stage.Setup)){
+                if(stageUpdated.compareAndSet(this,Stage.Pending, Stage.PreSetup)){
+                    startDispatcher = queuePreSetupScripts();
+                }
+
+                break;
+            case PreSetup:
+                if(stageUpdated.compareAndSet(this,Stage.PreSetup, Stage.Setup)){
                     startDispatcher = queueSetupScripts();
                 }
                 break;
@@ -366,7 +376,7 @@ public class Run implements Runnable, DispatchObserver {
                 stageUpdated.set(this, Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.postStop will set it to Cleanup
             } else {
                 logger.warn("Skipping cleanup - Abort has been defined to not run any cleanup scripts");
-                stageUpdated.set(this, Stage.Cleanup);//set the stage as cleanup so dispatcher.stop call to DispatchObserver.postStop will set it to Done
+                stageUpdated.set(this, Stage.PostCleanup);//set the stage as PostCleanup so dispatcher.stop call to DispatchObserver.postStop will set it to Done
             }
             dispatcher.stop(false);//interrupts working threads and stops dispatching next commands
             //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
@@ -492,15 +502,143 @@ public class Run implements Runnable, DispatchObserver {
         }
         return ok;
     }
+    private Script createTempDirectory(){
+        Script script = new Script("create-qdup-temp");
+        script.then(
+           Cmd.sh(this.config.getSetting(RunConfig.MAKE_TEMP_KEY,RunConfigBuilder.MAKE_TEMP_CMD).toString())
+           .then(Cmd.setState(State.HOST_PREFIX+RunConfigBuilder.TEMP_DIR))
+        );
+
+        return script;
+    }
+    private Script removeTempDirectory(){
+        Script script = new Script("remove-qdup-temp");
+        script.then(
+           Cmd.sh(
+              this.config.getSetting(RunConfig.REMOVE_TEMP_KEY,RunConfigBuilder.REMOVE_TEMP_CMD) +
+              " " +
+              StringUtil.PATTERN_PREFIX+RunConfigBuilder.TEMP_DIR+StringUtil.PATTERN_SUFFIX)
+        );
+
+        return script;
+    }
+
+    private boolean queuePostCleanupScripts(){
+        logger.debug("{}.post-cleanup",this);
+        List<Callable<Boolean>> connectSessions = new LinkedList<>();
+
+        Script setup = removeTempDirectory();
+        config.getAllHostsInRoles().forEach(host->{
+            connectSessions.add(()->{
+                String name = "post-cleanup@"+host.getShortHostName();
+                SshSession session = new SshSession(
+                   host,
+                   config.getKnownHosts(),
+                   config.getIdentity(),
+                   config.getPassphrase(),
+                   config.getTimeout(),
+                   "",getDispatcher().getScheduler(),
+                   isTrace(name));
+                session.setName(name);
+                if ( session.isConnected() ) {
+                    //TODO configure session delay
+                    //session.setDelay(SuffixStream.NO_DELAY);
+                    ScriptContext scriptContext = new ScriptContext(
+                       session,
+                       config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
+                       this,
+                       profiles.get(name),
+                       setup
+                    );
+                    getDispatcher().addScriptContext(scriptContext);
+                    return session.isOpen();
+                }
+                else {
+                    session.close();
+                    return false;
+                }
+            });
+        });
+
+        boolean ok = true;
+        if(!connectSessions.isEmpty()) {
+            ok = connectAll(connectSessions, 60);
+            if (!ok) {
+                abort(false);
+            }
+
+        }else{
+
+        }
+        return ok;
+
+    }
+
+    private boolean queuePreSetupScripts(){
+        logger.debug("{}.pre-setup",this);
+        List<Callable<Boolean>> connectSessions = new LinkedList<>();
+
+        Script setup = createTempDirectory();
+        config.getAllHostsInRoles().forEach(host->{
+            connectSessions.add(()->{
+                String name = "pre-setup@"+host.getShortHostName();
+                SshSession session = new SshSession(
+                   host,
+                   config.getKnownHosts(),
+                   config.getIdentity(),
+                   config.getPassphrase(),
+                   config.getTimeout(),
+                   "",getDispatcher().getScheduler(),
+                   isTrace(name));
+                session.setName(name);
+                if ( session.isConnected() ) {
+                    //TODO configure session delay
+                    //session.setDelay(SuffixStream.NO_DELAY);
+                    ScriptContext scriptContext = new ScriptContext(
+                       session,
+                       config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
+                       this,
+                       profiles.get(name),
+                       setup
+                    );
+                    getDispatcher().addScriptContext(scriptContext);
+                    return session.isOpen();
+                }
+                else {
+                    session.close();
+                    return false;
+                }
+            });
+        });
+
+        boolean ok = true;
+        if(!connectSessions.isEmpty()) {
+            ok = connectAll(connectSessions, 60);
+            if (!ok) {
+                abort(false);
+            }
+
+        }else{
+
+        }
+        return ok;
+
+    }
+    private boolean queueSessions(List<Callable<Boolean>> connectSessions){
+        boolean ok = true;
+        if(!connectSessions.isEmpty()){
+            ok = connectAll(connectSessions, 60);
+            if (!ok) {
+                abort(false);
+            }
+        }
+        return ok;
+    }
     private boolean queueSetupScripts(){
         logger.debug("{}.setup",this);
 
         //Observer to set the Env.Diffs
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
-
-
-
-
         //TODO don't run an ALL-setup but rather put it in the start of each connection?
         config.getRoleNames().stream().forEach(roleName->{
             final Role role = config.getRole(roleName);
@@ -531,7 +669,7 @@ public class Run implements Runnable, DispatchObserver {
                                    session,
                                    config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
                                    this,
-                                   profiles.get(roleName+"-setup@"+host.getShortHostName()),
+                                   profiles.get(name),
                                    setup
                            );
                            getDispatcher().addScriptContext(scriptContext);

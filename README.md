@@ -1,8 +1,10 @@
-# Qdup 
-The Qdup project provides a way to coordinate multiple terminal shell connections for queuing performance tests and collecting output files.
-
+# qDup 
+qDup allows shell commands to be *queued up* across multiple servers to coordinate performance tests.
+It is designed to follow the same workflow as a user at a terminal so that commands can be performed with or without qDup.
+Commands are grouped into re-usable Scripts that are mapped to different Hosts by Roles. 
+qDup has 3 pre-defined phases for script execution to follow the usual performance test workflow: setup, run, cleanup.   
 ## Example
-The main way to use qDup is with yaml configuration files passed to the executable jar.
+The main way to use qDup is with yaml configuration files passed to the executable jar. 
 Let's look at a sample yaml.
 ```YAML
 name: example                                # the name of the test we plan to run
@@ -20,9 +22,6 @@ scripts:                                     # scripts are the series of command
       silent : true                          # omit output from the run log
       command: tail -f server.log            # tail server.log       
     watch:                                   # watch streams each line of output to the sub commands
-    - regex: ".*?tail: no files.*"           # a tail error message that server.log was missing
-      then:
-      - abort: WF error                      # abort the run with a message WF error
     - regex: ".*?FATAL.*"                    # if the line contains FATAL
       then:
       - ctrlC                                # send ctrl+c to the shell (ends tail -f)
@@ -65,13 +64,12 @@ states:
 ```
 The main workflow is broken into 3 stages: setup, run, cleanup
 
-Setup scripts execute sequentially with a shared ssh session to help
+Setup scripts execute **sequentially** with a shared ssh session to help
 capture all the changes and ensure a consistent state for the run stage.
 Any environment changes to the setup ssh session will be copied to all
 the run stage sessions.
 
-Run scripts execute in parallel and will start with whatever
-environment changes occur from setup.
+Run scripts execute in parallel and will start with environment changes from setup.
 
 Cleanup scripts sequentially execute with a shared ssh session to ensure
 a consistent ending state.
@@ -80,21 +78,21 @@ so it is safe to cleanup anything left on the hosts
 
 ### Running a yaml
 trying to run `java -jar qDup.jar` without any arguments will list
-the supported options for the jar. The only required option is to either
+the supported options for the jar. The only required options are to either
 specify the base folder where qDup should create the run folder
 (`-b /tmp`) or to specify the full path where qDup should save the run
-files (`-B /tmp/myRun`)
+files (`-B /tmp/myRun`) and a yaml file.
 
 > java -jar qDup.jar -b /tmp test.yaml
 
 This example shows only 1 yaml but you can also load helper yamls with
-shared definitions (e.g. scripts)
+shared definitions (e.g. scripts or hosts)
 
-> java -jar qDup.jar -b /tmp test.yaml helper.yaml
+> java -jar qDup.jar -b /tmp test.yaml hosts.yaml scripts.yaml
 
 Remember to put your main yaml first because it will take naming precedence
 over any scripts, state, or hosts that are defined in subsequent yaml.
-Roles, however, are merged between yaml
+Roles, are merged across all yaml based on name.
 
 ## Scripts
 A `Script` a is tree of commands that run one at a time. Each command accepts
@@ -107,14 +105,11 @@ the input. The `abort` command is a special case that will not pass
 execution because it ends the execution.
 
 ## Commands
-Commands can be used in one of 3 ways:
+Commands can be used in one of two ways:
 
 1. `- command : <argumentString>`
 Commands that support multiple arguments will try and parse the
 argumentString to identify the appropriate arguments.
-2. `- command : [<argument>, <argument>, ...]`
-Arguments are passed as a list (using either bracket or dash notation). Arguments
-are matched based on their position in the list and the declared order for the command.
 3. `- command : { argumentName: argumentValue, ...}`
 Arguments are explicitly mapped to the command's declared argument names.
 This is the least ambiguous but most verbose and is rarely necessary.
@@ -123,6 +118,9 @@ This is the least ambiguous but most verbose and is rarely necessary.
 * `abort: <message>`
 Abort the current run and log the message. Aborted runs will still
 downlaod any files from `queue-download` and will still run cleanup scripts
+* `add-prompt: <prompt>`
+Add another sequence of characters that indicates the previous `sh` command is done.
+This is to support commands that change the prompt (e.g. jboss-cli)
 * `countdown: <name> <initial>`
 decrease a `name` counter which starts with `initial`.
 Child commands will be invoked each time after `name` counter reaches 0.
@@ -130,7 +128,8 @@ Child commands will be invoked each time after `name` counter reaches 0.
 send ctrl+C interrupt to the remote shell. This will kill
 any currently running command (e.g. `sh: tail -f /tmp/server.log`)
 * `done:` signals that the current stage ended
-and any remaining active commands should end (including `wait-for`)
+and any remaining active commands should end (including `wait-for`).
+Use this command if you have `wait-for` that may never be signaled
 * `download: <path> ?<destination>`
 download `path` from the connected host and save the output to the
 run output path + `destination`
@@ -154,7 +153,7 @@ Invoke the `name` script as part of the current script (or independently if `asy
 ```yaml
 script:
   name: doSomething
-  async: true #run the script without pausing the current script 
+  async: true #run the script without pausing the current script. Starts a new shell 
 ```
 * `js: <javascript (input,state)=>{...}>` invoke javascript function with
 `input` and `state` as inputs. The command will invoke the next command
@@ -185,20 +184,30 @@ will invoke if the pattern does not match.
 repeat the child commands until `name` is fully signalled.
 Be sure to add a `sleep` to prevent a tight loop and pick a `name` that
 is signalled in all runs (e.g. be careful of error conditions)
-* `set-state <name> ?<value>`
-set the named state attribute to `value`
-if present or to the input if no value is provided
-* `sh: <command> [<silent>]`
+* `send-text: <text>`
+sends text to the terminal. 
+Use this when monitoring a long running interactive `sh` command that does not use a new prompt.
+* `set-signal: <name> <count>`
+set the expected number of `singal` calls for `name`. 
+qDup waits for `signal: <name>` to be run `count` before the signal is reached and other scripts are notified. 
+* `set-state: <name> ?<value>`
+set the named state attribute to `value` if present or to the input if no value is provided
+* `sh: <command>`
 Execute a remote shell command. The silent option (when true) prevents
 qDup from logging the command output (useful when tailing a long file)
+```yaml
+sh:
+   command: ./doSomething.sh
+   silent: true
+```
 * `signal: <name>`
 send one signal for `name`. Runs calculate the expected number of `signals` for each
-`name` and `waitFor` will wait for the expected number of `signal`
+`name` and `wait-for` will wait for the expected number of `signal`
 * `sleep: <ms>`
 pause the current script for the given number of milliseconds
 * `upload: <path> <destination>`
 upload a file from the local `path` to `destination` on the remote host
-* `waitFor: <name>`
+* `wait-for: <name>`
 pause the current script until `name` is fully signaled
 * `xpath: <path>`
 This is an overloaded command that can perform an xpath
@@ -212,8 +221,8 @@ This is an overloaded command that can perform an xpath
    - `file>xpath -> stateName` - set stateName to the value found from xpath
 
 ## Monitoring
-### Watching
-Some commands (e.g. `sh` commands) can provide updates during execution.
+### watch
+Some commands (e.g. `sh` commands) can provide output updates during execution.
 A child command with the `watch` prefix will receive each new line of
 output from the parent command as they are available (instead of after
 the parent completes). This is mostly used to monitor output with `regex`
@@ -227,24 +236,37 @@ condition is met.
     - ctrlC:
     - abort: FATAL error
 ```
-
-Note: `sh`, `waitFor`, and `repeat-until` cannot be used in `watch` or `timer`
+Note: `sh`, `wait-for`, and `repeat-until` cannot be used in `watch`
 because they can block the execution of other watchers.
 
-### Timers
+### timer
 Another option for long running commands is to set a timer that will
 execute if the command has been active for longer than the timeout.
 ```YAML
  - wait-for: SERVER_STARTED
-   timer: 
+   timer:
+     60s:
+     - log: still waiting 
      120_000: #ms
      - abort: server took too long to start, aborting
 ```
-Note: `sh`, `waitFor`, and `repeat-until` cannot be used in a timer
+Note: `sh`, `wait-for`, and `repeat-until` cannot be used in a timer
+because they can block the execution of other timers
+
+### on-signal
+A long running command might need to be altered if another script sends a signal.
+For example a signal to stop a trace process with `ctrlC` or to send text to an interactive command (e.g. top).
+```YAML
+- sh: top
+  on-signal:
+    DONE:
+    - send-text: q
+``` 
+Note: `sh`, `wait-for`, and `repeat-until` cannot be used in an on-signal
 because they can block the execution of other timers
 
 ## State
-State is the main way to introduce variability into a run. Commands can
+State is the main way to introduce variables into a run. Commands can
 reference state variables by name with `${{name}}` and `regex` can define
 new entries with standard java regex capture groups `(?<name>.*)`
 ```YAML
@@ -262,12 +284,50 @@ A `:` can also be used to define a default value should any of the state variabl
  - sh: tail -f /tmp/server.log
    timer: 
      ${{= ${{RAMP_UP}} + ${{MEASURE}} + ${{RAMP_DOWN}} : 100}}:
-     - echo : ${{ (RAMP_UP+MEASURE+RAMP_DOWN)+'s'}} have has lapsed
+     - echo : ${{= ${{RAMP_UP}}+${{MEASURE}}+${{RAMP_DOWN}} : 100}}ms have has lapsed
 ```
 State references also have built in functions for time conversion
 * `seconds(val)` - converts `val` like `10m 2s` into seconds
 * `milliseconds(val)` - converts `val` like `60s` into milliseconds
 
+qDup uses a state hierarchy so scripts default to their own state namespace but can use a shared namespace if desired.
+There are 3 namespaces: default, HOST, and RUN.
+####default
+The default namespace is for all variables without a namespace prefix and ensures scripts do not have to use unique state names
+####host
+The host namespace is shared by all scripts on the same host. State values can be set on the host namespace by using the `HOST.`
+prefix for the variable name.
+```yaml
+- set-state: HOST.name 
+- echo: ${{HOST.name}} ${{name}}
+``` 
+The host namespace can be explicitly used with ${{HOST.name}} but will also be used for ${{name}} if name is not in the default namespace.
+####run
+The run namespace is the top namespace and contains all state values defined in yaml. It shared by all scripts in the run
+and can be accessed using the `RUN.` prefix. Like the host namespace, the run namespace will be used to resolve default scoped variables
+if the value is not found in the default or host namespace. 
+```yaml
+- set-state: RUN.name
+- echo: ${{RUN.name}} ${{name}}
+```
+####with
+State values can also be bound when adding a script to a role or when calling a command (e.g. 'script') in script.
+Values defined in with (or the with on a parent command) do not use a prefix and take priority over default, host, or run namespace.
+```yaml
+scripts:
+  exampleScript:
+  - script: otherScript
+    with:
+      name: "exampleName"
+      
+roles:
+  exampleRole:
+  run-scripts:
+  - dosomething:
+      with:
+        name: "testName"
+- 
+```
 ## YAML
 Configuration files can include the following sections:
 

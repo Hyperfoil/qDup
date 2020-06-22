@@ -51,8 +51,9 @@ public class RunConfigBuilder {
    private static final String RUN_STATE = "run";
    public static final String SCRIPT_DIR = "ENV.SCRIPT_DIR";
 
-   public static final String TEMP_DIR = "ENV.TMPDIR";
+   public static final String TEMP_DIR = "ENV.TEMP_DIR";
    public static final String MAKE_TEMP_CMD = "mktemp -d -t qdup-XXXXXXXXXX";
+   public static final String REMOVE_TEMP_CMD = "rm -r";
 
    public static final String DEFAULT_KNOWN_HOSTS = System.getProperty("user.home") + "/.ssh/known_hosts";
    public static final String DEFAULT_IDENTITY = System.getProperty("user.home") + "/.ssh/id_rsa";
@@ -110,6 +111,7 @@ public class RunConfigBuilder {
       errors = new LinkedList<>();
       settings = new Json(false);
       settings.set(RunConfig.MAKE_TEMP_KEY,MAKE_TEMP_CMD);
+      settings.set(RunConfig.REMOVE_TEMP_KEY,REMOVE_TEMP_CMD);
    }
 
 

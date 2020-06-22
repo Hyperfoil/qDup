@@ -16,7 +16,6 @@ public class HostTest {
       assertEquals("hostname.with.domain",h.getHostName());
       assertEquals("hostname",h.getShortHostName());
       assertEquals("port",31337,h.getPort());
-      assertEquals(Host.DEFAULT_PORT,h.getPort());
    }
 
    @Test

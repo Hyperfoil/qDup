@@ -299,9 +299,7 @@ public class CmdTest extends SshTestBase {
       doit.run();
       dispatcher.shutdown();
 
-
       State s = config.getState();
-      System.out.println(s.tree());
 
       assertTrue("state should contain resolved",s.has("resolved"));
       assertEquals("resolved should get value from state","worked",s.get("resolved"));

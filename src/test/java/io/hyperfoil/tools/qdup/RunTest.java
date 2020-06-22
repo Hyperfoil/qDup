@@ -122,6 +122,47 @@ public class RunTest extends SshTestBase {
    }
 
 
+   //TODO run test when connected to the internet (or valid registry)
+   @Test
+   public void tmp_env_dir() {
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+         "scripts:",
+         "  foo:",
+         "    - set-state: RUN.dir ${{"+RunConfigBuilder.TEMP_DIR+"}}",
+         "    - sh: echo 'bar' > ${{"+RunConfigBuilder.TEMP_DIR+"}}/bar.txt",
+         "    - sh: cat ${{"+RunConfigBuilder.TEMP_DIR+"}}/bar.txt",
+         "    - set-state: RUN.bar",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts: [foo]"
+      ),true));
+      RunConfig config = builder.buildConfig();
+      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+
+      State state = config.getState();
+
+      Object bar = state.get("bar");
+      Object dir = state.get("dir");
+
+      assertNotNull("bar should exist in state\n"+state.tree(),bar);
+      assertEquals("bar should be the content of the file","bar",bar);
+
+      assertNotNull("dir should exist in state\n"+state.tree(),dir);
+      assertFalse("dir should not exist in the container after a run",exists(dir.toString()));
+
+
+   }
+
+
    @Test
    public void invoke_with_state_script_name() {
       Parser parser = Parser.getInstance();

@@ -8,7 +8,6 @@ import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -203,6 +202,13 @@ public class Parser {
             (json)->{
                 return new ForEach(json.getString("name"),json.getString("input",""));
             }
+        );
+        rtrn.addCmd(
+           SendText.class,
+           "send-text",
+           (cmd)->cmd.getText(),
+           (str)->new SendText(str),
+           null
         );
         //Invoke
         rtrn.addCmd(

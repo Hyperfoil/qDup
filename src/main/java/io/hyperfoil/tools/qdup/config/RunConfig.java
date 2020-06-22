@@ -21,6 +21,7 @@ public class RunConfig {
 
 
     public static final String MAKE_TEMP_KEY = "MKTEMP";
+    public static final String REMOVE_TEMP_KEY = "RMTEMP";
 
     private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
@@ -111,6 +112,13 @@ public class RunConfig {
         this.tracePatterns = new HashSet<>(tracePatterns);
         this.settings = new Json(false);
         this.settings.merge(settings);
+    }
+
+    public boolean hasSetting(String key){
+        return settings.has(key);
+    }
+    public Object getSetting(String key,Object defaultValue){
+        return hasSetting(key) ? settings.get(key) : defaultValue;
     }
 
     public Set<String> getTracePatterns(){return tracePatterns;}
