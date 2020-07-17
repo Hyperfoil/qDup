@@ -25,7 +25,20 @@ import static org.junit.Assert.*;
 
 public class RegexTest extends SshTestBase {
 
-    @Test
+
+   @Test
+   public void regex_match_pattern(){
+      Regex regex = new Regex("^\\s*auth_tcp\\s*=\\s*\"none\"");
+
+      SpyContext context = new SpyContext();
+
+      regex.run("#auth_tcp=\"none\"",context);
+
+      assertFalse("regex should not call next",context.hasNext());
+      assertTrue("regex should call skip",context.hasSkip());
+   }
+
+   @Test
    public void getNext_isMiss_onMiss_misses(){
       Regex regex = new Regex("foo",true).onMiss(Cmd.log("miss"));
       regex.then(Cmd.log("matches"));

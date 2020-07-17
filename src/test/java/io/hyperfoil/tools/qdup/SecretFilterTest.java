@@ -9,10 +9,35 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
+import static io.hyperfoil.tools.qdup.SecretFilter.REPLACEMENT;
 import static org.junit.Assert.*;
 
 public class SecretFilterTest extends SshTestBase {
 
+
+   @Test
+   public void filter_with_curly_brackets(){
+      SecretFilter filter = new SecretFilter();
+      filter.addSecret("{\"key\":\"value\"}");
+      try {
+         String output = filter.filter("foo {\"key\":\"value\"} bar");
+         assertEquals("output should remove json","foo "+REPLACEMENT+" bar",output);
+      }catch(Exception e){
+         fail("should not throw an exception when filtering\n"+e.getMessage());
+      }
+   }
+
+   @Test
+   public void filter_repeated(){
+      SecretFilter filter = new SecretFilter();
+      filter.addSecret("foo");
+      try {
+         String output = filter.filter("foobarfoobarfoo");
+         assertEquals("output should remove secret",REPLACEMENT+"bar"+REPLACEMENT+"bar"+REPLACEMENT,output);
+      }catch(Exception e){
+         fail("should not throw an exception when filtering\n"+e.getMessage());
+      }
+   }
 
    @Test
    public void detect_secret_in_state(){

@@ -30,7 +30,7 @@ public class SecretFilter {
    public String filter(String input){
       String rtrn = input;
       for(String secret : secrets){
-         rtrn = rtrn.replaceAll(secret,REPLACEMENT);
+         rtrn = rtrn.replace(secret,REPLACEMENT);
       }
       return rtrn;
    }
