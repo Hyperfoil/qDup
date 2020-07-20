@@ -1,6 +1,9 @@
 package io.hyperfoil.tools.qdup.cmd;
 
+import io.hyperfoil.tools.qdup.SshSession;
+import io.hyperfoil.tools.qdup.cmd.impl.RepeatUntilSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
+import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.yaup.AsciiArt;
@@ -27,9 +30,7 @@ import java.util.function.Consumer;
  *   calls SshSession.run()
  *     calls CommandResult.next(output)
  *
- *
  * Need strong guarantees that all Script / Cmd / Dispatch Observers finish before closing the session / killing the treads with Stop
- *
  *
  */
 public class Dispatcher {
@@ -52,7 +53,6 @@ public class Dispatcher {
     private static final String QUEUE_OBSERVER = "QUEUE_OBSERVER";
 
     //Result called by watchers which will just invoke the next watcher on the current thread
-
 
     private final ConcurrentHashMap<Cmd,ScriptContext> scriptContexts;
     private final ConcurrentHashMap<String,ScriptContext> contextById;
@@ -95,7 +95,6 @@ public class Dispatcher {
                     o.preStop(context,command,output);
                 }
             }
-
         }
         @Override
         public void preNext(Context context, Cmd command, String output){
@@ -104,7 +103,6 @@ public class Dispatcher {
                     o.preNext(context,command,output);
                 }
             }
-
         }
         @Override
         public void preSkip(Context context, Cmd command, String output){
@@ -216,15 +214,43 @@ public class Dispatcher {
 
         this.nannyFuture = null;
         this.nannyTask = (timestamp)->{
+            AtomicInteger nonWaitingContexts = new AtomicInteger(0);
             scriptContexts.forEach((script, context)->{
                 Cmd command = context.getCurrentCmd();
+                System.out.println("nanny :: context.command"+command+" "+THRESHOLD);
                 logger.trace("Nanny checking:\n  host={}\n  command={}",
                         context.getSession().getHost(),
                         command);
+
+                //checking if the command is waiting for a signal
+                if(command instanceof WaitFor){
+
+                }else {
+                    Cmd target = command;
+                    System.out.println("nanny :: target="+target);
+                    boolean isWaiting = false;
+                    do{
+
+                        System.out.println("nanny :: target="+target);
+                        if(target instanceof RepeatUntilSignal){
+                            System.out.println("nanny :: repeat-until parent of "+command);
+                            isWaiting = true;
+                        }
+                    }while(!isWaiting && target.hasParent() && (target = target.getParent())!=null);
+                    if(!isWaiting){
+                        System.out.println("nanny :: nonWaiting "+command);
+                        nonWaitingContexts.incrementAndGet();
+                    }else{
+                        System.out.println("nanny :: waiting "+command);
+                    }
+                }
+
+                //check for idle sh
                 long lastUpdate = context.getUpdateTime();
                 if(timestamp - lastUpdate > THRESHOLD){
+                    System.out.println("nanny > THRESHOLD");
                     if(command instanceof Sh){
-                        //TODO check for common prompts in output?
+
                         String output = context.getSession().peekOutput();
                         String parentName = null;
                         if (command.getParent() instanceof Script)
@@ -240,9 +266,31 @@ public class Dispatcher {
                                     String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000),
                                     context.getSession().peekOutputTail());
                         }
+                        //TODO do we check for common prompts in output?
+                        if(output.contains(SshSession.PROMPT)){
+                            //TODO do we assume the prompt means we missed the end of the command?
+                        }
                     }
                 }
             });
+            if(nonWaitingContexts.get() == 0){
+                if(!scriptContexts.isEmpty()){
+
+                    if(logger.isTraceEnabled()){
+                        logger.trace("ending phase with {} active idle waiting scripts\n{}",
+                           scriptContexts.size(),
+                           getActiveJson()
+                        );
+                    }else{
+                        logger.info("ending phase with {} active idle waiting scripts\n{}",
+                           scriptContexts.size(),
+                           getActiveJson().toString(2)
+                        );
+                    }
+                    ScriptContext first = scriptContexts.values().iterator().next();
+                    first.done();//use context.done to also stop the waiters
+                }
+            }
 
         };
         this.isRunning = new AtomicBoolean(false);

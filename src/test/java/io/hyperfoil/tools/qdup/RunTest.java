@@ -102,7 +102,7 @@ public class RunTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("pwd", stream("" +
-            "scripts:",
+         "scripts:",
          "  foo:",
          "    - sh: echo \"pwd is: $(pwd)\"",
          "    - echo:",
