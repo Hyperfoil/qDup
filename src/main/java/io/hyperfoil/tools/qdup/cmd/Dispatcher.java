@@ -217,7 +217,6 @@ public class Dispatcher {
             AtomicInteger nonWaitingContexts = new AtomicInteger(0);
             scriptContexts.forEach((script, context)->{
                 Cmd command = context.getCurrentCmd();
-                System.out.println("nanny :: context.command"+command+" "+THRESHOLD);
                 logger.trace("Nanny checking:\n  host={}\n  command={}",
                         context.getSession().getHost(),
                         command);
@@ -227,28 +226,22 @@ public class Dispatcher {
 
                 }else {
                     Cmd target = command;
-                    System.out.println("nanny :: target="+target);
                     boolean isWaiting = false;
                     do{
 
-                        System.out.println("nanny :: target="+target);
                         if(target instanceof RepeatUntilSignal){
-                            System.out.println("nanny :: repeat-until parent of "+command);
                             isWaiting = true;
                         }
                     }while(!isWaiting && target.hasParent() && (target = target.getParent())!=null);
                     if(!isWaiting){
-                        System.out.println("nanny :: nonWaiting "+command);
                         nonWaitingContexts.incrementAndGet();
                     }else{
-                        System.out.println("nanny :: waiting "+command);
                     }
                 }
 
                 //check for idle sh
                 long lastUpdate = context.getUpdateTime();
                 if(timestamp - lastUpdate > THRESHOLD){
-                    System.out.println("nanny > THRESHOLD");
                     if(command instanceof Sh){
 
                         String output = context.getSession().peekOutput();
