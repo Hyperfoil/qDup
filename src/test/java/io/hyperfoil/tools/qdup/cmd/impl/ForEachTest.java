@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Result;
@@ -43,6 +44,49 @@ public class ForEachTest extends SshTestBase {
         forEach.run(input.toString(),context);
 
         assertEquals("first run should see one","one",context.getNext());
+    }
+
+
+    @Test
+    public void script_with_same_argument(){
+        String mac = "00:11:22:33:44:0b";
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",stream(""+
+          "scripts:",
+           "  foo:",
+           "  - script: bar",
+           "    with:",
+           "      host: ${{TEST}}",
+           "  bar:",
+           "  - set-state:",
+           "      key: RUN.key",
+           "      value: ${{= \"${{host.mac}}\".replace(/\\:/g,'-')}}",
+           "    separator: _",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [foo]",
+           "states:",
+           "  TEST: ",
+           "    mac: \""+mac+"\""
+        ),false));
+
+        RunConfig config = builder.buildConfig();
+        Dispatcher dispatcher = new Dispatcher();
+
+        Cmd foo = config.getScript("foo");
+
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+
+        assertTrue("state should have key",state.has("key"));
+        assertEquals("key should be mac with : replaced with -",mac.replace(":","-"),state.get("key"));
     }
 
     @Test

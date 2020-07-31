@@ -52,8 +52,6 @@ public class NannyTest extends SshTestBase {
 
       doit.run();
 
-      System.out.println(config.getScript("foo").tree(2,true));
-
       State state = config.getState();
 
       assertTrue("state should have done",state.has("done"));
@@ -95,8 +93,6 @@ public class NannyTest extends SshTestBase {
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
-
-      System.out.println(config.getScript("foo").tree(2,true));
 
       State state = config.getState();
 

@@ -283,29 +283,27 @@ public abstract class Cmd {
       }
    }
 
-   public static Object getStateValue(String name, Cmd cmd, State state, Ref ref) {
-      if(!hasStateReference(name,cmd)){
-         return name;
-      }
-      CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
-      try {
-         if(cmd!=null){
-            return StringUtil.populatePattern(name,map,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
-         }else {
-            return StringUtil.populatePattern(name, map, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
-         }
-      } catch (PopulatePatternException pe){
-          logger.warn(pe.getMessage());
-          return name;//""; //TODO: this is the default behaviour, do we want to return a zero length string when populating the pattern has failed?
-      }
-
-   }
    public static String populateStateVariables(String command, Cmd cmd, State state) {
       return populateStateVariables(command, cmd, state, new Ref(cmd));
    }
    public static String populateStateVariables(String command, Cmd cmd, State state, Ref ref) {
-      Object rtrn = getStateValue(command,cmd,state,ref);
-      return rtrn == null ? "" : rtrn.toString();
+      if(command == null){
+         return "";
+      }
+      if(!hasStateReference(command,cmd)){
+         return command;
+      }
+      CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
+      try {
+         if(cmd!=null){
+            return StringUtil.populatePattern(command,map,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
+         }else {
+            return StringUtil.populatePattern(command, map, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+         }
+      } catch (PopulatePatternException pe){
+         logger.warn(pe.getMessage());
+         return command;//""; //TODO: this is the default behaviour, do we want to return a zero length string when populating the pattern has failed?
+      }
    }
 
 

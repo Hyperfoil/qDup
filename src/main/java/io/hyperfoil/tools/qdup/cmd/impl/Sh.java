@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.yaup.AsciiArt;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,6 +39,16 @@ public class Sh extends Cmd {
     @Override
     public void run(String input, Context context) {
         populatedCommand = populateStateVariables(command,this,context.getState());
+        if(Cmd.hasStateReference(populatedCommand,this)){
+            context.terminal(
+               String.format("%sAbort! %s%s",
+                  context.isColorTerminal()? AsciiArt.ANSI_RED:"",
+                  command,
+                  context.isColorTerminal()?AsciiArt.ANSI_RESET:""
+               )
+            );
+            context.abort(false);
+        }
         context.getTimer().start("Sh-invoke:"+populatedCommand);
         //TODO do we need to manually remove the lineObserver?
         if(prompt.isEmpty()) {

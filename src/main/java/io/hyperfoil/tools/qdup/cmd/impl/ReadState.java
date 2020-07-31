@@ -21,7 +21,7 @@ public class ReadState extends Cmd {
     @Override
     public void run(String input, Context context) {
         //use getStateValue in case it is in WITH or contest
-        Object value = Cmd.getStateValue(key, this, context.getState(), null);
+        Object value = Cmd.populateStateVariables(key, this, context.getState(), null);
         populatedKey = value == null ? "" : value.toString();
         if(populatedKey == null || populatedKey.isEmpty() || Cmd.hasStateReference(populatedKey,this)){
             context.skip(input);

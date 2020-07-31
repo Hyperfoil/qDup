@@ -265,7 +265,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("FOO", "foo");
       state.set("BAR", "bar");
-      Object populated = Cmd.getStateValue("${{FOO}}${{BAR}}", null, state, null);
+      Object populated = Cmd.populateStateVariables("${{FOO}}${{BAR}}", null, state, null);
       assertEquals("expect both values to replace", "foobar", populated);
    }
 

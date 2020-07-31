@@ -21,7 +21,7 @@ public class ReadSignal extends Cmd {
     @Override
     public void run(String input, Context context) {
         //use getStateValue in case it is in WITH or contest
-        Object value = Cmd.getStateValue(name, this, context.getState(), null);
+        Object value = Cmd.populateStateVariables(name, this, context.getState(), null);
         populatedName = value == null ? "" : value.toString();
         if(populatedName == null || populatedName.isEmpty()){
             context.skip(input);
