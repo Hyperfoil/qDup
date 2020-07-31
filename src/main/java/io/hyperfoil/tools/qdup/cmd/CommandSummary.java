@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 
 /**
@@ -113,6 +114,11 @@ public class CommandSummary {
     private Set<String> waits;
     private Set<String> variables;
     private Set<String> regexVariables;
+
+
+
+
+
 
     public CommandSummary(Cmd command, RunConfigBuilder config){
         this.name = command.toString();

@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.cmd;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.impl.RepeatUntilSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
+import io.hyperfoil.tools.qdup.cmd.impl.Signal;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -217,6 +218,7 @@ public class Dispatcher {
             AtomicInteger nonWaitingContexts = new AtomicInteger(0);
             scriptContexts.forEach((script, context)->{
                 Cmd command = context.getCurrentCmd();
+                long lastUpdate = context.getUpdateTime();
                 logger.trace("Nanny checking:\n  host={}\n  command={}",
                         context.getSession().getHost(),
                         command);
@@ -227,12 +229,16 @@ public class Dispatcher {
                 }else {
                     Cmd target = command;
                     boolean isWaiting = false;
-                    do{
 
-                        if(target instanceof RepeatUntilSignal){
-                            isWaiting = true;
+                    do {
+                        if (target instanceof RepeatUntilSignal) {
+                            String toSignal = ((RepeatUntilSignal)target).getName();
+                            long start = System.currentTimeMillis();
+                            boolean selfSignals = target.walk(cmd-> cmd instanceof Signal && ((Signal)cmd).getName().equals(toSignal)).stream().filter(v->v).findAny().orElse(false);
+                            long stop = System.currentTimeMillis();
+                            isWaiting = !selfSignals;
                         }
-                    }while(!isWaiting && target.hasParent() && (target = target.getParent())!=null);
+                    } while (!isWaiting && target.hasParent() && (target = target.getParent()) != null);
                     if(!isWaiting){
                         nonWaitingContexts.incrementAndGet();
                     }else{
@@ -240,7 +246,7 @@ public class Dispatcher {
                 }
 
                 //check for idle sh
-                long lastUpdate = context.getUpdateTime();
+
                 if(timestamp - lastUpdate > THRESHOLD){
                     if(command instanceof Sh){
 

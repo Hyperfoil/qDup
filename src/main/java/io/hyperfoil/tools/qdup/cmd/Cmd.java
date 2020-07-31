@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -250,6 +251,34 @@ public abstract class Cmd {
       return new XmlCmd(path, operations);
    }
 
+
+   public <T> List<T> walk(Function<Cmd,T> converter){
+      LinkedList<T> rtrn = new LinkedList<>();
+      walk(this,converter,rtrn);
+      return rtrn;
+   }
+
+   private <T> void walk(Cmd target, Function<Cmd,T> converter, List<T> rtrn){
+      T value = converter.apply(target);
+      rtrn.add(value);
+      if(target.hasThens()){
+         target.getThens().forEach(child->walk(child,converter,rtrn));
+      }
+      if(target.hasWatchers()){
+         target.getWatchers().forEach(child->walk(child,converter,rtrn));
+      }
+      if(target.hasTimers()){
+         target.getTimeouts().forEach(timer->{
+            target.getTimers(timer).forEach(child->walk(child,converter,rtrn));
+         });
+      }
+      if(target.hasSignalWatchers()){
+         target.getSignalNames().forEach(signal->{
+            target.getSignal(signal).forEach(child->walk(child,converter,rtrn));
+         });
+      }
+
+   }
 
    public boolean hasWith(String name) {
       boolean hasIt = false;
