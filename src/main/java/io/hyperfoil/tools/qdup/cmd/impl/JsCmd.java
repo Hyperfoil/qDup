@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.CmdStateRefMap;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.Json;
 import org.graalvm.polyglot.Value;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -38,8 +39,13 @@ public class JsCmd extends Cmd {
     public void run(String input, Context context) {
             try{
                 CmdStateRefMap csrm = new CmdStateRefMap(this,context.getState(),new Ref(this));
+
                 String populatedCodeString = Cmd.populateStateVariables(codeString,this,context.getState());
-                Object rtrn = StringUtil.jsEval(populatedCodeString,input,csrm);
+                Object jsInput = input;
+                if(Json.isJsonLike(input)){
+                    jsInput = Json.fromString(input);
+                }
+                Object rtrn = StringUtil.jsEval(populatedCodeString,jsInput,csrm);
                 if( rtrn==null ||
                     (rtrn instanceof Boolean && !((Boolean)rtrn)) ||
                     (rtrn instanceof String && ((String)rtrn).toUpperCase().equals("FALSE"))
