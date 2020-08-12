@@ -475,6 +475,7 @@ public class ScriptContext implements Context, Runnable{
                     for (Long timeout : cmd.getTimeouts()) {
                         List<Cmd> toCall = cmd.getTimers(timeout);
                         Cmd noOp = Cmd.NO_OP();
+                        noOp.setStateParent(cmd);
                         toCall.forEach(noOp::then);
                         addTimer(
                             cmd,

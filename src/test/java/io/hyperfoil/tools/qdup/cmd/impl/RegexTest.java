@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.JsonServer;
 import io.hyperfoil.tools.qdup.Run;
+import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Result;
@@ -25,6 +26,58 @@ import static org.junit.Assert.*;
 
 public class RegexTest extends SshTestBase {
 
+   @Test
+   public void timer_resolve_with_reference(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+         "scripts:",
+         "  foo:",
+         "  - read-state: ${{data}}",
+         "  - regex: match",
+         "    then:",
+         "    - set-state: RUN.regex MATCHED",
+         "    else:",
+         "    - set-state: RUN.regex MISS",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts: [foo]",
+         "states:",
+         "  data: \"miss\""
+      ),false));
+
+      RunConfig config = builder.buildConfig();
+
+      Dispatcher dispatcher = new Dispatcher();
+
+      List<String> signals = new ArrayList<>();
+
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+
+      State state = config.getState();
+
+      assertTrue("state should have regex",state.has("regex"));
+      assertEquals("regex should be MISS","MISS",state.getString("regex"));
+
+   }
+
+   @Test
+   public void regex_template_in_pattern(){
+      Regex regex = new Regex("${{host.ip}} .*? \"GET /${{raw_image}} HTTP/1.1\" 200 -");
+      regex.with(Json.fromString("{\"host\":{\"ip\":\"192.168.0.100\"}}"));
+      regex.with("raw_image","rhcos-4.5.2-x86_64-metal.x86_64.raw.gz");
+
+      SpyContext context = new SpyContext();
+
+      regex.run("192.168.0.100 - - [11/Aug/2020 17:54:10] \"GET /rhcos-4.5.2-x86_64-metal.x86_64.raw.gz HTTP/1.1\" 200 -\n",context);
+
+      assertTrue("regex should call net",context.hasNext());
+   }
 
    @Test
    public void regex_match_pattern(){

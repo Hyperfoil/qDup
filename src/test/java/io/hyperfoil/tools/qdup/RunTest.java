@@ -1046,6 +1046,91 @@ public class RunTest extends SshTestBase {
    }
 
    @Test
+   public void timer_resolve_with_reference(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+            "scripts:",
+         "  foo:",
+         "  - sh: sleep 10s",
+         "    with:",
+         "      data:  ${{alpha[0]}}",
+         "    timer:",
+         "      2s:",
+         "      - set-state: RUN.timer ${{data.name}}",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts: [foo]",
+         "states:",
+         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+         "  charlie: {name: \"cat\"}"
+      ),false));
+
+      RunConfig config = builder.buildConfig();
+
+      Dispatcher dispatcher = new Dispatcher();
+
+      List<String> signals = new ArrayList<>();
+
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+
+      State state = config.getState();
+
+      assertTrue("state should have timer",state.has("timer"));
+      assertEquals("timer should be ant","ant",state.getString("timer"));
+
+   }
+
+
+
+   @Test
+   public void timer_resolve_with(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+            "scripts:",
+         "  foo:",
+         "  - sh: sleep 10s",
+         "    with:",
+         "      data:  {name: \"ant\"}",
+         "    timer:",
+         "      2s:",
+         "      - set-state: RUN.timer ${{data.name}}",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts: [foo]",
+         "states:",
+         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+         "  charlie: {name: \"cat\"}"
+      ),false));
+
+      RunConfig config = builder.buildConfig();
+
+      Dispatcher dispatcher = new Dispatcher();
+
+      List<String> signals = new ArrayList<>();
+
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+
+      State state = config.getState();
+
+      assertTrue("state should have timer",state.has("timer"));
+      assertEquals("timer should be ant","ant",state.getString("timer"));
+
+   }
+   @Test
    public void testTimer() {
       final StringBuilder first = new StringBuilder();
       final StringBuilder second = new StringBuilder();

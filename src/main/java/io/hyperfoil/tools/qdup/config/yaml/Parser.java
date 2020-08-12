@@ -305,7 +305,7 @@ public class Parser {
            (str)->{
                List<String> split = CmdBuilder.split(str);
                if(split.size()!=2){
-                   throw new YAMLException("cannot create countdown from " + str);
+                   throw new YAMLException("cannot create set-signal from " + str);
                }else{
                    return new SetSignal(split.get(0),split.get(1));
                }

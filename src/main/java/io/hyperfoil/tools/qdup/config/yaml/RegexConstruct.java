@@ -19,6 +19,7 @@ public class RegexConstruct extends CmdConstruct {
          }else{
             throw new YAMLException("regex else requires a sequence of commands "+node.getStartMark());
          }
+
       });
    }
 }

@@ -35,7 +35,6 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,7 +43,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -485,8 +483,10 @@ public abstract class Cmd {
    }
 
    public Cmd with(Json withs) {
-      this.withDef.merge(withs);
-      this.withActive.merge(withs);
+      if(withs!=null) {
+         this.withDef.merge(withs);
+         this.withActive.merge(withs);
+      }
       return this;
    }
 
@@ -589,9 +589,11 @@ public abstract class Cmd {
    public Cmd getStateParent(){return stateParent;}
    public void setParent(Cmd command){
       this.parent = command;
+      setStateParent(command);
+   }
+   public void setStateParent(Cmd command){
       this.stateParent = command;
    }
-
 
    public Cmd getSkip() {
       Cmd rtrn = null;
@@ -684,12 +686,13 @@ public abstract class Cmd {
          //replace with values if they have ${{ and check for secrets
 
          withDef.forEach((k,v)->{
+
             boolean isSecret = false;
             if(k.toString().startsWith(SecretFilter.SECRET_NAME_PREFIX)){
                k = k.toString().substring(SecretFilter.SECRET_NAME_PREFIX.length());
                isSecret = true;
             }
-            if(v instanceof String && ((String) v).indexOf(StringUtil.PATTERN_PREFIX) > -1){
+            if(v instanceof String && Cmd.hasStateReference((String) v,this)){
                String populatedV =populateStateVariables((String)v,this,context.getState(),new Ref(this));
                Object convertedV = State.convertType(populatedV);
                withActive.set(k,convertedV);

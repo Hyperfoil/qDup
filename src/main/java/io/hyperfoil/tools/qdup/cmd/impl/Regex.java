@@ -142,8 +142,21 @@ public class Regex extends Cmd {
    }
 
    @Override
+   public Cmd getSkip(){
+      if(ran && !matched && !miss && hasOnMiss()){
+         return onMiss.get(0);
+      }else{
+         return super.getSkip();
+      }
+   }
+
+   @Override
    public Cmd copy() {
-      return new Regex(this.patternString, this.miss);
+      Regex rtrn = new Regex(this.patternString, this.miss);
+      if(hasOnMiss()){
+         onMiss().forEach(c->rtrn.onMiss(c.deepCopy()));
+      }
+      return rtrn;
    }
 
    @Override
