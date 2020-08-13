@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 
 import java.util.*;
@@ -141,14 +142,15 @@ public class Regex extends Cmd {
 //      }
    }
 
-   @Override
-   public Cmd getSkip(){
-      if(ran && !matched && !miss && hasOnMiss()){
-         return onMiss.get(0);
-      }else{
-         return super.getSkip();
-      }
-   }
+   //commenting this out to test that skip means neither then or else
+//   @Override
+//   public Cmd getSkip(){
+//      if(ran && !matched && !miss && hasOnMiss()){
+//         return onMiss.get(0);
+//      }else{
+//         return super.getSkip();
+//      }
+//   }
 
    @Override
    public Cmd copy() {
@@ -157,6 +159,20 @@ public class Regex extends Cmd {
          onMiss().forEach(c->rtrn.onMiss(c.deepCopy()));
       }
       return rtrn;
+   }
+
+
+   @Override
+   public Cmd previousChildOrParent(Cmd child){
+      boolean inThens = thens.contains(child);
+      int cmdIndex = inThens ? thens.indexOf(child) : onMiss.indexOf(child);
+      if(cmdIndex < 0){
+         return null;
+      }else if (cmdIndex == 0){
+         return this;
+      }else{
+         return inThens ? thens.get(cmdIndex-1) : onMiss.get(cmdIndex-1);
+      }
    }
 
    @Override
