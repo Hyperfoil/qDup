@@ -6,6 +6,7 @@ import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -30,6 +31,14 @@ public class Regex extends Cmd {
       this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW\\(\\)remo])", "\\\\");
       this.matches = new HashMap<>();
       this.onMiss = new LinkedList<>();
+   }
+
+   @Override
+   public <T> void walk(Function<Cmd,T> converter, List<T> rtrn){
+      super.walk(converter,rtrn);
+      if(hasOnMiss()){
+         this.onMiss().forEach(child->child.walk(converter,rtrn));
+      }
    }
 
    public boolean isMiss() {

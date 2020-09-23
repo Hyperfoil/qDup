@@ -252,30 +252,29 @@ public abstract class Cmd {
 
    public <T> List<T> walk(Function<Cmd,T> converter){
       LinkedList<T> rtrn = new LinkedList<>();
-      walk(this,converter,rtrn);
+      walk(converter,rtrn);
       return rtrn;
    }
 
-   private <T> void walk(Cmd target, Function<Cmd,T> converter, List<T> rtrn){
-      T value = converter.apply(target);
+   public<T> void walk(Function<Cmd,T> converter, List<T> rtrn){
+      T value = converter.apply(this);
       rtrn.add(value);
-      if(target.hasThens()){
-         target.getThens().forEach(child->walk(child,converter,rtrn));
+      if(this.hasThens()){
+         this.getThens().forEach(child->child.walk(converter,rtrn));
       }
-      if(target.hasWatchers()){
-         target.getWatchers().forEach(child->walk(child,converter,rtrn));
+      if(this.hasWatchers()){
+         this.getWatchers().forEach(child->child.walk(converter,rtrn));
       }
-      if(target.hasTimers()){
-         target.getTimeouts().forEach(timer->{
-            target.getTimers(timer).forEach(child->walk(child,converter,rtrn));
+      if(this.hasTimers()){
+         this.getTimeouts().forEach(timer->{
+            this.getTimers(timer).forEach(child->child.walk(converter,rtrn));
          });
       }
-      if(target.hasSignalWatchers()){
-         target.getSignalNames().forEach(signal->{
-            target.getSignal(signal).forEach(child->walk(child,converter,rtrn));
+      if(this.hasSignalWatchers()){
+         this.getSignalNames().forEach(signal->{
+            this.getSignal(signal).forEach(child->child.walk(converter,rtrn));
          });
       }
-
    }
 
    public boolean hasWith(String name) {

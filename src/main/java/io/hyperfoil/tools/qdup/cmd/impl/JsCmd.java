@@ -45,7 +45,15 @@ public class JsCmd extends Cmd {
                 if(Json.isJsonLike(input)){
                     jsInput = Json.fromString(input);
                 }
-                Object rtrn = StringUtil.jsEval(populatedCodeString,jsInput,csrm);
+
+                Object rtrn = null;
+                try{
+                    Object result = StringUtil.jsEval(populatedCodeString,jsInput,csrm);
+                    rtrn = result;
+                }catch( RuntimeException ise){
+                    //todo; raise ise
+                    abort(ise.getMessage()+"\n"+ise.getCause().getMessage());
+                }
                 if( rtrn==null ||
                     (rtrn instanceof Boolean && !((Boolean)rtrn)) ||
                     (rtrn instanceof String && ((String)rtrn).toUpperCase().equals("FALSE"))

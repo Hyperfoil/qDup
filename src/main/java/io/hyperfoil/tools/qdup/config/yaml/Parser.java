@@ -267,6 +267,13 @@ public class Parser {
         );
         //TODO add Reboot to yaml support
         rtrn.addCmd(
+           Parse.class,
+           "parse",
+           (cmd)->cmd.getConfig(),
+           (str)->new Parse(str),
+           (json)->new Parse(json.toString())
+        );
+        rtrn.addCmd(
             Regex.class,
             "regex",
             new RegexMapping(),

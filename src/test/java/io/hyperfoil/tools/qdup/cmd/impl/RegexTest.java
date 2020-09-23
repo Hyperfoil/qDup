@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Result;
+import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
@@ -25,6 +26,58 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class RegexTest extends SshTestBase {
+
+
+   @Test
+   public void else_count(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+      "scripts:",
+      "  foo:",
+      "  - regex: \"Red Hat Enterprise Linux CoreOS\"",
+      "    then:",
+      "    - log: connected to ${{host.ip}}",
+      "    - signal: ${{host.name}}-connected",
+      "    - sh: exit #exit the ssh to the worker",
+      "    else:",
+      "    - log: failed to connect to ${{host.ip}}",
+      "    - sleep: 2m #only sleep if we didn't match",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts: [foo]",
+         "states:",
+         "  data: \"miss\""
+      ),false));
+
+      RunConfig config = builder.buildConfig();
+
+      Script foo = config.getScript("foo");
+
+      assertNotNull(foo);
+      assertTrue(foo.hasThens());
+      Cmd then = foo.getThens().get(0);
+      assertTrue(then instanceof Regex);
+      Regex regex = (Regex)then.copy();
+
+      //System.out.println(then);System.out.println(regex.onMiss());
+
+   }
+
+   @Test
+   public void else_previous(){
+      Regex parent = new Regex("FOO");
+      Regex child = new Regex("BAR");
+      parent.onMiss(child);
+
+      Cmd previous = child.getPrevious();
+
+      assertEquals("onMiss previous should be parent",parent,previous);
+
+   }
 
    @Test
    public void timer_resolve_with_reference(){

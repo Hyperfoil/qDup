@@ -90,8 +90,14 @@ public class ForEach extends LoopCmd {
    public void run(String input, Context context) {
       try {
 
+         int callbackRunCount = getCallback().getRunCount();
+
+
+
+
          String populatedDeclaredInput = Cmd.populateStateVariables(declaredInput, this, context.getState());
          //if we need to load from declaredInput
+         //this only works if the iteration array has not changed, we need to track the index in the array not the array itself?
          if (!declaredInput.isEmpty() && !populatedDeclaredInput.isEmpty() && (split.isEmpty() || !this.loadedInput.equalsIgnoreCase(populatedDeclaredInput))) {
             clearLoopState();
             split.addAll(split(populatedDeclaredInput));

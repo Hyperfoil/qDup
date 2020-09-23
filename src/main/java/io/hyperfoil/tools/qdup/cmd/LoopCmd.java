@@ -2,7 +2,12 @@ package io.hyperfoil.tools.qdup.cmd;
 
 public abstract class LoopCmd extends Cmd {
 
-   private class Callback extends Cmd {
+   protected class Callback extends Cmd {
+
+      private int runCount = 0;
+
+      public int getRunCount(){return  runCount;}
+      public void resetRunCount(){runCount = 0;}
 
       @Override
       public Cmd getNext(){
@@ -11,6 +16,7 @@ public abstract class LoopCmd extends Cmd {
 
       @Override
       public void run(String input, Context context) {
+         runCount++;
          context.next(input);
       }
 
@@ -26,7 +32,10 @@ public abstract class LoopCmd extends Cmd {
       public void postRun(String output,Context context){}
    }
 
-   private Callback callback;
+   protected Callback callback;
+
+   protected Callback getCallback(){return callback;}
+
    public LoopCmd(boolean silent){
       super(silent);
       this.callback = new Callback();
