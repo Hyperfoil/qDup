@@ -7,6 +7,23 @@ import org.junit.Test;
 public class RepeatUntilSignalTest {
 
     @Test
+    public void selfSignaling(){
+        RepeatUntilSignal repeatUntilSignal = new RepeatUntilSignal("foo");
+        repeatUntilSignal.then(Cmd.sleep("1s").then(Cmd.signal("foo")));
+        Assert.assertTrue("Should count as self signaling\n"+repeatUntilSignal.tree(2,true),repeatUntilSignal.isSelfSignaling());
+    }
+
+    @Test
+    public void selfSignaling_regex_onMiss(){
+        RepeatUntilSignal repeatUntilSignal = new RepeatUntilSignal("foo");
+        Regex regex = new Regex(".*");
+        regex.onMiss(Cmd.signal("foo"));
+        repeatUntilSignal.then(regex);
+
+        Assert.assertTrue("Should count as self signaling\n"+repeatUntilSignal.tree(2,true),repeatUntilSignal.isSelfSignaling());
+    }
+
+    @Test
     public void nextAndSkipTest(){
         Cmd start = Cmd.NO_OP();
         start.then(

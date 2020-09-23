@@ -232,10 +232,7 @@ public class Dispatcher {
 
                     do {
                         if (target instanceof RepeatUntilSignal) {
-                            String toSignal = ((RepeatUntilSignal)target).getName();
-                            long start = System.currentTimeMillis();
-                            boolean selfSignals = target.walk(cmd-> cmd instanceof Signal && ((Signal)cmd).getName().equals(toSignal)).stream().filter(v->v).findAny().orElse(false);
-                            long stop = System.currentTimeMillis();
+                            boolean selfSignals = ((RepeatUntilSignal)target).isSelfSignaling();
                             isWaiting = !selfSignals;
                         }
                     } while (!isWaiting && target.hasParent() && (target = target.getParent()) != null);
