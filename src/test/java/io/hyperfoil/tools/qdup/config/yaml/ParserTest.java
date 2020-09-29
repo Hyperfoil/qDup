@@ -3,13 +3,14 @@ package io.hyperfoil.tools.qdup.config.yaml;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
-import io.hyperfoil.tools.qdup.cmd.impl.CtrlC;
-import io.hyperfoil.tools.qdup.cmd.impl.Echo;
+import io.hyperfoil.tools.qdup.cmd.impl.*;
 
-import io.hyperfoil.tools.qdup.cmd.impl.Regex;
+import io.hyperfoil.tools.qdup.config.RunConfig;
+import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -25,7 +26,7 @@ public class ParserTest extends SshTestBase {
     public void load_regex_else(){
         Parser parser = Parser.getInstance();
         YamlFile loaded = parser.loadFile("test",join(""+
-              "scripts:",
+           "scripts:",
            "  foo:",
            "  - regex: foo",
            "    else:",
@@ -42,7 +43,7 @@ public class ParserTest extends SshTestBase {
 
         assertTrue("command should be a regex "+next,next instanceof Regex);
         Regex r = (Regex)next;
-        assertTrue("regex should have commands on miss",r.hasOnMiss());
+        assertTrue("regex should have commands on miss",r.hasElse());
         assertFalse("regex should not be for miss",r.isMiss());
         assertTrue("regex should have then commands",r.hasThens());
 
@@ -52,6 +53,29 @@ public class ParserTest extends SshTestBase {
         assertTrue("yaml contains then",output.contains("then"));
         assertFalse("yaml should not contain miss",output.contains("miss"));
     }
+
+    @Test
+    public void state_without_value(){
+        Parser parser = Parser.getInstance();
+        YamlFile loaded = parser.loadFile("test",join(""+
+                "states:",
+                "  foo: bar",
+                "  biz:",
+                "  buz:"
+        ),true);
+
+        assertNotNull(loaded);
+
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(loaded);
+
+        RunConfig config = builder.buildConfig();
+
+        assertEquals("state should have biz\n"+config.getState().toJson().toString(2),"",config.getState().get("biz"));
+        assertEquals("state should have buz\n"+config.getState().toJson().toString(2),"",config.getState().get("buz"));
+
+    }
+
 
     @Test
     public void load_sh_all_opts(){
@@ -122,6 +146,30 @@ public class ParserTest extends SshTestBase {
         assertTrue("echo in output",output.contains("echo"));
         assertFalse("echo: not in output",output.contains("echo:"));
     }
+
+    @Test
+    public void cmd_with_else(){
+        Parser p = Parser.getInstance();
+        YamlFile loaded = p.loadFile("test",join(""+
+                "scripts:",
+                "  foo:",
+                "  - read-state: BAR",
+                "    else:",
+                "    - sh: ls",
+                "  - read-signal: FOO",
+                "    else:",
+                "    - sh: pwd"
+                ),false);
+        assertTrue("missing foo script",loaded.getScripts().containsKey("foo"));
+        Script foo = loaded.getScripts().get("foo");
+        assertTrue("next should be ReadState",foo.getNext() instanceof ReadState);
+        assertTrue("read-state next next should be read-signal",foo.getNext().getNext() instanceof ReadSignal);
+        String output = p.dump(loaded);
+        assertTrue("yaml output should include ls\n"+output,output.contains("ls"));
+        assertTrue("yaml output should include pwd\n"+output,output.contains("pwd"));
+
+    }
+
     @Test
     public void load_cmd_no_args(){
         Parser parser = Parser.getInstance();

@@ -17,7 +17,7 @@ public class RepeatUntilSignalTest {
     public void selfSignaling_regex_onMiss(){
         RepeatUntilSignal repeatUntilSignal = new RepeatUntilSignal("foo");
         Regex regex = new Regex(".*");
-        regex.onMiss(Cmd.signal("foo"));
+        regex.onElse(Cmd.signal("foo"));
         repeatUntilSignal.then(regex);
 
         Assert.assertTrue("Should count as self signaling\n"+repeatUntilSignal.tree(2,true),repeatUntilSignal.isSelfSignaling());

@@ -7,8 +7,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class RegexMappingTest {
 
@@ -29,9 +28,13 @@ public class RegexMappingTest {
 
    @Test
    public void regex_else(){
-      Regex cmd = new Regex("foo",false).onMiss(Cmd.echo());
+      Regex cmd = new Regex("foo",false);
+      cmd.onElse(Cmd.sh("ls"));
+      cmd.then(Cmd.echo());
 
+      Parser p = Parser.getInstance();
       RegexMapping mapping = new RegexMapping();
+      mapping.setDefer(p.getMapRepresenter());
       Map<Object,Object> map = mapping.getMap(cmd);
 
       assertTrue("map should contain regex "+map.keySet(),map.containsKey("regex"));
@@ -40,5 +43,7 @@ public class RegexMappingTest {
       assertTrue("else should be a list "+map.get("else"),map.get("else") instanceof List);
       List<Object> elseList = (List<Object>)map.get("else");
       assertEquals("else should contain one entry",1,elseList.size());
+      assertNotNull("else entry should not be null",elseList.get(0));
+      assertTrue("else should contain ls",elseList.get(0).toString().contains("ls"));
    }
 }

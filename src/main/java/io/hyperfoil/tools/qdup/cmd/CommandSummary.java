@@ -8,6 +8,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.Signal;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.Counters;
 import io.hyperfoil.tools.yaup.StringUtil;
 
@@ -25,15 +26,30 @@ import java.util.regex.Matcher;
  */
 public class CommandSummary {
 
-    private void processCommand(Cmd command, boolean isWatching, RunConfigBuilder config, Cmd.Ref ref){
+    private void processCommand(Cmd command, boolean isWatching, RunConfigBuilder config, Cmd.Ref ref) {
         String toString = command.toString();
 
-        if(isWatching && command instanceof Sh){
-            addWarning(command+" cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
+        if (yamlParser != null) {
+            Object encoded = yamlParser.representCommand(command);
+            String encodedStr = encoded.toString();
+            if (Cmd.hasStateReference(encodedStr, command)) {
+                String populated = Cmd.populateStateVariables(encodedStr, command, config.getState(), ref);
+                if (Cmd.hasStateReference(populated, command)) {
+                    //Failed to populate the pattern from state
+                    Cmd script = command;
+                    while (!(script instanceof Script) && script.getParent() != null) {
+                        script = script.getParent();
+                    }
+                    addWarning("Failed to populate pattern for " + command + " from script: " + script);
+                }
+            }
+        }
+        if (isWatching && command instanceof Sh) {
+            addWarning(command + " cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.");
         }
 
-        if(command instanceof Signal){
-            String populatedSignal = Cmd.populateStateVariables(((Signal)command).getName(),command,config.getState(), ref);
+        if (command instanceof Signal) {
+            String populatedSignal = Cmd.populateStateVariables(((Signal) command).getName(), command, config.getState(), ref);
 
             addSignal(populatedSignal);
             //TODO how to detect when a signal has an initialized value
@@ -42,38 +58,38 @@ public class CommandSummary {
 //            } else {
 //                addSignal(populatedSignal);
 //            }
-        }else if (command instanceof WaitFor){
-            String populatedWait = Cmd.populateStateVariables(((WaitFor)command).getName(),command,config.getState(), ref);
-            if(populatedWait.contains(StringUtil.PATTERN_PREFIX) && !((WaitFor)command).hasInitial()) {
+        } else if (command instanceof WaitFor) {
+            String populatedWait = Cmd.populateStateVariables(((WaitFor) command).getName(), command, config.getState(), ref);
+            if (populatedWait.contains(StringUtil.PATTERN_PREFIX) && !((WaitFor) command).hasInitial()) {
                 // TODO better detection of populatedStateVariables
                 //                addWarning("wait-for: " + populatedWait + " does not have a known value for state variable and will likely not be signalled");
             } else {
 
                 addWait(populatedWait);
             }
-        }else if (command instanceof ScriptCmd){
-            String scriptName = ((ScriptCmd)command).getName();
-            Script namedScript = config.getScript(scriptName,command);
-            if(namedScript==null){
+        } else if (command instanceof ScriptCmd) {
+            String scriptName = ((ScriptCmd) command).getName();
+            Script namedScript = config.getScript(scriptName, command);
+            if (namedScript == null) {
                 //TODO is it an error if a script isn't found?
-            }else{
-                processCommand(namedScript,isWatching,config,ref.add(command));
+            } else {
+                processCommand(namedScript, isWatching, config, ref.add(command));
             }
 
-        }else if (command instanceof InvokeCmd){
-            Cmd invokedCmd = ((InvokeCmd)command).getCommand();
-            processCommand(invokedCmd,isWatching,config,ref.add(command));
-        }else if (command instanceof Regex){
-            String pattern = ((Regex)command).getPattern();
+        } else if (command instanceof InvokeCmd) {
+            Cmd invokedCmd = ((InvokeCmd) command).getCommand();
+            processCommand(invokedCmd, isWatching, config, ref.add(command));
+        } else if (command instanceof Regex) {
+            String pattern = ((Regex) command).getPattern();
             Matcher matcher = Cmd.NAMED_CAPTURE.matcher(pattern);
-            while(matcher.find()){
+            while (matcher.find()) {
                 String name = matcher.group(1);
                 addRegexVariable(name);
             }
-        }else{
+        } else {
         }
 
-        if(toString.indexOf(StringUtil.PATTERN_PREFIX)>-1) {
+        if (toString.indexOf(StringUtil.PATTERN_PREFIX) > -1) {
 
             Matcher matcher = Cmd.STATE_PATTERN.matcher(toString);
             while (matcher.find()) {
@@ -82,27 +98,27 @@ public class CommandSummary {
             }
         }
 
-        if(!command.getWatchers().isEmpty()){
-            for(Cmd watcher : command.getWatchers()){
-                processCommand(watcher,true,config,ref);
+        if (!command.getWatchers().isEmpty()) {
+            for (Cmd watcher : command.getWatchers()) {
+                processCommand(watcher, true, config, ref);
             }
         }
-        if(!command.getThens().isEmpty()){
-            for(Cmd then : command.getThens()){
-                processCommand(then,isWatching,config,ref);
+        if (!command.getThens().isEmpty()) {
+            for (Cmd then : command.getThens()) {
+                processCommand(then, isWatching, config, ref);
             }
         }
-        if(command.hasTimers()){
-            for(long timeout: command.getTimeouts()){
-                for(Cmd timer : command.getTimers(timeout)){
-                    processCommand(timer,true,config,ref);
+        if (command.hasTimers()) {
+            for (long timeout : command.getTimeouts()) {
+                for (Cmd timer : command.getTimers(timeout)) {
+                    processCommand(timer, true, config, ref);
                 }
             }
         }
-        if(command.hasSignalWatchers()){
-            for(String name : command.getSignalNames()){
-                for(Cmd onSignal : command.getSignal(name)){
-                    processCommand(onSignal,true,config,ref);
+        if (command.hasSignalWatchers()) {
+            for (String name : command.getSignalNames()) {
+                for (Cmd onSignal : command.getSignal(name)) {
+                    processCommand(onSignal, true, config, ref);
                 }
             }
         }
@@ -115,12 +131,9 @@ public class CommandSummary {
     private Set<String> variables;
     private Set<String> regexVariables;
 
+    private Parser yamlParser;
 
-
-
-
-
-    public CommandSummary(Cmd command, RunConfigBuilder config){
+    public CommandSummary(Cmd command, RunConfigBuilder config, Parser yamlParser) {
         this.name = command.toString();
 
         warnings = new LinkedList<>();
@@ -129,72 +142,96 @@ public class CommandSummary {
         variables = new HashSet<>();
         regexVariables = new HashSet<>();
 
-        processCommand(command,false,config,new Cmd.Ref(command));
+        this.yamlParser = yamlParser;
+
+        processCommand(command, false, config, new Cmd.Ref(command));
     }
 
-    public String getName(){return name;}
+    public String getName() {
+        return name;
+    }
 
-    private void addWarning(String warning){
+    private void addWarning(String warning) {
         warnings.add(warning);
     }
-    private void addRegexVariable(String name){ regexVariables.add(name); }
-    private void addVariable(String name){ variables.add(name); }
-    private void addSignal(String name){
-        if(!name.isEmpty()){
+
+    private void addRegexVariable(String name) {
+        regexVariables.add(name);
+    }
+
+    private void addVariable(String name) {
+        variables.add(name);
+    }
+
+    private void addSignal(String name) {
+        if (!name.isEmpty()) {
             signals.add(name);
         }
     }
-    private boolean hasWait(String name){
+
+    private boolean hasWait(String name) {
         return waits.contains(name);
     }
-    private void addWait(String name){
-        if(!name.isEmpty()) {
+
+    private void addWait(String name) {
+        if (!name.isEmpty()) {
             waits.add(name);
         }
     }
-    public List<String> getWarnings(){
+
+    public List<String> getWarnings() {
         return warnings;
     }
-    public Counters<String> getSignals(){
+
+    public Counters<String> getSignals() {
         return signals;
     }
-    public Set<String> getWaits(){
+
+    public Set<String> getWaits() {
         return waits;
     }
-    public Set<String> getVariables(){return variables;}
-    public Set<String> getRegexVariables(){return regexVariables;}
-    public Set<String> getStateDependentVariables(){
+
+    public Set<String> getVariables() {
+        return variables;
+    }
+
+    public Set<String> getRegexVariables() {
+        return regexVariables;
+    }
+
+    public Set<String> getStateDependentVariables() {
         Set<String> rtrn = new HashSet<>(variables);
         rtrn.removeAll(regexVariables);
         return rtrn;
     }
-    public String toString(){
-        final StringBuffer rtrn= new StringBuffer();
-        rtrn.append(name+" "+super.toString()+"\n");
-        if(!warnings.isEmpty()){
+
+    public String toString() {
+        final StringBuffer rtrn = new StringBuffer();
+        rtrn.append(name + " " + super.toString() + "\n");
+        if (!warnings.isEmpty()) {
             rtrn.append("  warnings:\n");
-            warnings.forEach(warning -> rtrn.append("    "+warning+"\n"));
+            warnings.forEach(warning -> rtrn.append("    " + warning + "\n"));
         }
-        if(!signals.isEmpty()){
+        if (!signals.isEmpty()) {
             rtrn.append("  signals:\n");
-            signals.forEach(signal -> rtrn.append("    "+signal+"\n"));
+            signals.forEach(signal -> rtrn.append("    " + signal + "\n"));
         }
-        if(!waits.isEmpty()){
+        if (!waits.isEmpty()) {
             rtrn.append("  waits:\n");
-            waits.forEach(waiter -> rtrn.append("    "+waiter+"\n"));
+            waits.forEach(waiter -> rtrn.append("    " + waiter + "\n"));
         }
-        if(!variables.isEmpty()){
+        if (!variables.isEmpty()) {
             rtrn.append("  variables:\n");
-            variables.forEach(variable -> rtrn.append("    "+variable+"\n"));
+            variables.forEach(variable -> rtrn.append("    " + variable + "\n"));
         }
-        if(!regexVariables.isEmpty()){
+        if (!regexVariables.isEmpty()) {
             rtrn.append("  regexVariables:\n");
-            regexVariables.forEach(autoVariable -> rtrn.append("    "+autoVariable+"\n"));
+            regexVariables.forEach(autoVariable -> rtrn.append("    " + autoVariable + "\n"));
         }
         Set<String> stateDependent = getStateDependentVariables();
-        if(!stateDependent.isEmpty()){
+        if (!stateDependent.isEmpty()) {
             rtrn.append("  stateDependencies:\n");
-            stateDependent.forEach(v->rtrn.append("    "+v+"\n"));
+            stateDependent.forEach(v -> rtrn.append("    " + v + "\n"));
         }
         return rtrn.toString();
     }

@@ -224,6 +224,29 @@ public class State {
         }
         return rtrn;
     }
+    public boolean remove(String key){
+        State target = this;
+        boolean rtrn = false;
+        String currentKey = key;
+        //find the key if it starts with a prefix
+        do {
+            if(target.prefix!=null && currentKey.startsWith(target.prefix)){
+                currentKey = currentKey.substring(target.prefix.length());
+                if(target.json.has(currentKey)){
+                    rtrn = true;
+                    target.json.remove(currentKey);
+                }
+            }
+        }while((target=target.parent)!=null && !rtrn);
+
+        if(!rtrn){
+            if(this.json.has(key)){
+                rtrn = true;
+                this.json.remove(key);
+            }
+        }
+        return rtrn;
+    }
     public Object get(String key){
         State target = this;
         Object rtrn = null;

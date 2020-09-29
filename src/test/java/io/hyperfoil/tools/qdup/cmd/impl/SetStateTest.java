@@ -18,6 +18,29 @@ import static org.junit.Assert.assertTrue;
 
 public class SetStateTest extends SshTestBase {
 
+   @Test
+   public void replace_same_name_from_state(){
+      SetState setState = new SetState("FOO","${{FOO:bar}}");
+      SpyContext spyContext = new SpyContext();
+      spyContext.getState().set("FOO","biz");
+      setState.run("",spyContext);
+      assertEquals("FOO should not change","biz",spyContext.getState().get("FOO"));
+   }
+   @Test
+   public void replace_same_name_from_default(){
+      SetState setState = new SetState("FOO","${{FOO:bar}}");
+      SpyContext spyContext = new SpyContext();
+      setState.run("",spyContext);
+      assertEquals("FOO should change to bar","bar",spyContext.getState().get("FOO"));
+   }
+   @Test
+   public void replace_same_name_from_emtpy_value(){
+      SetState setState = new SetState("FOO","${{FOO:bar}}");
+      SpyContext spyContext = new SpyContext();
+      spyContext.getState().set("FOO","");
+      setState.run("",spyContext);
+      assertEquals("FOO should not change","bar",spyContext.getState().get("FOO"));
+   }
 
    @Test
    public void replace_regex(){

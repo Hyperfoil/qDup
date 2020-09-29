@@ -1,12 +1,17 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.CmdWithElse;
 import io.hyperfoil.tools.qdup.cmd.Context;
 
-public class ReadState extends Cmd {
+import java.util.LinkedList;
+import java.util.List;
+
+public class ReadState extends CmdWithElse {
 
     private String key;
     private String populatedKey;
+    private boolean ran = false;
     public ReadState(String key){
         this.key = key;
     }
@@ -18,8 +23,10 @@ public class ReadState extends Cmd {
         return "read-state: "+key;
     }
 
+
     @Override
     public void run(String input, Context context) {
+        ran = true;
         //use getStateValue in case it is in WITH or contest
         Object value = Cmd.populateStateVariables(key, this, context.getState(), null);
         populatedKey = value == null ? "" : value.toString();

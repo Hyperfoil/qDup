@@ -15,7 +15,7 @@ public class RegexConstruct extends CmdConstruct {
          if(cmd instanceof Regex && node instanceof SequenceNode){
             Regex r = (Regex)cmd;
             SequenceNode sequenceNode = (SequenceNode)node;
-            this.sequenceToCmds(sequenceNode).forEach(r::onMiss);
+            this.sequenceToCmds(sequenceNode).forEach(r::onElse);
          }else{
             throw new YAMLException("regex else requires a sequence of commands "+node.getStartMark());
          }

@@ -99,7 +99,7 @@ public abstract class Cmd {
 
    public static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^${}:]+):?(?<default>[^}]*)}}");
 
-   public static final String ENV_PREFIX = "${";
+   public static final String ENV_PREFIXx = "${";
    public static final String ENV_SUFFIX = "}";
    public static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{(?<name>[^\\{][^\\}]*)}");
 
@@ -331,8 +331,6 @@ public abstract class Cmd {
          return command;//""; //TODO: this is the default behaviour, do we want to return a zero length string when populating the pattern has failed?
       }
    }
-
-
    private static final AtomicInteger uidGenerator = new AtomicInteger(0);
 
    protected Json withDef;

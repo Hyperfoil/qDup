@@ -231,6 +231,19 @@ public class CmdTest extends SshTestBase {
       String populated = Cmd.populateStateVariables("${{BAR}}", cmd, state);
       assertEquals("${{BAR}} should resolve to foo", "foo", populated);
    }
+   @Test
+   public void populateStateVariables_empty_state_value_uses_default() {
+      State state = new State("RUN.");
+      state.set("FOO", "");
+
+      Cmd cmd = Cmd.NO_OP();
+      cmd.with("BAR", "${{FOO:bar}}");
+
+      String populatedDefault = Cmd.populateStateVariables("${{FOO:bar}}", cmd, state);
+      String populatedEmpty = Cmd.populateStateVariables("${{FOO}}", cmd, state);
+      assertEquals("${{FOO:bar}} should resolve to bar", "bar", populatedDefault);
+      assertEquals("${{FOO}} should resolve to bar", "", populatedEmpty);
+   }
 
    @Test
    public void populateStateVariables_defaultEmpty_bindState() {

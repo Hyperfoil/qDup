@@ -26,6 +26,72 @@ import static org.junit.Assert.assertTrue;
 public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
+    public void multiple_yaml_override_state(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("first",stream(""+
+            "states:",
+            "  foo: bar"
+        ),true));
+        builder.loadYaml(parser.loadFile("first",stream(""+
+            "states:",
+            "  foo: biz"
+        ),true));
+        RunConfig runConfig = builder.buildConfig();
+
+        assertEquals("second should not change state\n"+runConfig.getState().toJson().toString(2),"bar",runConfig.getState().get("foo"));
+    }
+
+    @Test
+    public void error_missing_state_value() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("ctrlC", stream("" +
+                "scripts:",
+                "  foo:",
+                "    - sh: echo HI",
+                "      then:",
+                "      - sh: echo ${{BAR}}",
+                "hosts:",
+                "  local: "+getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    setup-scripts: [foo]",
+                "states:",
+                "  BAR: ${{BIZ}}",
+                "  BIZx: "
+        ), false));
+        RunConfig runConfig = builder.buildConfig(parser);
+        assertTrue("runConfig errors:\n" + runConfig.getErrors().stream().collect(Collectors.joining("\n")), runConfig.hasErrors());
+        assertEquals("expect 1 error:\n"+ runConfig.getErrors().stream().collect(Collectors.joining("\n")),1,runConfig.getErrors().size());
+    }
+
+    @Test
+    public void error_missing_state_has_default() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("ctrlC", stream("" +
+            "scripts:",
+            "  foo:",
+            "    - sh: echo HI",
+            "      then:",
+            "      - sh: echo ${{BAR}}",
+            "hosts:",
+            "  local: "+getHost(),
+            "roles:",
+            "  doit:",
+            "    hosts: [local]",
+            "    setup-scripts: [foo]",
+            "states:",
+            "  BAR: ${{BIZ:}}",
+            "  BIZx: "
+        ), false));
+        RunConfig runConfig = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + runConfig.getErrors().stream().collect(Collectors.joining("\n")), runConfig.hasErrors());
+    }
+
+    @Test
     public void testScriptWithCtrlC(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();

@@ -136,7 +136,7 @@ public class JarMain {
          Option.builder(null)
             .longOpt("enableWaml")
             .hasArg(false)
-            .desc("do not accept waml configuration")
+            .desc("accept waml configuration")
             .build()
       );
 
@@ -159,6 +159,13 @@ public class JarMain {
             .build()
       );
 
+      options.addOption(
+              Option.builder("SX")
+              .argName("KEY")
+              .desc("remove a state parameter")
+              .hasArg()
+              .build()
+      );
 
       options.addOption(
          Option.builder("k")
@@ -331,11 +338,12 @@ public class JarMain {
          outputPath = "/tmp";
       }
 
+      Parser yamlParser = Parser.getInstance();
       CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
       RunConfigBuilder runConfigBuilder = new RunConfigBuilder(cmdBuilder);
 
       //WamlParser wamlParser = new WamlParser();
-      Parser yamlParser = Parser.getInstance();
+
       for (String yamlPath : yamlPaths) {
          File yamlFile = new File(yamlPath);
          if (!yamlFile.exists()) {
@@ -389,7 +397,18 @@ public class JarMain {
       Properties stateProps = commandLine.getOptionProperties("S");
       if (!stateProps.isEmpty()) {
          stateProps.forEach((k, v) -> {
-            runConfigBuilder.forceRunState(k.toString(), v.toString());
+            if(v!=null && !v.toString().trim().isEmpty()) {
+               runConfigBuilder.forceRunState(k.toString(), v.toString());
+            }
+         });
+      }
+
+      Properties removeStateProperties = commandLine.getOptionProperties("SX");
+      if(!removeStateProperties.isEmpty()){
+         removeStateProperties.forEach((k,v) -> {
+            if(k!=null){
+               runConfigBuilder.forceRunState(k.toString(),"");
+            }
          });
       }
 
@@ -397,7 +416,7 @@ public class JarMain {
          runConfigBuilder.trace(commandLine.getOptionValue("trace"));
       }
 
-      RunConfig config = runConfigBuilder.buildConfig();
+      RunConfig config = runConfigBuilder.buildConfig(yamlParser);
 
       if (commandLine.hasOption("test")) {
          //logger.info(config.debug());

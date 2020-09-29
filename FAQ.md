@@ -16,7 +16,7 @@ A: qDup  uses ssh terminal sessions so need to be able to connect to the target 
 
 ## Failed to load qdup.yaml as yaml only
 
-Q: Why does the parser fail witl the following error message?
+Q: Why does the parser fail with the following error message?
 ```
 13:44:19.759 [main] ERROR i.h.tools.qdup.config.yaml.Parser - Failed to load qdup.yaml as yaml only
 mapping values are not allowed here

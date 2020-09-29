@@ -7,6 +7,7 @@ import io.hyperfoil.tools.qdup.cmd.CommandSummary;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.HashedSets;
@@ -628,7 +629,10 @@ public class RunConfigBuilder {
       return script;
    }
 
-   public RunConfig buildConfig() {
+   public RunConfig buildConfig(){
+      return buildConfig(null);
+   }
+   public RunConfig buildConfig(Parser yamlParser) {
       Map<String, Host> seenHosts = new HashMap<>();
       Map<String, Role> roles = new HashMap<>();
 
@@ -758,13 +762,13 @@ public class RunConfigBuilder {
          }
       });
 
-      //check signal / wait-for
+      //perform static analysis
       StageSummary setupStage = new StageSummary();
       StageSummary runStage = new StageSummary();
       StageSummary cleanupStage = new StageSummary();
 
       BiConsumer<StageSummary, Cmd> addCmd = (stage, cmd) -> {
-         CommandSummary summary = new CommandSummary(cmd, this);
+         CommandSummary summary = new CommandSummary(cmd, this,yamlParser);
          stage.add(summary);
       };
 
@@ -780,6 +784,9 @@ public class RunConfigBuilder {
       setupStage.getErrors().forEach(this::addError);
       runStage.getErrors().forEach(this::addError);
       cleanupStage.getErrors().forEach(this::addError);
+
+
+
 
       if (errorCount() > 0) {
          return new RunConfig(getName(), errors);

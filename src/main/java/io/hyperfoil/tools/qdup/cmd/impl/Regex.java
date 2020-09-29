@@ -1,8 +1,8 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.CmdWithElse;
 import io.hyperfoil.tools.qdup.cmd.Context;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 
 import java.util.*;
@@ -11,13 +11,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-public class Regex extends Cmd {
+public class Regex extends CmdWithElse {
 
    private String pattern;
    private String patternString;
    private boolean matched = false;
    private boolean miss = false;
-   private List<Cmd> onMiss;
    private Map<String, String> matches;
    private boolean ran = false;
 
@@ -30,34 +29,13 @@ public class Regex extends Cmd {
       this.miss = miss;
       this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW\\(\\)remo])", "\\\\");
       this.matches = new HashMap<>();
-      this.onMiss = new LinkedList<>();
    }
 
-   @Override
-   public <T> void walk(Function<Cmd,T> converter, List<T> rtrn){
-      super.walk(converter,rtrn);
-      if(hasOnMiss()){
-         this.onMiss().forEach(child->child.walk(converter,rtrn));
-      }
-   }
 
    public boolean isMiss() {
       return miss;
    }
 
-   public boolean hasOnMiss() {
-      return !onMiss.isEmpty();
-   }
-
-   public List<Cmd> onMiss() {
-      return Collections.unmodifiableList(onMiss);
-   }
-
-   public Regex onMiss(Cmd command) {
-      command.setParent(this);
-      onMiss.add(command);
-      return this;
-   }
 
    public String getPattern() {
       return patternString;
@@ -82,7 +60,6 @@ public class Regex extends Cmd {
             newPattern = newPattern.replace(realName, compName);
          }
          renames.put(compName, realName);
-
       }
       try {
          Pattern pattern = Pattern.compile(newPattern, Pattern.DOTALL);
@@ -119,7 +96,7 @@ public class Regex extends Cmd {
          } else {
             logger.trace("{} NOT match {} ", this, input);
 
-            if (hasOnMiss()) {
+            if (hasElse()) {
                String logOutput = getLogOutput(input, context);
                context.log(logOutput);
                context.next(input);
@@ -139,8 +116,8 @@ public class Regex extends Cmd {
 
    @Override
    public Cmd getNext() {
-      if(ran && !miss && !matched && hasOnMiss()){
-         return onMiss.get(0);
+      if(ran && !miss && !matched && hasElse()){
+         return getElses().get(0);
       }else{
          return super.getNext();
       }
@@ -151,38 +128,17 @@ public class Regex extends Cmd {
 //      }
    }
 
-   //commenting this out to test that skip means neither then or else
-//   @Override
-//   public Cmd getSkip(){
-//      if(ran && !matched && !miss && hasOnMiss()){
-//         return onMiss.get(0);
-//      }else{
-//         return super.getSkip();
-//      }
-//   }
-
    @Override
    public Cmd copy() {
       Regex rtrn = new Regex(this.patternString, this.miss);
-      if(hasOnMiss()){
-         onMiss().forEach(c->rtrn.onMiss(c.deepCopy()));
+      if(hasElse()){
+         getElses().forEach(c->rtrn.onElse(c.deepCopy()));
       }
       return rtrn;
    }
 
 
-   @Override
-   public Cmd previousChildOrParent(Cmd child){
-      boolean inThens = thens.contains(child);
-      int cmdIndex = inThens ? thens.indexOf(child) : onMiss.indexOf(child);
-      if(cmdIndex < 0){
-         return null;
-      }else if (cmdIndex == 0){
-         return this;
-      }else{
-         return inThens ? thens.get(cmdIndex-1) : onMiss.get(cmdIndex-1);
-      }
-   }
+
 
    @Override
    public String toString() {

@@ -3,10 +3,7 @@ package io.hyperfoil.tools.qdup.config.yaml;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RegexMapping extends CmdMapping {
 
@@ -40,12 +37,13 @@ public class RegexMapping extends CmdMapping {
       Map<Object, Object> rtrn = super.getMap(o);
       if (o instanceof Regex) {
          Regex r = (Regex) o;
-         if (r.hasOnMiss()) {
-            if (r.hasOnMiss()) {
-               List<Object> onMiss = new LinkedList<>();
-               r.onMiss().forEach(miss -> onMiss.add(defer(miss)));
-               rtrn.put(ELSE, onMiss);
-            }
+         if (r.hasElse()) {
+            List<Object> elses = new ArrayList<>();
+            r.getElses().forEach(miss -> {
+               Object defered = defer(miss);
+               elses.add(defered);
+            });
+            rtrn.put(ELSE, elses);
          }
       }
       return rtrn;

@@ -12,8 +12,6 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
@@ -62,16 +60,13 @@ public class RegexTest extends SshTestBase {
       Cmd then = foo.getThens().get(0);
       assertTrue(then instanceof Regex);
       Regex regex = (Regex)then.copy();
-
-      //System.out.println(then);System.out.println(regex.onMiss());
-
    }
 
    @Test
    public void else_previous(){
       Regex parent = new Regex("FOO");
       Regex child = new Regex("BAR");
-      parent.onMiss(child);
+      parent.onElse(child);
 
       Cmd previous = child.getPrevious();
 
@@ -146,7 +141,7 @@ public class RegexTest extends SshTestBase {
 
    @Test
    public void getNext_isMiss_onMiss_misses(){
-      Regex regex = new Regex("foo",true).onMiss(Cmd.log("miss"));
+      Cmd regex = new Regex("foo",true).onElse(Cmd.log("miss"));
       regex.then(Cmd.log("matches"));
 
       SpyContext context = new SpyContext();
@@ -164,7 +159,7 @@ public class RegexTest extends SshTestBase {
 
     @Test
     public void getNext_onMiss_misses(){
-       Regex regex = new Regex("foo").onMiss(Cmd.log("miss"));
+       Cmd regex = new Regex("foo").onElse(Cmd.log("miss"));
        regex.then(Cmd.log("matches"));
 
        SpyContext context = new SpyContext();
@@ -183,7 +178,7 @@ public class RegexTest extends SshTestBase {
     }
    @Test
    public void getNext_onMiss_matches(){
-      Regex regex = new Regex("foo").onMiss(Cmd.log("miss"));
+      Cmd regex = new Regex("foo").onElse(Cmd.log("miss"));
       regex.then(Cmd.log("matches"));
 
       SpyContext context = new SpyContext();
