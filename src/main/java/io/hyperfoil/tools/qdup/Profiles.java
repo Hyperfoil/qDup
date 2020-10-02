@@ -11,8 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wreicher
- * A convenience wrapper around slf4j Profiles.
- * May need to change the api to no longer have an external dependency on slf4j extension
+ * A convenience wrapper around SystemTimers.
  */
 public class Profiles {
 

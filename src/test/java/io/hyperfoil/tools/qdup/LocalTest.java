@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 
 import java.io.File;
@@ -22,7 +23,7 @@ public class LocalTest extends SshTestBase{
             toSend.deleteOnExit();
             Files.write(toSend.toPath(),"foo".getBytes());
 
-            Local local = new Local(getBuilder().buildConfig());
+            Local local = new Local(getBuilder().buildConfig(Parser.getInstance()));
 
             local.upload(toSend.getPath(),"/tmp/destination.txt",host);
 

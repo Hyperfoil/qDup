@@ -31,8 +31,15 @@ public class CmdStateRefMap implements Map<Object, Object>  ,ProxyObject {
 
    public CmdStateRefMap(Cmd cmd, State state, Cmd.Ref ref) {
       this.cmd = cmd;
-      this.state = state;
+      this.state = state == null ? new State(State.RUN_PREFIX) : state;
       this.ref = ref;
+//      if(this.cmd!=null){
+//         cmd.loadAllWithDefs(this.state);
+//      }
+//      if(this.ref!=null){
+//         ref.loadAllWithDefs(this.state);
+//      }
+
    }
 
 
@@ -55,12 +62,12 @@ public class CmdStateRefMap implements Map<Object, Object>  ,ProxyObject {
       }
       if (ref != null) {
          Object rtrn = null;
-         Cmd.Ref targeetRef = ref;
+         Cmd.Ref target = ref;
          do {
-            if (targeetRef.getCommand() != null && targeetRef.getCommand().hasWith(key.toString()) ) {
-               rtrn = targeetRef.getCommand().getWith().get(key);
+            if (target.getCommand() != null && target.getCommand().hasWith(key.toString()) ) {
+               rtrn = target.getCommand().getWith(key.toString());
             }
-         } while ((targeetRef = targeetRef.getParent()) != null && rtrn == null);
+         } while ((target = target.getParent()) != null && rtrn == null);
          if (rtrn != null) {
             return true;
          }
@@ -84,18 +91,23 @@ public class CmdStateRefMap implements Map<Object, Object>  ,ProxyObject {
          //only use value from with if it does not contain a reference back to the same key
          //this support with: {FOO: ${{FOO}} } so script variables can be mapped to a state variable with the same name
          //technically that does not need to happen but it should be supported
-         if (cmd.hasWith(key.toString()) && ! cmd.getWith(key.toString()).toString().contains(cmd.getPatternPrefix()+key.toString())) {
-            return cmd.getWith(key.toString());
+         if (cmd.hasWith(key.toString())){
+            Object found = cmd.getWith(key.toString(),state==null ? new State(State.RUN_PREFIX) : state);
+            if(!found.toString().contains(cmd.getPatternPrefix()+key.toString())){
+               return found;
+            }else{
+            }
+
          }
       }
       if (ref != null) {
          Object rtrn = null;
-         Cmd.Ref targeetRef = ref;
+         Cmd.Ref target = ref;
          do {
-            if (targeetRef.getCommand() != null && targeetRef.getCommand().getWith().has(key)) {
-               rtrn = targeetRef.getCommand().getWith().get(key);
+            if (target.getCommand() != null && target.getCommand().hasWith(key.toString()) && ! target.getCommand().getWith(key.toString()).toString().contains(cmd.getPatternPrefix()+key.toString())) {
+               rtrn = target.getCommand().hasWith(key.toString()) ? target.getCommand().getWith(key.toString()) : null;
             }
-         } while ((targeetRef = targeetRef.getParent()) != null && rtrn == null);
+         } while ((target = target.getParent()) != null && rtrn == null);
          if( rtrn != null ){
             return rtrn;
          }

@@ -6,16 +6,41 @@ import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class CmdTest extends SshTestBase {
 
+   @Test
+   public void walk_single_then(){
+      AtomicInteger counter = new AtomicInteger(0);
+      BiFunction<Cmd,Boolean,Void> consumer = (cmd, watching)->{counter.incrementAndGet();return null;};
+
+      Cmd cmd = Cmd.sh("ls").then(Cmd.sh("pwd"));
+      cmd.walk(false,consumer);
+
+      assertEquals("walk should run twice",2,counter.get());
+   }
+   @Test
+   public void walk_then_and_else(){
+      AtomicInteger counter = new AtomicInteger(0);
+      BiFunction<Cmd,Boolean,Void> consumer = (cmd, watching)->{counter.incrementAndGet();return null;};
+
+      Cmd cmd = Cmd.regex("foo").onElse(Cmd.sh("ls")).then(Cmd.sh("pwd"));
+      cmd.walk(false,consumer);
+
+      assertEquals("walk should run 3 times",3,counter.get());
+   }
 
    @Test
    public void populateStateVariables_part_of_path() {
@@ -264,6 +289,29 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
+   public void getStateVariables_two_states(){
+      List<String> list = Cmd.getStateVariables("${{RUN.BAR:}}-${{FOO.name}}",null,null,null);
+      assertEquals("expect two entries",2,list.size());
+   }
+
+   @Test
+   public void populateStateVariables_default(){
+      State state = new State("RUN.");
+      Cmd cmd = Cmd.NO_OP();
+      String populated = Cmd.populateStateVariables("RUN.BAR ${{RUN.BAR:}}-${{FOO.name}}", cmd, state, new Cmd.Ref(cmd));
+   }
+
+   @Test
+   public void populateStateVariables_with_json_from_ref(){
+      State state = new State("RUN.");
+      state.set("FOO", "bar");
+      Cmd cmd = Cmd.NO_OP();
+      cmd.with(Json.fromString("{\"key\":{\"value\":\"foo\"}}"));
+      Cmd use = Cmd.sh("pwd");
+      String populated = Cmd.populateStateVariables("${{key.value}}", use, state, new Cmd.Ref(cmd));
+      assertEquals("should populate from state", "foo", populated);
+   }
+   @Test
    public void populateStateVariables_defaultIgnored_bindWith() {
       State state = new State("RUN.");
       state.set("FOO", "bar");
@@ -303,7 +351,7 @@ public class CmdTest extends SshTestBase {
          "  value: worked"
       ), false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
 
       Cmd foo = config.getScript("foo");
@@ -323,7 +371,7 @@ public class CmdTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("", stream("" +
-            "scripts:",
+         "scripts:",
          "  foo:",
          "  - set-state: RUN.name ${{host.name}}",
          "hosts:",
@@ -341,7 +389,10 @@ public class CmdTest extends SshTestBase {
          "  charlie: {name: \"cat\"}"
       ), false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
+
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
       Dispatcher dispatcher = new Dispatcher();
 
       Cmd foo = config.getScript("foo");
@@ -349,6 +400,7 @@ public class CmdTest extends SshTestBase {
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       dispatcher.shutdown();
+
 
       assertEquals("state.name should populate", "cat", config.getState().get("name"));
    }
@@ -376,7 +428,7 @@ public class CmdTest extends SshTestBase {
          "  charlie: {name: \"cat\"}"
       ), false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
 
       Cmd foo = config.getScript("foo");
@@ -425,6 +477,40 @@ public class CmdTest extends SshTestBase {
       String populated = Cmd.populateStateVariables("${{foo}}", bot, state);
       assertEquals("with should take priority over state", "bar", populated);
    }
+   @Test
+   public void populateStateVariables_from_parent_with_json() {
+      Cmd top = Cmd.NO_OP();
+      Cmd mid = Cmd.NO_OP();
+      Cmd bot = Cmd.NO_OP();
+
+      top.then(mid);
+      mid.then(bot);
+
+      top.with("foo", Json.fromString("{ \"bar\":\"value\"}"));
+
+      State state = new State("");
+      state.set("foo", "state");
+
+      String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state);
+      assertEquals("with should take priority over state", "value", populated);
+   }
+   @Test
+   public void populateStateVariables_from_timer_parent_with_json() {
+      Cmd top = Cmd.NO_OP();
+      Cmd mid = Cmd.NO_OP();
+      Cmd bot = Cmd.NO_OP();
+
+      top.then(mid);
+      mid.addTimer(100,bot);
+
+      top.with("foo", Json.fromString("{ \"bar\":\"value\"}"));
+
+      State state = new State("");
+      state.set("foo", "state");
+
+      String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state);
+      assertEquals("with should take priority over state", "value", populated);
+   }
 
    @Test
    public void test_timer() {
@@ -462,7 +548,7 @@ public class CmdTest extends SshTestBase {
 
       builder.setRunState("NAME", "variable");
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run(tmpDir.toString(), config, dispatcher);
       run.run();
@@ -498,7 +584,7 @@ public class CmdTest extends SshTestBase {
       builder.addRoleRun("role", "run-signal", new HashMap<>());
       builder.addRoleRun("role", "run-sleep", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run(tmpDir.toString(), config, dispatcher);
       run.run();
@@ -535,7 +621,7 @@ public class CmdTest extends SshTestBase {
       builder.addHostToRole("role", "local");
       builder.addRoleRun("role", "run-with", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run(tmpDir.toString(), config, dispatcher);
       run.run();

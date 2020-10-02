@@ -22,28 +22,20 @@ public class StageTest extends SshTestBase{
     @Test
     public void variableSignalName_boundInState(){
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-
         Script signal = new Script("signal");
         signal.then(Cmd.signal("${{FOO}}"));
-
         builder.addScript(signal);
-
         builder.addHostAlias("alpha","guest@alpha");
-
         builder.addHostToRole("role","alpha");
-
         builder.addRoleRun("role","signal", Collections.emptyMap());
-
         RunConfig runConfig;
-
-//        runConfig = builder.buildConfig();
 //        assertTrue("should not be valid to signal an undefined state variable",runConfig.hasErrors());
 
         builder.setRunState("FOO","foo");
-        runConfig = builder.buildConfig();
+        runConfig = builder.buildConfig(Parser.getInstance());
 
-        assertFalse("adding state FOO = foo should make the config valid:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
-        assertTrue("run should signal foo (state value of FOO):\n"+runConfig.getRunStage().getSignals(),runConfig.getRunStage().getSignals().contains("foo"));
+        assertFalse("adding state FOO = foo should make the config valid:\n"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertTrue("run should signal foo (state value of FOO)", runConfig.getSignalCounts().contains("foo"));
     }
 
     @Test
@@ -67,31 +59,26 @@ public class StageTest extends SshTestBase{
            "    - bar:",
            "        with: { BAR: foo }"
         ),true));
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
 
-        assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
-        assertTrue("should signal foo:\n"+config.getRunStage().getSignals(),config.getRunStage().getSignals().contains("foo"));
-        assertEquals("one signal for foo",1,config.getRunStage().getSignalCount("foo"));
-        assertTrue("one waiter for foo",config.getRunStage().getWaiters().contains("foo"));
-
+        assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        assertTrue("should signal foo",config.getSignalCounts().contains("foo"));
+        assertEquals("one signal for foo",1,config.getSignalCounts().count("foo"));
     }
 
     @Test
     public void signalOneScriptOneHost(){
         RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
-
         Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));
-
         builder.addScript(signal);
-
         builder.addHostAlias("local","guest@localhost");
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","signal", Collections.emptyMap());
 
-        RunConfig runConfig = builder.buildConfig();
+        RunConfig runConfig = builder.buildConfig(Parser.getInstance());
 
-        Assert.assertEquals("expect 1 signal for FOO",1,runConfig.getRunStage().getSignalCount("FOO"));
+        Assert.assertEquals("expect 1 signal for FOO",1,runConfig.getSignalCounts().count("FOO"));
 
     }
     @Test
@@ -111,9 +98,9 @@ public class StageTest extends SshTestBase{
         builder.addRoleRun("role","signal", Collections.emptyMap());
 
 
-        RunConfig runConfig = builder.buildConfig();
+        RunConfig runConfig = builder.buildConfig(Parser.getInstance());
 
-        Assert.assertEquals("expect 2 signals for FOO",2,runConfig.getRunStage().getSignalCount("FOO"));
+        Assert.assertEquals("expect 2 signals for FOO",2,runConfig.getSignalCounts().count("FOO"));
 
     }
     @Test
@@ -136,10 +123,10 @@ public class StageTest extends SshTestBase{
         builder.addRoleRun("role","second", Collections.emptyMap());
 
 
-        RunConfig runConfig = builder.buildConfig();
+        RunConfig runConfig = builder.buildConfig(Parser.getInstance());
 
 
-        Assert.assertEquals("expect 2 signals for FOO",2,runConfig.getRunStage().getSignalCount("FOO"));
+        Assert.assertEquals("expect 2 signals for FOO",2,runConfig.getSignalCounts().count("FOO"));
 
     }
     @Test
@@ -165,9 +152,9 @@ public class StageTest extends SshTestBase{
         builder.addRoleRun("role","second", Collections.emptyMap());
 
 
-        RunConfig runConfig = builder.buildConfig();
+        RunConfig runConfig = builder.buildConfig(Parser.getInstance());
 
-        Assert.assertEquals("expect 4 signals for FOO",4,runConfig.getRunStage().getSignalCount("FOO"));
+        Assert.assertEquals("expect 4 signals for FOO",4,runConfig.getSignalCounts().count("FOO"));
 
     }
     @Test
@@ -189,8 +176,8 @@ public class StageTest extends SshTestBase{
            "    run-scripts:",
            "    - sig:"
         ),true));
-        RunConfig config = builder.buildConfig();
-        Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
+        RunConfig config = builder.buildConfig(parser);
+        Assert.assertEquals("expect 4 signals for FOO",4,config.getSignalCounts().count("FOO"));
     }
     @Test
     public void signalInRepeatedSubScript(){
@@ -221,8 +208,8 @@ public class StageTest extends SshTestBase{
            "    - inv:",
            "    - wat:"
         ),true));
-        RunConfig config = builder.buildConfig();
-        Assert.assertEquals("expect 4 signals for FOO",4,config.getRunStage().getSignalCount("FOO"));
+        RunConfig config = builder.buildConfig(parser);
+        Assert.assertEquals("expect 4 signals for FOO",4,config.getSignalCounts().count("FOO"));
     }
 
 
@@ -248,8 +235,8 @@ public class StageTest extends SshTestBase{
         builder.addRoleRun("role","second", Collections.emptyMap());
 
 
-        RunConfig runConfig = builder.buildConfig();
-        Assert.assertEquals("expect 4 signals for FOO",4,runConfig.getRunStage().getSignalCount("FOO"));
+        RunConfig runConfig = builder.buildConfig(Parser.getInstance());
+        Assert.assertEquals("expect 4 signals for FOO",4,runConfig.getSignalCounts().count("FOO"));
 
     }
 

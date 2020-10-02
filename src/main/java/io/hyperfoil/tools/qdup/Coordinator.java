@@ -61,14 +61,14 @@ public class Coordinator {
 
     private List<Consumer<String>> observers;
 
-    private Map<String,AtomicInteger> latches;
+    private Map<String,AtomicInteger> signalLatches;
     private Map<String,Long> latchTimes;
     private Map<String,List<Waiter>> waitFors;
 
     private Map<String,AtomicInteger> counters;
 
     public Coordinator(){
-        latches = new HashMap<>();
+        signalLatches = new HashMap<>();
         latchTimes = new LinkedHashMap<>();
         counters = new HashMap<>();
         observers = new LinkedList<>();
@@ -82,7 +82,7 @@ public class Coordinator {
 
     public Map<String,Integer> getLatches(){
         Map<String,Integer> rtrn = new HashMap<>();
-        latches.forEach((k,v)->rtrn.put(k,v.intValue()));
+        signalLatches.forEach((k, v)->rtrn.put(k,v.intValue()));
         return rtrn;
     }
     public Map<String,Long> getLatchTimes(){return Collections.unmodifiableMap(latchTimes);}
@@ -138,23 +138,23 @@ public class Coordinator {
         setSignal(name,count,false);
     }
     public void setSignal(String name, int count,boolean force){
-        if(latches.containsKey(name) && latches.get(name).get()>0 && !force){
-            logger.warn("duplicate setSignal for {}, using previous VALUE {} not new VALUE {}",name,latches.get(name).get(),count);
+        if(signalLatches.containsKey(name) && signalLatches.get(name).get()>0 && !force){
+            logger.warn("duplicate setSignal for {}, using previous VALUE {} not new VALUE {}",name, signalLatches.get(name).get(),count);
             return;
         }
         AtomicInteger latch = new AtomicInteger(count);
-        latches.put(name,latch);
+        signalLatches.put(name,latch);
         checkWatchers(name);
     }
     public boolean hasSignal(String name){
-        return latches.containsKey(name);
+        return signalLatches.containsKey(name);
     }
     public int getSignalCount(String name){
-        if(!latches.containsKey(name)){
+        if(!signalLatches.containsKey(name)){
             logger.error("signal {} missing latch, defaulting to 0",name);
             return 0;
         }
-        return latches.get(name).get();
+        return signalLatches.get(name).get();
     }
     public int getWaitCount(String name){
         if(!waitFors.containsKey(name)){
@@ -168,9 +168,9 @@ public class Coordinator {
     }
     private void checkWatchers(String name){
         //TODO this should not signal missing once we correctly find singals inside for-each
-        if( !latches.containsKey(name) || latches.get(name).get()<=0  ) {//signal for a missing latch
-            if(latches.containsKey(name) && latches.get(name).get() < 0){
-                logger.error("Latch {} went below zero to {}",name,latches.get(name).get());
+        if( !signalLatches.containsKey(name) || signalLatches.get(name).get()<=0  ) {//signal for a missing latch
+            if(signalLatches.containsKey(name) && signalLatches.get(name).get() < 0){
+                logger.error("Latch {} went below zero to {}",name, signalLatches.get(name).get());
             }
             if(!observers.isEmpty()){
                 for(Consumer<String> observer : observers){
@@ -186,12 +186,12 @@ public class Coordinator {
     }
     public void signal(String name){
 
-        if(!latches.containsKey(name)){
+        if(!signalLatches.containsKey(name)){
             logger.warn("signal {} missing latch, ignoring",name);
             //return;
-        }else if( latches.get(name).get() > 0 ){
-            latches.get(name).decrementAndGet();
-            if(latches.get(name).get()==0){
+        }else if( signalLatches.get(name).get() > 0 ){
+            signalLatches.get(name).decrementAndGet();
+            if(signalLatches.get(name).get()==0){
                 latchTimes.put(name,System.currentTimeMillis());
             }
         }
@@ -203,16 +203,16 @@ public class Coordinator {
         waitFor(name,waiter);
     }
     private void waitFor(String name,Waiter waiter){
-        if(!latches.containsKey(name)){
+        if(!signalLatches.containsKey(name)){
             logger.error("waitFor {} missing latch, using default latch WITH count=0",name);
             waiter.next();
         }else {
             //TODO this is a race condition, need a check after adding to the list as well. Refactor out of signal to use same check code
-            if(latches.get(name).get() <=0){
-                logger.info("waitFor {} count = {}, invoking next",name,latches.get(name).get());
+            if(signalLatches.get(name).get() <=0){
+                logger.info("waitFor {} count = {}, invoking next",name, signalLatches.get(name).get());
                 waiter.next();
             }else {
-                logger.debug("waitFor {} count = {}, queueing",name,latches.get(name).get());
+                logger.debug("waitFor {} count = {}, queueing",name, signalLatches.get(name).get());
                 ensureWaitFor(name).add(waiter);
             }
         }

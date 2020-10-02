@@ -24,6 +24,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,7 +61,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleRun("role", "onSignal", new HashMap<>());
       builder.addRoleRun("role", "sendSignal", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -88,7 +89,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleRun("role", "localScript", new HashMap<>());
       builder.addRoleRun(RunConfigBuilder.ALL_ROLE, "allScript", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -113,8 +114,8 @@ public class RunTest extends SshTestBase {
          "    hosts: [local]",
          "    run-scripts: [foo]"
       ),true));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -141,8 +142,8 @@ public class RunTest extends SshTestBase {
          "    hosts: [local]",
          "    run-scripts: [foo]"
       ),true));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -172,7 +173,7 @@ public class RunTest extends SshTestBase {
       StringBuilder sb = new StringBuilder();
 
       wamlParser.load("test", stream("" +
-            "scripts:",
+         "scripts:",
          "  foo:",
          "  - sh: echo ${{NAME}}",
          "  - script: ${{NAME}}",
@@ -181,6 +182,8 @@ public class RunTest extends SshTestBase {
          "  - invoke: foo",
          "      with:",
          "        NAME: biz",
+         "  fail:",
+         "  - sh: pwd",
          "  biz:",
          "  - sh: echo ${{NAME}}",
          "hosts:",
@@ -193,7 +196,7 @@ public class RunTest extends SshTestBase {
          "  NAME: fail"
       ));
       builder.loadWaml(wamlParser);
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
       Cmd bar = config.getScript("bar");
       assertNotNull("missing bar script", bar);
       Cmd biz = config.getScript("biz");
@@ -229,8 +232,8 @@ public class RunTest extends SshTestBase {
          "states:",
          "  BAR: [{biz: {buz: 'one'}},{biz: {buz: 'two'}},{biz: {buz: 'three'}}]"
       ),true));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
       Cmd target = config.getScript("foo");
       while (target.getNext() != null && !(target instanceof ReadState)) {
@@ -288,8 +291,8 @@ public class RunTest extends SshTestBase {
          "states:",
          "  NAME: signalName"
       ),true));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
    }
 
    @Test
@@ -328,9 +331,9 @@ public class RunTest extends SshTestBase {
               "states:",
               "  OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]"
       ),false));
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
 
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
       Script foo = config.getScript("foo");
 
@@ -382,9 +385,9 @@ public class RunTest extends SshTestBase {
       //set log level to INFO to disable STATE logger
       root.setLevel(Level.INFO);
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
 
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
@@ -424,8 +427,8 @@ public class RunTest extends SshTestBase {
          "    run-scripts: [bar]",
          "    cleanup-scripts: [biz]"
       ),true));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
@@ -507,7 +510,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleRun("role", "tail", new HashMap<>());
       builder.addRoleRun("role", "echo", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
@@ -533,7 +536,7 @@ public class RunTest extends SshTestBase {
       builder.addScript(runScript);
       builder.addHostToRole("role", "local");
       builder.addRoleRun("role", "cmd-output-trim", new HashMap<>());
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
@@ -579,7 +582,7 @@ public class RunTest extends SshTestBase {
       builder.addScript(runScript);
       builder.addHostToRole("role", "local");
       builder.addRoleRun("role", "run-echo-exitStatus", new HashMap<>());
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
@@ -612,7 +615,7 @@ public class RunTest extends SshTestBase {
       builder.addHostToRole("role", "local");
       builder.addRoleRun("role", "run-for-each", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
 
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
@@ -642,7 +645,7 @@ public class RunTest extends SshTestBase {
       builder.addHostToRole("role", "local");
       builder.addRoleRun("role", "script", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -692,7 +695,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleRun("role", "run-abort", new HashMap<>());
       builder.addRoleCleanup("role", "cleanup-abort", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -739,7 +742,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleRun("role", "run", new HashMap<>());
       builder.addRoleCleanup("role", "cleanup", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -785,7 +788,7 @@ public class RunTest extends SshTestBase {
          "  charlie: {name: \"cat\"}"
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
 
       Dispatcher dispatcher = new Dispatcher();
 
@@ -857,7 +860,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleRun("role", "tail", new HashMap<>());
       builder.addRoleRun("role", "send", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -915,7 +918,7 @@ public class RunTest extends SshTestBase {
          builder.addRoleRun("role", "tail", new HashMap<>());
          builder.addRoleRun("role", "send", new HashMap<>());
 
-         RunConfig config = builder.buildConfig();
+         RunConfig config = builder.buildConfig(Parser.getInstance());
 
          Dispatcher dispatcher = new Dispatcher();
          Run run = new Run(tmpDir.toString(), config, dispatcher);
@@ -960,7 +963,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleSetup("role", "second", new HashMap<>());
 
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run(tmpDir.toString(), config, dispatcher);
       run.run();
@@ -1025,7 +1028,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleCleanup("role", "post-run-cleanup", new HashMap<>());
 
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run(tmpDir.toString(), config, dispatcher);
       long start = System.currentTimeMillis();
@@ -1070,7 +1073,9 @@ public class RunTest extends SshTestBase {
          "  charlie: {name: \"cat\"}"
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
+
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 
       Dispatcher dispatcher = new Dispatcher();
 
@@ -1114,7 +1119,7 @@ public class RunTest extends SshTestBase {
          "  charlie: {name: \"cat\"}"
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
 
       Dispatcher dispatcher = new Dispatcher();
 
@@ -1151,7 +1156,7 @@ public class RunTest extends SshTestBase {
       builder.addHostToRole("role", "local");
       builder.addRoleRun("role", "run-timer", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
 
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run(tmpDir.toString(), config, dispatcher);
@@ -1194,7 +1199,7 @@ public class RunTest extends SshTestBase {
       builder.addRoleRun("role", "run-env", new HashMap<>());
       builder.addRoleSetup("role", "setup-env", new HashMap<>());
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(Parser.getInstance());
 
       Dispatcher dispatcher = new Dispatcher();
       Run run = new Run(tmpDir.toString(), config, dispatcher);

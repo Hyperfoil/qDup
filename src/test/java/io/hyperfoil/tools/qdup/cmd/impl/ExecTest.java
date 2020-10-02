@@ -38,8 +38,8 @@ public class ExecTest extends SshTestBase {
          "    hosts: [local]",
          "    run-scripts: [foo]"
       ), true));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
@@ -83,8 +83,8 @@ public class ExecTest extends SshTestBase {
          "    hosts: [local]",
          "    run-scripts: [foo]"
       ), true));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       JsonServer jsonServer = new JsonServer(doit, 31337);

@@ -4,18 +4,13 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.ContextObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
-import io.hyperfoil.tools.qdup.cmd.ScriptContext;
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
-import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -24,7 +19,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
-import java.net.SocketException;
 import java.util.Map;
 
 public class JsonServer implements RunObserver, ContextObserver {
@@ -93,7 +87,7 @@ public class JsonServer implements RunObserver, ContextObserver {
         }
     }
     @Override
-    public void preStage(Run.Stage stage){
+    public void preStage(Stage stage){
         if(server!=null){
             Json event = new Json();
             event.set("type","stage.start");
@@ -102,7 +96,7 @@ public class JsonServer implements RunObserver, ContextObserver {
         }
     }
     @Override
-    public void postStage(Run.Stage stage){
+    public void postStage(Stage stage){
         if(server!=null){
             Json event = new Json();
             event.set("type","stage.stop");

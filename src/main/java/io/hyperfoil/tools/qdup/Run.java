@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 public class Run implements Runnable, DispatchObserver {
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
-    private final static AtomicReferenceFieldUpdater<Run,Stage> stageUpdated = AtomicReferenceFieldUpdater.newUpdater(Run.class,Run.Stage.class,"stage");
+    private final static AtomicReferenceFieldUpdater<Run,Stage> stageUpdated = AtomicReferenceFieldUpdater.newUpdater(Run.class, Stage.class,"stage");
 
     //TODO does a static logger name retain file appenders from previous Runs?
     public static final String RUN_LOGGER_NAME = "qdup.run";
@@ -95,21 +95,6 @@ public class Run implements Runnable, DispatchObserver {
         }
         public String getPath(){return path;}
         public String getDestination(){return destination;}
-    }
-
-    enum Stage {
-        Pending("pending"),
-        PreSetup("pre-setup"),
-        Setup("setup"),
-        Run("run"),
-        Cleanup("cleanup"),
-        PostCleanup("post-cleanup"),
-        Done("done");
-        String name;
-        Stage(String name){
-            this.name = name;
-        }
-        public String getName(){return name;}
     }
 
     private volatile Stage stage = Stage.Pending;
@@ -390,43 +375,9 @@ public class Run implements Runnable, DispatchObserver {
 
     //TODO separate coordinators for each stage?
     private boolean initializeCoordinator(){
-        List<String> noSignal = new ArrayList<>();
-        Set<String> signaled = new HashSet<>();
-        Consumer<StageSummary> setupCoordinator = (stageSummary)->{
-            stageSummary.getSignals().forEach((signalName)->{
-                long count = stageSummary.getSignalCount(signalName);
-                coordinator.setSignal(signalName,(int)count);
-                signaled.add(signalName);
-            });
-            stageSummary.getWaiters().stream().filter((waitName)->
-                    !signaled.contains(waitName)
-            ).forEach((notSignaled)->{
-                noSignal.add(notSignaled);
-            });
-        } ;
-
-        setupCoordinator.accept(config.getSetupStage());
-        if(!noSignal.isEmpty()){
-            noSignal.forEach((notSignaled)->{
-                runLogger.error("{} setup scripts missing signal for {}",this,notSignaled);
-            });
-            return false;
-        }
-        setupCoordinator.accept(config.getRunStage());
-
-        if(!noSignal.isEmpty()){
-            noSignal.forEach((notSignaled)->{
-                runLogger.error("{} run scripts missing signal for {}",this,notSignaled);
-            });
-            return false;
-        }
-        setupCoordinator.accept(config.getCleanupStage());
-        if(!noSignal.isEmpty()){
-            noSignal.forEach((notSignaled)->{
-                runLogger.error("{} cleanup scripts missing signal for {}",this,notSignaled);
-            });
-            return false;
-        }
+        config.getSignalCounts().forEach((name,count)->{
+            coordinator.setSignal(name,count.intValue());
+        });
         return true;
     }
 
@@ -441,8 +392,8 @@ public class Run implements Runnable, DispatchObserver {
 
             timestamps.put("start",System.currentTimeMillis());
             if(config.hasErrors()){
-                config.getErrors().forEach(logger::error);
-                config.getErrors().forEach(runLogger::error);
+                config.getErrors().forEach(e->logger.error(e.toString()));
+                config.getErrors().forEach(e->runLogger.error(e.toString()));
                 timestamps.put("stop",System.currentTimeMillis());
                 return;
             }

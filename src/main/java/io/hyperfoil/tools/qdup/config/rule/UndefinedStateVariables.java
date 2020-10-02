@@ -1,0 +1,208 @@
+package io.hyperfoil.tools.qdup.config.rule;
+
+import io.hyperfoil.tools.qdup.SecretFilter;
+import io.hyperfoil.tools.qdup.Stage;
+import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
+import io.hyperfoil.tools.qdup.cmd.impl.Regex;
+import io.hyperfoil.tools.qdup.cmd.impl.SetState;
+import io.hyperfoil.tools.qdup.config.RunConfig;
+import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.RunRule;
+import io.hyperfoil.tools.qdup.config.RunSummary;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.HashedLists;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/*
+ Find any ${{foo}} where foo is not previously set or available from state or withs
+ */
+public class UndefinedStateVariables implements RunRule {
+
+    private HashedLists<String, RSSCRef> usedVariables;
+    private HashedLists<String, RSSCRef> setVariables;
+    private HashedLists<String, RSSCRef> neededVariables;
+    private Parser parser;
+    private Set<String> ignore;
+    public UndefinedStateVariables(Parser parser){
+        this(parser,new HashSet<>());
+    }
+    public UndefinedStateVariables(Parser parser, Collection<String> ignore) {
+        this.parser = parser;
+        usedVariables = new HashedLists<>();
+        setVariables = new HashedLists<>();
+        neededVariables = new HashedLists<>();
+        this.ignore = new HashSet<>(ignore);
+    }
+
+    public void addIgnore(String name){
+        String trimmed = trim(name);
+        ignore.add(trimmed);
+    }
+    public boolean hasIgnore(String name){
+        String trimmed = trim(name);
+        return
+            ignore.contains(trimmed) ||
+            ignore.stream()
+                .filter(var -> trimmed.startsWith(var))
+                .findAny().orElse(null) != null;
+    }
+    public Set<String> getIgnore(){return ignore;}
+    private void addUsedVariable(String name, RSSCRef ref) {
+        String trimmed = trim(name);
+        usedVariables.put(trimmed, ref);
+    }
+
+    private void addSetVariable(String name, RSSCRef ref, RunSummary summary) {
+        String trimmed = trim(name);
+        if(!hasSetVariable(trimmed) && hasNeedVariable(trimmed)){
+
+            neededVariables.get(trimmed).stream().filter(rssc->{
+                return
+                    (
+                        ref.isSameScript(rssc) ||
+                        rssc.isBeforeOrSequentiallyWith(ref)
+                    )
+                    &&
+                    !(
+                        RunConfigBuilder.SCRIPT_DIR.equals(trimmed) ||
+                        RunConfigBuilder.TEMP_DIR.equals(trimmed) ||
+                        trimmed.startsWith(SecretFilter.SECRET_NAME_PREFIX)
+                    );
+            }).forEach(rssc->{
+                summary.addError(
+                    rssc.getRole(),
+                    rssc.getStage(),
+                    rssc.getScript(),
+                    rssc.getCommand().toString(),
+                    trimmed+" used without default before it is set"
+                );
+            });
+
+
+        }
+        setVariables.put(trimmed, ref);
+    }
+
+    public String trim(String name){
+        String rtrn = name;
+        if(rtrn.startsWith(SecretFilter.SECRET_NAME_PREFIX)){
+            rtrn = rtrn.substring(SecretFilter.SECRET_NAME_PREFIX.length());
+        }
+        rtrn = State.removeStatePrefix(rtrn);
+        return rtrn;
+    }
+
+    private void addNeededVariable(String name, RSSCRef ref) {
+        String trimmed = trim(name);
+        if(
+            RunConfigBuilder.TEMP_DIR.equals(trimmed) ||
+            RunConfigBuilder.SCRIPT_DIR.equals(trimmed) ||
+            hasSetVariable(trimmed)
+        )
+        {
+
+        } else {
+            neededVariables.put(trimmed, ref);
+        }
+    }
+    private boolean hasNeedVariable(String name){
+        String trimmed = trim(name);
+        return neededVariables.containsKey(trimmed);
+    }
+    private boolean hasSetVariable(String name) {
+        String trimmed = trim(name);
+        return
+            setVariables.containsKey(trimmed) ||
+                setVariables.keys().stream()
+                    .filter(var -> {
+                        return trimmed.startsWith(var);})
+                    .findAny().orElse(null) != null;
+    }
+
+    @Override
+    public void scan(String role, Stage stage, String script, String host, Cmd command, boolean isWatching, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+
+        String commandStr = parser != null ? parser.dump(parser.representCommand(command)) : command.toString();
+        if (Cmd.hasStateReference(commandStr, command)) {
+            command.loadAllWithDefs(config.getState());
+            ref.loadAllWithDefs(config.getState());
+            String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), ref);
+            if (Cmd.hasStateReference(populated, command)) {
+                List<String> neededVariables = Cmd.getStateVariables(populated, command, config.getState(), ref);
+                neededVariables
+                    .stream()
+                    .filter(var->!(
+                        command.hasWith(var) ||
+                        config.getState().has(var)
+                    ))
+                    .forEach(neededVariable -> {
+                        addNeededVariable(
+                            neededVariable,
+                            new RSSCRef(
+                                role,
+                                stage,
+                                script,
+                                command
+                            )
+                        );
+                    });
+            }
+        }
+        if (command instanceof Regex) {
+            RSSCRef rssc = new RSSCRef(
+                role,
+                stage,
+                script,
+                command
+            );
+            ((Regex) command).getCaptureNames().forEach(captureName->{
+                String populated = Cmd.populateStateVariables(captureName,command, config.getState(),ref);
+                addSetVariable(populated,rssc,summary);
+            });
+        } else if (command instanceof SetState) {
+            RSSCRef rssc = new RSSCRef(
+                role,
+                stage,
+                script,
+                command
+            );
+            String str = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), ref);
+            addSetVariable(str,rssc,summary);
+        } else if (command instanceof ForEach){
+            String str = Cmd.populateStateVariables(((ForEach)command).getName(),command, config.getState(),ref);
+            if(Cmd.hasStateReference(str,command)){
+
+            }
+            RSSCRef rssc = new RSSCRef(
+                    role,
+                    stage,
+                    script,
+                    command
+            );
+            addSetVariable(str,rssc,summary);
+        }
+    }
+
+    @Override
+    public void close(RunConfigBuilder config, RunSummary summary) {
+        neededVariables.keys().stream()
+            .filter(key->!hasSetVariable(key))
+            .forEach(key->{
+                neededVariables.get(key).forEach(ref->{
+                    summary.addError(
+                        ref.getRole(),
+                        ref.getStage(),
+                        ref.getScript(),
+                        ref.getCommand().toString(),
+                        key+" is used before it appears to be set"
+                    );
+                });
+            });
+    }
+}

@@ -30,16 +30,16 @@ public class State {
     private static Pattern IntegerPattern = Pattern.compile("-?\\d{1,16}+");
     private static Pattern DoublePattern = Pattern.compile("-?\\d+(?:\\.\\d+)?");
 
-    public static final String RUN_PREFIX = "RUN.";
-    public static final String HOST_PREFIX = "HOST.";
     public static final String CHILD_DELIMINATOR = ".";
+    public static final String RUN_PREFIX = "RUN"+CHILD_DELIMINATOR;
+    public static final String HOST_PREFIX = "HOST"+CHILD_DELIMINATOR;
+
 
     private State parent;
     private Json json;
     private Map<String,State> childStates;
     private String prefix;
     private SecretFilter secretFilter;
-
 
     public static class CmdState extends State {
         private final Cmd cmd;
@@ -59,6 +59,17 @@ public class State {
         @Override
         public void set(String key,Object value){
             parent().set(key,value);
+        }
+    }
+    public static String removeStatePrefix(String input){
+        if(input == null || input.isEmpty()){
+            return "";
+        }else if (input.startsWith(RUN_PREFIX)){
+            return input.substring(RUN_PREFIX.length());
+        }else if (input.startsWith(HOST_PREFIX)){
+            return input.substring(HOST_PREFIX.length());
+        }else{
+            return input;
         }
     }
 

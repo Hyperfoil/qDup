@@ -157,7 +157,6 @@ public class SuffixStream extends MultiStream {
             logger.error(getClass().getName()+".write("+off+","+len+")");
             logger.error(printByteCharacters(b,off,Math.min(10,b.length-off)));
             logger.error(Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(Object::toString).collect(Collectors.joining("\n")));
-            //System.exit(-1);
         }
         try {
             int trailingSuffixLength = Integer.MIN_VALUE;
@@ -215,7 +214,7 @@ public class SuffixStream extends MultiStream {
             }
         }catch(Exception e){
             logger.error(e.getMessage(),e);
-            throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);//System.exit(-1);
+            throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);
         }
     }
     private void foundSuffix(String name,int index){

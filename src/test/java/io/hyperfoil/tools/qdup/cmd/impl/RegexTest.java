@@ -51,7 +51,7 @@ public class RegexTest extends SshTestBase {
          "  data: \"miss\""
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
 
       Script foo = config.getScript("foo");
 
@@ -97,7 +97,7 @@ public class RegexTest extends SshTestBase {
          "  data: \"miss\""
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
 
       Dispatcher dispatcher = new Dispatcher();
 
@@ -217,7 +217,7 @@ public class RegexTest extends SshTestBase {
           "    run-scripts: [foo]"
        ));
        builder.loadWaml(wamlParser);
-       RunConfig config = builder.buildConfig();
+       RunConfig config = builder.buildConfig(parser);
        Dispatcher dispatcher = new Dispatcher();
 
        Cmd foo = config.getScript("foo");

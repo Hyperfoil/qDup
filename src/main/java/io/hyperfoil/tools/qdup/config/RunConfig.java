@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
+import io.hyperfoil.tools.yaup.Counters;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -63,13 +64,10 @@ public class RunConfig {
 
     private Map<String,Role> roles;
 
-    private StageSummary setupStage;
-    private StageSummary runStage;
-    private StageSummary cleanupStage;
+    private Counters<String> signalCounts;
 
     private Boolean colorTerminal = false;
-    private List<String> errors;
-
+    private List<RunError> errors;
 
     private Json settings;
 
@@ -77,18 +75,13 @@ public class RunConfig {
 
     private int timeout = 10;
 
-    protected RunConfig(String name,List<String> errors){
-        this.name = name;
-        this.errors = errors;
-    }
     protected RunConfig(
             String name,
+            List<RunError> errors,
             Map<String,Script> scripts,
             State state,
+            Counters<String> signalCounts,
             Map<String,Role> roles,
-            StageSummary setupStage,
-            StageSummary runStage,
-            StageSummary cleanupStage,
             String knownHosts,
             String identity,
             String passphrase,
@@ -96,16 +89,14 @@ public class RunConfig {
             Set<String> tracePatterns,
             Json settings){
         this.name = name;
+        this.errors = errors;
         this.scripts = scripts;
+        this.signalCounts = signalCounts;
         this.state = state;
         this.roles = roles;
-        this.setupStage = setupStage;
-        this.runStage = runStage;
-        this.cleanupStage = cleanupStage;
         this.knownHosts = knownHosts;
         this.identity = identity;
         this.passphrase = passphrase;
-        this.errors = new LinkedList<>();
         if ( timeout != null ) {
             this.timeout = timeout;
         }
@@ -114,6 +105,7 @@ public class RunConfig {
         this.settings.merge(settings);
     }
 
+    public Counters<String> getSignalCounts(){return signalCounts;}
     public boolean hasSetting(String key){
         return settings.has(key);
     }
@@ -123,21 +115,21 @@ public class RunConfig {
 
     public Set<String> getTracePatterns(){return tracePatterns;}
 
-    public StageSummary getSetupStage() {
-        return setupStage;
-    }
-    public StageSummary getRunStage() {
-        return runStage;
-    }
-    public StageSummary getCleanupStage() {
-        return cleanupStage;
-    }
+//    public StageSummary getSetupStage() {
+//        return setupStage;
+//    }
+//    public StageSummary getRunStage() {
+//        return runStage;
+//    }
+//    public StageSummary getCleanupStage() {
+//        return cleanupStage;
+//    }
 
     public Set<String> getRoleNames(){return roles.keySet();}
     public Role getRole(String name){
         return roles.get(name);
     }
-
+    public Collection<Role> getRoles(){return roles.values();}
 
     /**
      * Gets all the hosts that are used in a role
@@ -155,7 +147,7 @@ public class RunConfig {
     }
     public String debug(boolean full){
         if(hasErrors()){
-            return getErrors().stream().collect(Collectors.joining("\n"));
+            return getErrors().stream().map(RunError::toString).collect(Collectors.joining("\n"));
         }
         StringBuilder  sb = new StringBuilder();
         BiConsumer<String,List<? extends Cmd>> printScripts = (phase, scripts)->{
@@ -204,13 +196,12 @@ public class RunConfig {
     }
 
     public boolean hasErrors(){return !errors.isEmpty();}
-    public List<String> getErrors(){return Collections.unmodifiableList(errors);}
-    public void addError(String error){
-        errors.add(error);
+    public List<RunError> getErrors(){return Collections.unmodifiableList(errors);}
+    public List<String> getErrorStrings(){
+        return getErrors().stream().map(RunError::toString).collect(Collectors.toList());
     }
 
     public String getName(){return name;}
-
     public State getState(){return state;}
 
     public int getTimeout() {

@@ -20,6 +20,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -74,7 +75,7 @@ public class ForEachTest extends SshTestBase {
            "    mac: \""+mac+"\""
         ),false));
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
 
         Cmd foo = config.getScript("foo");
@@ -113,7 +114,7 @@ public class ForEachTest extends SshTestBase {
            "  charlie: {name: \"cat\"}"
         ),false));
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
 
         Cmd foo = config.getScript("foo");
@@ -144,7 +145,9 @@ public class ForEachTest extends SshTestBase {
            "    run-scripts: [foo]"
         ),false));
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
         Cmd foo = config.getScript("foo");
         Cmd forEach = foo.getNext();
 
@@ -178,7 +181,7 @@ public class ForEachTest extends SshTestBase {
            "  DATA: [{name: \"one\",bar: [1, 2, 3]},{name: \"two\",bar: [2,4,6]},{name: 'three' ,bar: [3,6,9]}]"
         ),false));
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
         Cmd foo = config.getScript("foo");
 
         Dispatcher dispatcher = new Dispatcher();
@@ -211,7 +214,7 @@ public class ForEachTest extends SshTestBase {
            "  SECOND: [1, 2, 3]"
         ),true));
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
         Cmd foo = config.getScript("foo");
 
         Dispatcher dispatcher = new Dispatcher();
@@ -252,7 +255,7 @@ public class ForEachTest extends SshTestBase {
            ),true));
 
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
 
         Cmd foo = config.getScript("foo");
 
@@ -1035,8 +1038,8 @@ public class ForEachTest extends SshTestBase {
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run",new HashMap<>());
 
-        RunConfig config = builder.buildConfig();
-        assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        RunConfig config = builder.buildConfig(Parser.getInstance());
+        assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);
@@ -1078,8 +1081,8 @@ public class ForEachTest extends SshTestBase {
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run",new HashMap<>());
 
-        RunConfig config = builder.buildConfig();
-        assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        RunConfig config = builder.buildConfig(Parser.getInstance());
+        assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);
@@ -1111,7 +1114,7 @@ public class ForEachTest extends SshTestBase {
            "          FOO : server1,server2,server3"
         ),true));
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
 
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
@@ -1127,7 +1130,7 @@ public class ForEachTest extends SshTestBase {
             fail("failed to find for-each in script foo");
         }
 
-        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        assertFalse("runConfig errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(),config,dispatcher);
 
@@ -1154,7 +1157,7 @@ public class ForEachTest extends SshTestBase {
            "states:",
            "  FOO: 'server1,server2,server3'"
         ),true));
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
             target = target.getNext();
@@ -1164,7 +1167,7 @@ public class ForEachTest extends SshTestBase {
             splits.add(input);
             return Result.next(input);
         })));
-        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        assertFalse("runConfig errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(),config,dispatcher);
         doit.run();
@@ -1189,7 +1192,7 @@ public class ForEachTest extends SshTestBase {
            "states:",
            "  FOO: server1,server2,server3"
         ),true));
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
             target = target.getNext();
@@ -1199,7 +1202,7 @@ public class ForEachTest extends SshTestBase {
             splits.add(input);
             return Result.next(input);
         })));
-        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        assertFalse("runConfig errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(),config,dispatcher);
 
@@ -1225,7 +1228,7 @@ public class ForEachTest extends SshTestBase {
            "    hosts: [local]",
            "    run-scripts: [foo]"
         ),true));
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
             target = target.getNext();
@@ -1235,7 +1238,7 @@ public class ForEachTest extends SshTestBase {
             splits.add(input);
             return Result.next(input);
         })));
-        assertFalse("runConfig errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        assertFalse("runConfig errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(),config,dispatcher);
 
@@ -1278,8 +1281,8 @@ public class ForEachTest extends SshTestBase {
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run",new HashMap<>());
 
-        RunConfig config = builder.buildConfig();
-        assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        RunConfig config = builder.buildConfig(Parser.getInstance());
+        assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);

@@ -103,7 +103,6 @@ public class WamlStateParser {
                return input.trim().substring(",".length()).trim();
             }else{
                pushState(new KeyState("",this));
-               //System.exit(-1);
             }
          }else{
             String inputPrefix = getPrefix(input);

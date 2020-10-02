@@ -69,7 +69,7 @@ public class ParserTest extends SshTestBase {
         RunConfigBuilder builder = getBuilder();
         builder.loadYaml(loaded);
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
 
         assertEquals("state should have biz\n"+config.getState().toJson().toString(2),"",config.getState().get("biz"));
         assertEquals("state should have buz\n"+config.getState().toJson().toString(2),"",config.getState().get("buz"));

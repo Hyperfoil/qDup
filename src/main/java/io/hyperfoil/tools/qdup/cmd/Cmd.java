@@ -2,31 +2,7 @@ package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
-import io.hyperfoil.tools.qdup.cmd.impl.Abort;
-import io.hyperfoil.tools.qdup.cmd.impl.CodeCmd;
-import io.hyperfoil.tools.qdup.cmd.impl.Countdown;
-import io.hyperfoil.tools.qdup.cmd.impl.CtrlC;
-import io.hyperfoil.tools.qdup.cmd.impl.Done;
-import io.hyperfoil.tools.qdup.cmd.impl.Download;
-import io.hyperfoil.tools.qdup.cmd.impl.Echo;
-import io.hyperfoil.tools.qdup.cmd.impl.ExitCode;
-import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
-import io.hyperfoil.tools.qdup.cmd.impl.InvokeCmd;
-import io.hyperfoil.tools.qdup.cmd.impl.JsCmd;
-import io.hyperfoil.tools.qdup.cmd.impl.Log;
-import io.hyperfoil.tools.qdup.cmd.impl.QueueDownload;
-import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
-import io.hyperfoil.tools.qdup.cmd.impl.Reboot;
-import io.hyperfoil.tools.qdup.cmd.impl.Regex;
-import io.hyperfoil.tools.qdup.cmd.impl.RepeatUntilSignal;
-import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
-import io.hyperfoil.tools.qdup.cmd.impl.SetState;
-import io.hyperfoil.tools.qdup.cmd.impl.Sh;
-import io.hyperfoil.tools.qdup.cmd.impl.Signal;
-import io.hyperfoil.tools.qdup.cmd.impl.Sleep;
-import io.hyperfoil.tools.qdup.cmd.impl.Upload;
-import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
-import io.hyperfoil.tools.qdup.cmd.impl.XmlCmd;
+import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -41,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -55,12 +32,45 @@ public abstract class Cmd {
       private Cmd command;
 
       public Ref(Cmd command) {
-         this.command = command;
+         this.command = command == null ? Cmd.NO_OP() : command;
+      }
+
+      public void loadAllWithDefs(State state){
+         Cmd.Ref target = this;
+         do {
+            if(target.getCommand()!=null && target.getCommand().hasVariablePatternInWith()){
+               target.getCommand().loadAllWithDefs(state);
+            }
+         }while( (target = target.getParent())!=null );
+      }
+      public void loadWithDefs(State state){
+         Cmd.Ref target = this;
+         do {
+            if(target.getCommand()!=null && target.getCommand().hasVariablePatternInWith()){
+               target.getCommand().loadWithDefs(state);
+            }
+         }while( (target = target.getParent())!=null );
       }
 
       public Ref add(Cmd command) {
          Ref rtrn = new Ref(command);
          rtrn.parent = this;
+         return rtrn;
+      }
+
+      public boolean hasWith(Object name){
+         return getWith(name) != null;
+      }
+      public Object getWith(Object name){
+         Object rtrn = null;
+         Cmd.Ref target = this;
+         do {
+            if(target.getCommand() != null){
+               if(target.getCommand().hasWith(name.toString())){
+                  rtrn = target.getCommand().getWith(name.toString());
+               }
+            }
+         } while ((target = target.getParent()) != null && rtrn == null);
          return rtrn;
       }
 
@@ -76,6 +86,27 @@ public abstract class Cmd {
          return command;
       }
 
+      @Override
+      public String toString(){
+         return "ref: "+command.toString()+" parent: "+command.getStateParent()+" with: "+command.getWith();
+      }
+      public String dump(){
+         Cmd.Ref target = this.getParent();
+         StringBuilder sb = new StringBuilder();
+         sb.append("Ref dump\n");
+         sb.append(this.toString());
+         while(target!=null){
+            sb.append("\n");
+            sb.append(target);
+            List<Cmd> chain = target.command.getStateLineage();
+            for(int i=0; i<chain.size();i++){
+               sb.append("\n");
+               sb.append(String.format("%"+(i+1)+"s%s with: %s","",chain.get(i).toString(),chain.get(i).getWith().toString()));
+            }
+            target = target.getParent();
+         }
+         return sb.toString();
+      }
    }
 
    public static class NO_OP extends Cmd {
@@ -197,7 +228,7 @@ public abstract class Cmd {
       return new Reboot(timeout, target, password);
    }
 
-   public static Cmd regex(String pattern) {
+   public static Regex regex(String pattern) {
       return new Regex(pattern);
    }
 
@@ -213,11 +244,15 @@ public abstract class Cmd {
       return new ScriptCmd(name, async,false);
    }
 
-   public static Cmd setState(String name) {
+   public static SetSignal setSignal(String name, String value) {
+      return new SetSignal(name,value);
+   }
+
+   public static SetState setState(String name) {
       return new SetState(name);
    }
 
-   public static Cmd setState(String name, String value) {
+   public static SetState setState(String name, String value) {
       return new SetState(name, value);
    }
 
@@ -250,29 +285,37 @@ public abstract class Cmd {
    }
 
 
-   public <T> List<T> walk(Function<Cmd,T> converter){
+   public <T> List<T> walk(boolean isWatching,Function<Cmd,T> converter){
       LinkedList<T> rtrn = new LinkedList<>();
-      walk(converter,rtrn);
+      walk((cmd,b)->converter.apply(cmd),isWatching,rtrn);
+      return rtrn;
+   }
+   public <T> List<T> walk(boolean isWatching,BiFunction<Cmd,Boolean,T> converter){
+      LinkedList<T> rtrn = new LinkedList<>();
+      walk(converter,isWatching,rtrn);
       return rtrn;
    }
 
-   public<T> void walk(Function<Cmd,T> converter, List<T> rtrn){
-      T value = converter.apply(this);
+   public<T> void walk(boolean isWatching,Function<Cmd,T> converter,List<T> rtrn){
+      walk((cmd,b)->converter.apply(cmd),isWatching,rtrn);
+   }
+   public<T> void walk(BiFunction<Cmd,Boolean,T> converter, boolean isWatching,List<T> rtrn){
+      T value = converter.apply(this,isWatching);
       rtrn.add(value);
       if(this.hasThens()){
-         this.getThens().forEach(child->child.walk(converter,rtrn));
+         this.getThens().forEach(child->child.walk(converter,isWatching,rtrn));
       }
       if(this.hasWatchers()){
-         this.getWatchers().forEach(child->child.walk(converter,rtrn));
+         this.getWatchers().forEach(child->child.walk(converter,true,rtrn));
       }
       if(this.hasTimers()){
          this.getTimeouts().forEach(timer->{
-            this.getTimers(timer).forEach(child->child.walk(converter,rtrn));
+            this.getTimers(timer).forEach(child->child.walk(converter,true,rtrn));
          });
       }
       if(this.hasSignalWatchers()){
          this.getSignalNames().forEach(signal->{
-            this.getSignal(signal).forEach(child->child.walk(converter,rtrn));
+            this.getSignal(signal).forEach(child->child.walk(converter,true,rtrn));
          });
       }
    }
@@ -286,12 +329,32 @@ public abstract class Cmd {
       }
       return hasIt;
    }
-
-   public Object getWith(String name) {
+   public List<Cmd> getStateLineage(){
+      List<Cmd> rtrn = new LinkedList<>();
+      Cmd target = this;
+      do{
+         rtrn.add(target);
+      }while( (target = target.getStateParent()) !=null);
+      return rtrn;
+   }
+   public Object getWith(String name){
+      return getWith(name,new State(State.RUN_PREFIX));
+   }
+   public Object getWith(String name,State state) {
       Object value = null;
       Cmd target = this;
       while (value == null && target != null) {
          value = target.withActive.has(name) ? target.withActive.get(name) : Json.find(target.withActive, name.startsWith("$") ? name : "$." + name);
+         if(value!=null){//we found something
+            if(Cmd.hasStateReference(value.toString(),target)){//
+               //target.loadWithDefs(state);
+               if (value.toString().contains(name)) { //do not use targets's with if it is value is referencing name (avoid loops)
+                  value = Cmd.populateStateVariables(value.toString(), null, state);
+               } else {
+                  value = Cmd.populateStateVariables(value.toString(), target, state);
+               }
+            }
+         }
          target = target.stateParent;
       }
       return value;
@@ -309,6 +372,34 @@ public abstract class Cmd {
       }
    }
 
+   public static List<String> getStateVariables(String command, Cmd cmd, State state,Ref ref){
+      CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
+      List<String> rtrn = Collections.EMPTY_LIST;
+      if(cmd==null){
+         try {
+            rtrn = StringUtil.getPatternNames(
+                    command,
+                    map,
+                    StringUtil.PATTERN_PREFIX,
+                    StringUtil.PATTERN_DEFAULT_SEPARATOR,
+                    StringUtil.PATTERN_SUFFIX,
+                    StringUtil.PATTERN_JAVASCRIPT_PREFIX
+            );
+         } catch (PopulatePatternException e) {}
+      }else{
+         try {
+            rtrn = StringUtil.getPatternNames(
+                    command,
+                    map,
+                    StringUtil.PATTERN_PREFIX,
+                    StringUtil.PATTERN_DEFAULT_SEPARATOR,
+                    StringUtil.PATTERN_SUFFIX,
+                    StringUtil.PATTERN_JAVASCRIPT_PREFIX
+            );
+         } catch (PopulatePatternException e) {}
+      }
+      return rtrn;
+   }
    public static String populateStateVariables(String command, Cmd cmd, State state) {
       return populateStateVariables(command, cmd, state, new Ref(cmd));
    }
@@ -327,8 +418,10 @@ public abstract class Cmd {
             return StringUtil.populatePattern(command, map, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          }
       } catch (PopulatePatternException pe){
-         logger.warn(pe.getMessage());
-         return command;//""; //TODO: this is the default behaviour, do we want to return a zero length string when populating the pattern has failed?
+         //pe.printStackTrace();
+         logger.debug(pe.getMessage());//changed to debug because runs now fail when patterns are missing
+         //return command;//must return input to show there are unpopulated patterns
+         return pe.getResult();//should still contain the missing entries
       }
    }
    private static final AtomicInteger uidGenerator = new AtomicInteger(0);
@@ -676,39 +769,60 @@ public abstract class Cmd {
       return Collections.unmodifiableList(this.watchers);
    }
 
+   public boolean hasVariablePatternInWith(){
+      return Cmd.hasStateReference(withDef.toString(0),this);
+   }
 
-   public final void doRun(String input, Context context) {
-      if (!withDef.isEmpty()) {
-
-         //replace with values if they have ${{ and check for secrets
-
+   //replace with values if they have ${{ and check for secrets
+   public void loadAllWithDefs(State state){
+      Cmd target = this;
+      do{
+         target.loadWithDefs(state);
+      } while ( (target = target.getStateParent()) != null );
+   }
+   public void loadWithDefs(State state){
+      if(!withDef.isEmpty()){
          withDef.forEach((k,v)->{
-
             boolean isSecret = false;
-            if(k.toString().startsWith(SecretFilter.SECRET_NAME_PREFIX)){
-               k = k.toString().substring(SecretFilter.SECRET_NAME_PREFIX.length());
+            String key = k.toString();
+            Object updatedKey = k;
+            if(Cmd.hasStateReference(key,this)){
+               //using state parent to prevent loop when trying to resolve self references
+               key = Cmd.populateStateVariables(key,this.getStateParent(),state);
+               updatedKey = key;
+            }
+            if(key.startsWith(SecretFilter.SECRET_NAME_PREFIX)){
+               key = key.substring(SecretFilter.SECRET_NAME_PREFIX.length());
                isSecret = true;
+               updatedKey = key;
             }
             if(v instanceof String && Cmd.hasStateReference((String) v,this)){
-               String populatedV =populateStateVariables((String)v,this,context.getState(),new Ref(this));
+               String populatedV = populateStateVariables((String)v,this.getStateParent(),state);
                Object convertedV = State.convertType(populatedV);
-               withActive.set(k,convertedV);
+               withActive.set(updatedKey,convertedV);
                if(isSecret){
-                  context.getState().getSecretFilter().addSecret(convertedV.toString());
+                  state.getSecretFilter().addSecret(convertedV.toString());
                }
             }else{
-               withActive.set(k,v);
+               withActive.set(updatedKey,v);
                if(isSecret){
-                  context.getState().getSecretFilter().addSecret(v.toString());
+                  state.getSecretFilter().addSecret(v.toString());
                }
             }
          });
+      }
+   }
+
+   public final void doRun(String input, Context context) {
+      loadWithDefs(context.getState());
+         //replace with values if they have ${{ and check for secrets
+
+
          //TODO the is currently being handles by populateStateVariables
          // a good idea might be to create a new context for this and this.then()
 //            for(String key : with.keySet()){
 //                context.getState().set(key,with.get(key));
 //            }
-      }
       if(hasParent()){
          getParent().preChild(this);
       }

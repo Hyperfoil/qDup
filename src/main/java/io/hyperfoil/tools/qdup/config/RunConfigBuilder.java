@@ -3,9 +3,13 @@ package io.hyperfoil.tools.qdup.config;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.CommandSummary;
 import io.hyperfoil.tools.qdup.cmd.Script;
+import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
+import io.hyperfoil.tools.qdup.cmd.impl.SetState;
+import io.hyperfoil.tools.qdup.config.rule.NonObservingCommands;
+import io.hyperfoil.tools.qdup.config.rule.SignalCounts;
+import io.hyperfoil.tools.qdup.config.rule.UndefinedStateVariables;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
@@ -30,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static io.hyperfoil.tools.qdup.config.waml.WamlParser.*;
@@ -620,7 +625,7 @@ public class RunConfigBuilder {
    }
 
    public Script getScript(String name, Cmd command) {
-      if (name.contains(StringUtil.PATTERN_PREFIX)) {
+      if (Cmd.hasStateReference(name,command)) {
          name = Cmd.populateStateVariables(name, command, state);
       }
       Script script = scripts.get(name);
@@ -630,7 +635,7 @@ public class RunConfigBuilder {
    }
 
    public RunConfig buildConfig(){
-      return buildConfig(null);
+      return buildConfig(Parser.getInstance());
    }
    public RunConfig buildConfig(Parser yamlParser) {
       Map<String, Host> seenHosts = new HashMap<>();
@@ -649,7 +654,7 @@ public class RunConfigBuilder {
             logger.warn(e.getMessage());
             populatedValue = "";
          }
-         if (populatedValue.contains(StringUtil.PATTERN_PREFIX)) {
+         if (Cmd.hasStateReference(populatedValue,null)) {
             addError("cannot create host from " + value + " -> " + populatedValue);
          }
          Host host = Host.parse(populatedValue);
@@ -763,42 +768,23 @@ public class RunConfigBuilder {
       });
 
       //perform static analysis
-      StageSummary setupStage = new StageSummary();
-      StageSummary runStage = new StageSummary();
-      StageSummary cleanupStage = new StageSummary();
+      RunSummary summary = new RunSummary();
+      SignalCounts signalCounts = new SignalCounts();
+      summary.addRule("signals",signalCounts);
+      summary.addRule("variables",new UndefinedStateVariables(yamlParser));
+      summary.addRule("observers",new NonObservingCommands());
 
-      BiConsumer<StageSummary, Cmd> addCmd = (stage, cmd) -> {
-         CommandSummary summary = new CommandSummary(cmd, this,yamlParser);
-         stage.add(summary);
-      };
-
-
-      roles.values().forEach(role -> {
-         role.getDeclaredHosts().forEach(host -> {
-            role.getSetup().forEach(c -> addCmd.accept(setupStage, c));
-            role.getRun().forEach(c -> addCmd.accept(runStage, c));
-            role.getCleanup().forEach(c -> addCmd.accept(cleanupStage, c));
-         });
-      });
-
-      setupStage.getErrors().forEach(this::addError);
-      runStage.getErrors().forEach(this::addError);
-      cleanupStage.getErrors().forEach(this::addError);
+      summary.scan(roles.values(),this);
 
 
 
-
-      if (errorCount() > 0) {
-         return new RunConfig(getName(), errors);
-      } else {
          return new RunConfig(
             getName(),
+            summary.getErrors(),
             scripts,
             state,
+            signalCounts.getCounts(),
             roles,
-            setupStage,
-            runStage,
-            cleanupStage,
             getKnownHosts(),
             getIdentity(),
             getPassphrase(),
@@ -806,7 +792,6 @@ public class RunConfigBuilder {
             getTracePatterns(),
             settings
          );
-      }
    }
 
 }

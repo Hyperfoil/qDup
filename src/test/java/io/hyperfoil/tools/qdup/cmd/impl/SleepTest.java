@@ -55,7 +55,7 @@ public class SleepTest extends SshTestBase {
            "  charlie: {name: \"cat\"}"
         ),false));
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
 
         List<String> signals = new ArrayList<>();

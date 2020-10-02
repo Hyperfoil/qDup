@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 
@@ -43,7 +44,7 @@ public class ScriptContextTest extends SshTestBase {
     private ScriptContext getContext(Cmd command){
 
         RunConfigBuilder builder = getBuilder();
-        RunConfig runConfig = builder.buildConfig();
+        RunConfig runConfig = builder.buildConfig(Parser.getInstance());
         Run run = new Run(
                 "/tmp/",
             runConfig,

@@ -44,8 +44,8 @@ public class NannyTest extends SshTestBase {
          "    - foo:",
          "    - bar:"
       ),false));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -86,8 +86,8 @@ public class NannyTest extends SshTestBase {
          "    - foo:",
          "    - bar:"
       ),false));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -131,8 +131,8 @@ public class NannyTest extends SshTestBase {
          "    - foo:",
          "    - bar:"
       ),false));
-      RunConfig config = builder.buildConfig();
-      assertFalse("runConfig errors:\n" + config.getErrors().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 

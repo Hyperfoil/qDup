@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 
@@ -45,8 +46,8 @@ public class ExitCodeTest extends SshTestBase {
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-exit",new HashMap<>());
 
-        RunConfig config = builder.buildConfig();
-        assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        RunConfig config = builder.buildConfig(Parser.getInstance());
+        assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);

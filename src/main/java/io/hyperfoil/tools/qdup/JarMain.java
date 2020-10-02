@@ -11,6 +11,7 @@ import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.ScriptContext;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.RunError;
 import org.apache.commons.cli.*;
 import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
@@ -436,9 +437,9 @@ public class JarMain {
       }
 
       if (config.hasErrors()) {
-         for (String error : config.getErrors()) {
-            System.out.printf("Error: %s%n", error);
-         }
+         config.getErrors().stream().map(RunError::toString).forEach(error->{
+            System.out.printf("%s%n",error);
+         });
          System.exit(1);
          return;
       }

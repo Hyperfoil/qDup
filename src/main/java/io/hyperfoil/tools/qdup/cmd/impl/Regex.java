@@ -36,6 +36,15 @@ public class Regex extends CmdWithElse {
       return miss;
    }
 
+   public Set<String> getCaptureNames(){
+      HashSet<String> rtrn = new HashSet<>();
+      Matcher matcher = Cmd.NAMED_CAPTURE.matcher(pattern);
+      while (matcher.find()) {
+         String name = matcher.group(1);
+         rtrn.add(name);
+      }
+      return rtrn;
+   }
 
    public String getPattern() {
       return patternString;

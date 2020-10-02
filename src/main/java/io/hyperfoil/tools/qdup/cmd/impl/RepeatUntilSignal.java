@@ -30,7 +30,7 @@ public class RepeatUntilSignal extends LoopCmd {
     }
 
     public boolean isSelfSignaling(){
-        return walk(cmd-> cmd instanceof Signal && ((Signal)cmd).getName().equals(getName())).stream().filter(v->v).findAny().orElse(false);
+        return walk(false,cmd-> cmd instanceof Signal && ((Signal)cmd).getName().equals(getName())).stream().filter(v->v).findAny().orElse(false);
     }
 
     @Override

@@ -9,6 +9,9 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import static io.hyperfoil.tools.qdup.SecretFilter.REPLACEMENT;
 import static org.junit.Assert.*;
 
@@ -90,7 +93,8 @@ public class SecretFilterTest extends SshTestBase {
          "states:",
          "  "+SecretFilter.SECRET_NAME_PREFIX+"FOO: BAR"
       ),false));
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);

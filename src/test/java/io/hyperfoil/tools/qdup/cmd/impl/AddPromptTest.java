@@ -35,7 +35,7 @@ public class AddPromptTest extends SshTestBase {
             "    run-scripts: [foo]"
          ),true));
 
-         RunConfig config = builder.buildConfig();
+         RunConfig config = builder.buildConfig(parser);
          Cmd foo = config.getScript("foo");
 
          StringBuilder sb = new StringBuilder();

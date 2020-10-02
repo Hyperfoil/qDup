@@ -5,6 +5,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public abstract class CmdWithElse extends Cmd{
@@ -30,10 +31,10 @@ public abstract class CmdWithElse extends Cmd{
     }
 
     @Override
-    public <T> void walk(Function<Cmd,T> converter, List<T> rtrn){
-        super.walk(converter,rtrn);
+    public <T> void walk(BiFunction<Cmd,Boolean,T> converter, boolean isWatching, List<T> rtrn){
+        super.walk(converter,isWatching,rtrn);
         if(hasElse()){
-            this.getElses().forEach(child->child.walk(converter,rtrn));
+            this.getElses().forEach(child->child.walk(converter,isWatching,rtrn));
         }
     }
 

@@ -226,7 +226,7 @@ public class FilteredStream extends MultiStream{
             }
         } catch(Exception e) {
             logger.error(e.getMessage(),e);
-            throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);//System.exit(-1);
+            throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);
         }
     }
     public boolean hasSuffix(byte b[],byte suffix[],int off,int len){

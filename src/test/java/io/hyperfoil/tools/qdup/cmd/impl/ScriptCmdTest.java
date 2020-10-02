@@ -9,7 +9,11 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class ScriptCmdTest extends SshTestBase {
 
@@ -22,10 +26,10 @@ public class ScriptCmdTest extends SshTestBase {
          Parser parser = Parser.getInstance();
          RunConfigBuilder builder = getBuilder();
          builder.loadYaml(parser.loadFile("", stream("" +
-               "scripts:",
+            "scripts:",
             "  update:",
             "  - sleep: 2s",
-            "  - set-state: RUN.FOO ${{RUN.FOO}}-${{arg}}",
+            "  - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg}}",
             "  foo:",
             "  - script: ",
             "      name: update",
@@ -46,7 +50,9 @@ public class ScriptCmdTest extends SshTestBase {
             "  charlie: {name: \"cat\"}"
          ), false));
 
-         RunConfig config = builder.buildConfig();
+         RunConfig config = builder.buildConfig(parser);
+         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
          Dispatcher dispatcher = new Dispatcher();
          Cmd foo = config.getScript("foo");
          Run doit = new Run(tmpDir.toString(), config, dispatcher);
@@ -84,7 +90,7 @@ public class ScriptCmdTest extends SshTestBase {
          "  charlie: {name: \"cat\"}"
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
       Cmd foo = config.getScript("foo");
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
@@ -121,7 +127,7 @@ public class ScriptCmdTest extends SshTestBase {
          "  charlie: {name: \"cat\"}"
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
       Cmd foo = config.getScript("foo");
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
@@ -169,7 +175,7 @@ public class ScriptCmdTest extends SshTestBase {
             "  BAR: def"
          ),false));
 
-         RunConfig config = builder.buildConfig();
+         RunConfig config = builder.buildConfig(parser);
          Dispatcher dispatcher = new Dispatcher();
          Run doit = new Run(tmpDir.toString(), config, dispatcher);
          doit.run();
@@ -207,7 +213,7 @@ public class ScriptCmdTest extends SshTestBase {
          "  charlie: {name: \"cat\"}"
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();

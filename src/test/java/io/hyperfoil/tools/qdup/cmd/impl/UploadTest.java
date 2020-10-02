@@ -7,6 +7,7 @@ import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 
@@ -48,9 +49,9 @@ public class UploadTest extends SshTestBase {
             builder.addHostToRole("role","local");
             builder.addRoleRun("role","run-upload",new HashMap<>());
 
-            RunConfig config = builder.buildConfig();
+            RunConfig config = builder.buildConfig(Parser.getInstance());
 
-            assertFalse("unexpected errors:\n"+config.getErrors().stream().collect(Collectors.joining("\n")),config.hasErrors());
+            assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
 
             Dispatcher dispatcher = new Dispatcher();

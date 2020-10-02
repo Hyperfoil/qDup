@@ -13,8 +13,10 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 public class SetStateTest extends SshTestBase {
 
@@ -68,7 +70,7 @@ public class SetStateTest extends SshTestBase {
          "      key: RUN.key ",
          "      value: ${{=\"${{host.mac}}\".replace(/:/g,'-')}}",
          "    separator: _",
-         "  - set-state: RUN.ARGS ${{= ${{FOO}}.join(' ')}}",
+         "  - set-state: RUN.ARGS ${{= ${{FOO:[\"a\",\"b\"]}}.join(' ')}}",
          "hosts:",
          "  local: " + getHost(),
          "roles:",
@@ -81,7 +83,9 @@ public class SetStateTest extends SshTestBase {
          "    mac: \""+mac+"\""
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -91,7 +95,7 @@ public class SetStateTest extends SshTestBase {
 
       State state = config.getState();
 
-      assertTrue("state shoudl have key",state.has("key"));
+      assertTrue("state should have key",state.has("key"));
       assertEquals("key should be mac with : replaced with -",mac.replace(":","-"),state.get("key"));
    }
 
@@ -119,7 +123,7 @@ public class SetStateTest extends SshTestBase {
          "  FOO: [ \"ant\", \"apple\" ]"
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
@@ -157,7 +161,7 @@ public class SetStateTest extends SshTestBase {
          "  charlie: {name: \"cat\"}"
       ),false));
 
-      RunConfig config = builder.buildConfig();
+      RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 

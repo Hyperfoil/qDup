@@ -15,6 +15,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,7 +44,30 @@ public class RunConfigBuilderTest extends SshTestBase {
     }
 
     @Test
-    public void error_missing_state_value() {
+    public void error_missing_signal_value() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("error", stream("" +
+            "scripts:",
+            "  foo:",
+            "  - signal: ${{BAR}}",
+            "hosts:",
+            "  local: "+getHost(),
+            "roles:",
+            "  doit:",
+            "    hosts: [local]",
+            "    setup-scripts: [foo]",
+            "states:",
+            "  BAR: ${{BIZ}}",
+            "  BIZx: "
+        ), false));
+        RunConfig runConfig = builder.buildConfig(parser);
+        assertTrue("runConfig errors:\n" + runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")), runConfig.hasErrors());
+        assertEquals("expect 1 error:\n"+ runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),1,runConfig.getErrors().size());
+    }
+
+    @Test
+    public void error_missing_referenced_state_value() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("ctrlC", stream("" +
@@ -63,8 +87,8 @@ public class RunConfigBuilderTest extends SshTestBase {
                 "  BIZx: "
         ), false));
         RunConfig runConfig = builder.buildConfig(parser);
-        assertTrue("runConfig errors:\n" + runConfig.getErrors().stream().collect(Collectors.joining("\n")), runConfig.hasErrors());
-        assertEquals("expect 1 error:\n"+ runConfig.getErrors().stream().collect(Collectors.joining("\n")),1,runConfig.getErrors().size());
+        assertTrue("runConfig errors:\n" + runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")), runConfig.hasErrors());
+        assertEquals("expect 1 error:\n"+ runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),1,runConfig.getErrors().size());
     }
 
     @Test
@@ -88,7 +112,7 @@ public class RunConfigBuilderTest extends SshTestBase {
             "  BIZx: "
         ), false));
         RunConfig runConfig = builder.buildConfig(parser);
-        assertFalse("runConfig errors:\n" + runConfig.getErrors().stream().collect(Collectors.joining("\n")), runConfig.hasErrors());
+        assertFalse("runConfig errors:\n" + runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")), runConfig.hasErrors());
     }
 
     @Test
@@ -108,7 +132,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         ),true));
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("runConfig errors:\n"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
         Script fooScript = runConfig.getScript("foo");
 
@@ -131,6 +155,11 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testRolesWithState(){
         WamlParser parser = new WamlParser();
         parser.load("with",stream("",
+            "scripts:",
+            "  build-agroal:",
+            "  - echo",
+            "  setup-wildfly:",
+            "  - echo",
             "hosts:",
             "  local : me@localhost",
             "roles:",
@@ -145,12 +174,11 @@ public class RunConfigBuilderTest extends SshTestBase {
         RunConfigBuilder builder = getBuilder();
 
         builder.loadWaml(parser);
-        RunConfig runConfig = builder.buildConfig();
+        RunConfig config = builder.buildConfig();
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 
-        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
-
-        assertTrue("run should have wildfly role",runConfig.getRoleNames().contains("wildfly"));
-        Role role = runConfig.getRole("wildfly");
+        assertTrue("run should have wildfly role",config.getRoleNames().contains("wildfly"));
+        Role role = config.getRole("wildfly");
         assertEquals("hosts in wildfly role",1,role.getDeclaredHosts().size());
         List<ScriptCmd> setup = role.getSetup();
         assertEquals("two scripts in setup",2,setup.size());
@@ -184,15 +212,13 @@ public class RunConfigBuilderTest extends SshTestBase {
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("runConfig errors:\n"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
-        Set<String> signalNames = runConfig.getRunStage().getSignals();
-        Set<String> waitNames = runConfig.getRunStage().getWaiters();
+        List<String> signalNames = runConfig.getSignalCounts().entries();
 
         assertTrue("signal: "+signalNames.toString(),signalNames.contains("SERVER_READY"));
-        assertTrue("wait-for: "+waitNames.toString(),waitNames.contains("SERVER_READY"));
 
-        long signalCount = runConfig.getRunStage().getSignalCount("SERVER_READY");
+        long signalCount = runConfig.getSignalCounts().count("SERVER_READY");
 
         assertEquals("signal count for SERVER_READY",2,signalCount);
     }
@@ -209,7 +235,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         ),true));
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("runConfig errors:\n"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
         State state = runConfig.getState();
 
@@ -248,7 +274,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("runConfig errors:\n"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
         State state = runConfig.getState();
 
@@ -285,7 +311,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("runConfig errors:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("runConfig errors:\n"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
         Script script = runConfig.getScript("first");
 
@@ -308,7 +334,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
         Script foo = runConfig.getScript("foo");
 
@@ -340,7 +366,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
         Script first = runConfig.getScript("first");
 
@@ -369,7 +395,7 @@ public class RunConfigBuilderTest extends SshTestBase {
         builder.loadWaml(parser);
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
         Script script = runConfig.getScript("first");
 
@@ -468,7 +494,7 @@ public class RunConfigBuilderTest extends SshTestBase {
 
         RunConfig runConfig = builder.buildConfig();
 
-        assertFalse("RunConfig should not contain errors but saw:\n"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("RunConfig should not contain errors but saw:\n"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
 
         Host foo = new Host("user","foo");
         Host bar = new Host("user","bar");
@@ -507,7 +533,7 @@ public class RunConfigBuilderTest extends SshTestBase {
            ),true
         ));
         RunConfig runConfig = builder.buildConfig();
-        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrors().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
+        assertFalse("RunConfig should not contain errors but saw\n:"+runConfig.getErrorStrings().stream().collect(Collectors.joining("\n")),runConfig.hasErrors());
         Script firstScript = runConfig.getScript("firstScript");
         assertNotNull("firstScript should exist but was null",firstScript);
         Cmd next = firstScript.getNext();

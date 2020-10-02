@@ -8,6 +8,7 @@ import io.hyperfoil.tools.qdup.cmd.Result;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Assert;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
@@ -69,7 +70,7 @@ public class XmlCmdTest extends SshTestBase {
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-xml",new HashMap<>());
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(Parser.getInstance());
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
@@ -79,7 +80,7 @@ public class XmlCmdTest extends SshTestBase {
         File tmpXml = new File("/tmp/foo.xml");
 
         try {
-            new Local(getBuilder().buildConfig())
+            new Local(getBuilder().buildConfig(Parser.getInstance()))
                     .download(tmpXml.getAbsolutePath(), tmpXml.getAbsolutePath(), getHost());
             String content = new String(Files.readAllBytes(tmpXml.toPath()));
             assertFalse("content should not contain uno",content.contains("uno"));
@@ -113,7 +114,7 @@ public class XmlCmdTest extends SshTestBase {
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-xml",new HashMap<>());
 
-        RunConfig config = builder.buildConfig();
+        RunConfig config = builder.buildConfig(Parser.getInstance());
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
