@@ -261,10 +261,9 @@ public class SshSession {
     }
 
     private void shConsumers(String output) {
-
-        for (Consumer<String> consumer : shObservers.values()) {
+        shObservers.forEach((name,consumer)->{
             consumer.accept(output);
-        }
+        });
     }
 
     public int permits() {
@@ -304,7 +303,6 @@ public class SshSession {
             sessionStreams = new SessionStreams(getName(), executor);
 
             semaphoreCallback = (name) -> {
-
                 sessionStreams.flushBuffer();
                 String streamString = sessionStreams.currentOutput();
 
@@ -312,14 +310,19 @@ public class SshSession {
                         .replaceAll("^[\r\n]+", "")  //replace leading newlines
                         .replaceAll("[\r\n]+$", "") //replace trailing newlines
                         .replaceAll("\r\n", "\n"); //change \r\n to just \n
-                shConsumers(output);
+
+
+
                 //TODO use atomic boolean to set expecting response and check for true bfore release?
                 shellLock.release();
+
+                //shellLock.release so we can use shSync in consumer? causing InterruptedException
+                shConsumers(output);
+
                 if (isTracing()) {
                     try {
                         sessionStreams.getTrace().write("RELEASE".getBytes());
                     } catch (IOException e) {
-                        e.printStackTrace();
                     }
                 }
                 if (permits() > 1) {
@@ -354,7 +357,7 @@ public class SshSession {
 
             //TODO do we wait 1s for slow connections?
 
-            sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
+            sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"");
             sh("");//forces the thread to wait for the previous sh to complete
             if (setupCommand != null && !setupCommand.trim().isEmpty()) {
                 sh(setupCommand);
@@ -378,7 +381,6 @@ public class SshSession {
                 }
             } catch (InterruptedException e) {
                 logger.warn("{}@{} interrupted while waiting for initial PROMPT", host.getUserName(), host.getHostName());
-                //e.printStackTrace();
                 Thread.interrupted();
             }
         } catch (GeneralSecurityException | IOException e) {
@@ -459,7 +461,6 @@ public class SshSession {
                     commandStream.write(ctrlInt(key));//b3 works for real qdup, not TestServer
                     commandStream.flush();
                 } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
         } else {
@@ -477,7 +478,6 @@ public class SshSession {
                     commandStream.println((command));
                     commandStream.flush();
                 } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
         } else {
@@ -528,20 +528,17 @@ public class SshSession {
 
     //TODO clear the buffers before sending the current command?
     private void sh(String command, boolean acquireLock, Consumer<String> callback, Map<String, String> prompt) {
+
         command = command.replaceAll("[\r\n]+$", ""); //replace trailing newlines
         logger.trace("{} sh: {}, lock: {}", host, command, acquireLock);
-
         lastCommand = command;
-
         if (isOpen()) {
-
             if (command == null) {
                 return;
             }
             if (!channelShell.isOpen()) {
                 logger.error("Shell is not connected for " + command);
                 //TODO fail the run or reconnect
-
             } else {
                 if (acquireLock) {
                     try {
@@ -550,13 +547,10 @@ public class SshSession {
                             logger.error("ShSession " + getName() + "cmd=" + command + " sh.acquire --> permits==" + permits());
                             assert permits() == 0;
                         }
-
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
                         Thread.interrupted();
                     }
                     sessionStreams.clearInline();
-
                     if (prompt != null && !prompt.isEmpty()) {
                         sessionStreams.addInlinePrompts(prompt.keySet(), (name) -> {
                             if (prompt.containsKey(name)) {
@@ -598,7 +592,6 @@ public class SshSession {
             assert semaphore.availablePermits() == 0;
             semaphore.acquire();
         } catch (InterruptedException e) {
-            e.printStackTrace();
         }
         return sb.toString();
     }
@@ -616,7 +609,7 @@ public class SshSession {
                     ExecWatcher watcher = new ExecWatcher(command, callback, baos);
                     MultiStream stream = new MultiStream();
                     stream.addStream("baos", baos);
-                    stream.addStream("sout", System.err);
+                    //stream.addStream("sout", System.err);
                     channelExec.setOut(stream);
                     //channelExec.setErr(baos); //added to try and catch echo output
                     channelExec.addChannelListener(watcher);
@@ -625,7 +618,6 @@ public class SshSession {
                 channelExec.open().verify(9L, TimeUnit.SECONDS);
 
             } catch (IOException e) {
-                e.printStackTrace();
             }
         }
     }
@@ -663,7 +655,6 @@ public class SshSession {
                         //do we really care about release?
                         //we are going to destroy the semaphore / shell
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
                         Thread.interrupted();
                     }
                 }
@@ -672,7 +663,6 @@ public class SshSession {
                 clientSession.close();
                 sshClient.stop();
             } catch (IOException e) {
-                e.printStackTrace();
             }
         }
     }
