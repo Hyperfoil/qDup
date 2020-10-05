@@ -37,6 +37,7 @@ public class SuffixStream extends MultiStream {
         @Override
         public void run() {
             if(lastIndex == writeIndex){//if there has not been a subsequent write
+                future = null; //so we don't accidentally cancel the future running a shSync
                 foundSuffix(name,writeIndex);
                 callConsumers(name);
             }

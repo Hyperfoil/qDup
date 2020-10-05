@@ -16,16 +16,25 @@ import java.util.List;
 public class SpyContext implements Context {
 
     List<String> updates;
+    List<String> log;
+    List<String> error;
     String next;
     String skip;
+    private boolean aborted = false;
     State state = new State("");
 
-
+    private Context context;
 
     public SpyContext(){
+        this(null);
+    }
+    public SpyContext(Context context){
+        this.context = context;
         updates = new ArrayList<>();
         next = null;
         skip = null;
+        log = new ArrayList<>();
+        error = new ArrayList<>();
     }
 
     public void clear(){
@@ -37,26 +46,49 @@ public class SpyContext implements Context {
     @Override
     public void next(String output) {
         next = output;
+        if(context!=null){
+            context.next(output);
+        }
     }
 
     @Override
     public void skip(String output) {
         skip = output;
+        if(context!=null){
+            context.skip(output);
+        }
     }
 
     @Override
     public void update(String output) {
         updates.add(output);
+        if(context!=null){
+            context.update(output);
+        }
     }
 
     @Override
-    public void log(String message) {}
+    public void log(String message) {
+        log.add(message);
+        if(context!=null){
+            context.log(message);
+        }
+    }
 
     @Override
-    public void error(String message) {}
+    public void error(String message) {
+        log.add(message);
+        if(context!=null){
+            context.error(message);
+        }
+    }
 
     @Override
-    public void terminal(String output) {}
+    public void terminal(String output) {
+        if(context!=null){
+            context.terminal(output);
+        }
+    }
 
     @Override
     public boolean isColorTerminal() {
@@ -65,28 +97,48 @@ public class SpyContext implements Context {
 
     @Override
     public SystemTimer getTimer() {
+        if(context!=null){
+            return context.getTimer();
+        }
         return null;
     }
 
     @Override
-    public Host getHost(){return null;}
+    public Host getHost(){
+        if(context!=null){
+            return context.getHost();
+        }
+        return null;
+    }
     @Override
     public String getRunOutputPath() {
+        if(context!=null){
+            return context.getRunOutputPath();
+        }
         return null;
     }
 
     @Override
     public Cmd getCurrentCmd() {
+        if(context!=null){
+            return context.getCurrentCmd();
+        }
         return null;
     }
 
     @Override
     public Script getScript(String name, Cmd command) {
+        if(context!=null){
+            return context.getScript(name,command);
+        }
         return null;
     }
 
     @Override
     public SshSession getSession() {
+        if(context!=null){
+            return context.getSession();
+        }
         return null;
     }
 
@@ -106,36 +158,60 @@ public class SpyContext implements Context {
     @Override
     public void abort(Boolean skipCleanup) {
 
+        aborted = true;
+        if(context!=null){
+            context.abort(skipCleanup);
+        }
     }
 
     @Override
     public void done() {
-
+        if(context!=null){
+            context.done();
+        }
     }
 
     @Override
     public Local getLocal() {
+        if(context!=null){
+            return context.getLocal();
+        }
+
         return null;
     }
 
     @Override
     public void schedule(Runnable runnable, long delayMs) {
-
+        if(context!=null){
+            context.schedule(runnable,delayMs);
+        }
     }
 
     @Override
     public Coordinator getCoordinator() {
+
+        if(context!=null){
+            return context.getCoordinator();
+        }
         return null;
     }
 
     @Override
-    public void close() { }
+    public void close() {
+        if(context!=null){
+            context.close();
+        }
+    }
 
+    public boolean isAborted(){return aborted;}
     public String getNext(){return next;}
     public boolean hasNext(){return next!=null;}
     public String getSkip(){return skip;}
     public boolean hasSkip(){return skip!=null;}
     public List<String> getUpdates(){return updates;}
+
+    public List<String> getLogs(){return log;}
+    public List<String> getErrors(){return error;}
 
     @Override
     public String toString(){return "SpyContext next="+next+" skip="+skip;}

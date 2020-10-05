@@ -198,7 +198,7 @@ public class RunConfigBuilder {
       });
       yamlFile.getHosts().forEach((name, host) -> {
          if (hostAlias.containsKey(name) && !hostAlias.get(name).equals(host)) {
-            addError(String.format("%s tried to load host $s:$s but alredy defined as $s", yamlFile.getPath(), name, host, hostAlias.get(name)));
+            addError(String.format("%s tried to load host $s:$s but already defined as $s", yamlFile.getPath(), name, host, hostAlias.get(name)));
          } else {
             hostAlias.put(name, host);
          }
@@ -500,9 +500,10 @@ public class RunConfigBuilder {
       this.timeout = timeout;
    }
 
-   private String getKnownHosts() {
+   public String getKnownHosts() {
       return knownHosts;
    }
+
 
    public void setKnownHosts(String knownHosts) {
       this.knownHosts = knownHosts;
@@ -516,9 +517,10 @@ public class RunConfigBuilder {
       this.identity = identity;
    }
 
-   private String getPassphrase() {
+   public String getPassphrase() {
       return passphrase;
    }
+
 
    public void setPassphrase(String passphrase) {
       this.passphrase = passphrase;

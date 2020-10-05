@@ -44,5 +44,4 @@ public class HostTest {
       assertNull("invalid host should be null",h);
    }
 
-
 }

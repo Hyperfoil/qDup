@@ -7,7 +7,6 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 import io.hyperfoil.tools.qdup.cmd.impl.SetState;
-import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.RunSummary;
@@ -53,6 +52,8 @@ public class UndefinedStateVariables implements RunRule {
                 .findAny().orElse(null) != null;
     }
     public Set<String> getIgnore(){return ignore;}
+    public Set<String> getUsedVariables(){return usedVariables.keys();}
+    public Set<String> getSetVariables(){return setVariables.keys();}
     private void addUsedVariable(String name, RSSCRef ref) {
         String trimmed = trim(name);
         usedVariables.put(trimmed, ref);
@@ -130,6 +131,13 @@ public class UndefinedStateVariables implements RunRule {
 
         String commandStr = parser != null ? parser.dump(parser.representCommand(command)) : command.toString();
         if (Cmd.hasStateReference(commandStr, command)) {
+            RSSCRef rssc = new RSSCRef(
+                    role,
+                    stage,
+                    script,
+                    command
+            );
+            Cmd.getStateVariables(commandStr,command, config.getState(),ref).forEach(v->addUsedVariable(v,rssc));
             command.loadAllWithDefs(config.getState());
             ref.loadAllWithDefs(config.getState());
             String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), ref);
@@ -162,8 +170,11 @@ public class UndefinedStateVariables implements RunRule {
                 command
             );
             ((Regex) command).getCaptureNames().forEach(captureName->{
-                String populated = Cmd.populateStateVariables(captureName,command, config.getState(),ref);
-                addSetVariable(populated,rssc,summary);
+                String toUse = captureName;
+                if(Cmd.hasStateReference(toUse,command)){
+                    toUse = Cmd.populateStateVariables(captureName,command, config.getState(),ref);
+                }
+                addSetVariable(toUse,rssc,summary);
             });
         } else if (command instanceof SetState) {
             RSSCRef rssc = new RSSCRef(
@@ -172,20 +183,29 @@ public class UndefinedStateVariables implements RunRule {
                 script,
                 command
             );
-            String str = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), ref);
-            addSetVariable(str,rssc,summary);
-        } else if (command instanceof ForEach){
-            String str = Cmd.populateStateVariables(((ForEach)command).getName(),command, config.getState(),ref);
-            if(Cmd.hasStateReference(str,command)){
-
+            String key = ((SetState) command).getKey();
+            String value = ((SetState) command).getValue();
+            if(Cmd.hasStateReference(key,command)){
+                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), ref);
             }
+            addSetVariable(key,rssc,summary);
+        } else if (command instanceof ForEach){
             RSSCRef rssc = new RSSCRef(
                     role,
                     stage,
                     script,
                     command
             );
-            addSetVariable(str,rssc,summary);
+            String key = ((ForEach)command).getName();
+            String value = ((ForEach)command).getDeclaredInput();
+            if(Cmd.hasStateReference(key,command)){
+                Cmd.getStateVariables(key,command, config.getState(),ref).forEach(v->addUsedVariable(v,rssc));
+                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), ref);
+            }
+            if(Cmd.hasStateReference(value,command)){
+                Cmd.getStateVariables(value,command, config.getState(),ref).forEach(v->addUsedVariable(v,rssc));
+            }
+            addSetVariable(key,rssc,summary);
         }
     }
 

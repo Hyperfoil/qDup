@@ -76,7 +76,6 @@ public class ScriptContext implements Context, Runnable{
 
     private final State state;
     private final Run run;
-    ///private final Profiler profiler;
     private final SystemTimer timer;
     private ContextObserver observer = null;
     private Semaphore lineQueueSemaphore;
@@ -91,8 +90,6 @@ public class ScriptContext implements Context, Runnable{
 
     long startTime = -1;
     long updateTime = -1;
-
-
 
     public String getContextId(){
         //TODO use a StringBuilder to correctly handle missing session or root
@@ -129,28 +126,20 @@ public class ScriptContext implements Context, Runnable{
                     this.update(line);
                 }
             );
-            //TODO does this belong here or in Sh?
-//            session.addShObserver(getClass().getSimpleName(),(output)->{
-//                this.next(output);
-//            });
         }
         this.lineQueueSemaphore = new Semaphore(1);
         this.lineQueue = new LinkedBlockingQueue<>();
         this.timeouts = new LinkedList<>();
-
     }
-
 
     public ScriptContext newChildContext(SystemTimer timer,Cmd root){
         sessionCounter.incrementAndGet();
         return new SharedScriptContext(timer,root);
     }
 
-
     public void setObserver(ContextObserver observer){
         this.observer = observer;
     }
-
     protected long getStartTime(){return startTime;}
     protected void setStartTime(long startTime){this.startTime = startTime;}
     protected long getUpdateTime(){return updateTime;}
@@ -158,7 +147,6 @@ public class ScriptContext implements Context, Runnable{
 
     protected Cmd getRootCmd(){return rootCmd;}
     public Cmd getCurrentCmd(){return currentCmd;}
-
 
     public Run getRun(){return run;}
 
@@ -193,7 +181,6 @@ public class ScriptContext implements Context, Runnable{
             session.close();
         }
     }
-
 
     public State getState(){return state;}
     @Override
@@ -281,40 +268,16 @@ public class ScriptContext implements Context, Runnable{
         getRunLogger().error("{}@{}:{}",rootString,getHost().getShortHostName(),filteredMessage);
     }
 
-    //was unused, delete in next update
-//    private void log(Cmd command,String output,Context context){
-//        String cmdLogOuptut = command == null ? output : command.getLogOutput(output,this);
-//        String populatedCommand = Cmd.populateStateVariables(cmdLogOuptut, command, state);
-//        String rootString;
-//        if(rootCmd instanceof Script){
-//            rootString = ((Script)rootCmd).getName();
-//        }else if (rootCmd instanceof ScriptCmd){
-//            rootString = ((ScriptCmd)rootCmd).getName();
-//        }else{
-//            rootString = rootCmd.toString();
-//        }
-//        getRunLogger().info("{}@{}:{}",
-//            rootString,
-//            getHost().getShortHostName(),
-//            populatedCommand
-//        );
-//    }
-
     public void closeLineQueue(){
         //only close if something is listening
         //may need to send close before listener has the semaphore (e.g. tests)
         lineQueue.add(CLOSE_QUEUE);
     }
 
-
-
-
-
     @Override
     public void next(String output) {
         getTimer().start("next");
         Cmd cmd = getCurrentCmd();
-
         if(!signalCmds.isEmpty()){
             signalCmds.forEach((name,onsignal)->{
                 getCoordinator().removeWaiter(name,onsignal);

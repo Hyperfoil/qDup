@@ -4,16 +4,17 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.yaup.AsciiArt;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Sh extends Cmd {
 
     private String command;
     private String populatedCommand;
     private Map<String,String> prompt;
+
+    private String exitCode = "";
+
     public Sh(String command){
         this(command,false);
     }
@@ -21,6 +22,9 @@ public class Sh extends Cmd {
         this(command,silent,new LinkedHashMap<>());
 
     }
+
+
+
     public Sh(String command, boolean silent, Map<String,String> prompt){
         super(silent);
         this.command = command;
@@ -38,6 +42,7 @@ public class Sh extends Cmd {
 
     @Override
     public void run(String input, Context context) {
+
         populatedCommand = populateStateVariables(command,this,context.getState());
         if(Cmd.hasStateReference(populatedCommand,this)){
             context.terminal(
@@ -61,6 +66,7 @@ public class Sh extends Cmd {
                 String populatedValue = Cmd.populateStateVariables(value,this,context.getState());
                 populated.put(key,populatedValue);
             });
+
             context.getSession().sh(populatedCommand,context::next,populated);
         }
         context.getTimer().start("Sh-await-callback:"+populatedCommand);
@@ -73,6 +79,21 @@ public class Sh extends Cmd {
             rtrn+="\n"+output;
         }
         return rtrn;
+    }
+
+    @Override
+    public void postRun(String output,Context context){
+
+        String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
+        context.getSession().shSync("(exit $__qdup_ec);");
+        String toLog = getLogOutput(output,context);
+        if(toLog != null && !toLog.isBlank()) {
+            if ("0".equals(response)) {
+                context.log(toLog);
+            }else{
+                context.error(toLog);
+            }
+        }
     }
 
     @Override

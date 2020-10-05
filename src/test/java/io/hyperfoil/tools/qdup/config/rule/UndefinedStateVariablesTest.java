@@ -101,6 +101,8 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         summary.addRule("state",rule);
         summary.scan(config.getRoles(),builder);
         assertTrue("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),1,rule.getUsedVariables().size());
+
     }
     @Test
     public void error_missing_referenced_state_value() {
@@ -128,6 +130,9 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
         summary.scan(config.getRoles(),builder);
+
+        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),2,rule.getUsedVariables().size());
+
         assertTrue("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
 
         assertTrue("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -157,6 +162,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         summary.addRule("state",rule);
         summary.scan(config.getRoles(),builder);
         assertTrue("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),1,rule.getUsedVariables().size());
     }
 
     @Test
@@ -194,6 +200,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         summary.addRule("state",rule);
         summary.scan(config.getRoles(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),9,rule.getUsedVariables().size());
     }
 
     @Test
@@ -221,6 +228,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         summary.addRule("state",rule);
         summary.scan(config.getRoles(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),3,rule.getUsedVariables().size());
     }
 
     @Test
@@ -257,5 +265,6 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         summary.scan(config.getRoles(),builder);
 
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),7,rule.getUsedVariables().size());
     }
 }

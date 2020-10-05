@@ -343,8 +343,6 @@ public class JarMain {
       CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
       RunConfigBuilder runConfigBuilder = new RunConfigBuilder(cmdBuilder);
 
-      //WamlParser wamlParser = new WamlParser();
-
       for (String yamlPath : yamlPaths) {
          File yamlFile = new File(yamlPath);
          if (!yamlFile.exists()) {

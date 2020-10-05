@@ -2,14 +2,10 @@ package io.hyperfoil.tools.qdup;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.AppenderBase;
-import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.Context;
-import io.hyperfoil.tools.qdup.cmd.ContextObserver;
-import io.hyperfoil.tools.qdup.cmd.Dispatcher;
-import io.hyperfoil.tools.qdup.cmd.Result;
-import io.hyperfoil.tools.qdup.cmd.Script;
+import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
@@ -17,14 +13,18 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInput;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -120,8 +120,76 @@ public class RunTest extends SshTestBase {
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
       doit.run();
+      //TODO post doit validation?
    }
 
+   @Test
+   public void test_check_exit_code(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+             "scripts:",
+              "  foo:",
+              "    - sh: ls /tmp; (exit 42);",
+              "    - sh: echo $?",
+              "    - sh: doesnotexist",
+              "    - sh: echo $?",
+              "    - sh: pwd",
+              "    - sh: history",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]"
+      ),true));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+   }
+
+   @Test
+   public void test_exitCode() {
+      Semaphore block = new Semaphore(0);
+      Sh cmd = new Sh("whoami; pwd; (exit 42);");
+      cmd.then(Cmd.code(((input, state) -> {
+         block.release();
+         return Result.next("ok");
+      })));
+      State state = new State(State.RUN_PREFIX);
+      ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(4, runnable -> new Thread(runnable, "scheduled"));
+      RunConfigBuilder builder = getBuilder();
+      SshSession sshSession = new SshSession(
+              getHost(),
+              builder.getKnownHosts(),
+              builder.getIdentity(),
+              builder.getPassphrase(),
+              builder.getTimeout(),
+              "",
+              scheduled,
+              false
+      );
+      RunConfig config = builder.buildConfig(Parser.getInstance());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      List<String> errors = new ArrayList<>();
+      ScriptContext context = new ScriptContext(sshSession,state,doit,new SystemTimer("test"),cmd){
+         @Override
+         public void error(String message){
+            errors.add(message);
+            super.error(message);
+         }
+      };
+      cmd.run("",context);
+      try{
+         block.acquire();
+      } catch (InterruptedException e) {
+         fail(e.getMessage());
+      }
+   }
 
    //TODO run test when connected to the internet (or valid registry)
    @Test
@@ -1092,6 +1160,42 @@ public class RunTest extends SshTestBase {
 
    }
 
+   @Test
+   public void host_with_password(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+             "scripts:",
+              "  foo:",
+              "  - set-state: RUN.worked true",
+              "hosts:",
+              "  local: " + getPasswordHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]",
+              "states:",
+              "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+              "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+              "  charlie: {name: \"cat\"}"
+      ),false));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+
+      List<String> signals = new ArrayList<>();
+
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+
+      State state = config.getState();
+
+      assertTrue("state should have worked",state.has("worked"));
+      assertEquals("timer should be ant","true",state.getString("worked"));
+   }
 
 
    @Test
