@@ -57,7 +57,7 @@ public class SetState extends Cmd {
                     //TODO populatedValue should already resolve patterns, any pattern prefix means it failed to resolve?
 
                 }
-                if (Json.isJsonLike(populatedValue) && value.contains(StringUtil.PATTERN_PREFIX) && value.contains(StringUtil.PATTERN_SUFFIX)) {
+                if (Json.isJsonLike(populatedValue) && populatedValue.contains(StringUtil.PATTERN_PREFIX) && populatedValue.contains(StringUtil.PATTERN_SUFFIX)) {
                     Json fromPopulatedValue = Json.fromString(populatedValue);
                     if (!fromPopulatedValue.isEmpty()) {
                         context.getState().set(populatedKey, fromPopulatedValue);
