@@ -292,9 +292,11 @@ State references also have built in functions for time conversion
 
 qDup uses a state hierarchy so scripts default to their own state namespace but can use a shared namespace if desired.
 There are 3 namespaces: default, HOST, and RUN.
-####default
+
+#### default
 The default namespace is for all variables without a namespace prefix and ensures scripts do not have to use unique state names
-####host
+
+#### HOST
 The host namespace is shared by all scripts on the same host. State values can be set on the host namespace by using the `HOST.`
 prefix for the variable name.
 ```yaml
@@ -302,7 +304,8 @@ prefix for the variable name.
 - echo: ${{HOST.name}} ${{name}}
 ``` 
 The host namespace can be explicitly used with ${{HOST.name}} but will also be used for ${{name}} if name is not in the default namespace.
-####run
+
+#### RUN
 The run namespace is the top namespace and contains all state values defined in yaml. It shared by all scripts in the run
 and can be accessed using the `RUN.` prefix. Like the host namespace, the run namespace will be used to resolve default scoped variables
 if the value is not found in the default or host namespace. 
@@ -310,7 +313,8 @@ if the value is not found in the default or host namespace.
 - set-state: RUN.name
 - echo: ${{RUN.name}} ${{name}}
 ```
-####with
+
+#### with
 State values can also be bound when adding a script to a role or when calling a command (e.g. 'script') in script.
 Values defined in with (or the with on a parent command) do not use a prefix and take priority over default, host, or run namespace.
 ```yaml
