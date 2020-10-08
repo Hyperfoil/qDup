@@ -81,11 +81,15 @@ public class RunSummary implements RunRule{
                             "missing script: " + scriptName);
                     //TODO is it an error if a script isn't found?
                 } else {
-                    walk(role, stage, script, host, namedScript, isWatching, config, ref.add(command));
+                    Cmd target = namedScript.deepCopy();
+                    target.setStateParent(command); //to maintain reference to with's from
+                    walk(role, stage, script, host, target, isWatching, config, ref.add(command));
                 }
             }
         } else if (command instanceof InvokeCmd) {
-            Cmd invokedCmd = ((InvokeCmd) command).getCommand();
+            Cmd invokedCmd = ((InvokeCmd) command).getCommand().deepCopy();
+            invokedCmd.setStateParent(command);
+
             walk(role,stage,script,host,invokedCmd,isWatching,config,ref.add(command));
         }
     }

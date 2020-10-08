@@ -2,22 +2,17 @@ package io.hyperfoil.tools.qdup;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.classic.spi.LoggingEvent;
-import ch.qos.logback.core.AppenderBase;
 import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInput;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -113,7 +108,7 @@ public class RunTest extends SshTestBase {
          "  doit:",
          "    hosts: [local]",
          "    run-scripts: [foo]"
-      ),true));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -142,7 +137,7 @@ public class RunTest extends SshTestBase {
               "  doit:",
               "    hosts: [local]",
               "    run-scripts: [foo]"
-      ),true));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -209,7 +204,7 @@ public class RunTest extends SshTestBase {
          "  doit:",
          "    hosts: [local]",
          "    run-scripts: [foo]"
-      ),true));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -236,20 +231,18 @@ public class RunTest extends SshTestBase {
    public void invoke_with_state_script_name() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      WamlParser wamlParser = new WamlParser();
-
       StringBuilder sb = new StringBuilder();
 
-      wamlParser.load("test", stream("" +
+      builder.loadYaml(parser.loadFile("test", stream("" +
          "scripts:",
          "  foo:",
          "  - sh: echo ${{NAME}}",
          "  - script: ${{NAME}}",
          "  bar:",
          "  - sh: echo ${{NAME}}",
-         "  - invoke: foo",
-         "      with:",
-         "        NAME: biz",
+         "  - script: foo",
+         "    with:",
+         "      NAME: biz",
          "  fail:",
          "  - sh: pwd",
          "  biz:",
@@ -262,8 +255,7 @@ public class RunTest extends SshTestBase {
          "    run-scripts: [bar]",
          "states:",
          "  NAME: fail"
-      ));
-      builder.loadWaml(wamlParser);
+      )));
       RunConfig config = builder.buildConfig(parser);
       Cmd bar = config.getScript("bar");
       assertNotNull("missing bar script", bar);
@@ -299,7 +291,7 @@ public class RunTest extends SshTestBase {
          "    run-scripts: [foo]",
          "states:",
          "  BAR: [{biz: {buz: 'one'}},{biz: {buz: 'two'}},{biz: {buz: 'three'}}]"
-      ),true));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
@@ -358,7 +350,7 @@ public class RunTest extends SshTestBase {
          "    run-scripts: [foo,bar]",
          "states:",
          "  NAME: signalName"
-      ),true));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
    }
@@ -398,7 +390,7 @@ public class RunTest extends SshTestBase {
               "    run-scripts: [foo, bar]",
               "states:",
               "  OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]"
-      ),false));
+      )));
       RunConfig config = builder.buildConfig(parser);
 
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -447,7 +439,7 @@ public class RunTest extends SshTestBase {
               "    run-scripts: [foo]",
               "states:",
               "  OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]"
-      ),false));
+      )));
 
       Logger root = (Logger) LoggerFactory.getLogger(Run.STATE_LOGGER_NAME);
       //set log level to INFO to disable STATE logger
@@ -494,7 +486,7 @@ public class RunTest extends SshTestBase {
          "    setup-scripts: [foo]",
          "    run-scripts: [bar]",
          "    cleanup-scripts: [biz]"
-      ),true));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -854,7 +846,7 @@ public class RunTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
 
@@ -1139,7 +1131,7 @@ public class RunTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
 
@@ -1178,7 +1170,7 @@ public class RunTest extends SshTestBase {
               "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
               "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
               "  charlie: {name: \"cat\"}"
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -1221,7 +1213,7 @@ public class RunTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
 

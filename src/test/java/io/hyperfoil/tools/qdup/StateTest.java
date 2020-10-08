@@ -1,7 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
@@ -34,7 +33,7 @@ public class StateTest extends SshTestBase{
     @Test
     public void populateStateVariables_object_spread(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("",stream(""+
               "scripts:",
            "  foo:",
@@ -50,7 +49,7 @@ public class StateTest extends SshTestBase{
            "  multi:",
            "   - one",
            "   - two"
-        ),true));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
         String one = Cmd.populateStateVariables("${{inline.one}}",null,config.getState());
@@ -62,7 +61,7 @@ public class StateTest extends SshTestBase{
     @Test
     public void array_object_reference(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("",stream(""+
               "scripts:",
            "  foo:",
@@ -78,7 +77,7 @@ public class StateTest extends SshTestBase{
            "  multi:",
            "   - one",
            "   - two"
-        ),true));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
 
@@ -89,7 +88,7 @@ public class StateTest extends SshTestBase{
     @Test
     public void array_index_reference(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("",stream(""+
               "scripts:",
            "  foo:",
@@ -105,7 +104,7 @@ public class StateTest extends SshTestBase{
            "  multi:",
            "   - one",
            "   - two"
-        ),true));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
 
@@ -116,7 +115,7 @@ public class StateTest extends SshTestBase{
     @Test
     public void array_state_in_yaml(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("",stream(""+
            "scripts:",
            "  foo:",
@@ -132,7 +131,7 @@ public class StateTest extends SshTestBase{
            "  multi:",
            "   - one",
            "   - two"
-        ),true));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
 

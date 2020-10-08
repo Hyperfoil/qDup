@@ -10,7 +10,6 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -33,7 +32,7 @@ public class ParserTest extends SshTestBase {
            "    - echo",
            "    then:",
            "    - done"
-        ),true);
+        ));
 
         assertNotNull(loaded);
         assertTrue(loaded.getScripts().containsKey("foo"));
@@ -62,7 +61,7 @@ public class ParserTest extends SshTestBase {
                 "  foo: bar",
                 "  biz:",
                 "  buz:"
-        ),true);
+        ));
 
         assertNotNull(loaded);
 
@@ -96,7 +95,7 @@ public class ParserTest extends SshTestBase {
            "      - ctrlC",
            "    then:",
            "    - done"
-        ),true);
+        ));
 
         assertNotNull(loaded);
         assertTrue(loaded.getScripts().containsKey("foo"));
@@ -131,7 +130,7 @@ public class ParserTest extends SshTestBase {
            "  - ctrlC:",
            "    then:",
            "    - echo"
-        ),true);
+        ));
 
         assertNotNull("should be able to load a nested string cmd",loaded);
         assertTrue("missing foo script",loaded.getScripts().containsKey("foo"));
@@ -159,7 +158,7 @@ public class ParserTest extends SshTestBase {
                 "  - read-signal: FOO",
                 "    else:",
                 "    - sh: pwd"
-                ),false);
+                ));
         assertTrue("missing foo script",loaded.getScripts().containsKey("foo"));
         Script foo = loaded.getScripts().get("foo");
         assertTrue("next should be ReadState",foo.getNext() instanceof ReadState);
@@ -179,7 +178,7 @@ public class ParserTest extends SshTestBase {
            "  - ctrlC:",
            "  - echo",
            "  - done"
-        ),true);
+        ));
         assertTrue("missing foo script",loaded.getScripts().containsKey("foo"));
         Script foo = loaded.getScripts().get("foo");
         assertTrue("next should be ctrlC",foo.getNext() instanceof CtrlC);
@@ -204,9 +203,10 @@ public class ParserTest extends SshTestBase {
             "    - sh: perf record -a -g -o ${{PERF_DATA:/tmp/perf.data}} & export PERF_RECORD_PID=\"$!\"",
             "    - wait-for: ${{WAIT_STOP}}",
             "    - sh: kill ${PERF_RECORD_PID}",
-            "       - timer: 5s # No idea why this is getting stuck at times",
-            "          - ctrlC"
-       ),true);
+            "      timer:",
+            "        5s: # No idea why this is getting stuck at times",
+            "        - ctrlC"
+       ));
         assertNotNull(loaded);
         assertTrue(loaded.getScripts().containsKey("perf-record"));
         Script script = loaded.getScripts().get("perf-record");
@@ -223,7 +223,7 @@ public class ParserTest extends SshTestBase {
            "  - sh: pwd",
            "    then:",
            "    - set-state: PWD"
-        ),true);
+        ));
 
         assertNotNull("loaded should not be null",loaded);
         assertEquals("loaded scripts",1,loaded.getScripts().size());
@@ -239,10 +239,10 @@ public class ParserTest extends SshTestBase {
           "scripts:",
            "  foo:",
            "  - sh: pwd",
-           "      with:",
-           "        FOO: One,Two,Three",
-           "    - set-state: PWD"
-        ),true);
+           "    with:",
+           "      FOO: One,Two,Three",
+           "  - set-state: PWD"
+        ));
         assertNotNull("loaded should not be null",loaded);
         assertEquals("loaded scripts",1,loaded.getScripts().size());
         assertEquals("loaded hosts",0,loaded.getHosts().size());

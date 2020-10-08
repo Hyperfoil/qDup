@@ -5,9 +5,7 @@ import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.Role;
-import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.yaup.StringUtil;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -19,8 +17,6 @@ import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.Tag;
-import io.hyperfoil.tools.qdup.config.waml.WamlException;
-import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
@@ -29,7 +25,6 @@ import io.hyperfoil.tools.yaup.yaml.Mapping;
 import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
@@ -89,7 +84,7 @@ public class Parser {
                 (cmd) -> (cmd.getName() + " " + cmd.getInitial()),
 
                 (str) -> {
-                    List<String> split = CmdBuilder.split(str);
+                    List<String> split = Parser.split(str);
                     if (split.size() == 2) {
                         return new Countdown(split.get(0), Integer.parseInt(split.get(1)));
                     } else {
@@ -146,7 +141,7 @@ public class Parser {
                 "download",
                 (cmd) -> (cmd.getPath() + (cmd.getDestination() != null && !cmd.getDestination().isEmpty() ? " " + cmd.getDestination() : "")),
                 (str) -> {
-                    List<String> split = CmdBuilder.split(str);
+                    List<String> split = Parser.split(str);
                     if (split.size() <= 1) {
                         return new Download(str);
                     } else if (split.size() == 2) {
@@ -180,10 +175,10 @@ public class Parser {
         rtrn.addCmd(
                 ForEach.class,
                 "for-each",
-                //have to quote declaredInput because CmdBuilder.split() strips out the quotes, remove once cmd builder is gone
+                //have to quote declaredInput because Parser.split() strips out the quotes, remove once cmd builder is gone
                 (cmd) -> ((cmd.getName() + " " + (cmd.getDeclaredInput().trim().isEmpty() ? "" : "'" + cmd.getDeclaredInput()).trim() + "'")),
                 (str) -> {
-                    List<String> split = CmdBuilder.split(str);
+                    List<String> split = Parser.split(str);
                     if (split.size() <= 1) {
                         return new ForEach(split.get(0));
                     } else if (split.size() == 2) {
@@ -231,7 +226,7 @@ public class Parser {
                 "queue-download",
                 (cmd) -> (cmd.getPath() + (cmd.getDestination() != null && !cmd.getDestination().isEmpty() ? " " + cmd.getDestination() : "")),
                 (str) -> {
-                    List<String> split = CmdBuilder.split(str);
+                    List<String> split = Parser.split(str);
                     if (split.size() == 1) {
                         return new QueueDownload(split.get(0));
                     } else if (split.size() == 2) {
@@ -356,7 +351,7 @@ public class Parser {
                     }
                 },
                 (str) -> {
-                    List<String> split = CmdBuilder.split(str);
+                    List<String> split = Parser.split(str);
                     if (split.size() != 2) {
                         throw new YAMLException("cannot create set-signal from " + str);
                     } else {
@@ -372,7 +367,7 @@ public class Parser {
                     return cmd.getKey() + (cmd.getValue() != null && !cmd.getValue().isEmpty() ? " " + cmd.getValue() : "");
                 },
                 (str) -> {
-                    List<String> split = CmdBuilder.split(str);
+                    List<String> split = Parser.split(str);
                     if (split.size() <= 1) {
                         return new SetState(str);
                     } else {
@@ -445,7 +440,7 @@ public class Parser {
                 "upload",
                 (cmd) -> (cmd.getPath() + " " + cmd.getDestination()),
                 (str) -> {
-                    List<String> split = CmdBuilder.split(str);
+                    List<String> split = Parser.split(str);
                     if (split.size() <= 1) {
                         return new Upload(str);
                     } else if (split.size() == 2) {
@@ -462,7 +457,7 @@ public class Parser {
                 "wait-for",
                 (cmd) -> cmd.getName(),
                 (str) -> {
-                    List<String> split = CmdBuilder.split(str);
+                    List<String> split = Parser.split(str);
                     if (split.size() <= 1) {
                         return new WaitFor(str);
                     } else {
@@ -489,7 +484,7 @@ public class Parser {
                     }
                 },
                 (str) -> {
-                    List<String> split = CmdBuilder.split(str);
+                    List<String> split = Parser.split(str);
                     if (split.size() == 1) {
                         return new XmlCmd(str);
                     } else {
@@ -655,57 +650,106 @@ public class Parser {
     }
 
 
-    public YamlFile loadFile(String path, boolean enableWaml) {
+    public YamlFile loadFile(String path) {
         InputStream stream = FileUtility.getInputStream(path);
-        return loadFile(path, stream, enableWaml);
+        return loadFile(path, stream);
     }
 
-    public YamlFile loadFile(String path, InputStream stream, boolean enableWaml) {
+    public YamlFile loadFile(String path, InputStream stream) {
         String content = new BufferedReader(new InputStreamReader(stream))
                 .lines().collect(Collectors.joining("\n"));
-        return loadFile(path, content, enableWaml);
+        return loadFile(path, content);
     }
 
-    public YamlFile loadFile(String path, String content, boolean enableWaml) {
+    public YamlFile loadFile(String path, String content) {
         YamlFile loaded = null;
         try {
             loaded = yaml.loadAs(content, YamlFile.class);
         } catch (YAMLException e) {
-            if (enableWaml) {
-                try {
-                    WamlParser wamlParser = new WamlParser();
-                    wamlParser.load(path, new ByteArrayInputStream(content.getBytes()));
-                    if (wamlParser.hasErrors()) {
-                        logger.error("Failed to load {} with waml parser \n{}", path, wamlParser.getErrors().stream().collect(Collectors.joining("\n")));
-                    }
-                    RunConfigBuilder runConfigBuilder = new RunConfigBuilder(CmdBuilder.getBuilder());
-                    runConfigBuilder.loadWaml(wamlParser);
-                    String newContent = yaml.dump(YamlFileConstruct.MAPPING.getMap(runConfigBuilder.toYamlFile()));
-                    try {
-                        loaded = yaml.loadAs(newContent, YamlFile.class);
-                    } catch (Exception exception) {
-                        logger.error("Failed to load {} after waml transform\n{}\n{}", path, exception.getMessage(), newContent);
-                        exception.printStackTrace();
-                    }
-                } catch (WamlException wamlException) {
-                    logger.error("Failed to load {} as waml\n{}", path, wamlException.getMessage());
-                    wamlException.printStackTrace();
-                }
-                if (loaded != null) {
-                    logger.warn("loaded {} as deprecated waml format, convert with -W jar argument", path);
-                }
-            } else {
-                logger.error("Failed to load {} as yaml only\n{}", path, e.getMessage());
-                e.printStackTrace();
-            }
+                logger.error("Failed to load {} as yaml\n{}", path, e.getMessage());
         } catch (RuntimeException e) {
             logger.error("Failed to load {}\n{}", path, e.getMessage());
-            e.printStackTrace();
         }
         if (loaded != null) {
             loaded.setPath(path);
         }
         return loaded;
+    }
+
+    //Moved from CmdBuilder because removing waml code
+    //TODO split should not split ${{...}}
+    public static List<String> split(String input){
+        List<String> rtrn = new LinkedList<>();
+        int start=0;
+        int current=0;
+        boolean quoted = false;
+        boolean pop = false;
+        char quoteChar = '"';
+        while(current<input.length()){
+            switch (input.charAt(current)){
+                case '\'':
+                case '"':
+                    if(!quoted){
+                        quoted=true;
+                        quoteChar = input.charAt(current);
+                        if(current>start){
+                            pop=true;
+                        }else if (current==start){
+                            start++;
+                        }
+                    } else {
+                        if (quoteChar == input.charAt(current)) {
+                            if ('\\' == input.charAt(current - 1)) {
+
+                            } else {
+                                quoted = false;
+                                if (current > start) {
+                                    pop = true;
+                                }
+                            }
+                        }else{
+                            //this characters was not what started the quote so just in the quote
+                        }
+                    }
+
+                    break;
+                case ' ':
+                case '\t':
+                    if(!quoted){
+                        if(current>start){
+                            pop=true;
+                        }
+                    }
+            }
+            if(pop){
+                String arg = input.substring(start,current);
+                if(arg.startsWith("\"")){
+                    arg = arg.substring(1);
+                }
+                //don't need to check for tailing " because current is not yet incremented
+
+
+                start = current+1;
+                //drop spaces if not already at end
+                if(current+1<input.length()) {
+                    int drop = current + 1;
+                    while (drop+1 < input.length() && (input.charAt(drop) == ' ' || input.charAt(drop) == '\t') ) {
+                        drop++;
+                    }
+                    start = drop;
+                }
+                rtrn.add(arg);
+                pop=false;
+            }
+
+            current++;
+
+        }
+
+        if(start<current){
+            rtrn.add(input.substring(start,current));
+        }
+        return rtrn;
     }
 
 }

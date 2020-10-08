@@ -27,9 +27,6 @@ public class JsonServer implements RunObserver, ContextObserver {
 
     public static int DEFAULT_PORT = 31337;
 
-
-
-
     private final int port;
     private Run run;
     private final Vertx vertx;

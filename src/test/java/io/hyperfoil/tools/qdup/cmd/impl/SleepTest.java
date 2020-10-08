@@ -2,9 +2,6 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshTestBase;
-import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.Context;
-import io.hyperfoil.tools.qdup.cmd.ContextObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
@@ -53,7 +50,7 @@ public class SleepTest extends SshTestBase {
            "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
            "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
            "  charlie: {name: \"cat\"}"
-        ),false));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();

@@ -73,7 +73,7 @@ public class ForEachTest extends SshTestBase {
            "states:",
            "  TEST: ",
            "    mac: \""+mac+"\""
-        ),false));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
@@ -112,7 +112,7 @@ public class ForEachTest extends SshTestBase {
            "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
            "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
            "  charlie: {name: \"cat\"}"
-        ),false));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
@@ -143,7 +143,7 @@ public class ForEachTest extends SshTestBase {
            "  doit:",
            "    hosts: [local]",
            "    run-scripts: [foo]"
-        ),false));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -179,7 +179,7 @@ public class ForEachTest extends SshTestBase {
            "    run-scripts: [foo]",
            "states:",
            "  DATA: [{name: \"one\",bar: [1, 2, 3]},{name: \"two\",bar: [2,4,6]},{name: 'three' ,bar: [3,6,9]}]"
-        ),false));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
         Cmd foo = config.getScript("foo");
@@ -212,7 +212,7 @@ public class ForEachTest extends SshTestBase {
            "states:",
            "  FIRST: [1, 2, 3]",
            "  SECOND: [1, 2, 3]"
-        ),true));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
         Cmd foo = config.getScript("foo");
@@ -252,7 +252,7 @@ public class ForEachTest extends SshTestBase {
            "  FIRST: [1, 2]",
            "  SECOND: [1, 2]",
            "  THIRD: [1, 2]"
-           ),true));
+           )));
 
 
         RunConfig config = builder.buildConfig(parser);
@@ -1094,17 +1094,18 @@ public class ForEachTest extends SshTestBase {
     }
 
     @Test
-    public void waml_state_from_with(){
+    public void state_from_with(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("foreach",stream(""+
-              "scripts:",
+           "scripts:",
            "  foo:",
            "  - log: FOO=${{FOO}}",
            "  - for-each: SERVICE ${{FOO}}",
+           "    then:",
            "    - read-state: SERVICE",
            "hosts:",
-           "  local:"+getHost(),
+           "  local: "+getHost(),
            "roles:",
            "  doit:",
            "    hosts: [local]",
@@ -1112,10 +1113,10 @@ public class ForEachTest extends SshTestBase {
            "    - foo: ",
            "        with:",
            "          FOO : server1,server2,server3"
-        ),true));
+        )));
 
         RunConfig config = builder.buildConfig(parser);
-
+        assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
             target = target.getNext();
@@ -1130,7 +1131,7 @@ public class ForEachTest extends SshTestBase {
             fail("failed to find for-each in script foo");
         }
 
-        assertFalse("runConfig errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
+
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(),config,dispatcher);
 
@@ -1144,19 +1145,20 @@ public class ForEachTest extends SshTestBase {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("foreach",stream(""+
-              "scripts:",
+           "scripts:",
            "  foo:",
            "  - for-each: SERVICE ${{FOO}}",
-           "    - read-state: SERVICE",
+           "    then:",
+           "    - read-state: ${{SERVICE}}",
            "hosts:",
-           "  local:"+getHost(),
+           "  local: "+getHost(),
            "roles:",
            "  doit:",
            "    hosts: [local]",
            "    run-scripts: [foo]",
            "states:",
-           "  FOO: 'server1,server2,server3'"
-        ),true));
+           "  FOO: \"'server1,server2,server3'\""
+        )));
         RunConfig config = builder.buildConfig(parser);
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
@@ -1182,16 +1184,17 @@ public class ForEachTest extends SshTestBase {
            "scripts:",
            "  foo:",
            "  - for-each: SERVICE ${{FOO}}",
+           "    then:",
            "    - read-state: SERVICE",
            "hosts:",
-           "  local:"+getHost(),
+           "  local: "+getHost(),
            "roles:",
            "  doit:",
            "    hosts: [local]",
            "    run-scripts: [foo]",
            "states:",
            "  FOO: server1,server2,server3"
-        ),true));
+        )));
         RunConfig config = builder.buildConfig(parser);
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){
@@ -1220,14 +1223,15 @@ public class ForEachTest extends SshTestBase {
            "scripts:",
            "  foo:",
            "  - for-each: SERVICE 'service1, service2, service3'",
+           "    then:",
            "    - read-state: SERVICE",
            "hosts:",
-           "  local:"+getHost(),
+           "  local: "+getHost(),
            "roles:",
            "  doit:",
            "    hosts: [local]",
            "    run-scripts: [foo]"
-        ),true));
+        )));
         RunConfig config = builder.buildConfig(parser);
         Cmd target = config.getScript("foo");
         while(target.getNext()!=null && !(target instanceof ForEach)){

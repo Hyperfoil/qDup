@@ -92,7 +92,7 @@ public class SecretFilterTest extends SshTestBase {
          "    setup-scripts: [secrets]",
          "states:",
          "  "+SecretFilter.SECRET_NAME_PREFIX+"FOO: BAR"
-      ),false));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 

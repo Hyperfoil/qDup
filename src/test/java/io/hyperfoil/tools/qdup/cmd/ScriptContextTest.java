@@ -3,7 +3,6 @@ package io.hyperfoil.tools.qdup.cmd;
 import io.hyperfoil.tools.qdup.Profiles;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.State;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;

@@ -70,7 +70,7 @@ public class SignalCounts implements RunRule {
 
     @Override
     public void close(RunConfigBuilder config, RunSummary summary) {
-        waits.keys().stream().filter(name->!signals.contains(name)).forEach(name->{
+        waits.keys().stream().filter(name->!signals.contains(name) && name!=null && !name.isBlank()).forEach(name->{
             waits.get(name).forEach(ref->{
                 summary.addError(
                     ref.getRole(),

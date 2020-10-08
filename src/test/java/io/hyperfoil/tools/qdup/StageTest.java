@@ -2,7 +2,6 @@ package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
@@ -16,12 +15,9 @@ import static org.junit.Assert.*;
 
 public class StageTest extends SshTestBase{
 
-    private static CmdBuilder cmdBuilder = CmdBuilder.getBuilder();
-
-
     @Test
     public void variableSignalName_boundInState(){
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = new RunConfigBuilder();
         Script signal = new Script("signal");
         signal.then(Cmd.signal("${{FOO}}"));
         builder.addScript(signal);
@@ -41,7 +37,7 @@ public class StageTest extends SshTestBase{
     @Test
     public void variableSignalName_boundInRole(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
            "scripts:",
            "  foo:",
@@ -58,7 +54,7 @@ public class StageTest extends SshTestBase{
            "        with: { FOO: foo }",
            "    - bar:",
            "        with: { BAR: foo }"
-        ),true));
+        )));
         RunConfig config = builder.buildConfig(parser);
 
         assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
@@ -68,7 +64,7 @@ public class StageTest extends SshTestBase{
 
     @Test
     public void signalOneScriptOneHost(){
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = new RunConfigBuilder();
         Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));
         builder.addScript(signal);
@@ -84,7 +80,7 @@ public class StageTest extends SshTestBase{
     @Test
     public void signalOneScriptTwoHosts(){
 
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = new RunConfigBuilder();
 
         Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));
@@ -105,7 +101,7 @@ public class StageTest extends SshTestBase{
     }
     @Test
     public void signalTwoScriptsOneHost(){
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = new RunConfigBuilder();
 
 
         Script signal = new Script("signal");
@@ -132,7 +128,7 @@ public class StageTest extends SshTestBase{
     @Test
     public void signalTwoScriptsTwoHosts(){
 
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = new RunConfigBuilder();
 
         Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));
@@ -160,7 +156,7 @@ public class StageTest extends SshTestBase{
     @Test
     public void signalMultipleTimesSameScript(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
               "scripts:",
            "  sig:",
@@ -175,27 +171,27 @@ public class StageTest extends SshTestBase{
            "    hosts: [local]",
            "    run-scripts:",
            "    - sig:"
-        ),true));
+        )));
         RunConfig config = builder.buildConfig(parser);
         Assert.assertEquals("expect 4 signals for FOO",4,config.getSignalCounts().count("FOO"));
     }
     @Test
     public void signalInRepeatedSubScript(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
-              "scripts:",
+           "scripts:",
            "  sig:",
            "    - signal: FOO",
            "  inv:",
            "    - script: sig",
-           "        with: {BAR: alpha}",
+           "      with: {BAR: alpha}",
            "    - script: sig",
-           "        with: {BAR: bravo}",
+           "      with: {BAR: bravo}",
            "    - script: sig",
-           "        with: {BAR: charlie}",
+           "      with: {BAR: charlie}",
            "    - script: sig",
-           "        with: {BAR: delta}",
+           "      with: {BAR: delta}",
            "  wat:",
            "    - wait-for: FOO",
            "    - done:",
@@ -207,7 +203,7 @@ public class StageTest extends SshTestBase{
            "    run-scripts:",
            "    - inv:",
            "    - wat:"
-        ),true));
+        )));
         RunConfig config = builder.buildConfig(parser);
         Assert.assertEquals("expect 4 signals for FOO",4,config.getSignalCounts().count("FOO"));
     }
@@ -215,7 +211,7 @@ public class StageTest extends SshTestBase{
 
     @Test
     public void signalInSubScript(){
-        RunConfigBuilder builder = new RunConfigBuilder(cmdBuilder);
+        RunConfigBuilder builder = new RunConfigBuilder();
 
         Script signal = new Script("signal");
         signal.then(Cmd.signal("FOO"));

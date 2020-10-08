@@ -41,7 +41,7 @@ public class RunConfigTest extends SshTestBase {
          "    - bar:",
          "states:",
          "  MASTER: [\"one\",\"two\",\"three\"]"
-      ),false));
+      )));
       RunConfig config = builder.buildConfig(parser);
       long signalCount = config.getSignalCounts().count("master-ready");
 

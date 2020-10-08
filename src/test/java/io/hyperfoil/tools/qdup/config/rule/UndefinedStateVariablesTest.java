@@ -1,14 +1,13 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
 import io.hyperfoil.tools.qdup.SshTestBase;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
+import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -19,7 +18,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
     @Test
     public void value_from_foreach(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
                 "scripts:",
                 "  test:",
@@ -39,7 +38,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "          from_with: in_with",
                 "states:",
                 "  from_state: in_state"
-        ),false));
+        )));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
@@ -51,7 +50,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
     @Test
     public void error_set_after_used_separate_phase(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
                 "scripts:",
                 "  set:",
@@ -67,7 +66,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "    - use",
                 "    cleanup-scripts:",
                 "    - set"
-        ),false));
+        )));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
@@ -79,7 +78,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
     @Test
     public void error_set_after_used_sequential_phase(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
                 "scripts:",
                 "  set:",
@@ -94,7 +93,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "    setup-scripts:",
                 "    - use",
                 "    - set"
-        ),false));
+        )));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
@@ -123,7 +122,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "states:",
                 "  BAR: ${{BIZ}}",
                 "  BIZx: "
-        ), false));
+        )));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -142,7 +141,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
     @Test
     public void error_set_after_used_same_script(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
             "scripts:",
             "  test:",
@@ -155,7 +154,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
             "    hosts: [local]",
             "    run-scripts:",
             "    - test"
-        ),false));
+        )));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
@@ -166,9 +165,73 @@ public class UndefinedStateVariablesTest extends SshTestBase {
     }
 
     @Test
+    public void setstate_with_default(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+                "scripts:",
+                "  invoke:",
+                "  - script: test",
+                "    with:",
+                "      name: foo",
+                "  test:",
+                "    - read-state: ${{name}}",
+                "      then:",
+                "      - regex: .*",
+                "        then:",
+                "        - set-state: RUN.RUNTIME_NAME ${{name}}_${{suffix:2010}}",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    setup-scripts:",
+                "    - invoke:"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        RunSummary summary = new RunSummary();
+        UndefinedStateVariables rule = new UndefinedStateVariables(parser);
+        summary.addRule("state",rule);
+        summary.scan(config.getRoles(),builder);
+        assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+    }
+
+    @Test
+    public void use_default_twice_for_same_key(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("test",stream(""+
+                "scripts:",
+                "  test:",
+                "  - sh: ./profiler.sh -d 10 -b 2097152 -f /tmp/flamegraph.${{PID:jps}}.svg --title ${{TITLE}} --width 1900 ${{PID:jps}}"
+        )));
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    setup-scripts:",
+                "    - test:",
+                "        with:",
+                "          TITLE: foo",
+                "          PID: $(jps -v | grep jboss-modules | cut -d \" \" -f1)"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        RunSummary summary = new RunSummary();
+        UndefinedStateVariables rule = new UndefinedStateVariables(parser);
+        summary.addRule("state",rule);
+        summary.scan(config.getRoles(),builder);
+        Script script = config.getScript("test");
+
+        assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+
+    }
+
+    @Test
     public void value_from_setstate(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
                 "scripts:",
                 "  test:",
@@ -193,7 +256,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "          from_with: in_with",
                 "states:",
                 "  from_state: in_state"
-        ),false));
+        )));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
@@ -206,7 +269,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
     @Test
     public void value_from_regex(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
                 "scripts:",
                 "  test:",
@@ -221,7 +284,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "    hosts: [local]",
                 "    run-scripts:",
                 "    - test:"
-        ),false));
+        )));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
@@ -234,7 +297,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
     @Test
     public void valid_patterns(){
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("signal",stream(""+
                 "scripts:",
                 "  test:",
@@ -257,7 +320,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "  from_state: bravo",
                 "  stateJson:",
                 "    key: value"
-        ),false));
+        )));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);

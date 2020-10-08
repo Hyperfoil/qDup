@@ -349,7 +349,7 @@ public class CmdTest extends SshTestBase {
          "          value: ${{value}}",
          "states:",
          "  value: worked"
-      ), false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
@@ -387,7 +387,7 @@ public class CmdTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
-      ), false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
 
@@ -426,7 +426,7 @@ public class CmdTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
-      ), false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();

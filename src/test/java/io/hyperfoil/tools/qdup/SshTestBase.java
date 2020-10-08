@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.qdup;
 
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import org.junit.After;
 import org.junit.Before;
@@ -57,7 +56,7 @@ public class SshTestBase {
     private static final ScheduledThreadPoolExecutor SCHEDULED_THREAD_POOL_EXECUTOR = new ScheduledThreadPoolExecutor(2);
 
     public static RunConfigBuilder getBuilder(){
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.setIdentity(getIdentity());
 
         setIdentityFilePerms(getPath("keys"), getKeyDirPerms());

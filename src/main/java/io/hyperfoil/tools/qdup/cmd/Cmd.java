@@ -536,7 +536,6 @@ public abstract class Cmd {
    }
 
    public List<Cmd> getTimers(long timeout) {
-      setOutput("getTimers(" + timeout + ")=" + timers.get(timeout));
       return timers.get(timeout);
    }
 

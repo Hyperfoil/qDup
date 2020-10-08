@@ -4,13 +4,10 @@ import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
-import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
-import io.hyperfoil.tools.qdup.cmd.impl.SetState;
 import io.hyperfoil.tools.qdup.config.rule.NonObservingCommands;
 import io.hyperfoil.tools.qdup.config.rule.SignalCounts;
 import io.hyperfoil.tools.qdup.config.rule.UndefinedStateVariables;
-import io.hyperfoil.tools.qdup.config.waml.WamlParser;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.HashedLists;
@@ -24,20 +21,9 @@ import org.slf4j.ext.XLoggerFactory;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import static io.hyperfoil.tools.qdup.config.waml.WamlParser.*;
 
 public class RunConfigBuilder {
 
@@ -93,18 +79,16 @@ public class RunConfigBuilder {
    private Set<String> traceTargets;
    private Json settings;
 
-   private CmdBuilder cmdBuilder;
    private List<String> errors;
 
    private boolean isValid = false;
 
-   public RunConfigBuilder(CmdBuilder cmdBuilder) {
-      this("run-" + System.currentTimeMillis(), cmdBuilder);
+   public RunConfigBuilder() {
+      this("run-" + System.currentTimeMillis());
    }
 
-   public RunConfigBuilder(String name, CmdBuilder cmdBuilder) {
+   public RunConfigBuilder(String name) {
       this.name = name;
-      this.cmdBuilder = cmdBuilder;
       scripts = new LinkedHashMap<>();
       state = new State(State.RUN_PREFIX);
       roleHosts = new HashedSets<>();
@@ -127,52 +111,6 @@ public class RunConfigBuilder {
 
    public Set<String> getTracePatterns() {
       return traceTargets;
-   }
-
-   public void eachWamlChildArray(Json target, BiConsumer<Integer, Json> consumer) {
-
-      Json childArray = target.getJson(CHILD, EMPTY_ARRAY);
-      for (int childIndex = 0; childIndex < childArray.size(); childIndex++) {
-         Json childEntry = childArray.getJson(childIndex);
-         consumer.accept(childIndex, childEntry);
-      }
-   }
-
-   public Json toJson(Json yamlJson) {
-      Json rtrn = new Json();
-
-      eachWamlChildEntry(yamlJson, (index, entry) -> {
-         String key = entry.getString(KEY);
-         if (entry.has(VALUE)) {
-            rtrn.set(key, entry.get(VALUE));
-         } else {
-            rtrn.set(key, toJson(entry));
-         }
-      });
-      return rtrn;
-   }
-
-   public void eachWamlChildEntry(Json target, BiConsumer<Integer, Json> consumer) {
-
-      Json childArray = target.getJson(CHILD, EMPTY_ARRAY);
-      for (int childIndex = 0; childIndex < childArray.size(); childIndex++) {
-         Json childEntry = childArray.getJson(childIndex, EMPTY_ARRAY);
-         for (int entryIndx = 0; entryIndx < childEntry.size(); entryIndx++) {
-            Json entry = childEntry.getJson(entryIndx, EMPTY_ARRAY);
-            consumer.accept(childIndex, entry);
-         }
-      }
-   }
-
-   public Map<String, String> wamlChildMap(Json json) {
-      Map<String, String> rtrn = new LinkedHashMap<>();
-      eachWamlChildEntry(json, (i, childEntry) -> {
-         if (childEntry.has(KEY) && childEntry.has(VALUE)) {
-            rtrn.put(childEntry.getString(KEY), childEntry.getString(VALUE));
-         }
-
-      });
-      return rtrn;
    }
 
    public void addError(String error) {
@@ -227,21 +165,6 @@ public class RunConfigBuilder {
       return errors.isEmpty();
    }
 
-   public boolean loadWaml(WamlParser wamlParser) {
-      boolean ok = true;
-      if (wamlParser.hasErrors()) {
-         addErrors(wamlParser.getErrors());
-         ok = false;
-      } else {
-         for (String yamlPath : wamlParser.fileNames()) {
-            Json yamlJson = wamlParser.getJson(yamlPath);
-            boolean docOk = loadWamlJson(yamlJson, yamlPath);
-            ok = ok && docOk;
-         }
-      }
-      return ok;
-   }
-
    public String getPathDirectory(String yamlPath) {
       File file = new File(yamlPath);
       String rtrn = yamlPath;
@@ -250,180 +173,6 @@ public class RunConfigBuilder {
       }
       return rtrn;
    }
-
-   public boolean loadWamlJson(Json yamlJson, String yamlPath) {
-      boolean ok = true;
-      if (yamlJson.isArray()) {
-         for (int i = 0; i < yamlJson.size(); i++) {
-            Object yamlObj = yamlJson.get(i);
-            if (yamlObj instanceof Json) {
-               Json yamlEntry = (Json) yamlObj;
-               String entryKey = yamlEntry.getString(KEY, "");
-               String entryValue = yamlEntry.getString(VALUE);
-               Json entryChildJson = yamlEntry.getJson(CHILD, EMPTY_ARRAY);
-               switch (entryKey) {
-                  case NAME:
-                     if (entryValue != null && !entryValue.isEmpty()) {
-                        setName(entryValue);
-                     }
-                     break;
-                  case SCRIPTS:
-                     final List<String> scriptErrors = new LinkedList<>();
-                     eachWamlChildEntry(yamlEntry, (entryIndex, scriptEntry) -> {
-                        String scriptName = scriptEntry.getString(KEY, "");
-
-                        //Only accept the first definition so make sure the most important yaml is first :)
-                        if (hasScript(scriptName)) {
-                           logger.warn("{} tried to add script {} which already exists", yamlPath, scriptName);
-                        } else {
-                           Script newScript = new Script(scriptName);
-                           String scriptDir = getPathDirectory(yamlPath);
-                           newScript.with(SCRIPT_DIR, scriptDir);
-                           eachWamlChildArray(scriptEntry, (commandIndex, scriptCommand) -> {
-                              Cmd childCmd = cmdBuilder.buildYamlCommand(scriptCommand, newScript, scriptErrors);
-                              newScript.then(childCmd);
-                           });
-                           addScript(newScript);
-                        }
-                     });
-                     if (!scriptErrors.isEmpty()) {
-                        scriptErrors.forEach(s -> {
-                           addError(String.format("Error: %s in %s", s, yamlPath));
-                        });
-                     }
-                     break;
-                  case ROLES:
-                     eachWamlChildEntry(yamlEntry, (entryIndex, roleEntry) -> {
-                        String roleName = roleEntry.getString(KEY, "");
-
-                        //roles merge so no warning if already defined
-
-                        eachWamlChildEntry(roleEntry, (sectionIndex, roleSection) -> {
-                           String sectionName = roleSection.getString(KEY, "");
-                           if (HOSTS.equals(sectionName)) {
-                              if (roleSection.has(VALUE)) {
-                                 String roleSectionValue = roleSection.getString(VALUE).trim();
-                                 if (roleSectionValue.startsWith(HOST_EXPRESSION_PREFIX)) {
-                                    setRoleHostExpession(roleName, roleSection.getString(VALUE, ""));
-                                 } else {
-                                    //assume the value is the only host
-                                    //TODO add test for -hosts: hostName
-                                    addHostToRole(roleName, roleSectionValue);
-                                 }
-                              }
-                              eachWamlChildEntry(roleSection, (hostIndex, host) -> {
-                                 String hostReference = host.getString(KEY, "");
-                                 if (hostReference.isEmpty()) {
-                                    //TODO log error about parsing the host
-                                 } else {
-                                    addHostToRole(roleName, host.getString(KEY, ""));
-                                 }
-                              });
-
-                           } else {
-                              eachWamlChildEntry(roleSection, (scriptIndex, scriptRefernce) -> {
-                                 String scriptName = scriptRefernce.getString(KEY);
-
-                                 Map<String, String> scriptWiths = new LinkedHashMap<>();
-                                 eachWamlChildEntry(scriptRefernce, (childIndex, scriptChild) -> {
-                                    String childName = scriptChild.getString(KEY);
-                                    if (WITH.equalsIgnoreCase(childName)) {
-                                       Map<String, String> withs = wamlChildMap(scriptChild);
-                                       scriptWiths.putAll(withs);
-                                    }
-                                 });
-
-                                 switch (sectionName) {
-                                    case SETUP_SCRIPTS:
-                                       addRoleSetup(roleName, scriptName, scriptWiths);
-                                       break;
-                                    case RUN_SCRIPTS:
-                                       addRoleRun(roleName, scriptName, scriptWiths);
-                                       break;
-                                    case CLEANUP_SCRIPTS:
-                                       addRoleCleanup(roleName, scriptName, scriptWiths);
-                                       break;
-                                 }
-                              });
-                           }
-                        });
-                     });
-
-                     break;
-                  case HOSTS:
-                     eachWamlChildEntry(yamlEntry, (hostIndex, host) -> {
-                        String hostName = host.getString(KEY);
-                        String hostValue = host.getString(VALUE, "");
-                        if (hostValue.isEmpty()) {
-
-                           Map<String, String> hostMap = wamlChildMap(host);
-
-                           if (hostMap.containsKey("username") && hostMap.containsKey("hostname")) {
-                              String un = hostMap.get("username");
-                              String hn = hostMap.get("hostname");
-                              int port = hostMap.containsKey("port") ? Integer.parseInt(hostMap.get("port")) : Host.DEFAULT_PORT;
-                              hostValue = un + "@" + hn + ":" + port;
-                           } else {
-
-                           }
-                        }
-                        if (!hostValue.isEmpty()) {
-
-                           addHostAlias(hostName, hostValue);
-                        }
-                     });
-                     break;
-                  case STATES:
-                     eachWamlChildEntry(yamlEntry, (stateIndex, stateJson) -> {
-                        String stateName = stateJson.getString(KEY, "");
-                        if (stateJson.has(VALUE)) {
-                           String stateValue = stateJson.getString(VALUE);
-                           setRunState(stateName, stateValue);
-                        } else {
-                           setRunState(stateName, toJson(stateJson));
-//                                    eachWamlChildEntry(stateJson, (entryIndex, entry) -> {
-//                                        if (RUN_STATE.equals(stateName)) {
-//                                            if (entry.has(VALUE)){
-//                                                setRunState(entry.getString(KEY), entry.getString(VALUE));
-//                                            }else if (entry.has(CHILD)){
-//                                                String hostName = entry.getString(KEY);
-//                                                eachWamlChildEntry(entry, (hostEntryIndex, hostEntry) -> {
-//                                                    if (!hostEntry.has(VALUE) && hostEntry.has(CHILD)) {
-//                                                        String scriptName = hostEntry.getString(KEY);
-//                                                        eachWamlChildEntry(hostEntry, (scriptEntryIndex, scriptEntry) -> {
-//                                                            //TODO add script entry under host
-//                                                        });
-//                                                    } else {
-//                                                        //TODO add host entry
-//                                                    }
-//                                                });
-//
-//                                            }else{
-//                                                logger.trace("setting empty value for state = {}",entry.getString(KEY));
-//                                                setRunState(entry.getString(KEY),"");
-//                                            }
-//                                        } else {
-//                                            setHostState(stateName, entry.getString(KEY), entry.getString(VALUE));
-//                                        }
-//                                    });
-                        }
-                     });
-                     break;
-                  default:
-                     //umm...what is this?
-               }
-            } else {
-               ok = false;
-               break;
-            }
-         }
-      } else {
-         ok = false;
-      }
-
-      return ok;
-   }
-
 
    public void setName(String name) {
       if (this.name == null) {
@@ -686,7 +435,7 @@ public class RunConfigBuilder {
 
       //roleHostExpessions
       roleHostExpression.forEach((roleName, expession) -> {
-         List<String> split = CmdBuilder.split(expession);
+         List<String> split = Parser.split(expession);
          Set<Host> toAdd = new HashSet<>();
          Set<Host> toRemove = new HashSet<>();
 

@@ -38,7 +38,7 @@ public class HostExpressionTest {
          "  cat:",
          "    hosts: [charlie]",
          "    run-scripts: [foo]"
-      ),false));
+      )));
       RunConfig config = builder.buildConfig(parser);
 
       HostExpression hostExpression = new HostExpression("= ant + bat + cat");
@@ -73,7 +73,7 @@ public class HostExpressionTest {
          "  cat:",
          "    hosts: [charlie]",
          "    run-scripts: [foo]"
-      ),false));
+      )));
       RunConfig config = builder.buildConfig(parser);
 
       HostExpression hostExpression = new HostExpression("= "+RunConfigBuilder.ALL_ROLE+" - cat");

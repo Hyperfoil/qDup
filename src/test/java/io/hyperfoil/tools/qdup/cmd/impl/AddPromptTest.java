@@ -5,7 +5,6 @@ import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Result;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
@@ -33,7 +32,7 @@ public class AddPromptTest extends SshTestBase {
             "  doit:",
             "    hosts: [local]",
             "    run-scripts: [foo]"
-         ),true));
+         )));
 
          RunConfig config = builder.buildConfig(parser);
          Cmd foo = config.getScript("foo");

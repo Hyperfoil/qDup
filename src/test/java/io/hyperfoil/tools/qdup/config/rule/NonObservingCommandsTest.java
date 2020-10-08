@@ -1,7 +1,6 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
 import io.hyperfoil.tools.qdup.SshTestBase;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunSummary;
@@ -18,7 +17,7 @@ public class NonObservingCommandsTest extends SshTestBase {
     @Test
     public void sh_in_script_in_watch() {
         Parser parser = Parser.getInstance();
-        RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+        RunConfigBuilder builder = new RunConfigBuilder();
         builder.loadYaml(parser.loadFile("test", stream("" +
             "scripts:",
             "  doit:",
@@ -36,7 +35,7 @@ public class NonObservingCommandsTest extends SshTestBase {
             "    - test",
             "states:",
             "  FOO: doit"
-        ), false));
+        )));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -50,7 +49,7 @@ public class NonObservingCommandsTest extends SshTestBase {
         @Test
         public void sh_in_onsignal () {
             Parser parser = Parser.getInstance();
-            RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+            RunConfigBuilder builder = new RunConfigBuilder();
             builder.loadYaml(parser.loadFile("test", stream("" +
                             "scripts:",
                     "  test:",
@@ -65,7 +64,7 @@ public class NonObservingCommandsTest extends SshTestBase {
                     "    hosts: [local]",
                     "    run-scripts:",
                     "    - test"
-            ), false));
+            )));
             RunConfig config = builder.buildConfig(parser);
 
             RunSummary summary = new RunSummary();
@@ -78,7 +77,7 @@ public class NonObservingCommandsTest extends SshTestBase {
         @Test
         public void sh_in_timer () {
             Parser parser = Parser.getInstance();
-            RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+            RunConfigBuilder builder = new RunConfigBuilder();
             builder.loadYaml(parser.loadFile("test", stream("" +
                             "scripts:",
                     "  test:",
@@ -93,7 +92,7 @@ public class NonObservingCommandsTest extends SshTestBase {
                     "    hosts: [local]",
                     "    run-scripts:",
                     "    - test"
-            ), false));
+            )));
             RunConfig config = builder.buildConfig(parser);
 
             RunSummary summary = new RunSummary();
@@ -105,7 +104,7 @@ public class NonObservingCommandsTest extends SshTestBase {
         @Test
         public void sh_in_watch () {
             Parser parser = Parser.getInstance();
-            RunConfigBuilder builder = new RunConfigBuilder(CmdBuilder.getBuilder());
+            RunConfigBuilder builder = new RunConfigBuilder();
             builder.loadYaml(parser.loadFile("test", stream("" +
                             "scripts:",
                     "  test:",
@@ -119,7 +118,7 @@ public class NonObservingCommandsTest extends SshTestBase {
                     "    hosts: [local]",
                     "    run-scripts:",
                     "    - test"
-            ), false));
+            )));
             RunConfig config = builder.buildConfig(parser);
 
             RunSummary summary = new RunSummary();

@@ -37,7 +37,7 @@ public class ExecTest extends SshTestBase {
          "  doit:",
          "    hosts: [local]",
          "    run-scripts: [foo]"
-      ), true));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -82,7 +82,7 @@ public class ExecTest extends SshTestBase {
          "  doit:",
          "    hosts: [local]",
          "    run-scripts: [foo]"
-      ), true));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();

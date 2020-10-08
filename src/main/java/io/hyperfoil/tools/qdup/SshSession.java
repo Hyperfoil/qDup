@@ -120,17 +120,6 @@ public class SshSession {
 
     private Semaphore shellLock;
 
-//   private ByteArrayOutputStream shStream;
-//   private EscapeFilteredStream escapeFilteredStream;
-//   private SuffixStream suffixStream;
-//   private FilteredStream filteredStream;
-//   private SuffixStream promptStream;
-//
-//   private FileOutputStream traceStream;
-//   private String tracePath;
-//
-//   private LineEmittingStream lineEmittingStream;
-
     SessionStreams sessionStreams;
 
     private Host host;
@@ -612,10 +601,8 @@ public class SshSession {
                     channelExec.setOut(stream);
                     //channelExec.setErr(baos); //added to try and catch echo output
                     channelExec.addChannelListener(watcher);
-
                 }
                 channelExec.open().verify(9L, TimeUnit.SECONDS);
-
             } catch (IOException e) {
             }
         }
@@ -650,7 +637,6 @@ public class SshSession {
                             logger.error("ShSession " + getName() + " close.acquire --> permits==" + permits());
                             assert permits() == 0;
                         }
-
                         //do we really care about release?
                         //we are going to destroy the semaphore / shell
                     } catch (InterruptedException e) {

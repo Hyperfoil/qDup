@@ -43,7 +43,7 @@ public class NannyTest extends SshTestBase {
          "    run-scripts:",
          "    - foo:",
          "    - bar:"
-      ),false));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -85,7 +85,7 @@ public class NannyTest extends SshTestBase {
          "    run-scripts:",
          "    - foo:",
          "    - bar:"
-      ),false));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -130,7 +130,7 @@ public class NannyTest extends SshTestBase {
          "    run-scripts:",
          "    - foo:",
          "    - bar:"
-      ),false));
+      )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();

@@ -3,10 +3,8 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.State;
-import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
-import io.hyperfoil.tools.qdup.config.CmdBuilder;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
@@ -81,7 +79,7 @@ public class SetStateTest extends SshTestBase {
          "states:",
          "  host:",
          "    mac: \""+mac+"\""
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -121,7 +119,7 @@ public class SetStateTest extends SshTestBase {
          "      - foo:",
          "states:",
          "  FOO: [ \"ant\", \"apple\" ]"
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
@@ -159,7 +157,7 @@ public class SetStateTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();

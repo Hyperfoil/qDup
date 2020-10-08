@@ -90,6 +90,7 @@ public class State {
         return input;
     }
 
+    public boolean hasParent(){return parent()!=null;}
     State parent(){return parent;}
 
     public State(String prefix){

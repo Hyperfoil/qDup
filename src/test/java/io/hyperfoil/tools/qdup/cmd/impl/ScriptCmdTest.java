@@ -48,7 +48,7 @@ public class ScriptCmdTest extends SshTestBase {
             "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
             "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
             "  charlie: {name: \"cat\"}"
-         ), false));
+         )));
 
          RunConfig config = builder.buildConfig(parser);
          assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -88,7 +88,7 @@ public class ScriptCmdTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
@@ -125,7 +125,7 @@ public class ScriptCmdTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
@@ -173,7 +173,7 @@ public class ScriptCmdTest extends SshTestBase {
             "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
             "  charlie: {name: \"cat\"}",
             "  BAR: def"
-         ),false));
+         )));
 
          RunConfig config = builder.buildConfig(parser);
          Dispatcher dispatcher = new Dispatcher();
@@ -211,7 +211,7 @@ public class ScriptCmdTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
-      ),false));
+      )));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
