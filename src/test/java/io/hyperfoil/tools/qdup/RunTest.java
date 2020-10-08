@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -187,7 +188,8 @@ public class RunTest extends SshTestBase {
    }
 
    //TODO run test when connected to the internet (or valid registry)
-   @Test
+   //removed because disabling ENV.TMP_DIR
+   @Test @Ignore
    public void tmp_env_dir() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();

@@ -205,8 +205,12 @@ public class Run implements Runnable, DispatchObserver {
         }
         switch (stage){
             case Pending:
-                if(stageUpdated.compareAndSet(this,Stage.Pending, Stage.PreSetup)){
-                    startDispatcher = queuePreSetupScripts();
+                //removed because no longer want to use cmds to create tmp_dir
+//                if(stageUpdated.compareAndSet(this,Stage.Pending, Stage.PreSetup)){
+//                    startDispatcher = queuePreSetupScripts();
+//                }
+                if(stageUpdated.compareAndSet(this,Stage.Pending, Stage.Setup)){
+                    startDispatcher = queueSetupScripts();
                 }
 
                 break;
