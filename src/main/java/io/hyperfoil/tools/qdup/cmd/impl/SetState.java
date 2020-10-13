@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 
@@ -13,7 +14,6 @@ public class SetState extends Cmd {
     String value;
     String populatedKey;
     String populatedValue;
-    //String separator;
 
     public SetState(String key) {
         this(key, null);
@@ -38,7 +38,6 @@ public class SetState extends Cmd {
         return value;
     }
 
-
     @Override
     public String toString() {
         return "set-state: " + this.key + (this.value == null ? "" : " " + this.value);
@@ -57,7 +56,8 @@ public class SetState extends Cmd {
                     //TODO populatedValue should already resolve patterns, any pattern prefix means it failed to resolve?
 
                 }
-                if (Json.isJsonLike(populatedValue) && populatedValue.contains(StringUtil.PATTERN_PREFIX) && populatedValue.contains(StringUtil.PATTERN_SUFFIX)) {
+                //why was the following pattern check here?
+                if (Json.isJsonLike(populatedValue) /*&& populatedValue.contains(StringUtil.PATTERN_PREFIX) && populatedValue.contains(StringUtil.PATTERN_SUFFIX)*/) {
                     Json fromPopulatedValue = Json.fromString(populatedValue);
                     if (!fromPopulatedValue.isEmpty()) {
                         context.getState().set(populatedKey, fromPopulatedValue);

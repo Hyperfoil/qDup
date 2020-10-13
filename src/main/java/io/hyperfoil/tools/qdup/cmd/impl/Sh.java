@@ -83,10 +83,12 @@ public class Sh extends Cmd {
 
     @Override
     public void postRun(String output,Context context){
-
+        //not working in benchlab
         String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
         context.getSession().shSync("(exit $__qdup_ec);");
         String toLog = getLogOutput(output,context);
+//        context.log(toLog);
+        //not working in lab :(
         if(toLog != null && !toLog.isBlank()) {
             if ("0".equals(response)) {
                 context.log(toLog);

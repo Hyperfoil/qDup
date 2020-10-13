@@ -130,7 +130,7 @@ public class JsonServer implements RunObserver, ContextObserver {
         router.route("/stage").produces("application/json").handler(rc->{
             Json rtrn = new Json();
             if(this.run!=null){
-
+                rtrn.set("stage",this.run.getStage().getName());
             }
             rc.response().end(rtrn.toString(2));
         });

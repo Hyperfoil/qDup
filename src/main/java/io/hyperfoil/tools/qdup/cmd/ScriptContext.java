@@ -265,7 +265,12 @@ public class ScriptContext implements Context, Runnable{
             rootString = rootCmd.toString();
         }
         String filteredMessage = state.getSecretFilter().filter(message);
-        getRunLogger().error("{}@{}:{}",rootString,getHost().getShortHostName(),filteredMessage);
+        if(isColorTerminal()){
+            getRunLogger().error(AsciiArt.ANSI_RED+"{}@{}:{}"+AsciiArt.ANSI_RESET,rootString,getHost().getShortHostName(),filteredMessage);
+        }else{
+            getRunLogger().error("{}@{}:{}",rootString,getHost().getShortHostName(),filteredMessage);
+        }
+
     }
 
     public void closeLineQueue(){

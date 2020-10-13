@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.LoopCmd;
 import io.hyperfoil.tools.qdup.stream.MultiStream;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
@@ -91,9 +92,6 @@ public class ForEach extends LoopCmd {
       try {
 
          int callbackRunCount = getCallback().getRunCount();
-
-
-
 
          String populatedDeclaredInput = Cmd.populateStateVariables(declaredInput, this, context.getState());
          //if we need to load from declaredInput

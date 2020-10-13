@@ -60,7 +60,7 @@ public class RoleEnv extends Cmd {
         if(isStart){
             return "start-env:";
         }else{
-            return "stop-env:";
+            return "stop-env: "+(role.hasEnvironment(context.getHost()) ? role.getEnv(context.getHost()).getDiff().getCommand() : "");
         }
     }
 }

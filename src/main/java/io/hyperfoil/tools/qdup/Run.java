@@ -250,6 +250,8 @@ public class Run implements Runnable, DispatchObserver {
         }
         return startDispatcher;
     }
+
+    public Stage getStage(){return stage;}
     public Local getLocal(){return local;}
     public RunConfig getConfig(){return config;}
     public boolean isAborted(){return aborted.get();}
