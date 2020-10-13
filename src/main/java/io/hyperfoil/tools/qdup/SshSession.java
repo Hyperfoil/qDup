@@ -346,7 +346,9 @@ public class SshSession {
 
             //TODO do we wait 1s for slow connections?
 
-            sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"");
+            sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
+            String out = shSync("set +o history");
+            out = shSync("export HISTCONTROL=\"ignoreboth\"");
             sh("");//forces the thread to wait for the previous sh to complete
             if (setupCommand != null && !setupCommand.trim().isEmpty()) {
                 sh(setupCommand);
@@ -486,7 +488,9 @@ public class SshSession {
 
     public String shSync(String command, Map<String, String> prompt) {
         addShObserver(SH_BLOCK_CALLBACK, blockingConsumer);
-        assert blockingSemaphore.availablePermits() == 0;
+        if (blockingSemaphore.availablePermits() != 0 ){
+            logger.error("ERROR: blockingSemaphorePermits = {}\n  command = {}",blockingSemaphore.availablePermits(),command);
+        }
         sh(command, prompt);
         try {
             blockingSemaphore.acquire();//released in the observer
