@@ -70,21 +70,16 @@ public class QueueDownloadTest extends SshTestBase {
     }
 
     @Test
-    public void populateLocalEnv(){
+    public void populate_local_env_dollar(){
         RunConfigBuilder builder = getBuilder();
-
         String timestamp = ""+System.currentTimeMillis();
-
         Script runScript = new Script("run-queue");
         runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getHostName()+"/"));
         runScript.then(Cmd.sh("export FOO=\"/tmp\""));
+        runScript.then(Cmd.sh("cd /tmp"));
         runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
-
         runScript.then(Cmd.queueDownload("$FOO/date.txt"));
-
-
         builder.addScript(runScript);
-
         builder.addHostAlias("local",getHost().toString());
         builder.addHostToRole("role","local");
         builder.addRoleRun("role","run-queue",new HashMap<>());
@@ -95,18 +90,80 @@ public class QueueDownloadTest extends SshTestBase {
         run.run();
 
         File downloadFile = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/date.txt");
-
         assertTrue(tmpDir.toString() + "/download.txt should exist",downloadFile.exists());
-
         try {
             String content = new String(Files.readAllBytes(downloadFile.toPath())).trim();
-
             assertTrue("downloaded file should match expected [["+timestamp+"]] found [["+content+"]]",timestamp.equals(content));
         } catch (IOException e) {
             fail("IOException trying to read "+downloadFile.getPath()+" "+e.getMessage());
             e.printStackTrace();
         }
+        downloadFile.delete();
+        downloadFile.getParentFile().delete();
+        new File("/tmp/date.txt").delete();
+    }
+    @Test
+    public void populate_local_env_tick(){
+        RunConfigBuilder builder = getBuilder();
+        String timestamp = ""+System.currentTimeMillis();
+        Script runScript = new Script("run-queue");
+        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getHostName()+"/"));
+        runScript.then(Cmd.sh("export FOO=\"/tmp\""));
+        runScript.then(Cmd.sh("cd /tmp"));
+        runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
+        runScript.then(Cmd.queueDownload("`pwd`/date.txt"));
+        builder.addScript(runScript);
+        builder.addHostAlias("local",getHost().toString());
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run-queue",new HashMap<>());
 
+        RunConfig config = builder.buildConfig(Parser.getInstance());
+        Dispatcher dispatcher = new Dispatcher();
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
+        run.run();
+
+        File downloadFile = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/date.txt");
+        assertTrue(tmpDir.toString() + "/download.txt should exist",downloadFile.exists());
+        try {
+            String content = new String(Files.readAllBytes(downloadFile.toPath())).trim();
+            assertTrue("downloaded file should match expected [["+timestamp+"]] found [["+content+"]]",timestamp.equals(content));
+        } catch (IOException e) {
+            fail("IOException trying to read "+downloadFile.getPath()+" "+e.getMessage());
+            e.printStackTrace();
+        }
+        downloadFile.delete();
+        downloadFile.getParentFile().delete();
+        new File("/tmp/date.txt").delete();
+    }
+    @Test
+    public void populate_local_env_dollar_parenthesis(){
+        RunConfigBuilder builder = getBuilder();
+        String timestamp = ""+System.currentTimeMillis();
+        Script runScript = new Script("run-queue");
+        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getHostName()+"/"));
+        runScript.then(Cmd.sh("export FOO=\"/tmp\""));
+        runScript.then(Cmd.sh("cd /tmp"));
+        runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
+        runScript.then(Cmd.queueDownload("$(pwd)/date.txt"));
+        builder.addScript(runScript);
+        builder.addHostAlias("local",getHost().toString());
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run-queue",new HashMap<>());
+
+        RunConfig config = builder.buildConfig(Parser.getInstance());
+        Dispatcher dispatcher = new Dispatcher();
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
+        run.run();
+
+        File downloadFile = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/date.txt");
+        assertTrue(tmpDir.toString() + "/download.txt should exist",downloadFile.exists());
+        try {
+            String content = new String(Files.readAllBytes(downloadFile.toPath())).trim();
+            assertTrue("downloaded file should match expected [["+timestamp+"]] found [["+content+"]]",timestamp.equals(content));
+        } catch (IOException e) {
+            fail("IOException trying to read "+downloadFile.getPath()+" "+e.getMessage());
+            e.printStackTrace();
+        }
         downloadFile.delete();
         downloadFile.getParentFile().delete();
         new File("/tmp/date.txt").delete();
