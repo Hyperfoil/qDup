@@ -113,6 +113,21 @@ argumentString to identify the appropriate arguments.
 3. `- command : { argumentName: argumentValue, ...}`
 Arguments are explicitly mapped to the command's declared argument names.
 This is the least ambiguous but most verbose and is rarely necessary.
+All commands support the following keys:
+* `with`
+set custom state values for this command and all children commands
+* `then`
+a list of commands to run after the current command if it passes execution to its children
+* `idle-timer`
+set to `false` to disable the idle check or an expected duration to avoid unnecessary idle warnings
+* `state-scan`
+set to `false` to disable the state scanner that ensures all state references are defined or have a default before they are used.  
+* `silent`
+set to `true` to disable the default logging for the command
+* `timer`, `on-signal`, `watch`
+observe the execution of the command
+* `prefix`, `suffix`, `separator`, `js-prefix`
+change the state pattern indicator strings
 
 ### Available commands
 * `abort: <message>`
@@ -125,8 +140,14 @@ This is to support commands that change the prompt (e.g. jboss-cli)
 decrease a `name` counter which starts with `initial`.
 Child commands will be invoked each time after `name` counter reaches 0.
 * `ctrlC:`
-send ctrl+C interrupt to the remote shell. This will kill
+send ctrl+c interrupt to the remote shell. This will kill
 any currently running command (e.g. `sh: tail -f /tmp/server.log`)
+* `ctrl/:`
+send ctrl+/ to the remote shell.
+* `ctrlU:`
+send ctrl+u to the remote shell.
+* `ctrlZ:`
+send ctrl+z to the remote shell.
 * `done:` signals that the current stage ended
 and any remaining active commands should end (including `wait-for`).
 Use this command if you have `wait-for` that may never be signaled
@@ -140,9 +161,17 @@ download:
 ```
 * `echo:`
 log the input to console
+* `exec: <command>`
+run a shell command in an independent connection similar to passing a command to ssh.
+```yaml
+exec:
+  name: doSomething
+  async: true #run the script without pausing the current script. Starts a new shell 
+```
 * `for-each: <variableName> [values]` re-run the children with `variableName`
 set to each entry in `values` or the input from the previous command if `values`
-is not provided
+is not provided. If the command acts in the input from the previous command it will 
+try and identify the different value for `variableName` by checking for new lines, a json array, or a separated list.
 ```yaml
 for-each:
   name: variableName #the variable name for children commands
@@ -169,26 +198,55 @@ js: |
 ```
 * `log: <message>`
 log `message` to the run log
+* `parse: <parser>`
+use the text parsing rules from io.hyperfoil.tools.parse to parse the input from the previous command.
+```yaml
+parse:
+  - name: timestamp
+    pattern: "^(?<timestamp>\\d+)$"
+    eat: Line
+    rules: [ PreClose ]
+    children: 
+      - ...
+  - ... 
+```
 * `queue-download: <path> ?<destination>`
-queue the download action for after the run finishes. The download will
-occur if the run completes or aborts
+queue the download action for after the run-scripts finish or after cleanup-scripts if the command is used in a cleanup-script. 
+The download will occur if the run completes or aborts and will overwrite existing files.
+* `read-signal: <name>`
+checks if the signal `name` has already notified all `wait-for` and only invokes `then` commands if the `wait-for` were notified.
+The command can also have an `else` list of children commands that run if `name` has not notified all `wait-for`.
+```yaml
+read-signal: ready
+then:
+- sh: doThis
+else:
+- sh: doThat
+```
 * `read-state: <name>`
 read the current value of the named state variable
-and pass it as input to the next command. Child commands will only be
-called if the state exists and is not empty
+and pass it as input to the next command. Child `then` commands will be
+called if the state exists and is not empty, otherwise child `else` commands will be called
+```yaml
+read-state: ${{RUN.ok}} #check 
+then:
+- sh: doThis
+else:
+- sh: doThat
+```
 * `regex: <pattern>`
 try to match the input to a regular expression and add any named
-capture groups to the current state at the named scope. `else`child commands
+capture groups to the current state at the named scope. `else` child commands
 will invoke if the pattern does not match. 
 * `repeat-until: <name>`
 repeat the child commands until `name` is fully signalled.
-Be sure to add a `sleep` to prevent a tight loop and pick a `name` that
-is signalled in all runs (e.g. be careful of error conditions)
+Be sure to add a `sleep` to prevent a tight loop. 
+A run should still end if the `repeat-until` is left waiting for a signal that will never occur.  
 * `send-text: <text>`
 sends text to the terminal. 
 Use this when monitoring a long running interactive `sh` command that does not use a new prompt.
 * `set-signal: <name> <count>`
-set the expected number of `singal` calls for `name`. 
+set the expected number of `signal` calls for `name`. 
 qDup waits for `signal: <name>` to be run `count` before the signal is reached and other scripts are notified. 
 * `set-state: <name> ?<value>`
 set the named state attribute to `value` if present or to the input if no value is provided
@@ -199,17 +257,20 @@ qDup from logging the command output (useful when tailing a long file)
 sh:
    command: ./doSomething.sh
    silent: true
+   prompt:
+     "'? ": Y #respond Y to any prompt questions
+   ignore-exit-code: true #needed when qDup is run with -x or --exitCode to end a run if there is a non-zero exit code
 ```
 * `signal: <name>`
 send one signal for `name`. Runs calculate the expected number of `signals` for each
 `name` and `wait-for` will wait for the expected number of `signal`
-* `sleep: <ms>`
-pause the current script for the given number of milliseconds
+* `sleep: <amount>`
+pause the current script for a fixed amount of time. Numbers are milliseconds but `1m 30s` is also valid input 
 * `upload: <path> <destination>`
 upload a file from the local `path` to `destination` on the remote host
 * `wait-for: <name>`
 pause the current script until `name` is fully signaled
-* `xpath: <path>`
+* `xml: <path>`
 This is an overloaded command that can perform an xpath
   based search or modification. Path takes the following forms
    - `file>xpath` - finds all xpath matches in file and passes them as
@@ -277,15 +338,22 @@ new entries with standard java regex capture groups `(?<name>.*)`
   - log : eap ${{eapVersion}} started in ${{eapStartTime}}
   - ctrlC
 ```
-### State variables
-State variables can be combined within a state reference using either arithmetic operators or string concatenation
+### State javascript
+The `${{=` state prefix tells qDup to use the javascript engine to evaluate the content. 
+This lets us use javascript methods, string templates, any arithmetic operations.
 A `:` can also be used to define a default value should any of the state variable names not be defined
 ```YAML
  - sh: tail -f /tmp/server.log
    timer: 
      ${{= ${{RAMP_UP}} + ${{MEASURE}} + ${{RAMP_DOWN}} : 100}}:
-     - echo : ${{= ${{RAMP_UP}}+${{MEASURE}}+${{RAMP_DOWN}} : 100}}ms have has lapsed
+     - echo : "${{= ${{RAMP_UP}}+${{MEASURE}}+${{RAMP_DOWN}} : 100}}ms have has elapsed"
+     - echo : "$[[> $[[RAMP_UP]]+$[[MEASURE]]+$[[RAMP_DOWN]] _ 100]]ms have has elapsed"
+       prefix: "$[[" #use a custom state reference prefix
+       suffix: "]]" #use a custom state reference suffix
+       js-prefix: ">" #used after state prefix to tell qDup to use the javascript engine
+       separator: "_" #use a custom separator between state expression and the default value
 ```
+
 State references also have built in functions for time conversion
 * `seconds(val)` - converts `val` like `10m 2s` into seconds
 * `milliseconds(val)` - converts `val` like `60s` into milliseconds
@@ -394,7 +462,14 @@ Once yaup installs you can build qDup with the jar task
 
 ## Debug
 qDup.jar starts a json server with a few endpoints at hostname:31337
-* `/active` - the active commands and their current output
-* `/latches` - the timestamp each latch was reached
-* `/counters` - the current value for eah counter
+* `/state` - GET the active state
+* `/stage` - GET the current run stage [setup, run, cleanup]
+* `/active` - GET the active commands and their current output
+* `/session` - GET the active ssh sessions 
+* `/session/:sessionId` - POST a string to send it to the remote session. ^C will send a ctrl+c
+* `/signal` - the timestamp each signal was reached or the remaining count for each signal
+* `/signal/:name` - POST a number to set the current signal count
+* `/timer` - GET the command timers that track start and end time for each command
+* `/counter` - GET the current value for eah counter
+* `/waiter` - GET the waiting commands for all signal names
 * `/pendingDownloads` - what files are queued for download from which hosts

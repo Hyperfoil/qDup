@@ -198,13 +198,6 @@ public class Parser {
                     return new ForEach(json.getString("name"), json.getString("input", ""));
                 }
         );
-        rtrn.addCmd(
-                SendText.class,
-                "send-text",
-                (cmd) -> cmd.getText(),
-                (str) -> new SendText(str),
-                null
-        );
         //Invoke
         rtrn.addCmd(
                 JsCmd.class,
@@ -333,6 +326,13 @@ public class Parser {
                 (cmd) -> cmd.getName(),
                 (str) -> new ScriptCmd(str),
                 (json) -> new ScriptCmd(json.getString("name"), json.getBoolean("async", false), false)
+        );
+        rtrn.addCmd(
+                SendText.class,
+                "send-text",
+                (cmd) -> cmd.getText(),
+                (str) -> new SendText(str),
+                null
         );
         rtrn.addCmd(
                 SetSignal.class,
