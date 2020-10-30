@@ -8,7 +8,7 @@ public class RegexConstruct extends CmdConstruct {
    public RegexConstruct() {
       super(
          "regex",
-         (str)->new Regex(str),
+         (str,prefix,suffix)->new Regex(str),
          (json)-> new Regex(json.getString("pattern",""),json.getBoolean("miss",false))
       );
       this.addTopLevelkey("else",(cmd,node)->{

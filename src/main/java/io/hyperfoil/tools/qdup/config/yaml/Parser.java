@@ -68,14 +68,14 @@ public class Parser {
                 Abort.class,
                 "abort",
                 (cmd) -> cmd.getMessage(),
-                (str) -> new Abort(str),
+                (str,prefix,suffix) -> new Abort(str),
                 null
         );
         rtrn.addCmd(
                 AddPrompt.class,
                 "add-prompt",
                 (cmd) -> cmd.getPrompt(),
-                (str) -> new AddPrompt(str),
+                (str,prefix,suffix) -> new AddPrompt(str),
                 null
         );
         rtrn.addCmd(
@@ -83,8 +83,8 @@ public class Parser {
                 "countdown",
                 (cmd) -> (cmd.getName() + " " + cmd.getInitial()),
 
-                (str) -> {
-                    List<String> split = Parser.split(str);
+                (str,prefix,suffix) -> {
+                    List<String> split = Parser.split(str,prefix,suffix);
                     if (split.size() == 2) {
                         return new Countdown(split.get(0), Integer.parseInt(split.get(1)));
                     } else {
@@ -100,7 +100,7 @@ public class Parser {
                 "ctrlC",
                 true,
                 (cmd) -> "",
-                (str) -> new CtrlC(),
+                (str,prefix,suffix) -> new CtrlC(),
                 (json) -> new CtrlC()
         );
         rtrn.addCmd(
@@ -108,7 +108,7 @@ public class Parser {
                 "ctrl/",
                 true,
                 (cmd) -> "",
-                (str) -> new CtrlSlash(),
+                (str,prefix,suffix) -> new CtrlSlash(),
                 (json) -> new CtrlSlash()
         );
         rtrn.addCmd(
@@ -116,7 +116,7 @@ public class Parser {
                 "ctrlU",
                 true,
                 (cmd) -> "",
-                (str) -> new CtrlU(),
+                (str,prefix,suffix) -> new CtrlU(),
                 (json) -> new CtrlU()
         );
 
@@ -125,7 +125,7 @@ public class Parser {
                 "ctrlZ",
                 true,
                 (cmd) -> "",
-                (str) -> new CtrlZ(),
+                (str,prefix,suffix) -> new CtrlZ(),
                 (json) -> new CtrlZ()
         );
         rtrn.addCmd(
@@ -133,15 +133,15 @@ public class Parser {
                 "done",
                 true,
                 (cmd) -> "",
-                (str) -> new Done(),
+                (str,prefix,suffix) -> new Done(),
                 (json) -> new Done()
         );
         rtrn.addCmd(
                 Download.class,
                 "download",
                 (cmd) -> (cmd.getPath() + (cmd.getDestination() != null && !cmd.getDestination().isEmpty() ? " " + cmd.getDestination() : "")),
-                (str) -> {
-                    List<String> split = Parser.split(str);
+                (str,prefix,suffix) -> {
+                    List<String> split = Parser.split(str,prefix,suffix);
                     if (split.size() <= 1) {
                         return new Download(str);
                     } else if (split.size() == 2) {
@@ -158,7 +158,7 @@ public class Parser {
                 "echo",
                 true,
                 (cmd) -> "",
-                (str) -> new Echo(),
+                (str,prefix,suffix) -> new Echo(),
                 null
         );
         //Exec
@@ -166,7 +166,7 @@ public class Parser {
                 Exec.class,
                 "exec",
                 (cmd) -> cmd.getCommand(),
-                (str) -> new Exec(str),
+                (str,prefix,suffix) -> new Exec(str),
                 (json) -> {
                     return new Exec(json.getString("command"), json.getBoolean("async", false), json.getBoolean("silent", false));
                 }
@@ -177,8 +177,8 @@ public class Parser {
                 "for-each",
                 //have to quote declaredInput because Parser.split() strips out the quotes, remove once cmd builder is gone
                 (cmd) -> ((cmd.getName() + " " + (cmd.getDeclaredInput().trim().isEmpty() ? "" : "'" + cmd.getDeclaredInput()).trim() + "'")),
-                (str) -> {
-                    List<String> split = Parser.split(str);
+                (str,prefix,suffix) -> {
+                    List<String> split = Parser.split(str,prefix,suffix);
                     if (split.size() <= 1) {
                         return new ForEach(split.get(0));
                     } else if (split.size() == 2) {
@@ -203,14 +203,14 @@ public class Parser {
                 JsCmd.class,
                 "js",
                 (cmd) -> cmd.getCode(),
-                (str) -> new JsCmd(str),
+                (str,prefix,suffix) -> new JsCmd(str),
                 null
         );
         rtrn.addCmd(
                 Log.class,
                 "log",
                 (cmd) -> cmd.getMessage(),
-                (str) -> new Log(str),
+                (str,prefix,suffix) -> new Log(str),
                 null
         );
         //TODO QueueDelete
@@ -218,8 +218,8 @@ public class Parser {
                 QueueDownload.class,
                 "queue-download",
                 (cmd) -> (cmd.getPath() + (cmd.getDestination() != null && !cmd.getDestination().isEmpty() ? " " + cmd.getDestination() : "")),
-                (str) -> {
-                    List<String> split = Parser.split(str);
+                (str,prefix,suffix) -> {
+                    List<String> split = Parser.split(str,prefix,suffix);
                     if (split.size() == 1) {
                         return new QueueDownload(split.get(0));
                     } else if (split.size() == 2) {
@@ -257,7 +257,7 @@ public class Parser {
                 ),
                 new CmdWithElseConstruct(
                         "read-signal",
-                        (str) -> new ReadSignal(str),
+                        (str,prefix,suffix) -> new ReadSignal(str),
                         (json) -> {
                             return new ReadSignal(json.getString("name"));
                         }
@@ -288,7 +288,7 @@ public class Parser {
                 ),
                 new CmdWithElseConstruct(
                         "read-state",
-                        (str) -> new ReadState(str),
+                        (str,prefix,suffix) -> new ReadState(str),
                         (json) -> new ReadState(json.getString("name"))
                 )
         );
@@ -296,7 +296,7 @@ public class Parser {
                 Cmd.NO_OP.class,
                 "#NO_OP",
                 (cmd) -> "",
-                (str) -> new Cmd.NO_OP(),
+                (str,prefix,suffix) -> new Cmd.NO_OP(),
                 null
         );
         //TODO add Reboot to yaml support
@@ -304,7 +304,7 @@ public class Parser {
                 Parse.class,
                 "parse",
                 (cmd) -> cmd.getConfig(),
-                (str) -> new Parse(str),
+                (str,prefix,suffix) -> new Parse(str),
                 (json) -> new Parse(json.toString())
         );
         rtrn.addCmd(
@@ -317,21 +317,21 @@ public class Parser {
                 RepeatUntilSignal.class,
                 "repeat-until",
                 (cmd) -> cmd.getName(),
-                (str) -> new RepeatUntilSignal(str),
+                (str,prefix,suffix) -> new RepeatUntilSignal(str),
                 null
         );
         rtrn.addCmd(
                 ScriptCmd.class,
                 "script",
                 (cmd) -> cmd.getName(),
-                (str) -> new ScriptCmd(str),
+                (str,prefix,suffix) -> new ScriptCmd(str),
                 (json) -> new ScriptCmd(json.getString("name"), json.getBoolean("async", false), false)
         );
         rtrn.addCmd(
                 SendText.class,
                 "send-text",
                 (cmd) -> cmd.getText(),
-                (str) -> new SendText(str),
+                (str,prefix,suffix) -> new SendText(str),
                 null
         );
         rtrn.addCmd(
@@ -350,8 +350,8 @@ public class Parser {
                         return cmd.getName() + " " + cmd.getInitial();
                     }
                 },
-                (str) -> {
-                    List<String> split = Parser.split(str);
+                (str,prefix,suffix) -> {
+                    List<String> split = Parser.split(str,prefix,suffix);
                     if (split.size() != 2) {
                         throw new YAMLException("cannot create set-signal from " + str);
                     } else {
@@ -366,8 +366,8 @@ public class Parser {
                 (cmd) -> {
                     return cmd.getKey() + (cmd.getValue() != null && !cmd.getValue().isEmpty() ? " " + cmd.getValue() : "");
                 },
-                (str) -> {
-                    List<String> split = Parser.split(str);
+                (str,prefix,suffix) -> {
+                    List<String> split = Parser.split(str,prefix,suffix);
                     if (split.size() <= 1) {
                         return new SetState(str);
                     } else {
@@ -406,7 +406,7 @@ public class Parser {
                         return cmd.getCommand();
                     }
                 },
-                (str) -> {
+                (str,prefix,suffix) -> {
                     if (str == null || str.isEmpty()) {
                         throw new YAMLException("sh command cannot be empty");
                     }
@@ -432,7 +432,7 @@ public class Parser {
                 Signal.class,
                 "signal",
                 (cmd) -> cmd.getName(),
-                (str) -> new Signal(str),
+                (str,prefix,suffix) -> new Signal(str),
                 null
         );
 
@@ -440,15 +440,15 @@ public class Parser {
                 Sleep.class,
                 "sleep",
                 (cmd) -> cmd.getAmount(),
-                (str) -> new Sleep(str),
+                (str,prefix,suffix) -> new Sleep(str),
                 null
         );
         rtrn.addCmd(
                 Upload.class,
                 "upload",
                 (cmd) -> (cmd.getPath() + " " + cmd.getDestination()),
-                (str) -> {
-                    List<String> split = Parser.split(str);
+                (str,prefix,suffix) -> {
+                    List<String> split = Parser.split(str,prefix,suffix);
                     if (split.size() <= 1) {
                         return new Upload(str);
                     } else if (split.size() == 2) {
@@ -464,8 +464,8 @@ public class Parser {
                 WaitFor.class,
                 "wait-for",
                 (cmd) -> cmd.getName(),
-                (str) -> {
-                    List<String> split = Parser.split(str);
+                (str,prefix,suffix) -> {
+                    List<String> split = Parser.split(str,prefix,suffix);
                     if (split.size() <= 1) {
                         return new WaitFor(str);
                     } else {
@@ -491,7 +491,7 @@ public class Parser {
                         return map;
                     }
                 },
-                (str) -> new XmlCmd(str),
+                (str,prefix,suffix) -> new XmlCmd(str),
                 (json) -> {
                     List<String> operations = new LinkedList<>();
                     json.getJson("operations", new Json()).forEach(entry -> {
@@ -521,7 +521,7 @@ public class Parser {
     private Yaml yaml;
     private OverloadConstructor constructor;
     private MapRepresenter mapRepresenter;
-    private Map<String, Function<String, Cmd>> noArgs;
+    private Map<String, FromString> noArgs;
     private Map<Class, CmdMapping> cmdMappings;
     private boolean abortOnExitCode;
 
@@ -542,7 +542,7 @@ public class Parser {
                 if (node instanceof ScalarNode) {
                     String value = ((ScalarNode) node).getValue();
                     if (noArgs.containsKey(value)) {
-                        return noArgs.get(value).apply("");
+                        return noArgs.get(value).apply("",StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_SUFFIX);
                     }
                 } else {
                     //TODO cmd !=ScalarNode
@@ -578,11 +578,11 @@ public class Parser {
 
     }
 
-    public <T extends Cmd> void addCmd(Class<T> clazz, String tag, CmdEncoder<T> encoder, Function<String, Cmd> fromString, Function<Json, Cmd> fromJson, String... expectedKeys) {
+    public <T extends Cmd> void addCmd(Class<T> clazz, String tag, CmdEncoder<T> encoder, FromString<T> fromString, Function<Json, Cmd> fromJson, String... expectedKeys) {
         addCmd(clazz, tag, false, encoder, fromString, fromJson, expectedKeys);
     }
 
-    public <T extends Cmd> void addCmd(Class<T> clazz, String tag, boolean noArg, CmdEncoder<T> encoder, Function<String, Cmd> fromString, Function<Json, Cmd> fromJson, String... expectedKeys) {
+    public <T extends Cmd> void addCmd(Class<T> clazz, String tag, boolean noArg, CmdEncoder<T> encoder, FromString<T> fromString, Function<Json, Cmd> fromJson, String... expectedKeys) {
         Construct construct = new CmdConstruct(tag, fromString, fromJson, expectedKeys);
         CmdMapping cmdMapping = new CmdMapping<T>(tag, encoder);
 
@@ -674,9 +674,14 @@ public class Parser {
     //Moved from CmdBuilder because removing waml code
     //TODO split should not split ${{...}}
     public static List<String> split(String input){
+        return split(input,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_SUFFIX);
+    }
+    public static List<String> split(String input, String prefix, String suffix){
+
         List<String> rtrn = new LinkedList<>();
         int start=0;
         int current=0;
+        int stateDepth=0;
         boolean quoted = false;
         boolean pop = false;
         char quoteChar = '"';
@@ -698,7 +703,7 @@ public class Parser {
 
                             } else {
                                 quoted = false;
-                                if (current > start) {
+                                if (current > start && stateDepth == 0) {
                                     pop = true;
                                 }
                             }
@@ -711,9 +716,18 @@ public class Parser {
                 case ' ':
                 case '\t':
                     if(!quoted){
-                        if(current>start){
+                        if(current>start && stateDepth == 0){
                             pop=true;
                         }
+                    }
+                default:
+                    if(input.startsWith(prefix,current)){
+                        stateDepth++;
+                        current+=prefix.length()-1;
+                    }
+                    if(input.startsWith(suffix,current)){
+                        stateDepth--;
+                        current+=suffix.length()-1;
                     }
             }
             if(pop){

@@ -8,12 +8,7 @@ import org.yaml.snakeyaml.nodes.*;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -22,12 +17,12 @@ import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.json;
 public class CmdConstruct extends DeferableConstruct {
 
     private String tag;
-    private Function<String, Cmd> fromString;
+    private FromString fromString;
     private Function<Json, Cmd> fromJson;
     private Map<String, BiConsumer<Cmd,Node>> topLevelKeys;
     private final List<String> expectedKeys = new ArrayList<>();
 
-    public CmdConstruct(String tag,Function<String,Cmd> fromString,Function<Json,Cmd> fromJson,String...keys){
+    public CmdConstruct(String tag,FromString fromString,Function<Json,Cmd> fromJson,String...keys){
         this.tag = tag;
         this.fromString = fromString;
         this.fromJson = fromJson;
@@ -235,10 +230,26 @@ public class CmdConstruct extends DeferableConstruct {
                     .orElseThrow(()->new YAMLException("Missing required key="+tag+" "+node.getStartMark()))
                 .getValueNode();
 
+            //identify the pattern prefix and suffix for this command
+            Map<String,String> stateIndicators = new HashMap<>();
+            stateIndicators.put(CmdMapping.PREFIX,StringUtil.PATTERN_PREFIX);
+            stateIndicators.put(CmdMapping.SUFFIX,StringUtil.PATTERN_SUFFIX);
+            mappingNode.getValue().forEach(nodeTuple -> {
+                if(nodeTuple.getKeyNode() instanceof ScalarNode && nodeTuple.getValueNode() instanceof ScalarNode){
+                    String keyNode = ((ScalarNode)nodeTuple.getKeyNode()).getValue();
+                    String valueNode = ((ScalarNode)nodeTuple.getValueNode()).getValue();
+                    if(CmdMapping.PREFIX.equals(keyNode)){
+                        stateIndicators.put(CmdMapping.PREFIX,valueNode);
+                    }else if (CmdMapping.SUFFIX.equals(keyNode)){
+                        stateIndicators.put(CmdMapping.SUFFIX,valueNode);
+                    }
+                }
+            });
+
             if(tagValue instanceof ScalarNode){
                 if(supportString()){
                     String value = ((ScalarNode)tagValue).getValue();
-                    rtrn = fromString.apply(value);
+                    rtrn = fromString.apply(value,stateIndicators.get(CmdMapping.PREFIX),stateIndicators.get(CmdMapping.SUFFIX));
                 }else{
                     throw new YAMLException(tag+" does not support scalar values "+tagValue.getStartMark());
                 }

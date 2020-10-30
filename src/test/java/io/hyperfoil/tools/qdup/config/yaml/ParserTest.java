@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -18,6 +19,52 @@ public class ParserTest extends SshTestBase {
 
     public static String join(String...args){
         return Arrays.asList(args).stream().collect(Collectors.joining("\n"));
+    }
+
+
+    @Test
+    public void split_tab_separated(){
+        List<String> split = Parser.split("one\ttwo\tthree");
+        assertEquals("expect 3 entries:"+split,3,split.size());
+        assertEquals("split[0]","one",split.get(0));
+        assertEquals("split[1]","two",split.get(1));
+        assertEquals("split[2]","three",split.get(2));
+    }
+
+    @Test
+    public void split_space_separated(){
+        List<String> split = Parser.split("one two three");
+        assertEquals("expect 3 entries:"+split,3,split.size());
+        assertEquals("split[0]","one",split.get(0));
+        assertEquals("split[1]","two",split.get(1));
+        assertEquals("split[2]","three",split.get(2));
+    }
+
+    @Test
+    public void split_dont_split_statepattern(){
+        List<String> split = Parser.split("one ${{ ignore spaces }} three");
+        assertEquals("expect 3 entries:"+split,3,split.size());
+        assertEquals("split[0]","one",split.get(0));
+        assertEquals("split[1]","${{ ignore spaces }}",split.get(1));
+        assertEquals("split[2]","three",split.get(2));
+    }
+
+    @Test
+    public void split_dont_split_statepattern_custom(){
+        List<String> split = Parser.split("one $[[ ignore spaces ]] three","$[[","]]");
+        assertEquals("expect 3 entries:"+split,3,split.size());
+        assertEquals("split[0]","one",split.get(0));
+        assertEquals("split[1]","$[[ ignore spaces ]]",split.get(1));
+        assertEquals("split[2]","three",split.get(2));
+    }
+
+    @Test
+    public void split_dont_split_statepattern_nested(){
+        List<String> split = Parser.split("one ${{ ${{ignore}} ${{spaces}} }} three");
+        assertEquals("expect 3 entries:"+split,3,split.size());
+        assertEquals("split[0]","one",split.get(0));
+        assertEquals("split[1]","${{ ${{ignore}} ${{spaces}} }}",split.get(1));
+        assertEquals("split[2]","three",split.get(2));
     }
 
 

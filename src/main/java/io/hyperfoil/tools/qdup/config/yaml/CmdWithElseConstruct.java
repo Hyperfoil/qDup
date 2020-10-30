@@ -9,7 +9,7 @@ import org.yaml.snakeyaml.nodes.SequenceNode;
 import java.util.function.Function;
 
 public class CmdWithElseConstruct extends CmdConstruct{
-    public CmdWithElseConstruct(String tag, Function<String, Cmd> fromString, Function<Json, Cmd> fromJson, String... keys) {
+    public CmdWithElseConstruct(String tag, FromString fromString, Function<Json, Cmd> fromJson, String... keys) {
         super(tag, fromString, fromJson, keys);
         this.addTopLevelkey("else",(cmd,node)->{
             if(cmd instanceof CmdWithElse && node instanceof SequenceNode){
