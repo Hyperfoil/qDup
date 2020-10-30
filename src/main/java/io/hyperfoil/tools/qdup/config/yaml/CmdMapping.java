@@ -28,7 +28,19 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
 
 
 
-    public static final Set<String> COMMAND_KEYS = Collections.unmodifiableSet(Sets.of(WITH,THEN,TIMER, ON_SIGNAL,WATCH,SILENT,PREFIX,SUFFIX,SEPARATOR,JS_PREFIX));
+    public static final Set<String> COMMAND_KEYS = Collections.unmodifiableSet(Sets.of(
+            WITH,
+            THEN,
+            TIMER,
+            ON_SIGNAL,
+            WATCH,
+            SILENT,
+            PREFIX,
+            SUFFIX,
+            SEPARATOR,
+            JS_PREFIX,
+            IDLE_TIMER,
+            STATE_SCAN));
 
     private Defer defer = null;
     final String key;
