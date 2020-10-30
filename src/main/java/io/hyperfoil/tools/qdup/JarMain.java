@@ -53,6 +53,11 @@ public class JarMain {
     private boolean colorTerminal;
     private int jsonPort;
 
+
+    private boolean exitCode = false;
+
+    public boolean checkExitCode(){return exitCode;}
+
     public boolean isColorTerminal() {
         return colorTerminal;
     }
@@ -287,6 +292,14 @@ public class JarMain {
                         .build()
         );
 
+        //exit code checking
+        options.addOption(
+                Option.builder("x")
+                        .longOpt("exitCode")
+                        .hasArg(false)
+                        .desc("flag to enable exit code checking")
+                        .build()
+        );
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -343,6 +356,7 @@ public class JarMain {
         breakpoints = commandLine.hasOption("breakpoint") ? Arrays.asList(commandLine.getOptionValues("breakpoint")) : Collections.EMPTY_LIST;
         colorTerminal = commandLine.hasOption("colorTerminal");
         jsonPort = Integer.parseInt(commandLine.getOptionValue("jsonport", "" + JsonServer.DEFAULT_PORT));
+        exitCode = commandLine.hasOption("exitCode");
 
         outputPath = null;
         DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -386,6 +400,7 @@ public class JarMain {
         JarMain jarMain = new JarMain(args);
 
         Parser yamlParser = Parser.getInstance();
+        yamlParser.setAbortOnExitCode(jarMain.checkExitCode());
         RunConfigBuilder runConfigBuilder = new RunConfigBuilder();
 
         for (String yamlPath : jarMain.getYamlPaths()) {

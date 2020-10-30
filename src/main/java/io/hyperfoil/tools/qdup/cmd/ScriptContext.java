@@ -21,6 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -31,12 +32,12 @@ public class ScriptContext implements Context, Runnable{
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     private class SharedScriptContext extends ScriptContext{
-        public SharedScriptContext(SystemTimer timer,Cmd root){
+        public SharedScriptContext(SystemTimer timer,Cmd root, boolean checkExitCode){
             super(ScriptContext.this.getSession(),
                ScriptContext.this.getState(),
                ScriptContext.this.getRun(),
                timer,
-               root);
+               root,checkExitCode);
         }
         @Override
         public void close(){
@@ -73,7 +74,7 @@ public class ScriptContext implements Context, Runnable{
 
     private final SshSession session;
     private final Cmd rootCmd;
-
+    private boolean checkExitCode;
     private final State state;
     private final Run run;
     private final SystemTimer timer;
@@ -107,10 +108,10 @@ public class ScriptContext implements Context, Runnable{
         return (cmdName.isEmpty() ? "" : cmdName+":"+getRootCmd().getUid()+"@") + (getSession()!=null ? getSession().getHost().toString() : "");
     }
 
-    public ScriptContext(SshSession session, State state, Run run, SystemTimer timer, Cmd rootCmd){
-        this(session,state,run,timer,rootCmd.deepCopy(),null);
+    public ScriptContext(SshSession session, State state, Run run, SystemTimer timer, Cmd rootCmd, boolean checkExitCode){
+        this(session,state,run,timer,rootCmd.deepCopy(),null,checkExitCode);
     }
-    private ScriptContext(SshSession session, State state, Run run, SystemTimer timer, Cmd rootCmd,Cmd setCurrentCmd){
+    private ScriptContext(SshSession session, State state, Run run, SystemTimer timer, Cmd rootCmd,Cmd setCurrentCmd, boolean checkExitCode){
         this.session = session;
         this.rootCmd = rootCmd;
         this.currentCmd = null;
@@ -118,6 +119,7 @@ public class ScriptContext implements Context, Runnable{
         this.state = state;
         this.run = run;
         this.timer = timer;
+        this.checkExitCode = checkExitCode;
 
         if(this.session!=null){
             session.addLineObserver(
@@ -134,7 +136,7 @@ public class ScriptContext implements Context, Runnable{
 
     public ScriptContext newChildContext(SystemTimer timer,Cmd root){
         sessionCounter.incrementAndGet();
-        return new SharedScriptContext(timer,root);
+        return new SharedScriptContext(timer,root,false);
     }
 
     public void setObserver(ContextObserver observer){
@@ -473,6 +475,7 @@ public class ScriptContext implements Context, Runnable{
                                    this
                                 );
                                 try {
+
                                     logger.trace("watcher.run {}",watcher);
                                     watcherContext.forceCurrentCmd(watcher);
                                     watcher.doRun(line, watcherContext);

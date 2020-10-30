@@ -112,6 +112,7 @@ public class RunConfig {
     public Object getSetting(String key,Object defaultValue){
         return hasSetting(key) ? settings.get(key) : defaultValue;
     }
+    public Json getSettings(){return settings;}
 
     public Set<String> getTracePatterns(){return tracePatterns;}
 

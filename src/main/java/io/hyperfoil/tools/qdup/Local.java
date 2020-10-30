@@ -126,7 +126,7 @@ public class Local {
       if (path == null || path.isEmpty() || destination == null || destination.isEmpty()) {
 
       } else {
-         logger.info("Local.download({}@{}:{},{})", host.getUserName(), host.getHostName(), path, destination);
+         logger.info("Local.download({}:{},{})", host, path, destination);
          rsyncFetch(host, path, destination);
       }
    }
@@ -242,6 +242,7 @@ public class Local {
       logger.debug("Running rsync command : " + cmd.stream().collect(Collectors.joining(" ")));
       try {
          Process p = builder.start();
+
          final InputStream inputStream = p.getInputStream();
          final OutputStream outputStream = p.getOutputStream();
          final InputStream errorStream = p.getErrorStream();

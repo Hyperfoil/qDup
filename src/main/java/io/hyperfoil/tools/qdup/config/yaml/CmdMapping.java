@@ -22,6 +22,8 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
     public static final String SUFFIX = "suffix";
     public static final String SEPARATOR = "separator";
     public static final String JS_PREFIX = "js-prefix";
+    public static final String IDLE_TIMER = "idle-timer";
+    public static final String STATE_SCAN = "state-scan";
 
 
 
@@ -141,7 +143,13 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
             });
             rtrn.put(THEN,thens);
         }
-
+        if(cmd.hasCustomIdleTimer()){
+            if(cmd.hasIdleTimer()){
+                rtrn.put(IDLE_TIMER,cmd.getIdleTimer());
+            }else{
+                rtrn.put(IDLE_TIMER,"false");
+            }
+        }
         return rtrn;
     }
 

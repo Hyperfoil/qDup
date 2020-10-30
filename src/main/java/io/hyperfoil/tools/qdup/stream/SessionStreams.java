@@ -44,7 +44,14 @@ public class SessionStreams extends MultiStream {
    private FilteredStream filteredStream = null;
    private ByteArrayOutputStream shStream = null;
 
-
+   /* Stream hierarchy
+    * escapeFilteredStream - removes bash escape sequences
+    *    suffixStream - looks for substrings at the end of the write buffer (bash prompt)
+    *       filteredStream - removes sequences from anywhere in the write buffer (the bash command)
+    *          lineEmittingStream - sends each line (\n or \r\n) of the write buffer to listeners (watching commands)
+    *          shStream - stores all of the write buffer for a command
+    *       promptStream - watches for suffixes and sends a prompt response (Y/n, Ok?, ...)
+    */
    public SessionStreams(String name, ScheduledThreadPoolExecutor executor){
       super(name);
       shStream = new ByteArrayOutputStream();

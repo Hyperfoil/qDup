@@ -14,6 +14,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiFunction;
 
 public class ForEach extends LoopCmd {
 
@@ -46,6 +47,9 @@ public class ForEach extends LoopCmd {
       return name;
    }
 
+   public boolean hasDeclaredInput(){
+      return declaredInput!=null && !declaredInput.isBlank();
+   }
    public String getDeclaredInput() {
       return declaredInput;
    }

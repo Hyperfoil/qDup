@@ -3,7 +3,6 @@ package io.hyperfoil.tools.qdup.cmd;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.impl.RepeatUntilSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
-import io.hyperfoil.tools.qdup.cmd.impl.Signal;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -16,6 +15,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -49,7 +49,6 @@ public class Dispatcher {
     };
 
 
-    final static long THRESHOLD = 30_000; //30s
     private static final String CLOSE_QUEUE = "CLOSE_QUEUE_OBSERVER_"+System.currentTimeMillis();
     private static final String QUEUE_OBSERVER = "QUEUE_OBSERVER";
 
@@ -244,9 +243,8 @@ public class Dispatcher {
 
                 //check for idle sh
 
-                if(timestamp - lastUpdate > THRESHOLD){
+                if(command.hasIdleTimer() &&  timestamp - lastUpdate > command.getIdleTimer()){
                     if(command instanceof Sh){
-
                         String output = context.getSession().peekOutput();
                         String parentName = null;
                         if (command.getParent() instanceof Script)
@@ -361,7 +359,7 @@ public class Dispatcher {
                     nannyFuture = scheduler.scheduleAtFixedRate(() -> {
                         long timestamp = System.currentTimeMillis();
                         nannyTask.accept(timestamp);
-                    }, THRESHOLD, THRESHOLD, TimeUnit.MILLISECONDS);
+                    }, Cmd.DEFAULT_IDLE_TIMER, Cmd.DEFAULT_IDLE_TIMER, TimeUnit.MILLISECONDS);
                 }
                 for(Cmd script : scriptContexts.keySet()){
                     ScriptContext contextResult = scriptContexts.get(script);

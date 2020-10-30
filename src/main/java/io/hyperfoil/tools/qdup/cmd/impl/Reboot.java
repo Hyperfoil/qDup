@@ -15,7 +15,6 @@ import java.util.stream.IntStream;
 
 public class Reboot extends Cmd {
 
-
     private long timeout;
     private String target;
     private String password;

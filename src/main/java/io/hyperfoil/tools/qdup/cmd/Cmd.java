@@ -27,6 +27,9 @@ import java.util.regex.Pattern;
  */
 public abstract class Cmd {
 
+   final static long DEFAULT_IDLE_TIMER = 30_000; //30s
+   final static long DISABLED_IDLE_TIMER = -1;
+
    public static class Ref {
       private Ref parent;
       private Cmd command;
@@ -442,8 +445,11 @@ public abstract class Cmd {
    private Cmd parent;
    private Cmd stateParent;
 
-   int uid;
+   private long idleTimer = DEFAULT_IDLE_TIMER;
    protected boolean silent = false;
+   private boolean stateScan = true;
+
+   int uid;
    private String output;
 
    protected Cmd() {
@@ -463,6 +469,19 @@ public abstract class Cmd {
       this.uid = uidGenerator.incrementAndGet();
    }
 
+   public void setStateScan(boolean stateScan){
+      this.stateScan = stateScan;
+   }
+   public boolean isStateScan(){return stateScan;}
+   public boolean hasCustomIdleTimer(){return idleTimer!=DEFAULT_IDLE_TIMER;}
+   public boolean hasIdleTimer(){return idleTimer > 0;}
+   public long getIdleTimer(){return idleTimer;}
+   public void setIdleTimer(long idleTimer){
+      this.idleTimer = idleTimer;
+   }
+   public void disableIdleTimer(){
+      this.idleTimer = DISABLED_IDLE_TIMER;
+   }
 
    private void preChild(Cmd child){}
 
@@ -862,7 +881,9 @@ public abstract class Cmd {
    public Cmd deepCopy() {
       Cmd clone = this.copy();
       if(clone !=null){
-       clone.with(this.getWith());
+         clone.setStateScan(this.isStateScan());
+         clone.setIdleTimer(this.getIdleTimer());
+         clone.with(this.getWith());
          if(this.hasPatternPrefix()){
             clone.setPatternPrefix(this.getPatternPrefix());
          }

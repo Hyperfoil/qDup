@@ -3,12 +3,14 @@ package io.hyperfoil.tools.qdup;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.hyperfoil.tools.qdup.cmd.*;
+import io.hyperfoil.tools.qdup.cmd.impl.AddPrompt;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -94,6 +96,8 @@ public class RunTest extends SshTestBase {
       assertTrue("all script should have run", allRan.get());
    }
 
+
+
    @Test
    public void pwd_in_dollar() {
       Parser parser = Parser.getInstance();
@@ -147,6 +151,120 @@ public class RunTest extends SshTestBase {
       doit.run();
    }
 
+   @Test @Ignore
+   public void test_reconnect_client4(){
+      AtomicBoolean ran = new AtomicBoolean(false);
+      StringBuilder sb = new StringBuilder();
+      Script script = new Script("test");
+      script.then(Cmd.sh("pwd"));
+      script.then(new AddPrompt(" closed."));
+      script.then(new AddPrompt("We are no longer a registered authentication agent."));
+      script.then(Cmd.sh("sudo reboot"));
+      script.then(Cmd.sh("whoami"));
+      script.then(Cmd.code(((input, state) -> {
+         sb.append(input);
+         ran.set(true);
+         return Result.next("ok");
+      })));
+
+      RunConfigBuilder builder = getBuilder();
+      builder.addHostAlias("local", "benchuser@benchclient4.perf.lab.eng.rdu2.redhat.com:22");
+      builder.addScript(script);
+      builder.addHostToRole("role", "local");
+      builder.addRoleRun("role", script.getName(), new HashMap<>());
+
+      RunConfig config = builder.buildConfig(Parser.getInstance());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      JsonServer jsonServer = new JsonServer(doit, 31337);
+      jsonServer.start();
+      doit.run();
+      jsonServer.stop();
+      
+      assertTrue("expect ran to be true",ran.get());
+   }
+
+   private class FakeReboot extends Sh {
+
+      public FakeReboot(){
+         super("sleep 10s");
+      }
+      @Override
+      public void run(String input, Context context){
+         //send context super.run so it will add the correct callback just like an Sh
+         super.run(input,context);
+         restartContainer();
+         try {
+            Thread.sleep(2_000);
+         } catch (InterruptedException e) {
+            //e.printStackTrace();
+         }
+
+      }
+      @Override
+      public Cmd copy() {
+         return new FakeReboot();
+      }
+
+   }
+
+   @Test
+   public void test_force_reconnect(){
+      SshSession session = getSession();
+      String out;
+      out = session.shSync("echo hi");
+      restartContainer();
+      try {
+         Thread.sleep(10_000);
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      }
+      SshSession copy = session.openCopy();
+
+
+      assertTrue("expect copy to be open",copy.isOpen());
+      assertTrue("expect copy to be ready",copy.isReady());
+
+      assertFalse("expect session to not be open",session.isOpen());
+      assertFalse("expect session to not be ready",session.isReady());
+
+      boolean connected = session.ensureConnected();
+
+      assertTrue("expect session to be open",session.isOpen());
+      assertTrue("expect session to be ready",session.isReady());
+   }
+
+   @Test
+   public void test_reconnect() {
+      AtomicBoolean ran = new AtomicBoolean(false);
+      StringBuilder sb = new StringBuilder();
+      Script script = new Script("test");
+      script.then(Cmd.sh("whoami"));
+      script.then(new FakeReboot());
+      script.then(Cmd.sh("pwd"));
+      script.then(Cmd.code(((input, state) -> {
+         sb.append(input);
+         ran.set(true);
+         return Result.next("ok");
+      })));
+
+      RunConfigBuilder builder = getBuilder();
+      builder.addHostAlias("local", getHost().toString());
+      //builder.addHostAlias("local", "wreicher:imagine@desk:22");
+      builder.addScript(script);
+      builder.addHostToRole("role", "local");
+      builder.addRoleRun("role", script.getName(), new HashMap<>());
+
+      RunConfig config = builder.buildConfig(Parser.getInstance());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      assertTrue("expect ran to be true",ran.get());
+      assertEquals("pwd should be /root and not include motd","/root",sb.toString());
+   }
+
    @Test
    public void test_exitCode() {
       Semaphore block = new Semaphore(0);
@@ -172,7 +290,7 @@ public class RunTest extends SshTestBase {
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       List<String> errors = new ArrayList<>();
-      ScriptContext context = new ScriptContext(sshSession,state,doit,new SystemTimer("test"),cmd){
+      ScriptContext context = new ScriptContext(sshSession,state,doit,new SystemTimer("test"),cmd,false){
          @Override
          public void error(String message){
             errors.add(message);
@@ -554,13 +672,13 @@ public class RunTest extends SshTestBase {
       echo.then(Cmd.sh("echo 'foo1' >> /tmp/foo.txt"));
       echo.then(Cmd.sh("echo 'foo2' >> /tmp/foo.txt"));
       echo.then(Cmd.sh("echo 'foo3' >> /tmp/foo.txt"));
-      echo.then(Cmd.sleep("5s")); // added because docker doesnt update tail before DONE sends CtrlC
+      echo.then(Cmd.sleep("5s")); // added because docker does not update tail before DONE sends CtrlC
       echo.then(Cmd.signal("FOO_DONE"));
       echo.then(Cmd.waitFor("BAR_READY"));
       echo.then(Cmd.sh("echo 'bar1' >> /tmp/bar.txt"));
       echo.then(Cmd.sh("echo 'bar2' >> /tmp/bar.txt"));
       echo.then(Cmd.sh("echo 'bar3' >> /tmp/bar.txt"));
-      echo.then(Cmd.sleep("5s")); // added because docker doesnt update tail before DONE sends CtrlC
+      echo.then(Cmd.sleep("5s")); // added because docker does not update tail before DONE sends CtrlC
       echo.then(Cmd.signal("BAR_DONE"));
 
       RunConfigBuilder builder = getBuilder();

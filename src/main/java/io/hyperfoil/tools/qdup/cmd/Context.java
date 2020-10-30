@@ -12,6 +12,8 @@ import org.slf4j.profiler.Profiler;
 
 public interface Context {
 
+    default boolean checkExitCode(){return false;}
+
     void next(String output);
     void skip(String output);
     void update(String output);

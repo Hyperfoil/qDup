@@ -398,6 +398,9 @@ public class Parser {
                         if (!cmd.getPrompt().isEmpty()) {
                             opts.put("prompt", cmd.getPrompt());
                         }
+                        if(cmd.isIgnoreExitCode()){
+                            opts.put("ignore-exit-code",true);
+                        }
                         return map;
                     } else {
                         return cmd.getCommand();
@@ -414,6 +417,11 @@ public class Parser {
                         throw new YAMLException("sh requires a non-empty command ");
                     }
                     Sh sh = new Sh(json.getString("command"), json.getBoolean("silent", false));
+                    if(json.has("ignore-exit-code")){
+                        sh.setIgnoreExitCode(json.getBoolean("ignore-exit-code",false));
+                    }else if (rtrn.isAbortOnExitCode()){
+                        sh.setIgnoreExitCode(false);
+                    }
                     if (json.has("prompt")) {
                         json.getJson("prompt", new Json()).forEach((k, v) -> sh.addPrompt(k.toString(), v.toString()));
                     }
@@ -483,27 +491,7 @@ public class Parser {
                         return map;
                     }
                 },
-                (str) -> {
-                    List<String> split = Parser.split(str);
-                    if (split.size() == 1) {
-                        return new XmlCmd(str);
-                    } else {
-                        String name = split.get(0);
-                        String remainder = str.substring(name.length()).trim();
-                        if (Json.isJsonLike(remainder)) {
-                            Json remainderJson = Json.fromJs(remainder);
-                            if (remainderJson.isArray() && !remainderJson.isEmpty()) {
-                                split.clear();
-                                remainderJson.forEach(v -> split.add(v.toString()));
-                            } else {
-                                split.remove(0);
-                            }
-                        } else {
-                            split.remove(0);
-                        }
-                        return new XmlCmd(name, split.toArray(new String[0]));
-                    }
-                },
+                (str) -> new XmlCmd(str),
                 (json) -> {
                     List<String> operations = new LinkedList<>();
                     json.getJson("operations", new Json()).forEach(entry -> {
@@ -535,6 +523,7 @@ public class Parser {
     private MapRepresenter mapRepresenter;
     private Map<String, Function<String, Cmd>> noArgs;
     private Map<Class, CmdMapping> cmdMappings;
+    private boolean abortOnExitCode;
 
     private Parser() {
         constructor = new OverloadConstructor();
@@ -561,6 +550,12 @@ public class Parser {
                 return defer(node);
             }
         });
+        abortOnExitCode = false;
+    }
+
+    public boolean isAbortOnExitCode(){return abortOnExitCode;}
+    public void setAbortOnExitCode(boolean abortOnExitCode){
+        this.abortOnExitCode = abortOnExitCode;
     }
 
     public Object representCommand(Cmd cmd) {

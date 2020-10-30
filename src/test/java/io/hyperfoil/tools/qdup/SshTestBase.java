@@ -1,6 +1,11 @@
 package io.hyperfoil.tools.qdup;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -21,6 +26,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
@@ -119,6 +125,18 @@ public class SshTestBase {
         );
     }
 
+    public static void restartContainer(){
+        if(container!=null) {
+            int randomPort = container.getMappedPort(22);
+            Consumer<CreateContainerCmd> cmd = e -> e.withPortBindings(new PortBinding(Ports.Binding.bindPort(randomPort), new ExposedPort(22)));
+            container.stop();
+            container.withCreateContainerCmdModifier(cmd);
+            container.start();
+            String hostname = container.getContainerIpAddress();
+            host = new Host("root",hostname,null,container.getMappedPort(22));
+        }
+    }
+
     @BeforeClass
     public static void createContainer() {
 
@@ -150,6 +168,7 @@ public class SshTestBase {
                  .build()))
            .withExposedPorts(22);
         container.start();
+
         String hostname="localhost";
         try {
             hostname = java.net.InetAddress.getLocalHost().getHostName();

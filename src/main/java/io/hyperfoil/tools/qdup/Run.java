@@ -17,7 +17,6 @@ import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.qdup.config.StageSummary;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedSets;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -32,8 +31,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,7 +42,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -497,15 +493,16 @@ public class Run implements Runnable, DispatchObserver {
                    "",getDispatcher().getScheduler(),
                    isTrace(name));
                 session.setName(name);
-                if ( session.isConnected() ) {
+                if ( session.isReady() ) {
                     //TODO configure session delay
                     //session.setDelay(SuffixStream.NO_DELAY);
                     ScriptContext scriptContext = new ScriptContext(
-                       session,
-                       config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
-                       this,
-                       profiles.get(name),
-                       setup
+                        session,
+                        config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
+                        this,
+                        profiles.get(name),
+                        setup,
+                        config.getSettings().has("check-exit-code")
                     );
                     getDispatcher().addScriptContext(scriptContext);
                     return session.isOpen();
@@ -548,15 +545,16 @@ public class Run implements Runnable, DispatchObserver {
                    "",getDispatcher().getScheduler(),
                    isTrace(name));
                 session.setName(name);
-                if ( session.isConnected() ) {
+                if ( session.isReady() ) {
                     //TODO configure session delay
                     //session.setDelay(SuffixStream.NO_DELAY);
                     ScriptContext scriptContext = new ScriptContext(
-                       session,
-                       config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
-                       this,
-                       profiles.get(name),
-                       setup
+                        session,
+                        config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
+                        this,
+                        profiles.get(name),
+                        setup,
+                        config.getSettings().has("check-exit-code")
                     );
                     getDispatcher().addScriptContext(scriptContext);
                     return session.isOpen();
@@ -619,7 +617,7 @@ public class Run implements Runnable, DispatchObserver {
                                "", getDispatcher().getScheduler(),
                                 isTrace(name));
                        session.setName(name);
-                       if ( session.isConnected() ) {
+                       if ( session.isReady() ) {
                            //TODO configure session delay
                            //session.setDelay(SuffixStream.NO_DELAY);
                            ScriptContext scriptContext = new ScriptContext(
@@ -627,7 +625,8 @@ public class Run implements Runnable, DispatchObserver {
                                    config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
                                    this,
                                    profiles.get(name),
-                                   setup
+                                   setup,
+                                   config.getSettings().has("check-exit-code")
                            );
                            getDispatcher().addScriptContext(scriptContext);
                            return session.isOpen();
@@ -688,7 +687,7 @@ public class Run implements Runnable, DispatchObserver {
 
                             );
                             session.setName(name);
-                            if (session.isConnected()) {
+                            if (session.isReady()) {
                                 //session.setDelay(SuffixStream.NO_DELAY);
                                 timer.start("context:" + host.toString());
                                 ScriptContext scriptContext = new ScriptContext(
@@ -696,7 +695,8 @@ public class Run implements Runnable, DispatchObserver {
                                         scriptState,
                                         this,
                                         timer,
-                                        script
+                                        script,
+                                        config.getSettings().has("check-exit-code")
                                 );
 
                                 getDispatcher().addScriptContext(scriptContext);
@@ -734,7 +734,6 @@ public class Run implements Runnable, DispatchObserver {
             if(!ok){
                 abort(false);
             }
-
         }else{
 
         }
@@ -774,7 +773,7 @@ public class Run implements Runnable, DispatchObserver {
                                 getDispatcher().getScheduler(),
                                 isTrace(name));
                         session.setName(name);
-                        if ( session.isConnected() ) {
+                        if ( session.isReady() ) {
 
                             //session.setDelay(SuffixStream.NO_DELAY);
                             ScriptContext scriptContext = new ScriptContext(
@@ -782,7 +781,8 @@ public class Run implements Runnable, DispatchObserver {
                                     config.getState(),
                                     this,
                                     profiles.get(roleName + "-cleanup@" + host.getShortHostName()),
-                                    cleanup
+                                    cleanup,
+                                    config.getSettings().has("check-exit-code")
                             );
                             getDispatcher().addScriptContext(scriptContext);
                             return session.isOpen();

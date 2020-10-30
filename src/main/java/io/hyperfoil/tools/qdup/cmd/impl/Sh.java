@@ -14,16 +14,14 @@ public class Sh extends Cmd {
     private Map<String,String> prompt;
 
     private String exitCode = "";
+    private boolean ignoreExitCode = false;
 
     public Sh(String command){
         this(command,false);
     }
     public Sh(String command,boolean silent){
         this(command,silent,new LinkedHashMap<>());
-
     }
-
-
 
     public Sh(String command, boolean silent, Map<String,String> prompt){
         super(silent);
@@ -31,6 +29,10 @@ public class Sh extends Cmd {
         this.prompt = prompt;
     }
 
+    public boolean isIgnoreExitCode(){return ignoreExitCode;}
+    public void setIgnoreExitCode(boolean ignoreExitCode){
+        this.ignoreExitCode = ignoreExitCode;
+    }
     public void addPrompt(String prompt,String response){
         this.prompt.put(prompt,response);
     }
@@ -42,14 +44,11 @@ public class Sh extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-
         populatedCommand = populateStateVariables(command,this,context.getState());
         if(Cmd.hasStateReference(populatedCommand,this)){
-            context.terminal(
-               String.format("%sAbort! %s%s",
-                  context.isColorTerminal()? AsciiArt.ANSI_RED:"",
-                  command,
-                  context.isColorTerminal()?AsciiArt.ANSI_RESET:""
+            context.error(
+               String.format("Abort! Failed to populate pattern: %s",
+                  command
                )
             );
             context.abort(false);
@@ -83,18 +82,25 @@ public class Sh extends Cmd {
 
     @Override
     public void postRun(String output,Context context){
-        //not working in benchlab
-        String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
-        context.getSession().shSync("(exit $__qdup_ec);");
         String toLog = getLogOutput(output,context);
-//        context.log(toLog);
-        //not working in lab :(
-        if(toLog != null && !toLog.isBlank()) {
-            if ("0".equals(response)) {
-                context.log(toLog);
-            }else{
-                context.error(toLog);
+        //not working in benchlab
+        if(context.getSession()!=null && context.getSession().isOpen()){
+            String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
+            context.getSession().shSync("(exit $__qdup_ec);");
+            //not working in lab :(
+            if(toLog != null && !toLog.isBlank()) {
+                if ("0".equals(response)) {
+                    context.log(toLog);
+                } else {
+                    context.error(toLog);
+                    if (context.checkExitCode() && !isIgnoreExitCode()) {
+                        boolean couldBeCtrlC = walk(true, (cmd) -> cmd instanceof CtrlC).stream().anyMatch(Boolean::booleanValue);
+                        context.abort(false);
+                    }
+                }
             }
+        }else{
+            context.log(toLog);
         }
     }
 

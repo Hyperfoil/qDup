@@ -2,24 +2,23 @@ package io.hyperfoil.tools.qdup;
 
 
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.qdup.stream.EscapeFilteredStream;
-import io.hyperfoil.tools.qdup.stream.FilteredStream;
-import io.hyperfoil.tools.qdup.stream.LineEmittingStream;
 import io.hyperfoil.tools.qdup.stream.MultiStream;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
-import io.hyperfoil.tools.qdup.stream.SuffixStream;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.client.channel.ClientChannelEvent;
+import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.PtyMode;
-import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.resource.URLResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -28,15 +27,19 @@ import org.slf4j.ext.XLoggerFactory;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -48,6 +51,10 @@ import java.util.function.Consumer;
 public class SshSession {
 
     private static final AtomicInteger UID = new AtomicInteger();
+    private final static AtomicReferenceFieldUpdater<SshSession,Status> statusUpdater = AtomicReferenceFieldUpdater.newUpdater(SshSession.class, Status.class,"status");
+    private final static AtomicReferenceFieldUpdater<SshSession,ShAction> actionUpdater = AtomicReferenceFieldUpdater.newUpdater(SshSession.class, ShAction.class,"currentAction");
+    public static final int MAX_RECONNECT_ATTEMPTS = 10;
+    public static final int RECONNECT_RETRY_DELAY = 10_000;
 
     public String getLastCommand() {
         return lastCommand;
@@ -104,6 +111,96 @@ public class SshSession {
         }
     }
 
+    private static enum Status {
+        Initializing("new connection"),
+        Ready("ready"),
+        Disconnected("disconnected"),
+        Connecting("reconnecting"),
+        Closing("closing");
+
+        private String name;
+        Status(String name){
+            this.name = name;
+        }
+        public String getName(){return name;}
+    }
+
+    private class SessionWatcher implements ChannelListener {
+        @Override
+        public void channelInitialized(Channel channel) {
+        }
+
+        @Override
+        public void channelOpenSuccess(Channel channel) {
+        }
+
+        @Override
+        public void channelOpenFailure(Channel channel, Throwable reason) {
+        }
+
+        @Override
+        public void channelStateChanged(Channel channel, String hint) {
+        }
+
+        @Override
+        public void channelClosed(Channel channel, Throwable reason) {
+            if(Status.Closing.equals(status)){
+
+            }else{
+                Status previousStatus = status;
+                if(!Status.Connecting.equals(status)){
+                    statusUpdater.set(SshSession.this,Status.Disconnected); //only change to disconnected if not connecting
+                }
+                //release any permits
+                if(isActive()){
+                    if(Status.Ready.equals(previousStatus)){
+                        logger.warn("reconnect invoking semaphoreCallback due to active command during disconnect\n  command:"+currentAction.getCommand());
+                        if(sessionStreams!=null) {
+                            String output = getShOutput(true);
+                            if(semaphoreCallback!=null){
+                                semaphoreCallback.accept("watcher");
+                            }
+                            //callback(output);
+                        }
+                    }else{
+                        if(permits() == 0) {
+                            if(shellLock.hasQueuedThreads()){
+                            }
+                            actionUpdater.set(SshSession.this,null);
+                            shellLock.release();
+                        }
+                        //ensureConnected();
+                    }
+                }else{
+                    //ensureConnected();
+                    //reconnect();
+                }
+            }
+        }
+    }
+
+    private static class ShAction {
+        private final String command;
+        private final boolean acquireLock;
+        private final Consumer<String> callback;
+        private final Map<String,String> prompts;
+
+        private ShAction(String command, boolean acquireLock, Consumer<String> callback, Map<String, String> prompts) {
+            this.command = command;
+            this.acquireLock = acquireLock;
+            this.callback = callback;
+            this.prompts = prompts;
+        }
+        public String getCommand() {return command;}
+
+        public boolean isAcquireLock() {return acquireLock;}
+
+        public boolean hasCallback(){return callback!=null;}
+        public Consumer<String> getCallback() {return callback;}
+
+        public Map<String, String> getPrompts() {return prompts;}
+    }
+
     private static final AtomicInteger counter = new AtomicInteger();
 
     private static final XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
@@ -114,19 +211,17 @@ public class SshSession {
     private ClientSession clientSession;
     private ChannelShell channelShell;
 
-    private Properties sshConfig;
-
+    //private Properties sshConfig;
     private PrintStream commandStream;
-
     private Semaphore shellLock;
 
     SessionStreams sessionStreams;
 
-    private Host host;
+    private Host host; //
     private String knownHosts;
     private String identity;
     private String passphrase;
-    private int timeout;
+    private int  timeout;
     private String setupCommand;
     private boolean trace;
 
@@ -138,32 +233,15 @@ public class SshSession {
     private Map<String, Consumer<String>> shObservers;
     private ScheduledThreadPoolExecutor executor;
 
-    public String getName() {
-        return name;
-    }
-
-    public boolean isTracing() {
-        return sessionStreams.hasTrace();
-    }
-
-    public boolean hasName() {
-        return name != null && !name.isEmpty();
-    }
-
-    public void setName(String name) {
-        this.name = name;
-        if (sessionStreams != null) { //can be null if this failed to connect
-            sessionStreams.setName(name);
-        }
-    }
-
     private String name = "";
     private String lastCommand = "";
 
-    private boolean connected = false;
-    long shStart = -1;
-    long shStop = -1;
+    private volatile Status status = Status.Initializing;
+    private volatile ShAction currentAction = null;
 
+    //private AtomicBoolean closed = new AtomicBoolean(false);
+    private Semaphore connectingSemaphore = new Semaphore(1);
+    private StampedLock connectingLock = new StampedLock();
     public SshSession(Host host) {
         this(host, RunConfigBuilder.DEFAULT_KNOWN_HOSTS, RunConfigBuilder.DEFAULT_IDENTITY, RunConfigBuilder.DEFAULT_PASSPHRASE, RunConfigBuilder.DEFAULT_SSH_TIMEOUT, "", null, false);
     }
@@ -182,21 +260,6 @@ public class SshSession {
 
         shellLock = new Semaphore(1);
 
-        sshClient = SshClient.setUpDefaultClient();
-
-        PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.IDLE_TIMEOUT, Long.MAX_VALUE);
-        PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO2_READ_TIMEOUT, Long.MAX_VALUE);
-        PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO_WORKERS, 1);
-
-        // StrictHostKeyChecking=no
-        //        sshConfig = new Properties();
-        //        sshConfig.put("StrictHostKeyChecking", "no");
-        sshClient.setServerKeyVerifier((clientSession1, remoteAddress, serverKey) -> {
-            return true;
-        });
-
-        sshClient.start();
-
         lineObservers = new ConcurrentHashMap<>();
         shObservers = new ConcurrentHashMap<>();
 
@@ -209,10 +272,30 @@ public class SshSession {
             blockingSemaphore.release();
         };
         this.executor = executor;
-        connected = connect(this.timeout * 1_000, setupCommand, this.trace);
-
+        connect(this.timeout * 1_000, setupCommand, this.trace);
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public boolean isActive(){return currentAction!=null;}
+    public boolean isIdle(){return currentAction==null;}
+
+    public boolean isTracing() {
+        return sessionStreams.hasTrace();
+    }
+
+    public boolean hasName() {
+        return name != null && !name.isEmpty();
+    }
+
+    public void setName(String name) {
+        this.name = name;
+        if (sessionStreams != null) { //can be null if this failed to connect
+            sessionStreams.setName(name);
+        }
+    }
     public SshSession openCopy() {
         return new SshSession(host, knownHosts, identity, passphrase, timeout, setupCommand, executor, trace);
     }
@@ -229,10 +312,12 @@ public class SshSession {
         lineObservers.clear();
     }
 
+    public boolean hasShObserver(String name){
+        return shObservers.containsKey(name);
+    }
     public void addShObserver(String name, Consumer<String> consumer) {
         shObservers.put(name, consumer);
     }
-
     public void removeShObserver(String name) {
         shObservers.remove(name);
     }
@@ -249,7 +334,7 @@ public class SshSession {
         sessionStreams.addPrompt(prommpt);
     }
 
-    private void shConsumers(String output) {
+    private void shObservers(String output) {
         shObservers.forEach((name,consumer)->{
             consumer.accept(output);
         });
@@ -259,16 +344,127 @@ public class SshSession {
         return shellLock.availablePermits();
     }
 
+    public String getShOutput(boolean flush){
+        if(flush){
+            sessionStreams.flushBuffer();
+        }
+        String streamString = sessionStreams.currentOutput();
+
+        String output = streamString
+                .replaceAll("^[\r\n]+", "")  //replace leading newlines
+                .replaceAll("[\r\n]+$", "") //replace trailing newlines
+                .replaceAll("\r\n", "\n"); //change \r\n to just \n
+        return output;
+    }
+
     public boolean connect(long timeoutMillis, String setupCommand, boolean trace) {
+        Status previousStatus = status;
         if (isOpen()) {
             return true;
         }
+        statusUpdater.set(this,Status.Connecting);
         boolean rtrn = false;
-
         try {
-            clientSession = sshClient.connect(host.getUserName(), host.getHostName(), host.getPort()).verify(this.timeout * 2_000).getSession();
-            URLResource urlResource = new URLResource(Paths.get(identity).toUri().toURL());
+            if(Status.Disconnected.equals(previousStatus)){
+                if(sshClient != null && sshClient.isStarted()){
+                    sshClient.stop();
+                }
+                if(clientSession!=null && clientSession.isOpen()){
+                    clientSession.close(true);
+                    clientSession.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED),0L);
+                }
+                if(channelShell != null && channelShell.isOpen()){
+                    channelShell.close(true);
+                    channelShell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED),0L);
+                }
+            }
+            sshClient = SshClient.setUpDefaultClient();
+//            sshClient.addSessionListener(new SessionListener() {
+//                @Override
+//                public void sessionEstablished(Session session) {
+//                }
+//
+//                @Override
+//                public void sessionCreated(Session session) {
+//                }
+//
+//                @Override
+//                public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
+//                }
+//
+//                @Override
+//                public void sessionClosed(Session session) {
+//                }
+//            });
+            PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.IDLE_TIMEOUT, Long.MAX_VALUE);
+            PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO2_READ_TIMEOUT, Long.MAX_VALUE); //so no InterruptedByTimeoutException
+            PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO_WORKERS, 1);
+            // StrictHostKeyChecking=no
+            //        sshConfig = new Properties();
+            //        sshConfig.put("StrictHostKeyChecking", "no");
+            sshClient.setServerKeyVerifier((clientSession1, remoteAddress, serverKey) -> {
+                return true;
+            });
+            sshClient.start();
 
+            ConnectFuture future = sshClient.connect(host.getUserName(), host.getHostName(), host.getPort());
+            future.await(10,TimeUnit.SECONDS);
+            if(!future.isConnected()){
+                return false;
+            }
+            future = future.verify(this.timeout * 2_000);
+            future.await(10,TimeUnit.SECONDS);
+            if(!future.isConnected()){
+                return false;
+            }
+            clientSession = future.getSession();
+            clientSession.addSessionListener(new SessionListener() {
+                @Override
+                public void sessionEstablished(Session session) {
+
+                }
+
+                @Override
+                public void sessionCreated(Session session) {
+
+                }
+
+                @Override
+                public void sessionPeerIdentificationReceived(Session session, String version, List<String> extraLines) {
+
+                }
+
+                @Override
+                public void sessionNegotiationStart(Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal) {
+
+                }
+
+                @Override
+                public void sessionNegotiationEnd(Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal, Map<KexProposalOption, String> negotiatedOptions, Throwable reason) {
+
+                }
+
+                @Override
+                public void sessionEvent(Session session, Event event) {
+
+                }
+
+                @Override
+                public void sessionException(Session session, Throwable t) {
+                }
+
+                @Override
+                public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
+
+                }
+
+                @Override
+                public void sessionClosed(Session session) {
+
+                }
+            });
+
+            URLResource urlResource = new URLResource(Paths.get(identity).toUri().toURL());
             try (InputStream inputStream = urlResource.openInputStream()) {
                 clientSession.addPublicKeyIdentity(GenericUtils.head(SecurityUtils.loadKeyPairIdentities(
                         clientSession,
@@ -279,35 +475,27 @@ public class SshSession {
             }
             if (host.hasPassword()) {
                 clientSession.addPasswordIdentity(host.getPassword());
-
             }
-            clientSession.auth().verify(this.timeout * 1_000);
-            //setup all the streams
+            //clientSession.auth().verify(this.timeout * 1_000);
+            boolean sessionResponse = clientSession.auth().verify().await(this.timeout * 1_000);
+            clientSession.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.AUTHED), 0L);
 
+            //setup all the streams
             //the output of the current sh command
             if (sessionStreams != null) {
                 sessionStreams.close();
             }
-
             sessionStreams = new SessionStreams(getName(), executor);
-
             semaphoreCallback = (name) -> {
-                sessionStreams.flushBuffer();
-                String streamString = sessionStreams.currentOutput();
-
-                String output = streamString
-                        .replaceAll("^[\r\n]+", "")  //replace leading newlines
-                        .replaceAll("[\r\n]+$", "") //replace trailing newlines
-                        .replaceAll("\r\n", "\n"); //change \r\n to just \n
-
-
-
+                String output = getShOutput(true);
                 //TODO use atomic boolean to set expecting response and check for true bfore release?
-                shellLock.release();
-
-                //shellLock.release so we can use shSync in consumer? causing InterruptedException
-                shConsumers(output);
-
+                if(permits() == 0) {
+                    shellLock.release();
+                }else{
+                    //this should only happen if reconnected
+                    logger.debug("skipping release, suspect reconnect");
+                }
+                shObservers(output);
                 if (isTracing()) {
                     try {
                         sessionStreams.getTrace().write("RELEASE".getBytes());
@@ -333,36 +521,31 @@ public class SshSession {
 
             channelShell.setOut(sessionStreams);//efs or ss
             channelShell.setErr(sessionStreams);//PROMPT goes to error stream so have to listen there too
+            channelShell.addChannelListener(new SessionWatcher());
 
             setTrace(trace);
 
             if (timeoutMillis > 0) {
-                channelShell.open().verify(timeoutMillis).isOpened();
+                boolean response = channelShell.open().verify().await(timeoutMillis);
+                //channelShell.open().verify(timeoutMillis).isOpened();
+
             } else {
                 channelShell.open().verify().isOpened();
             }
-
             commandStream = new PrintStream(channelShell.getInvertedIn());
-
-            //TODO do we wait 1s for slow connections?
-
-            sh("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'");
-            String out = shSync("set +o history");
-            out = shSync("export HISTCONTROL=\"ignoreboth\"");
-            sh("");//forces the thread to wait for the previous sh to complete
+            shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"");
             if (setupCommand != null && !setupCommand.trim().isEmpty()) {
-                sh(setupCommand);
+                shConnecting(setupCommand);
             } else {
 
             }
             //is this what is bugging out envTest?
             try {
+                shellLock.acquire();//technically should be before try{ for cases where acquire throws the exception
                 try {
-                    shellLock.acquire();//technically should be before try{ for cases where acquire throws the exception
                     if (permits() != 0) {
                         logger.error("ShSession " + getName() + " connect.acquire --> permits==" + permits());
                     }
-
                 } finally {
                     shellLock.release();
                     if (permits() != 1) {
@@ -374,8 +557,19 @@ public class SshSession {
                 logger.warn("{}@{} interrupted while waiting for initial PROMPT", host.getUserName(), host.getHostName());
                 Thread.interrupted();
             }
+            if (sessionStreams != null) { //sessionStreams can be null if an exception was thrown trying to connect
+                //allow session to be fully setup before adding watcher support to lineEmittingStream
+                sessionStreams.addLineConsumer(this::lineConsumers);
+            } else {
+                logger.error("failed to setup terminal streams for {}", host);
+            }
+            statusUpdater.compareAndSet(this,Status.Connecting,Status.Ready);
+            sessionStreams.flush(); //to remove any motd that may be in the stream
+            sessionStreams.reset(); //to remove any motd that may be in the stream
+
         } catch (GeneralSecurityException | IOException e) {
-            logger.error("Exception while connecting to {}@{}\n{}", host.getUserName(), host.getHostName(), e.getMessage(), e);
+            //e.printStackTrace();
+            logger.debug("Exception while connecting to {}@{}\n{}", host.getUserName(), host.getHostName(), e.getMessage(), e);
         } finally {
             logger.trace("{} session.isOpen={} shell.isOpen={}",
                     this.getHost().getHostName(),
@@ -384,53 +578,53 @@ public class SshSession {
             );
             rtrn = isOpen();
         }
-        if (sessionStreams != null) { //sessionStreams can be null if an exception was thrown trying to connect
-            //allow session to be fully setup before adding watcher support to lineEmittingStream
-            sessionStreams.addLineConsumer(this::lineConsumers);
-        } else {
-            logger.error("failed to setup terminal streams for {}", host);
-        }
-        assert permits() == 1; //only one permit available for next sh(...)
-        connected = rtrn; //set connected in case something external calls connect(...)
         return rtrn;
     }
-
+    public boolean waitForReady(){
+        while(!Status.Ready.equals(status)){
+//            try {
+            logger.debug("getting connecting semaphore with status: "+status);
+            long lock = connectingLock.readLock();
+            connectingLock.unlockRead(lock);
+//                connectingSemaphore.acquire();
+//                connectingSemaphore.release();
+//            } catch (InterruptedException e) {
+//                //e.printStackTrace();
+//            } finally {
+//
+//            }
+        }
+        return Status.Ready.equals(status);
+    }
     public void setTrace(boolean trace) throws IOException {
         if (trace) {
             String path = getHost().toString() + (hasName() ? "." + getName() : "");
             sessionStreams.setTrace(path);
         }
     }
-
     public boolean isOpen() {
         boolean rtrn = channelShell != null && channelShell.isOpen() && clientSession != null && clientSession.isOpen();
+
         return rtrn;
     }
-
     public boolean usesDelay() {
         return sessionStreams.getDelay() > 0;
     }
-
     public int getDelay() {
         return sessionStreams.getDelay();
     }
-
     public void setDelay(int delay) {
         sessionStreams.setDelay(delay);
     }
-
-    public boolean isConnected() {
-        return connected;
+    public boolean isReady() {
+        return Status.Ready.equals(status);
     }
-
     public Host getHost() {
         return host;
     }
-
     protected int ctrlInt(char key) {
         return (Character.toUpperCase(key) & 0x1f);
     }
-
     public void ctrlC() {
         ctrl('C'); //SIGINT
     }
@@ -460,20 +654,16 @@ public class SshSession {
     }
 
     public void response(String command) {
-        if (isOpen()) {
-            if (!channelShell.isOpen()) {
-                logger.error("Shell is not connected for response");
-            } else {
-                try {
-                    TimeUnit.SECONDS.sleep(1);
-                    commandStream.println((command));
-                    commandStream.flush();
-                } catch (Exception e) {
-                }
+        if (ensureConnected()) {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+                commandStream.println((command));
+                commandStream.flush();
+            } catch (Exception e) {
+                //fire and forget
             }
         } else {
-            logger.error("Shell is not connected for response");
-            //TODO abort because session isn't open?
+            logger.error("Shell is not connected for response "+command);
         }
     }
 
@@ -483,6 +673,7 @@ public class SshSession {
     }
 
     public String shSync(String command) {
+
         return shSync(command, null);
     }
 
@@ -503,8 +694,34 @@ public class SshSession {
         return blockingResponse.toString();
     }
 
+    public void callback(String input){
+        ShAction target = currentAction;
+        if(target!=null) {
+            if (actionUpdater.compareAndSet(this, currentAction, null) ) {
+                if(target.hasCallback()){
+                    target.callback.accept(input);
+                }
+            }else{
+                logger.warn("failed to perform callback for "+target.getCommand());
+            }
+        }
+    }
+
+    private void shConnecting(String command){
+        Semaphore semaphore = new Semaphore(0);
+        Consumer<String> consumer = (response) -> {
+            String output = getShOutput(true);
+            semaphore.release();
+        };
+        sh(command,false, consumer,null);
+        try{
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
     public void sh(String command) {
-        sh(command, true, null, null);
+        sh(command, true,  null, null);
     }
 
     public void sh(String command, Map<String, String> prompt) {
@@ -518,59 +735,110 @@ public class SshSession {
     public void sh(String command, Consumer<String> callback, Map<String, String> prompt) {
         sh(command, true, callback, prompt);
     }
-
     //TODO clear the buffers before sending the current command?
     private void sh(String command, boolean acquireLock, Consumer<String> callback, Map<String, String> prompt) {
         command = command.replaceAll("[\r\n]+$", ""); //replace trailing newlines
         logger.trace("{} sh: {}, lock: {}", host, command, acquireLock);
+        ShAction newAction = new ShAction(command,acquireLock,callback,prompt);
         lastCommand = command;
-        if (isOpen()) {
-            if (command == null) {
-                return;
-            }
-            if (!channelShell.isOpen()) {
-                logger.error("Shell is not connected for " + command);
-                //TODO fail the run or reconnect
-            } else {
-                if (acquireLock) {
-                    try {
-                        shellLock.acquire();
-                        if (permits() != 0) {
-                            logger.error("ShSession " + getName() + "cmd=" + command + " sh.acquire --> permits==" + permits());
-                            assert permits() == 0;
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.interrupted();
+        if (command == null) {
+            return;
+        }
+            if (acquireLock) {
+                try {
+                    shellLock.acquire();
+                    if (permits() != 0) {
+                        logger.error("ShSession " + getName() + "cmd=" + command + " sh.acquire --> permits==" + permits());
+                        assert permits() == 0;
                     }
-                    sessionStreams.clearInline();
-                    if (prompt != null && !prompt.isEmpty()) {
-                        sessionStreams.addInlinePrompts(prompt.keySet(), (name) -> {
-                            if (prompt.containsKey(name)) {
-                                String response = prompt.get(name);
-                                this.response(response);
-                            }
-                        });
-                    }
+                } catch (InterruptedException e) {
+                    logger.error("interrupted acquiring shellLock for " + getName() + "@" + getHost());
+                    Thread.interrupted();
                 }
+                sessionStreams.clearInline();
+                if (prompt != null && !prompt.isEmpty()) {
+                    sessionStreams.addInlinePrompts(prompt.keySet(), (name) -> {
+                        if (prompt.containsKey(name)) {
+                            String response = prompt.get(name);
+                            this.response(response);
+                        }
+                    });
+                }
+            }
+            if(sessionStreams!=null){
                 //moved stream reset to after acquiring lock
                 sessionStreams.reset();
-                removeShObserver(SH_CALLBACK);
-                if (callback != null) {
-                    addShObserver(SH_CALLBACK, callback);
-                }
+            }
+            removeShObserver(SH_CALLBACK);
+            if (callback != null) {
+                //addShObserver(SH_CALLBACK, callback);
+                addShObserver(SH_CALLBACK, this::callback);
+            }
+            boolean sendCommand = ensureConnected();
+            if (sendCommand) {
                 if (!command.isEmpty()) {
-                    //TODO race between this and FilteredStream.write before we changed FilterStream to copy the keys into a new Set
-                    //Are we releasing the lock too soon in the stream chain?
-                    //test with a stream that sleeps in the write?
+                    // race between this and FilteredStream.write before we changed FilterStream to copy the keys into a new Set
+                    // Are we releasing the lock too soon in the stream chain?
+                    // test with a stream that sleeps in the write?
                     sessionStreams.setCommand(command);
                 }
+                actionUpdater.set(this,newAction);
                 commandStream.println(command);
                 commandStream.flush();
+            } else {
+                //TODO abort run if sh isn't open or try reconnect
+                logger.error("Shell is not connected for " + command);
             }
-        } else {
-            //TODO abort run if sh isn't open or try reconnect
-            logger.error("Shell is not connected for " + command);
+
+    }
+
+    public boolean ensureConnected() {
+        boolean rtrn = false;
+        if (isOpen()) {
+            return true;
         }
+
+        if (Status.Disconnected.equals(status)){
+                //connectingSemaphore.acquire();
+                long lock = connectingLock.writeLock();
+                synchronized (this) {
+                        try {
+                            if (Status.Disconnected.equals(status)) { //double check status before proceeding with
+                                rtrn = reconnect();
+                            }
+                        } finally {
+                            //connectingSemaphore.release();
+                            connectingLock.unlockWrite(lock);
+                        }
+
+                }
+
+        }
+        if (Status.Connecting.equals(status)){
+            waitForReady();
+        }
+        return isOpen();
+    }
+    private boolean reconnect(){
+        if(!isOpen() && Status.Disconnected.equals(status)){
+            int attempts = 0;
+            do {
+                try {
+                    connect(this.timeout * 1_000, setupCommand, this.trace);
+                }finally {
+                    attempts++;
+                    if(!isOpen() || !isReady()){
+                        try {
+                            Thread.sleep(RECONNECT_RETRY_DELAY);
+                        } catch (InterruptedException e) {
+                            //e.printStackTrace();
+                        }
+                    }else{
+                    }
+                }
+            } while ( (!isReady() || !isOpen()) && attempts < MAX_RECONNECT_ATTEMPTS);
+        }
+        return isOpen() && isReady();
     }
 
     public String execSync(String command) {
@@ -647,6 +915,7 @@ public class SshSession {
                         Thread.interrupted();
                     }
                 }
+                statusUpdater.set(this,Status.Closing);
                 sessionStreams.close();
                 channelShell.close();
                 clientSession.close();

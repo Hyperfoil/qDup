@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.config.yaml;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Sleep;
+import io.hyperfoil.tools.yaup.StringUtil;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.*;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -180,6 +181,35 @@ public class CmdConstruct extends DeferableConstruct {
                     cmd.setPatternJavascriptPrefix(value);
                 }else{
                     throw new YAMLException(CmdMapping.JS_PREFIX+" requires a scalar "+valueNode.getStartMark());
+                }
+                break;
+            case CmdMapping.IDLE_TIMER:
+                if(valueNode instanceof ScalarNode) {
+                    String value = ((ScalarNode) valueNode).getValue();
+                    if(value.toLowerCase().equals("false")){
+                        cmd.disableIdleTimer();
+                    }else {
+                        long millis = StringUtil.parseToMs(value);
+                        if(millis <= 0){
+                            throw new YAMLException(CmdMapping.IDLE_TIMER+" can be false or a valid duration "+valueNode.getStartMark());
+                        }else{
+                            cmd.setIdleTimer(millis);
+                        }
+                    }
+                }else{
+                    throw new YAMLException(CmdMapping.IDLE_TIMER+" requires a scalar "+valueNode.getStartMark());
+                }
+                break;
+            case CmdMapping.STATE_SCAN:
+                if(valueNode instanceof ScalarNode) {
+                    String value = ((ScalarNode) valueNode).getValue();
+                    if(value.toLowerCase().equals("false")){
+                        cmd.setStateScan(false);
+                    } else {
+                      //state scan is on by default
+                    }
+                }else{
+                    throw new YAMLException(CmdMapping.IDLE_TIMER+" requires a scalar "+valueNode.getStartMark());
                 }
                 break;
             default:

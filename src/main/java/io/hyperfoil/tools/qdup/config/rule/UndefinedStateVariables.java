@@ -62,7 +62,6 @@ public class UndefinedStateVariables implements RunRule {
     private void addSetVariable(String name, RSSCRef ref, RunSummary summary) {
         String trimmed = trim(name);
         if(!hasSetVariable(trimmed) && hasNeedVariable(trimmed)){
-
             neededVariables.get(trimmed).stream().filter(rssc->{
                 return
                     (
@@ -84,8 +83,6 @@ public class UndefinedStateVariables implements RunRule {
                     trimmed+" used without default before it is set"
                 );
             });
-
-
         }
         setVariables.put(trimmed, ref);
     }
@@ -128,7 +125,9 @@ public class UndefinedStateVariables implements RunRule {
 
     @Override
     public void scan(String role, Stage stage, String script, String host, Cmd command, boolean isWatching, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
-
+        if(!command.isStateScan()){
+            return;
+        }
         String commandStr = parser != null ? parser.dump(parser.representCommand(command)) : command.toString();
         if (Cmd.hasStateReference(commandStr, command)) {
             RSSCRef rssc = new RSSCRef(
@@ -173,6 +172,9 @@ public class UndefinedStateVariables implements RunRule {
                 String toUse = captureName;
                 if(Cmd.hasStateReference(toUse,command)){
                     toUse = Cmd.populateStateVariables(captureName,command, config.getState(),ref);
+                    if(Cmd.hasStateReference(toUse,command)){
+                        List<String> references = Cmd.getStateVariables(toUse,command, config.getState(), ref);
+                    }
                 }
                 addSetVariable(toUse,rssc,summary);
             });
