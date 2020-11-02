@@ -157,7 +157,7 @@ public class Dispatcher {
         scriptContexts.forEach( (rootCmd, context) -> {
             Json entry = new Json();
             Cmd currentCmd = context.getCurrentCmd();
-            entry.set("name",Cmd.populateStateVariables(currentCmd.toString(),currentCmd,context.getState()));
+            entry.set("name",Cmd.populateStateVariables(currentCmd.toString(),currentCmd,context));
             entry.set("host",context.getSession().getHost().toString());
             entry.set("uid",currentCmd.getUid());
             entry.set("contextId",context.getContextId());

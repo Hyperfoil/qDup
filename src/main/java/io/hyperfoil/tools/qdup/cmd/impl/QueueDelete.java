@@ -14,7 +14,7 @@ public class QueueDelete extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        String resolvedPath = Cmd.populateStateVariables(getPath(),this,context.getState());
+        String resolvedPath = Cmd.populateStateVariables(getPath(),this,context);
         if(resolvedPath.matches("[^\\$]*\\$(?!\\{\\{).*")){//if the source path has $name or ${name}
             resolvedPath = context.getSession().shSync("echo "+resolvedPath);
         }

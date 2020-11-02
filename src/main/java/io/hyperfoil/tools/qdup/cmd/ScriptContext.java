@@ -21,7 +21,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -428,7 +427,7 @@ public class ScriptContext implements Context, Runnable{
                     for(String name : cmd.getSignalNames()){
                         String populatedName = null;
                         try {
-                            populatedName = StringUtil.populatePattern(name,new CmdStateRefMap(cmd,state,null));
+                            populatedName = StringUtil.populatePattern(name,new PatternValuesMap(cmd,this,null));
                         } catch (PopulatePatternException e) {
                             logger.warn(e.getMessage());
                             populatedName = "";

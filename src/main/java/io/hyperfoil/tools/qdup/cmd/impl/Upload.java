@@ -20,8 +20,8 @@ public class Upload extends Cmd {
     @Override
     public void run(String input, Context context) {
 
-        populatedPath = populateStateVariables(path,this, context.getState());
-        populatedDestination =  populateStateVariables(destination ,this, context.getState());
+        populatedPath = populateStateVariables(path,this, context);
+        populatedDestination =  populateStateVariables(destination ,this, context);
 
         //create remote directory
         if(populatedDestination.endsWith("/")) {

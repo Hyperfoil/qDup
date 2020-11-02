@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd;
 
+import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
@@ -15,30 +16,32 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Provides a Map or Graaljs ProxyObject facade over the command's state and with variables
+ * Provides a Map facade over the command's state and with variables
  * This supports Graaljs treating state as a simple javascript object and lets yaup StringUtil.populatePattern
  * use the current variables from any scope (State or with's)
  */
 //TODO support javascript map and array functions (push, pop, map, filter, etc)
-public class CmdStateRefMap implements Map<Object, Object>  /*,ProxyObject*/ {
+public class PatternValuesMap implements Map<Object, Object>  /*,ProxyObject*/ {
+
+   public static final String QDUP_GLOBAL = "$QD";
 
    private Cmd cmd;
    private State state;
+   private Coordinator coordinator;
    private Cmd.Ref ref;
 
-   public CmdStateRefMap(Cmd cmd, State state, Cmd.Ref ref) {
+   public PatternValuesMap(Cmd cmd, Context context, Cmd.Ref ref) {
+      this(cmd,
+              context!=null ? context.getState() : null,
+              context!=null ? context.getCoordinator() : null,
+         ref);
+   }
+   public PatternValuesMap(Cmd cmd, State state, Coordinator coordinator, Cmd.Ref ref) {
       this.cmd = cmd;
       this.state = state == null ? new State(State.RUN_PREFIX) : state;
+      this.coordinator = coordinator;
       this.ref = ref;
-//      if(this.cmd!=null){
-//         cmd.loadAllWithDefs(this.state);
-//      }
-//      if(this.ref!=null){
-//         ref.loadAllWithDefs(this.state);
-//      }
-
    }
-
 
    @Override
    public int size() {
@@ -52,6 +55,9 @@ public class CmdStateRefMap implements Map<Object, Object>  /*,ProxyObject*/ {
 
    @Override
    public boolean containsKey(Object key) {
+      if(QDUP_GLOBAL.equals(key)){
+         return true;
+      }
       if (cmd != null) {
          if (cmd.hasWith(key.toString())) {
             return true;
@@ -84,6 +90,23 @@ public class CmdStateRefMap implements Map<Object, Object>  /*,ProxyObject*/ {
 
    @Override
    public Object get(Object key) {
+      if(QDUP_GLOBAL.equals(key)){
+         Json rtrn = new Json(false);
+         if(state!=null) {
+            rtrn.set("state", state.toJson());
+         }
+         if(coordinator != null) {
+            Json latches = new Json(false);
+            coordinator.getLatches().forEach((k,v)->latches.set(k,v));
+            rtrn.set("signal",latches);
+
+            Json counter = new Json(false);
+            coordinator.getCounters().forEach((k, v) -> counter.set(k, v));
+            rtrn.set("counter", counter);
+         }
+
+         return rtrn;
+      }
       if (cmd != null) {
          //only use value from with if it does not contain a reference back to the same key
          //this support with: {FOO: ${{FOO}} } so script variables can be mapped to a state variable with the same name

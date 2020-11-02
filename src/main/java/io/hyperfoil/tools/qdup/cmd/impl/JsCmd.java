@@ -1,11 +1,10 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.CmdStateRefMap;
+import io.hyperfoil.tools.qdup.cmd.PatternValuesMap;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
-import org.graalvm.polyglot.Value;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -38,9 +37,8 @@ public class JsCmd extends Cmd {
     @Override
     public void run(String input, Context context) {
             try{
-                CmdStateRefMap csrm = new CmdStateRefMap(this,context.getState(),new Ref(this));
-
-                String populatedCodeString = Cmd.populateStateVariables(codeString,this,context.getState());
+                PatternValuesMap map = new PatternValuesMap(this,context,new Ref(this));
+                String populatedCodeString = Cmd.populateStateVariables(codeString,this,context);
                 Object jsInput = input;
                 if(Json.isJsonLike(input)){
                     jsInput = Json.fromString(input);
@@ -48,10 +46,10 @@ public class JsCmd extends Cmd {
 
                 Object rtrn = null;
                 try{
-                    Object result = StringUtil.jsEval(populatedCodeString,jsInput,csrm);
+                    Object result = StringUtil.jsEval(populatedCodeString,jsInput,map);
                     rtrn = result;
                 }catch( RuntimeException ise){
-                    //todo; raise ise
+                    //todo; raise ISE
                     abort(ise.getMessage()+"\n"+ise.getCause().getMessage());
                 }
                 if( rtrn==null ||

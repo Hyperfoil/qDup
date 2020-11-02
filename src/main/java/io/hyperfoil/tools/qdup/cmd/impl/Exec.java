@@ -52,7 +52,7 @@ public class Exec extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        String populatedCommand = Cmd.populateStateVariables(getCommand(),this,context.getState());
+        String populatedCommand = Cmd.populateStateVariables(getCommand(),this,context);
         if(isAsync() && context instanceof ScriptContext){
             ScriptContext scriptContext = (ScriptContext)context;
             Cmd copy = this.deepCopy(); //use a copy so context.next does not advance to next siblings

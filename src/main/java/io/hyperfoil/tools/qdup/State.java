@@ -1,8 +1,7 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.CmdStateRefMap;
-import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.qdup.cmd.PatternValuesMap;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.*;
@@ -49,7 +48,7 @@ public class State {
         }
         @Override
         public Object get(String key){
-            String populatedKey = Cmd.populateStateVariables(key,cmd,this);
+            String populatedKey = Cmd.populateStateVariables(key,cmd,this,null);
             if(cmd.hasWith(populatedKey)){
                 return cmd.getWith(populatedKey);
             }else{
@@ -338,10 +337,10 @@ public class State {
         return buffer.toString();
     }
     public Map<Object,Object> toMap(){
-        return new CmdStateRefMap(null,this,null);
+        return new PatternValuesMap(null,this,null,null);
     }
     public Json toJson(){
-        Json rtrn = new Json();
+        Json rtrn = new Json(false);
 
         for(Object key : json.keySet()){
             rtrn.set(key,json.get(key));

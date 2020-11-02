@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd;
 
+import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
@@ -34,19 +35,19 @@ public abstract class Cmd {
          this.command = command == null ? Cmd.NO_OP() : command;
       }
 
-      public void loadAllWithDefs(State state){
+      public void loadAllWithDefs(State state, Coordinator coordinator){
          Cmd.Ref target = this;
          do {
             if(target.getCommand()!=null && target.getCommand().hasVariablePatternInWith()){
-               target.getCommand().loadAllWithDefs(state);
+               target.getCommand().loadAllWithDefs(state, coordinator);
             }
          }while( (target = target.getParent())!=null );
       }
-      public void loadWithDefs(State state){
+      public void loadWithDefs(State state,Coordinator coordinator){
          Cmd.Ref target = this;
          do {
             if(target.getCommand()!=null && target.getCommand().hasVariablePatternInWith()){
-               target.getCommand().loadWithDefs(state);
+               target.getCommand().loadWithDefs(state,coordinator);
             }
          }while( (target = target.getParent())!=null );
       }
@@ -348,9 +349,9 @@ public abstract class Cmd {
             if(Cmd.hasStateReference(value.toString(),target)){//
                //target.loadWithDefs(state);
                if (value.toString().contains(name)) { //do not use targets's with if it is value is referencing name (avoid loops)
-                  value = Cmd.populateStateVariables(value.toString(), null, state);
+                  value = Cmd.populateStateVariables(value.toString(), null,  state, null);
                } else {
-                  value = Cmd.populateStateVariables(value.toString(), target, state);
+                  value = Cmd.populateStateVariables(value.toString(), target, state, null);
                }
             }
          }
@@ -371,8 +372,8 @@ public abstract class Cmd {
       }
    }
 
-   public static List<String> getStateVariables(String command, Cmd cmd, State state,Ref ref){
-      CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
+   public static List<String> getStateVariables(String command, Cmd cmd, State state, Coordinator coordinator,Ref ref){
+      PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,ref);
       List<String> rtrn = Collections.EMPTY_LIST;
       if(cmd==null){
          try {
@@ -399,10 +400,17 @@ public abstract class Cmd {
       }
       return rtrn;
    }
-   public static String populateStateVariables(String command, Cmd cmd, State state) {
-      return populateStateVariables(command, cmd, state, new Ref(cmd));
+   public static String populateStateVariables(String command, Cmd cmd, Context context) {
+      return populateStateVariables(command, cmd,
+              context == null ? null : context.getState(),
+              context == null ? null : context.getCoordinator(),
+              new Ref(cmd)
+      );
    }
-   public static String populateStateVariables(String command, Cmd cmd, State state, Ref ref) {
+   public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator) {
+      return populateStateVariables(command, cmd, state, coordinator, new Ref(cmd));
+   }
+   public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator, Ref ref) {
       List<String> evals = Arrays.asList(
               "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
               "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}",
@@ -414,7 +422,7 @@ public abstract class Cmd {
       if(!hasStateReference(command,cmd)){
          return command;
       }
-      CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
+      PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,ref);
       try {
          if(cmd!=null){
             return StringUtil.populatePattern(command,map,evals,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
@@ -793,13 +801,13 @@ public abstract class Cmd {
    }
 
    //replace with values if they have ${{ and check for secrets
-   public void loadAllWithDefs(State state){
+   public void loadAllWithDefs(State state, Coordinator coordinator){
       Cmd target = this;
       do{
-         target.loadWithDefs(state);
+         target.loadWithDefs(state,coordinator);
       } while ( (target = target.getStateParent()) != null );
    }
-   public void loadWithDefs(State state){
+   public void loadWithDefs(State state, Coordinator coordinator){
       if(!withDef.isEmpty()){
          withDef.forEach((k,v)->{
             boolean isSecret = false;
@@ -807,7 +815,7 @@ public abstract class Cmd {
             Object updatedKey = k;
             if(Cmd.hasStateReference(key,this)){
                //using state parent to prevent loop when trying to resolve self references
-               key = Cmd.populateStateVariables(key,this.getStateParent(),state);
+               key = Cmd.populateStateVariables(key,this.getStateParent(),state,coordinator);
                updatedKey = key;
             }
             if(key.startsWith(SecretFilter.SECRET_NAME_PREFIX)){
@@ -816,7 +824,7 @@ public abstract class Cmd {
                updatedKey = key;
             }
             if(v instanceof String && Cmd.hasStateReference((String) v,this)){
-               String populatedV = populateStateVariables((String)v,this.getStateParent(),state);
+               String populatedV = populateStateVariables((String)v,this.getStateParent(),state,coordinator);
                Object convertedV = State.convertType(populatedV);
                withActive.set(updatedKey,convertedV);
                if(isSecret){
@@ -833,7 +841,7 @@ public abstract class Cmd {
    }
 
    public final void doRun(String input, Context context) {
-      loadWithDefs(context.getState());
+      loadWithDefs(context.getState(),context.getCoordinator());
          //replace with values if they have ${{ and check for secrets
 
 

@@ -32,13 +32,13 @@ public class SignalCounts implements RunRule {
     @Override
     public void scan(String role, Stage stage, String script, String host, Cmd command, boolean isWatching, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
         if(command instanceof WaitFor){
-            String populated = Cmd.populateStateVariables(((WaitFor) command).getName(), command, config.getState(), ref);
+            String populated = Cmd.populateStateVariables(((WaitFor) command).getName(), command, config.getState(), null, ref);
             if(Cmd.hasStateReference(populated,command)){
                 //TODO do we warn about wait-for something that cannot resolve at compile time
             }
             waits.put(populated,new RSSCRef(role,stage,script,command));
         }else if (command instanceof Signal){
-            String populated = Cmd.populateStateVariables(((Signal) command).getName(), command, config.getState(), ref);
+            String populated = Cmd.populateStateVariables(((Signal) command).getName(), command, config.getState(), null, ref);
             if(Cmd.hasStateReference(populated,command)){
                 //TODO do we warn about signal something that cannot resolve at compile time
             }
@@ -60,7 +60,7 @@ public class SignalCounts implements RunRule {
             }
             signals.add(populated);
         }else if (command instanceof SetSignal){
-            String populated = Cmd.populateStateVariables(((SetSignal)command).getName(),command, config.getState(), ref);
+            String populated = Cmd.populateStateVariables(((SetSignal)command).getName(),command, config.getState(), null, ref);
             if(Cmd.hasStateReference(populated,command)){
                 //TODO do we warn about signal something that cannot resolve at compile time
             }

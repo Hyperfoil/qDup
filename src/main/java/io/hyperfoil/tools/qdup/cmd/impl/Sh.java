@@ -44,7 +44,7 @@ public class Sh extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        populatedCommand = populateStateVariables(command,this,context.getState());
+        populatedCommand = populateStateVariables(command,this,context);
         if(Cmd.hasStateReference(populatedCommand,this)){
             context.error(
                String.format("Abort! Failed to populate pattern: %s",
@@ -62,7 +62,7 @@ public class Sh extends Cmd {
         }else{
             HashMap<String,String> populated = new HashMap<>();
             prompt.forEach((key,value)->{
-                String populatedValue = Cmd.populateStateVariables(value,this,context.getState());
+                String populatedValue = Cmd.populateStateVariables(value,this,context);
                 populated.put(key,populatedValue);
             });
 

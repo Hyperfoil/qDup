@@ -19,7 +19,7 @@ public class Abort extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        populatedMessage = Cmd.populateStateVariables(message,this,context.getState());
+        populatedMessage = Cmd.populateStateVariables(message,this,context);
         context.terminal(
             String.format("%sAbort! %s%s",
                 context.isColorTerminal()?AsciiArt.ANSI_RED:"",

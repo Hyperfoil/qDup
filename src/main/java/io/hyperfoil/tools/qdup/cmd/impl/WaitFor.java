@@ -16,12 +16,12 @@ public class WaitFor extends Cmd {
     }
     @Override
     public void run(String input, Context context) {
-        populatedName = Cmd.populateStateVariables(name,this,context.getState());
+        populatedName = Cmd.populateStateVariables(name,this,context);
         if(populatedName==null || populatedName.isEmpty()){
             context.next(input);
         }else {
             if(hasInitial()){
-                populatedInitial = Cmd.populateStateVariables(initial,this,context.getState());
+                populatedInitial = Cmd.populateStateVariables(initial,this,context);
 
                 try {
                     int intialLatches = Integer.parseInt(populatedInitial);

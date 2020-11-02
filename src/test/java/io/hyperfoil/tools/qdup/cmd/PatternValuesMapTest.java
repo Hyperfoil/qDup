@@ -7,7 +7,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CmdStateRefMapTest {
+public class PatternValuesMapTest {
 
     @Test
     public void find_from_state(){
@@ -16,7 +16,7 @@ public class CmdStateRefMapTest {
         state.set("key","value");
         Cmd.Ref ref = new Cmd.Ref(cmd);
 
-        CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
 
         assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be value","value",map.get("key"));
@@ -28,7 +28,7 @@ public class CmdStateRefMapTest {
         cmd.with("key","value");
         Cmd.Ref ref = new Cmd.Ref(cmd);
 
-        CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
 
         assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be value","value",map.get("key"));
@@ -40,7 +40,7 @@ public class CmdStateRefMapTest {
         cmd.with("key", "foo");
         Cmd.Ref ref = new Cmd.Ref(cmd);
         Cmd use = Cmd.sh("pwd");
-        CmdStateRefMap map = new CmdStateRefMap(use,state,ref);
+        PatternValuesMap map = new PatternValuesMap(use,state,null,ref);
 
         assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be foo","foo",map.get("key"));
@@ -62,12 +62,12 @@ public class CmdStateRefMapTest {
         state.set("biz", "value");
 
         Cmd.Ref ref = new Cmd.Ref(mid);
-        CmdStateRefMap map = new CmdStateRefMap(bot,state,ref);
+        PatternValuesMap map = new PatternValuesMap(bot,state,null,ref);
 
         assertTrue("map should have key",map.containsKey("foo.bar"));
         assertEquals("key.value should be value","value",map.get("foo.bar"));
 
-        String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state);
+        String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state,null);
         assertEquals("with should take priority over state", "value", populated);
     }
 
@@ -80,9 +80,9 @@ public class CmdStateRefMapTest {
         cmd.with("key","${{charlie}}");
         Cmd.Ref ref = new Cmd.Ref(cmd);
         Cmd use = Cmd.sh("pwd");
-        CmdStateRefMap map = new CmdStateRefMap(use,state,ref);
-        ref.loadAllWithDefs(state);
-        use.loadAllWithDefs(state);
+        PatternValuesMap map = new PatternValuesMap(use,state,null,ref);
+        ref.loadAllWithDefs(state,null);
+        use.loadAllWithDefs(state,null);
         assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
     }
@@ -95,7 +95,7 @@ public class CmdStateRefMapTest {
         cmd.with(Json.fromString("{\"key\":{\"value\":\"foo\"}}"));
         Cmd.Ref ref = new Cmd.Ref(cmd);
         Cmd use = Cmd.sh("pwd");
-        CmdStateRefMap map = new CmdStateRefMap(use,state,ref);
+        PatternValuesMap map = new PatternValuesMap(use,state,null,ref);
 
         assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
@@ -110,7 +110,7 @@ public class CmdStateRefMapTest {
 
         Cmd.Ref ref = new Cmd.Ref(use);
 
-        CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
 
         assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
@@ -126,7 +126,7 @@ public class CmdStateRefMapTest {
 
         Cmd.Ref ref = new Cmd.Ref(use);
 
-        CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
 
         assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));

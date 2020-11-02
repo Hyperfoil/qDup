@@ -19,7 +19,7 @@ public class AddPrompt extends Cmd {
 
    @Override
    public void run(String input, Context context) {
-       populatedPrompt = Cmd.populateStateVariables(prompt,this,context.getState());
+       populatedPrompt = Cmd.populateStateVariables(prompt,this,context);
 
        context.getSession().addPrompt(populatedPrompt);
 

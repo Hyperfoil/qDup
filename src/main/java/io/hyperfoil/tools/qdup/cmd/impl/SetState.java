@@ -47,11 +47,11 @@ public class SetState extends Cmd {
     public void run(String input, Context context) {
         synchronized (STATE_LOCK){
             try {
-                populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context.getState());
+                populatedValue = this.value == null ? input.trim() : Cmd.populateStateVariables(this.value, this, context);
                 if (StringUtil.isQuoted(populatedValue) && (StringUtil.removeQuotes(populatedValue)).trim().isEmpty()) {
                     populatedValue = "";
                 }
-                populatedKey = Cmd.populateStateVariables(this.key, this, context.getState());
+                populatedKey = Cmd.populateStateVariables(this.key, this, context);
                 if(populatedValue.contains(getPatternPrefix()) || populatedKey.contains(getPatternPrefix())){
                     //TODO populatedValue should already resolve patterns, any pattern prefix means it failed to resolve?
 

@@ -16,7 +16,7 @@ public class RepeatUntilSignal extends LoopCmd {
 
     @Override
     public void run(String input, Context context) {
-        populatedName = Cmd.populateStateVariables(name,this,context.getState());
+        populatedName = Cmd.populateStateVariables(name,this,context);
 
         if(populatedName==null || populatedName.isEmpty()){
             context.skip(input);

@@ -22,7 +22,7 @@ public class Parse extends Cmd {
 
    @Override
    public void run(String input, Context context) {
-      String populatedConfig = Cmd.populateStateVariables(getConfig(),this,context.getState());
+      String populatedConfig = Cmd.populateStateVariables(getConfig(),this,context);
       Object parserConfig = populatedConfig;
       if(Json.isJsonLike(populatedConfig)){
          parserConfig = Json.fromString(populatedConfig);

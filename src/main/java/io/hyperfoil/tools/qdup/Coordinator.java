@@ -102,7 +102,7 @@ public class Coordinator {
     }
 
     public Json getWaitJson(){
-        Json rtrn = new Json();
+        Json rtrn = new Json(false);
         waitFors.keySet().forEach(key->{
             Json entry = new Json();
             rtrn.set(key,entry);
@@ -115,6 +115,9 @@ public class Coordinator {
         return rtrn;
     }
 
+    public void setCounter(String name, int value){
+        counters.put(name,new AtomicInteger(value));
+    }
     public int increase(String name){
         if(!counters.containsKey(name)){
             counters.put(name,new AtomicInteger(0));

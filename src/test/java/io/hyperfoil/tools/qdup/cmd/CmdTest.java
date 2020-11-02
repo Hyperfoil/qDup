@@ -47,7 +47,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("FOO", "alpha");
 
-      String response = Cmd.populateStateVariables("/tmp/${{FOO}}/bravo", null, state);
+      String response = Cmd.populateStateVariables("/tmp/${{FOO}}/bravo", null, state, null);
       assertEquals("expected value", "/tmp/alpha/bravo", response);
    }
 
@@ -59,7 +59,7 @@ public class CmdTest extends SshTestBase {
       state.set("BAR", "2");
       state.set("BIZ", "3");
 
-      String response = Cmd.populateStateVariables("${{2 * (2 + 3)}}", null, state);
+      String response = Cmd.populateStateVariables("${{2 * (2 + 3)}}", null, state, null);
       assertEquals("expected value", "10", response);
    }
 
@@ -70,8 +70,39 @@ public class CmdTest extends SshTestBase {
       state.set("BAR", "2");
       state.set("BIZ", "3");
 
-      String response = Cmd.populateStateVariables("${{=FOO.bar * (BAR + BIZ)}}", null, state);
+      String response = Cmd.populateStateVariables("${{=FOO.bar * (BAR + BIZ)}}", null, state, null);
       assertEquals("expected value", "10", response);
+   }
+
+   @Test
+   public void populateStateVariable_qdup_global_state_dot_reference(){
+      SpyContext context = new SpyContext();
+      context.getState().set("biz","buz");
+      context.getCoordinator().setSignal("foo",4);
+      context.getCoordinator().setCounter("one",1);
+      context.getCoordinator().setCounter("two",2);
+
+      String response = Cmd.populateStateVariables("${{=$QD.state.biz}}",null,context);
+      assertEquals("state from qdup global","buz",response);
+   }
+   @Test
+   public void populateStateVariable_qdup_global_counter_dot_reference(){
+      SpyContext context = new SpyContext();
+
+      //context.getState().set("biz","buz");
+      context.getCoordinator().setCounter("one",1);
+      context.getCoordinator().setCounter("two",2);
+
+      String response = Cmd.populateStateVariables("${{=$QD.counter.one}}",null,context);
+      assertEquals("state from qdup global","1",response);
+   }
+   @Test
+   public void populateStateVariable_qdup_global_signal_dot_reference(){
+      SpyContext context = new SpyContext();
+      context.getCoordinator().setSignal("foo",4);
+
+      String response = Cmd.populateStateVariables("${{=$QD.signal.foo}}",null,context);
+      assertEquals("state from qdup global","4",response);
    }
 
    @Test
@@ -81,7 +112,7 @@ public class CmdTest extends SshTestBase {
       state.set("BAR", "2");
       state.set("BIZ", "3");
 
-      String response = Cmd.populateStateVariables("${{=FOO * (BAR + BIZ)}}", null, state);
+      String response = Cmd.populateStateVariables("${{=FOO * (BAR + BIZ)}}", null, state, null);
       assertEquals("expected value", "10", response);
    }
 
@@ -92,7 +123,7 @@ public class CmdTest extends SshTestBase {
       state.set("BAR", "2");
       state.set("BIZ", "3");
 
-      String response = Cmd.populateStateVariables("${{=${{FOO}} * (${{BAR}} + ${{BIZ}})}}", null, state);
+      String response = Cmd.populateStateVariables("${{=${{FOO}} * (${{BAR}} + ${{BIZ}})}}", null, state, null);
       assertEquals("expected value", "10", response);
    }
 
@@ -102,7 +133,7 @@ public class CmdTest extends SshTestBase {
       state.set("FOO", "10");
       state.set("BAR", "'1m'");
 
-      String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state);
+      String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state, null);
       assertEquals("expected value with seconds()", "140", response);
    }
 
@@ -111,7 +142,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("PATH", "/tmp/foo/");
       state.set("FOLDER", "bar");
-      String response = Cmd.populateStateVariables("${{PATH}}${{FOLDER}}", null, state);
+      String response = Cmd.populateStateVariables("${{PATH}}${{FOLDER}}", null, state, null);
       assertEquals("/tmp/foo/bar", response);
    }
 
@@ -120,7 +151,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("PATH", "/tmp/foo");
       state.set("FOLDER", "bar");
-      String response = Cmd.populateStateVariables("${{PATH}}/${{FOLDER}}", null, state);
+      String response = Cmd.populateStateVariables("${{PATH}}/${{FOLDER}}", null, state, null);
       assertEquals("/tmp/foo/bar", response);
    }
 
@@ -130,7 +161,7 @@ public class CmdTest extends SshTestBase {
       state.set("PATH", "/tmp/foo");
       state.set("FOLDER", "bar");
       state.set("DEST", "${{PATH}}/${{FOLDER}}");
-      String response = Cmd.populateStateVariables("${{DEST}}", null, state);
+      String response = Cmd.populateStateVariables("${{DEST}}", null, state, null);
       assertEquals("/tmp/foo/bar", response);
    }
 
@@ -139,7 +170,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("FOO", "10");
       state.set("BAR", "1m");
-      String response = Cmd.populateStateVariables("${{ 2*MISSING :-1}}", null, state);
+      String response = Cmd.populateStateVariables("${{ 2*MISSING :-1}}", null, state, null);
       assertEquals("expected default value when missing state", "-1", response);
    }
 
@@ -148,7 +179,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("FOO", "10");
       state.set("BAR", "1m");
-      String response = Cmd.populateStateVariables("${{ 2*doesNotExist(FOO) :-1}}", null, state);
+      String response = Cmd.populateStateVariables("${{ 2*doesNotExist(FOO) :-1}}", null, state, null);
       assertEquals("expected default value when missing state", "-1", response);
    }
 
@@ -156,7 +187,7 @@ public class CmdTest extends SshTestBase {
    public void populateStateVariables_arithmetic_strings() {
       State state = new State("");
       state.set("FOO", "10");
-      String response = Cmd.populateStateVariables("${{= (2*${{FOO}})+'m' :5m}}", null, state);
+      String response = Cmd.populateStateVariables("${{= (2*${{FOO}})+'m' :5m}}", null, state, null);
       assertEquals("expected string concat after maths", "20m", response);
    }
 
@@ -164,7 +195,7 @@ public class CmdTest extends SshTestBase {
    public void populateStateVariables_arithmetic_time_concat() {
       State state = new State("");
       state.set("FOO", "1");
-      String response = Cmd.populateStateVariables("${{=milliseconds(${{FOO}}+'m') :5m}}", null, state);
+      String response = Cmd.populateStateVariables("${{=milliseconds(${{FOO}}+'m') :5m}}", null, state, null);
       assertEquals("expected string concat after maths", "60000", response);
    }
 
@@ -183,7 +214,7 @@ public class CmdTest extends SshTestBase {
       state.set("foo", "FOO");
       state.set("bar", "BAR");
 
-      String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}", null, state);
+      String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}", null, state, null);
 
       assertEquals("all 3 found", "FOO.FOO.BAR", populated);
    }
@@ -197,7 +228,7 @@ public class CmdTest extends SshTestBase {
       state.set("foo", "FOO");
       state.set("bar", "BAR");
 
-      String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}", cmd, state);
+      String populated = Cmd.populateStateVariables("${{foo}}.${{foo}}.${{bar}}", cmd, state, null);
       assertEquals("cmd override state", "foo.foo.BAR", populated);
    }
 
@@ -205,7 +236,7 @@ public class CmdTest extends SshTestBase {
    public void populateStateVariables_javascript_regex(){
       State parent = new State("RUN.");
       String populated;
-      populated = Cmd.populateStateVariables("${{='<foo>'.match(/<(.*?)>/)[1]}}", null, parent);
+      populated = Cmd.populateStateVariables("${{='<foo>'.match(/<(.*?)>/)[1]}}", null, parent, null);
       assertEquals("expect to match","foo",populated);
    }
 
@@ -217,11 +248,11 @@ public class CmdTest extends SshTestBase {
       parent.set("FOO", "foo");
 
       String populated;
-      populated = Cmd.populateStateVariables("${{FOO}}", null, state);
+      populated = Cmd.populateStateVariables("${{FOO}}", null, state, null);
       assertEquals("should use parent value", "foo", populated);
 
       state.set("FOO", "FOO");
-      populated = Cmd.populateStateVariables("${{FOO}}", null, state);
+      populated = Cmd.populateStateVariables("${{FOO}}", null, state, null);
       assertEquals("should use child value", "FOO", populated);
    }
 
@@ -234,9 +265,9 @@ public class CmdTest extends SshTestBase {
       state.set("FOO", "FOO");
 
       String populated;
-      populated = Cmd.populateStateVariables("${{RUN.FOO}}", null, state);
+      populated = Cmd.populateStateVariables("${{RUN.FOO}}", null, state, null);
       assertEquals("should use parent value due to prefix", "foo", populated);
-      populated = Cmd.populateStateVariables("${{HOST.FOO}}", null, state);
+      populated = Cmd.populateStateVariables("${{HOST.FOO}}", null, state, null);
       assertEquals("should use parent value due to prefix", "FOO", populated);
    }
 
@@ -246,7 +277,7 @@ public class CmdTest extends SshTestBase {
       state.set("FOO", "BAR");
       state.set("BAR", "bar");
 
-      String populated = Cmd.populateStateVariables("${{${{FOO}}}}", null, state);
+      String populated = Cmd.populateStateVariables("${{${{FOO}}}}", null, state, null);
       assertEquals("evaluate as two state refernces", "bar", populated);
    }
 
@@ -274,7 +305,7 @@ public class CmdTest extends SshTestBase {
       Cmd cmd = Cmd.NO_OP();
       cmd.with("BAR", "${{FOO}}");
 
-      String populated = Cmd.populateStateVariables("${{BAR}}", cmd, state);
+      String populated = Cmd.populateStateVariables("${{BAR}}", cmd, state, null);
       assertEquals("${{BAR}} should resolve to foo", "foo", populated);
    }
    @Test
@@ -285,8 +316,8 @@ public class CmdTest extends SshTestBase {
       Cmd cmd = Cmd.NO_OP();
       cmd.with("BAR", "${{FOO:bar}}");
 
-      String populatedDefault = Cmd.populateStateVariables("${{FOO:bar}}", cmd, state);
-      String populatedEmpty = Cmd.populateStateVariables("${{FOO}}", cmd, state);
+      String populatedDefault = Cmd.populateStateVariables("${{FOO:bar}}", cmd, state, null);
+      String populatedEmpty = Cmd.populateStateVariables("${{FOO}}", cmd, state, null);
       assertEquals("${{FOO:bar}} should resolve to bar", "bar", populatedDefault);
       assertEquals("${{FOO}} should resolve to bar", "", populatedEmpty);
    }
@@ -295,7 +326,7 @@ public class CmdTest extends SshTestBase {
    public void populateStateVariables_defaultEmpty_bindState() {
       State state = new State("RUN.");
       state.set("FOO", "foo");
-      String populated = Cmd.populateStateVariables("${{FOO:}}", null, state);
+      String populated = Cmd.populateStateVariables("${{FOO:}}", null, state, null);
       assertEquals("should populate from state", "foo", populated);
    }
 
@@ -305,13 +336,14 @@ public class CmdTest extends SshTestBase {
       state.set("FOO", "bar");
       Cmd cmd = Cmd.NO_OP();
       cmd.with("FOO", "foo");
-      String populated = Cmd.populateStateVariables("${{FOO:}}", cmd, state);
+
+      String populated = Cmd.populateStateVariables("${{FOO:}}", cmd, state, null);
       assertEquals("should populate from state", "foo", populated);
    }
 
    @Test
    public void getStateVariables_two_states(){
-      List<String> list = Cmd.getStateVariables("${{RUN.BAR:}}-${{FOO.name}}",null,null,null);
+      List<String> list = Cmd.getStateVariables("${{RUN.BAR:}}-${{FOO.name}}",null,null,null, null);
       assertEquals("expect two entries",2,list.size());
    }
 
@@ -319,7 +351,7 @@ public class CmdTest extends SshTestBase {
    public void populateStateVariables_default(){
       State state = new State("RUN.");
       Cmd cmd = Cmd.NO_OP();
-      String populated = Cmd.populateStateVariables("RUN.BAR ${{RUN.BAR:}}-${{FOO.name}}", cmd, state, new Cmd.Ref(cmd));
+      String populated = Cmd.populateStateVariables("RUN.BAR ${{RUN.BAR:}}-${{FOO.name}}", cmd, state, null, new Cmd.Ref(cmd));
    }
 
    @Test
@@ -329,7 +361,7 @@ public class CmdTest extends SshTestBase {
       Cmd cmd = Cmd.NO_OP();
       cmd.with(Json.fromString("{\"key\":{\"value\":\"foo\"}}"));
       Cmd use = Cmd.sh("pwd");
-      String populated = Cmd.populateStateVariables("${{key.value}}", use, state, new Cmd.Ref(cmd));
+      String populated = Cmd.populateStateVariables("${{key.value}}", use, state, null, new Cmd.Ref(cmd));
       assertEquals("should populate from state", "foo", populated);
    }
    @Test
@@ -338,7 +370,7 @@ public class CmdTest extends SshTestBase {
       state.set("FOO", "bar");
       Cmd cmd = Cmd.NO_OP();
       cmd.with("FOO", "foo");
-      String populated = Cmd.populateStateVariables("${{FOO:biz}}", cmd, state);
+      String populated = Cmd.populateStateVariables("${{FOO:biz}}", cmd, state, null);
       assertEquals("should populate from state", "foo", populated);
    }
 
@@ -495,7 +527,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("foo", "state");
 
-      String populated = Cmd.populateStateVariables("${{foo}}", bot, state);
+      String populated = Cmd.populateStateVariables("${{foo}}", bot, state, null);
       assertEquals("with should take priority over state", "bar", populated);
    }
    @Test
@@ -512,7 +544,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("foo", "state");
 
-      String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state);
+      String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state, null);
       assertEquals("with should take priority over state", "value", populated);
    }
    @Test
@@ -529,7 +561,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("foo", "state");
 
-      String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state);
+      String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state, null);
       assertEquals("with should take priority over state", "value", populated);
    }
 

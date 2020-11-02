@@ -23,8 +23,8 @@ public class Download extends Cmd {
         String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHost().getHostName();
         String userName = context.getSession().getHost().getUserName();
         String hostName = context.getSession().getHost().getHostName();
-        String remotePath = populateStateVariables(path,this,context.getState());
-        String destinationPath =  populateStateVariables(basePath + File.separator +destination,this,context.getState());
+        String remotePath = populateStateVariables(path,this,context);
+        String destinationPath =  populateStateVariables(basePath + File.separator +destination,this,context);
         File destinationFile = new File(destinationPath);
         if(!destinationFile.exists()){
             destinationFile.mkdirs();

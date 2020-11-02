@@ -53,7 +53,7 @@ public class Regex extends CmdWithElse {
    @Override
    public void run(String input, Context context) {
       ran = true;
-      String populatedPattern = populateStateVariables(patternString, this, context.getState());
+      String populatedPattern = populateStateVariables(patternString, this, context);
       String newPattern = populatedPattern;
 
       matches.clear();

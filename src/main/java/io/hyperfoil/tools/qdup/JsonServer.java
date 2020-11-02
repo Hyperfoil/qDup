@@ -181,7 +181,7 @@ public class JsonServer implements RunObserver, ContextObserver {
            if(name != null && !name.trim().isEmpty()){
               String body = rc.getBodyAsString();
               if(body != null && !body.trim().isEmpty()){
-                 String populatedBody = Cmd.populateStateVariables(body,null,run.getConfig().getState());
+                 String populatedBody = Cmd.populateStateVariables(body,null,run.getConfig().getState(),run.getCoordinator());
                  if(populatedBody.matches("\\d{1,32}")){
                     try {
                        int amount = Integer.parseInt(populatedBody);

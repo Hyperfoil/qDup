@@ -17,7 +17,7 @@ public class Log extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        context.log(Cmd.populateStateVariables(message,this,context.getState()));
+        context.log(Cmd.populateStateVariables(message,this,context));
         context.next(input);
     }
     @Override

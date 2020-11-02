@@ -62,7 +62,7 @@ public class ScriptCmd extends Cmd {
     @Override
     public void run(String input, Context context) {
         clearToCall();
-        populatedName = populateStateVariables(name,this,context.getState());
+        populatedName = populateStateVariables(name,this,context);
         Script toCall = context.getScript(populatedName,this);
         Cmd originalNext = getNext();
         if(toCall == null){

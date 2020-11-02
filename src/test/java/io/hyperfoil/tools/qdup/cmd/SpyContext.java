@@ -21,20 +21,24 @@ public class SpyContext implements Context {
     String next;
     String skip;
     private boolean aborted = false;
-    State state = new State("");
+    private State state;
+    private Coordinator coordinator;
 
     private Context context;
 
     public SpyContext(){
-        this(null);
+        this(null,new State(""),new Coordinator());
     }
-    public SpyContext(Context context){
+
+    public SpyContext(Context context,State state, Coordinator coordinator){
         this.context = context;
         updates = new ArrayList<>();
         next = null;
         skip = null;
         log = new ArrayList<>();
         error = new ArrayList<>();
+        this.state = state;
+        this.coordinator = coordinator;
     }
 
     public void clear(){
@@ -189,11 +193,11 @@ public class SpyContext implements Context {
 
     @Override
     public Coordinator getCoordinator() {
-
         if(context!=null){
+
             return context.getCoordinator();
         }
-        return null;
+        return coordinator;
     }
 
     @Override

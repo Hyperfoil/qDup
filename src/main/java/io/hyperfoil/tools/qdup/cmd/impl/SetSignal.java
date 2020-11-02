@@ -27,8 +27,8 @@ public class SetSignal extends Cmd {
 
    @Override
    public void run(String input, Context context) {
-      populatedName = Cmd.populateStateVariables(name,this,context.getState());
-      populatedInitial = Cmd.populateStateVariables(initial,this,context.getState());
+      populatedName = Cmd.populateStateVariables(name,this,context);
+      populatedInitial = Cmd.populateStateVariables(initial,this,context);
       try {
          int intialLatches = Integer.parseInt(populatedInitial);
          context.getCoordinator().setSignal(populatedName,intialLatches,reset);
