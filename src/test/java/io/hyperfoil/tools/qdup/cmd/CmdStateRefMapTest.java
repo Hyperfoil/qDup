@@ -18,7 +18,7 @@ public class CmdStateRefMapTest {
 
         CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
 
-        assertTrue("map should have key",map.hasMember("key"));
+        assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be value","value",map.get("key"));
     }
     @Test
@@ -30,7 +30,7 @@ public class CmdStateRefMapTest {
 
         CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
 
-        assertTrue("map should have key",map.hasMember("key"));
+        assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be value","value",map.get("key"));
     }
     @Test
@@ -42,7 +42,7 @@ public class CmdStateRefMapTest {
         Cmd use = Cmd.sh("pwd");
         CmdStateRefMap map = new CmdStateRefMap(use,state,ref);
 
-        assertTrue("map should have key",map.hasMember("key"));
+        assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be foo","foo",map.get("key"));
     }
 
@@ -64,7 +64,7 @@ public class CmdStateRefMapTest {
         Cmd.Ref ref = new Cmd.Ref(mid);
         CmdStateRefMap map = new CmdStateRefMap(bot,state,ref);
 
-        assertTrue("map should have key",map.hasMember("foo.bar"));
+        assertTrue("map should have key",map.containsKey("foo.bar"));
         assertEquals("key.value should be value","value",map.get("foo.bar"));
 
         String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state);
@@ -83,7 +83,7 @@ public class CmdStateRefMapTest {
         CmdStateRefMap map = new CmdStateRefMap(use,state,ref);
         ref.loadAllWithDefs(state);
         use.loadAllWithDefs(state);
-        assertTrue("map should have key",map.hasMember("key.value"));
+        assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
     }
 
@@ -97,7 +97,7 @@ public class CmdStateRefMapTest {
         Cmd use = Cmd.sh("pwd");
         CmdStateRefMap map = new CmdStateRefMap(use,state,ref);
 
-        assertTrue("map should have key",map.hasMember("key.value"));
+        assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
     }
     @Test
@@ -112,7 +112,7 @@ public class CmdStateRefMapTest {
 
         CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
 
-        assertTrue("map should have key",map.hasMember("key.value"));
+        assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
     }
 
@@ -128,7 +128,7 @@ public class CmdStateRefMapTest {
 
         CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
 
-        assertTrue("map should have key",map.hasMember("key.value"));
+        assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
     }
 }

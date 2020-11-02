@@ -63,6 +63,27 @@ public class CmdTest extends SshTestBase {
       assertEquals("expected value", "10", response);
    }
 
+   @Test
+   public void populateStateVariable_javascript_using_state_json_member_from_global(){
+      State state = new State("");
+      state.set("FOO", Json.fromString("{\"bar\" : 2}"));
+      state.set("BAR", "2");
+      state.set("BIZ", "3");
+
+      String response = Cmd.populateStateVariables("${{=FOO.bar * (BAR + BIZ)}}", null, state);
+      assertEquals("expected value", "10", response);
+   }
+
+   @Test
+   public void populateStateVariable_javascript_using_state_from_global(){
+      State state = new State("");
+      state.set("FOO", "2");
+      state.set("BAR", "2");
+      state.set("BIZ", "3");
+
+      String response = Cmd.populateStateVariables("${{=FOO * (BAR + BIZ)}}", null, state);
+      assertEquals("expected value", "10", response);
+   }
 
    @Test
    public void populateStateVariables_arithmetic() {
@@ -331,7 +352,7 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
-   public void with_same_name_from_state(){
+   public void run_with_same_name_from_state(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("", stream("" +
@@ -367,7 +388,7 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
-   public void with_json_from_state() {
+   public void run_with_json_from_state() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("", stream("" +
@@ -406,7 +427,7 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
-   public void with_json() {
+   public void run_with_json() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("", stream("" +
@@ -441,14 +462,14 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
-   public void hasWith_self() {
+   public void has_with_self() {
       Cmd top = Cmd.NO_OP();
       top.with("foo", "bar");
       assertTrue("top should have bar", top.hasWith("foo"));
    }
 
    @Test
-   public void hasWith_parent() {
+   public void has_with_parent() {
       Cmd top = Cmd.NO_OP();
       Cmd mid = Cmd.NO_OP();
       Cmd bot = Cmd.NO_OP();
@@ -518,7 +539,7 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
-   public void test_on_signal_variable() {
+   public void run_test_on_signal_variable() {
       RunConfigBuilder builder = getBuilder();
       StringBuilder first = new StringBuilder();
 
@@ -557,7 +578,7 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
-   public void test_on_signal() {
+   public void run_test_on_signal() {
       RunConfigBuilder builder = getBuilder();
       StringBuilder first = new StringBuilder();
 
@@ -593,7 +614,7 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
-   public void testWith() {
+   public void run_test_with() {
       RunConfigBuilder builder = getBuilder();
 
       StringBuilder first = new StringBuilder();
@@ -632,7 +653,7 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
-   public void testCmdTreePrevious() {
+   public void test_cmd_tree_previous() {
       Cmd A = Cmd.log("A")
          .then(Cmd.log("B")
             .then(Cmd.log("C")

@@ -8,14 +8,11 @@ import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyObject;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Provides a Map or Graaljs ProxyObject facade over the command's state and with variables
@@ -23,7 +20,7 @@ import java.util.function.Function;
  * use the current variables from any scope (State or with's)
  */
 //TODO support javascript map and array functions (push, pop, map, filter, etc)
-public class CmdStateRefMap implements Map<Object, Object>  ,ProxyObject {
+public class CmdStateRefMap implements Map<Object, Object>  /*,ProxyObject*/ {
 
    private Cmd cmd;
    private State state;
@@ -236,6 +233,7 @@ public class CmdStateRefMap implements Map<Object, Object>  ,ProxyObject {
 
    // ProxyObject
    //
+/*
    @Override
    public Object getMember(String key) {
       Object rtrn = get(key);
@@ -253,7 +251,11 @@ public class CmdStateRefMap implements Map<Object, Object>  ,ProxyObject {
 
    @Override
    public boolean hasMember(String key) {
-      return containsKey(key);
+      if (Set.of("containsKey").contains(key)) {
+         return true;
+      } else {
+         return containsKey(key);
+      }
    }
 
    @Override
@@ -261,6 +263,7 @@ public class CmdStateRefMap implements Map<Object, Object>  ,ProxyObject {
       state.set(key, ValueConverter.convert(value));
    }
 
+*/
 
 
 }

@@ -11,11 +11,7 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -407,6 +403,11 @@ public abstract class Cmd {
       return populateStateVariables(command, cmd, state, new Ref(cmd));
    }
    public static String populateStateVariables(String command, Cmd cmd, State state, Ref ref) {
+      List<String> evals = Arrays.asList(
+              "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
+              "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}",
+              "function range(start,stop,step=1){ return Array(Math.ceil(Math.abs(stop - start) / step)).fill(start).map((x, y) => x + Math.ceil(Math.abs(stop - start) / (stop - start)) * y * step);}"
+      );
       if(command == null){
          return "";
       }
@@ -416,9 +417,9 @@ public abstract class Cmd {
       CmdStateRefMap map = new CmdStateRefMap(cmd,state,ref);
       try {
          if(cmd!=null){
-            return StringUtil.populatePattern(command,map,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
+            return StringUtil.populatePattern(command,map,evals,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
          }else {
-            return StringUtil.populatePattern(command, map, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+            return StringUtil.populatePattern(command, map, evals, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          }
       } catch (PopulatePatternException pe){
          //pe.printStackTrace();
