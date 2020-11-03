@@ -121,7 +121,7 @@ public class SshSessionTest extends SshTestBase{
         assertTrue("SshSession should be open after init",sshSession.isOpen());
 
         List<String> outputs = new LinkedList<>();
-        sshSession.addShObserver("out",outputs::add);
+        sshSession.addShObserver("out",(output)->outputs.add(output));
 
         sshSession.sh("env");
         sshSession.sh("pwd");

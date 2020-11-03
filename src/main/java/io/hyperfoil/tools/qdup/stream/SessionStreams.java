@@ -179,6 +179,7 @@ public class SessionStreams extends MultiStream {
    public void addPrompt(String name,String prompt,String replacement){
       suffixStream.addSuffix(name,prompt,replacement);
    }
+
    public void addPromptCallback(Consumer<String> callback){
       suffixStream.addConsumer(callback);
    }

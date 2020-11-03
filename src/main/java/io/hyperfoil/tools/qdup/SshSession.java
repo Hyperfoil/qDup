@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -158,7 +159,7 @@ public class SshSession {
                         if(sessionStreams!=null) {
                             String output = getShOutput(true);
                             if(semaphoreCallback!=null){
-                                semaphoreCallback.accept("watcher");
+                                semaphoreCallback.accept("SessionWatcher");
                             }
                             //callback(output);
                         }
@@ -182,10 +183,18 @@ public class SshSession {
     private static class ShAction {
         private final String command;
         private final boolean acquireLock;
-        private final Consumer<String> callback;
+        private final BiConsumer<String,String> callback;
         private final Map<String,String> prompts;
 
         private ShAction(String command, boolean acquireLock, Consumer<String> callback, Map<String, String> prompts) {
+            this(
+                command,
+                acquireLock,
+                (output,promptName)->callback.accept(output),
+                prompts
+            );
+        }
+        private ShAction(String command, boolean acquireLock, BiConsumer<String,String> callback, Map<String, String> prompts) {
             this.command = command;
             this.acquireLock = acquireLock;
             this.callback = callback;
@@ -196,7 +205,7 @@ public class SshSession {
         public boolean isAcquireLock() {return acquireLock;}
 
         public boolean hasCallback(){return callback!=null;}
-        public Consumer<String> getCallback() {return callback;}
+        public BiConsumer<String,String> getCallback() {return callback;}
 
         public Map<String, String> getPrompts() {return prompts;}
     }
@@ -230,7 +239,7 @@ public class SshSession {
     private Consumer<String> blockingConsumer;
     private StringBuffer blockingResponse;
     private Map<String, Consumer<String>> lineObservers;
-    private Map<String, Consumer<String>> shObservers;
+    private Map<String, BiConsumer<String,String>> shObservers;
     private ScheduledThreadPoolExecutor executor;
 
     private String name = "";
@@ -316,6 +325,9 @@ public class SshSession {
         return shObservers.containsKey(name);
     }
     public void addShObserver(String name, Consumer<String> consumer) {
+        addShObserver(name,(output,promptName)->consumer.accept(output));
+    }
+    public void addShObserver(String name, BiConsumer<String,String> consumer) {
         shObservers.put(name, consumer);
     }
     public void removeShObserver(String name) {
@@ -334,9 +346,9 @@ public class SshSession {
         sessionStreams.addPrompt(prommpt);
     }
 
-    private void shObservers(String output) {
+    private void shObservers(String output,String promptName) {
         shObservers.forEach((name,consumer)->{
-            consumer.accept(output);
+            consumer.accept(output,promptName);
         });
     }
 
@@ -495,7 +507,7 @@ public class SshSession {
                     //this should only happen if reconnected
                     logger.debug("skipping release, suspect reconnect");
                 }
-                shObservers(output);
+                shObservers(output,name);
                 if (isTracing()) {
                     try {
                         sessionStreams.getTrace().write("RELEASE".getBytes());
@@ -507,7 +519,7 @@ public class SshSession {
                     assert permits() == 1;
                 }
             };
-            sessionStreams.addPrompt("PROMPT", PROMPT, "");
+            sessionStreams.addPrompt(PROMPT, PROMPT, "");
             sessionStreams.addPromptCallback(this.semaphoreCallback);
 
             channelShell = clientSession.createShellChannel();
@@ -669,7 +681,7 @@ public class SshSession {
 
     //has to NOT acquire the lock
     public void reboot() {
-        sh("reboot", false, null, null);
+        sh("reboot", false, (BiConsumer)null, null);
     }
 
     public String shSync(String command) {
@@ -694,12 +706,12 @@ public class SshSession {
         return blockingResponse.toString();
     }
 
-    public void callback(String input){
+    public void callback(String input,String name){
         ShAction target = currentAction;
         if(target!=null) {
             if (actionUpdater.compareAndSet(this, currentAction, null) ) {
                 if(target.hasCallback()){
-                    target.callback.accept(input);
+                    target.callback.accept(input,name);
                 }
             }else{
                 logger.warn("failed to perform callback for "+target.getCommand());
@@ -709,7 +721,7 @@ public class SshSession {
 
     private void shConnecting(String command){
         Semaphore semaphore = new Semaphore(0);
-        Consumer<String> consumer = (response) -> {
+        BiConsumer<String,String> consumer = (response,promptName) -> {
             String output = getShOutput(true);
             semaphore.release();
         };
@@ -721,22 +733,28 @@ public class SshSession {
         }
     }
     public void sh(String command) {
-        sh(command, true,  null, null);
+        sh(command, true,  (BiConsumer)null, null);
     }
 
     public void sh(String command, Map<String, String> prompt) {
-        sh(command, true, null, prompt);
+        sh(command, true, (BiConsumer)null, prompt);
     }
 
     public void sh(String command, Consumer<String> callback) {
+
+        sh(command, true, (output,promptName)->callback.accept(output), null);
+    }
+    public void sh(String command, BiConsumer<String,String> callback) {
         sh(command, true, callback, null);
     }
 
     public void sh(String command, Consumer<String> callback, Map<String, String> prompt) {
-        sh(command, true, callback, prompt);
+        sh(command, true, (output,promptName)->callback.accept(output), prompt);
     }
-    //TODO clear the buffers before sending the current command?
-    private void sh(String command, boolean acquireLock, Consumer<String> callback, Map<String, String> prompt) {
+    public void sh(String command, BiConsumer<String,String> callback, Map<String, String> prompt) {
+        sh(command,true,callback,prompt);
+    }
+    private void sh(String command, boolean acquireLock, BiConsumer<String,String> callback, Map<String, String> prompt) {
         command = command.replaceAll("[\r\n]+$", ""); //replace trailing newlines
         logger.trace("{} sh: {}, lock: {}", host, command, acquireLock);
         ShAction newAction = new ShAction(command,acquireLock,callback,prompt);

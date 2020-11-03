@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.yaup.AsciiArt;
@@ -15,6 +16,12 @@ public class Sh extends Cmd {
 
     private String exitCode = "";
     private boolean ignoreExitCode = false;
+    private String previousPrompt="";
+
+    private void setPreviousPrompt(String prompt){
+        this.previousPrompt = prompt;
+    }
+    public String getPreviousPrompt(){return previousPrompt;}
 
     public Sh(String command){
         this(command,false);
@@ -56,7 +63,8 @@ public class Sh extends Cmd {
         context.getTimer().start("Sh-invoke:"+populatedCommand);
         //TODO do we need to manually remove the lineObserver?
         if(prompt.isEmpty()) {
-            context.getSession().sh(populatedCommand, (output)->{
+            context.getSession().sh(populatedCommand, (output,promptName)->{
+                setPreviousPrompt(promptName);
                 context.next(output);
             });
         }else{
@@ -66,7 +74,14 @@ public class Sh extends Cmd {
                 populated.put(key,populatedValue);
             });
 
-            context.getSession().sh(populatedCommand,context::next,populated);
+            context.getSession().sh(
+                    populatedCommand,
+                    (output,promptName)->{
+                        setPreviousPrompt(promptName);
+                        context.next(output);
+                    },
+                    populated
+            );
         }
         context.getTimer().start("Sh-await-callback:"+populatedCommand);
     }
@@ -80,11 +95,13 @@ public class Sh extends Cmd {
         return rtrn;
     }
 
+    //TODO add a way to disable post-run for commands that change propt (e.g. psql or docker exec)
     @Override
     public void postRun(String output,Context context){
         String toLog = getLogOutput(output,context);
-        //not working in benchlab
-        if(context.getSession()!=null && context.getSession().isOpen()){
+        //not working in benchlab?
+
+        if(context.getSession()!=null && context.getSession().isOpen() && SshSession.PROMPT.equals(getPreviousPrompt())){
             String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
             context.getSession().shSync("(exit $__qdup_ec);");
             //not working in lab :(
