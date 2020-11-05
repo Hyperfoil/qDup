@@ -66,4 +66,4 @@ Nesting a command under a `then` will prevent it's output from being seen by any
 Remember it as command output is availabe to chilren (command in `then`) and siblings (subsequent commands at the same level)
 but not ancestors (commands above the enclosing `then` or `else`)
 
-Check the link:./commands[commands] documentation for more on adding commands to scripts
+Check the link:./commands.adoc[commands] documentation for more on adding commands to scripts

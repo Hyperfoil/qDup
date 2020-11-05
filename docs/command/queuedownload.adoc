@@ -1,8 +1,8 @@
 = queue-download
 
-The `link:./download[download]` command will immediately download a file but most
+The `link:./download.adoc[download]` command will immediately download a file but most
 of the time a script wants to download the file after the run. The `queue-download`
-has the same 2 arguments as `link:./download[download]`, `path` and `destination`
+has the same 2 arguments as `link:./download.adoc[download]`, `path` and `destination`
 expect the download happens either after the run stage or after the cleanup stage.
 The download will only happen after cleanup if `queue-download` is called in `cleanup-scripts`
 

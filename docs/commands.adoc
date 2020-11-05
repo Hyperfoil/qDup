@@ -105,28 +105,28 @@ that are defined at runtime.
 ----
 
 == available commands
-link:./command/abort[abort]:: abort the run
-link:./command/addprompt[add-prompt]:: add a shell prompt
-link:./command/ctrlc[ctrlC]:: send ctrl+c to the ssh terminal
-link:./command/done[done]:: tell qDup that the current stage is done
-link:./command/download[download]:: download a file from the host
-link:./command/echo[echo]::send the input to the console
-link:./command/exec[exec]:: send an exec command to the ssh terminal
-link:./command/foreach[for-each]:: repeat the `then` command for each entry in the input
-link:./command/js[js]:: run the javascript function
-link:./command/log[log]:: write the message to the qDup run.log
-link:./command/parse[parse]:: use the https://github.com/Hyperfoil/parse[parse] library to parse the input
-link:./command/queuedownload[queue-download]:: queue a file for download after the run or cleanup stage
-link:./command/readsignal[read-signal]:: read the current signal and invoke the `then` commands if it was signalled
-link:./command/readstate[read-state]:: evaluate the state expression and invoke the `then` commands if it is not empty
-link:./command/regex[regex]:: match a https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html[Pattern] to the input string
-link:./command/repeatuntil[repeat-until]:: repeat the `then` commands until the signal occurs
-link:./command/script[script]:: run the named script
-link:./command/sendtext[send-text]:: send text to the current ssh terminal
-link:./command/setsignal[set-signal]:: set the expected number of signals for the named signal
-link:./command/sh[sh]:: send the sh command to the current ssh terminal
-link:./command/signal[signal]:: signal the named coordination point
-link:./command/sleep[sleep]:: pause the current script for the desired duration
-link:./command/upload[upload]:: upload a local file to the remote host
-link:./command/waitfor[wait-for]:: wait for the named coordiation point to be fully signalled
-link:./command/xml[xml]:: perform the listed xml operations
+link:./command/abort.adoc[abort]:: abort the run
+link:./command/addprompt.adoc[add-prompt]:: add a shell prompt
+link:./command/ctrlc.adoc[ctrlC]:: send ctrl+c to the ssh terminal
+link:./command/done.adoc[done]:: tell qDup that the current stage is done
+link:./command/download.adoc[download]:: download a file from the host
+link:./command/echo.adoc[echo]::send the input to the console
+link:./command/exec.adoc[exec]:: send an exec command to the ssh terminal
+link:./command/foreach.adoc[for-each]:: repeat the `then` command for each entry in the input
+link:./command/js.adoc[js]:: run the javascript function
+link:./command/log.adoc[log]:: write the message to the qDup run.log
+link:./command/parse.adoc[parse]:: use the https://github.com/Hyperfoil/parse[parse] library to parse the input
+link:./command/queuedownload.adoc[queue-download]:: queue a file for download after the run or cleanup stage
+link:./command/readsignal.adoc[read-signal]:: read the current signal and invoke the `then` commands if it was signalled
+link:./command/readstate.adoc[read-state]:: evaluate the state expression and invoke the `then` commands if it is not empty
+link:./command/regex.adoc[regex]:: match a https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html[Pattern] to the input string
+link:./command/repeatuntil.adoc[repeat-until]:: repeat the `then` commands until the signal occurs
+link:./command/script.adoc[script]:: run the named script
+link:./command/sendtext.adoc[send-text]:: send text to the current ssh terminal
+link:./command/setsignal.adoc[set-signal]:: set the expected number of signals for the named signal
+link:./command/sh.adoc[sh]:: send the sh command to the current ssh terminal
+link:./command/signal.adoc[signal]:: signal the named coordination point
+link:./command/sleep.adoc[sleep]:: pause the current script for the desired duration
+link:./command/upload.adoc[upload]:: upload a local file to the remote host
+link:./command/waitfor.adoc[wait-for]:: wait for the named coordiation point to be fully signalled
+link:./command/xml.adoc[xml]:: perform the listed xml operations

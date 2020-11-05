@@ -49,14 +49,14 @@ java -jar qDup-uber.jar -C -B /tmp qdup.yaml
 java -jar qDup-uber.jar -C -B /tmp  -S message="Greetings, qDup!" qdup.yaml
 ....
 
-check the link:./jar[jar] documentation on what else can be done with the uber jar.
+check the link:./jar.adoc[jar] documentation on what else can be done with the uber jar.
 
 == Concepts
 
 qDup scripts contain the following sections;
 
-* link:./scripts[scripts] - the sequence of commands to run on hosts
-* link:./hosts[hosts] - the configuration for connecting via ssh
-* link:./roles[roles] - assign scripts to hosts to define the steps in the test
-* link:./states[states] - json-like data to
+* link:./scripts.adoc[scripts] - the sequence of commands to run on hosts
+* link:./hosts.adoc[hosts] - the configuration for connecting via ssh
+* link:./roles.adoc[roles] - assign scripts to hosts to define the steps in the test
+* link:./states.adoc[states] - json-like data to
 
