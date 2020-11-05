@@ -1,0 +1,26 @@
+= log
+
+The `log` command accepts a single string argument and writes the output to the
+qDup run log.
+
+[source,yaml]
+----
+- log: some message ${{message}}
+----
+
+The log command can help provide updates for a long running command that is
+set to `silent` because it is too verbose to include the entire output.
+
+[source,yaml]
+----
+- sh:
+    command: ./run.sh 3h
+    silent: true
+    watch:
+    - regex: ramping up
+      then:
+      - log: run is ramping up
+    - regex: measuring
+      then:
+      - log: run is measuring
+----

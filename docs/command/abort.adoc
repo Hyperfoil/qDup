@@ -1,0 +1,10 @@
+= abort
+
+End the current command run with an optional error message
+
+[source,yaml]
+----
+- abort #no error message
+- abort: "failed to meet some great expectations" #abort with error message
+----
+

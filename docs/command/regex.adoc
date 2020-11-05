@@ -1,0 +1,43 @@
+= regex
+
+The `regex` command uses a https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html[java.util.Pattern]
+to match the input from the previous command. The `regex` will match if the pattern is any part of the input (`Pattern.find` in java).
+We have to explicitly use `^` and `$` to target the beginning, end, or entire input.
+
+[source,yaml]
+----
+- sh: cat server.log
+- regex: "started in (?<seconds>\\d+\\.\\d{3}) seconds
+- log: seconds = ${{seconds}}
+----
+
+The pattern's named capture groups are added to the script's `state` and are available to
+subsequent commands. It is a good idea to put commands that use the capture groups under
+`then` so that they are only invoked if the pattern matched. We can use `else` to invoke commands
+if the pattern does not match.
+
+[source,yaml]
+----
+- sh: cat server.log
+- regex: "started in (?<seconds>\\d+\\.\\d{3}) seconds
+  then:
+  - log: seconds = ${{seconds}}
+  else:
+  - abort: failed to start
+----
+
+The named capture groups can use the state `RUN.` and `HOST.` prefixes target global run state
+or the host state instead of the default script state. This lets other scripts access the values but will
+likely require coordination to ensure the value is ready before other scripts try to access it.
+
+[source,yaml]
+----
+scripts:
+  getTime:
+  - sh: cat server.log
+  - regex: "started in (?<RUN.seconds>\\d+\\.\\d{3}) seconds
+  useTime:
+  - log: seconds = ${{seconds}} #will find the RUN.seconds from getTime
+----
+
+

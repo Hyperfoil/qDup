@@ -1,0 +1,25 @@
+= read-signal
+
+The `read-signal` will run the `then` commands if the signal `name` is reached
+or the `else` commands if the signal is not yet reached.
+
+[source,yaml]
+----
+- read-signal: ready
+  then:
+  - sh: this.sh
+  else:
+  - sh: that.sh
+----
+
+The `read-signal` command can also be created with yaml mapping but 'name' is
+the only argument.
+[source,yaml]
+----
+- read-signal:
+    name: ready
+  then:
+  - sh: this.sh
+  else:
+  - sh: that.sh
+----

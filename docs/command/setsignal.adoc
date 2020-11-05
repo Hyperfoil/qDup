@@ -1,0 +1,19 @@
+= set-signal
+
+The `set-signal` command can initialize or re-set a signal counter to either create
+custom signals during script execution or re-use signals multiple times.
+
+[source,yaml]
+----
+- set-signal: READY 2 #expect 2 calls to signal: READY
+- set-signal:
+    name: DONE
+    count: 2
+----
+
+qDup uses `signal` and `wait-for` to coordinate multiple scripts. qDup will internally
+calculate the number of times `signal` will be called for any signal name that
+can be resolved at startup. Some signal names cannot be identified at startup therefore
+the expected number of signal's has to be explicitly set with `set-signal`.
+
+

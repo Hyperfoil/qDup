@@ -1,0 +1,14 @@
+= read-state
+
+The `read-state` command accepts evaluates a state `name` and invokes the `then` commands
+if the result is not `null` and not an empty string, otherwise it invokes the `else` commands.
+
+[source,yaml]
+----
+- read-state: ${{use_https}}
+  then:
+  - sh: curl https://server/index.html
+  else:
+  - sh: curl http://server/index.html
+----
+

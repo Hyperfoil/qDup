@@ -1,0 +1,22 @@
+= script
+
+The `script` command will invoke another script using the same ssh terminal as the current script.
+The simple yaml syntax just accepts the target script `name` but the yaml mapping syntax can also
+include an `async` option. Setting `async: true` will create a new ssh terminal and
+
+[source,yaml]
+----
+- script: create_unique_name
+- script:
+    name: setup_runtime
+    async: true
+----
+
+Using `async` will start the script in an independent ssh terminal. The next
+sibling will run while the `script` is running and any `then` from the `script` will
+run as part of the new ssh terminal. Because `async` uses a separate ssh terminal it will
+create a copy of the current script's `state` and will no modify the same state.
+Environment changes in the script and its `then` will not be shared with the subsequent commands
+in the original script.
+
+

@@ -1,0 +1,24 @@
+= upload
+
+The `upload` command copies a file from the machine running qDup onto the host executing the script.
+The command has 2 arguments, 'path' and 'destination' but only 'path' is necessary.
+The default destination is the users home folder.
+
+[source,yaml]
+----
+- upload: /tmp/web.xml
+- upload: /tmp/server.xml ~/runtime/
+- upload:
+    path: /tmp/server.xml
+    destination: ~/runtime/
+----
+
+The above example illustrates the `upload` usage but it assumes the file already exists in `/tmp`.
+It is more common for existing files to be kept in the same repository as the qDup scripts. qDup has
+a reserved state variable that refers to the path to the qDup script. This allows us to upload files
+stored in the same folder structure as the qDup script.
+
+[source,yaml]
+----
+- upload: ${{ENV.SCRIPTS_DIR}}/web.xml
+----

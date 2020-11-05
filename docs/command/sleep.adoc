@@ -1,0 +1,13 @@
+= sleep
+
+The sleep command pauses the current script for a fixed amount of time. The time
+can be provided as a number of milliseconds or as a list of durations.
+
+[source,yaml]
+----
+- sleep: 100 #100 milliseconds
+- sleep: 1h 10m 20.5s
+----
+
+qDup does not support duration units beyond hours. If your script needs to pause
+for days or longer then open a support ticket, we would love to hear what you are testing.

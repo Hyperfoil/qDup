@@ -1,0 +1,69 @@
+= qDup Scripts
+
+Scripts are how qDup stores the automation tasks.
+Think of scripts as a sequence of qDup commands.
+[source,yaml]
+----
+scripts:
+  scriptName:
+  - sh: cd /tmp
+  - sh: ls #lists the content of /tmp
+----
+The commands run in order and can act on the output from the previous command
+[source,yaml]
+----
+  - sh: mktemp -d
+  - regex: (?<name>.*) #captures the output of mktemp -d as name
+----
+All commands can have a `then` key which contains a sequence of commands to run if the current command completes successfully.
+Most commands always complete successfully. The `regex` command will only invoke the commands under `then` if the pattern matches.
+Commands that can select to pass execution to `then` also support an `else` to explicitly run only when the command does not invoke `then`.
+This gives us the ability to conditionally run commands based on the output from previous commands.
+
+[source,yaml]
+----
+scripts:
+  scriptName:
+  - sh: ls /tmp
+  - regex: ^source.*
+    then:
+    - sh: rm -rf /tmp/source*
+    else:
+    - log: "first time running on the host"
+----
+The `regex: source` command checks the output of  `sh: ls /tmp` for anything that starts with source.
+The `rm -rf /tmp/source*` will only be called if the pattern matched while the `else` commands will only
+run if the pattern failed to match.
+
+The majority of qDup commands get their input from the just pass their input as output therefore multiple commands operate on the same output.
+[source,yaml]
+----
+scripts:
+  scriptName:
+  - sh: ls /tmp
+  - regex: ^source.* #matches against sh: ls /tmp
+    then:
+    - sh: rm -rf /tmp/source*
+  - regex: ^dstat.log #matches against the same output from sh: ls /tmp
+    then:
+    - sh: rm /tmp/dstat.log
+----
+qDup passes the input through to the next command because it is designed to behave like an administrator using an ssh connection.
+This means the command input would conceptually only change if the terminal output changed.
+The `sh` command is the main method of changing the terminal output but the following commands can also change the terminal output:
+
+- `xml` - will change output if used to get the values from an xpath
+- `upload` - will output the path to the file on the remote host
+- `read-state` - will output the state pattern if it was not empty
+- `js` - will output the returned object if it was not `true` or `"true"`
+- `for-each` will output the current iteration value
+- `exec` will output the response from the `ssh exec` operation
+- `download` outputs the local path of the file downloaded from the host
+
+The previous example showed called `sh: rm -rf /tmp/source*` but the following `regex`
+applied to the output of the previous `sh` becaues `rm -rf` was nested below the previous `regex`.
+Nesting a command under a `then` will prevent it's output from being seen by any commands higher up the `then` heirarchy.
+Remember it as command output is availabe to chilren (command in `then`) and siblings (subsequent commands at the same level)
+but not ancestors (commands above the enclosing `then` or `else`)
+
+Check the link:./commands[commands] documentation for more on adding commands to scripts

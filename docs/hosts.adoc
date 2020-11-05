@@ -1,0 +1,34 @@
+= qDup hosts
+
+The `hosts` section in qDup is a yaml mapping that give an alias for a username + host combination.
+The value of the mapping can be a string or mapping but in either case it must contain the information
+necessary to connect to the remote host.
+
+[source,yaml]
+----
+hosts:
+ string: me@myserver.com #just user and hostname uses default port 22 and ssh keys
+ fullString: me:12345@myserver.com:2222 #includes password and port number
+ fullMapping:
+   username: me
+   hostname: myserver.com
+   port: 2222
+   password: 12345
+----
+
+qDup supports passwords in the hosts definition because it can make testing easier but
+ssh keys are the recommended login method. If you cannot use ssh keys and must include
+the password you should use a state variable and pass the value as a secret through the command line
+
+.qdup.yaml
+[source,yaml]
+----
+hosts:
+  fullString: me:${{password}}@myserver.com:2222
+----
+Then run the script reading the password from a tmp file so it is not in the bash history
+....
+java -jar qdup-uber.jar -b /tmp/ -S _password="$(cat /tmp/secret.txt)" qdup.yaml
+....
+`-S _password` sets the state variable password and the `__` prefix tells qDup to treat the
+value as a secret and replace it with `\******` in the logs.

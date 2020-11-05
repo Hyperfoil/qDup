@@ -13,12 +13,50 @@ qDup allows for the co-ordination of many activities across multiple machines, a
 qDup uses ssh, no special agents or languages required.
 We recommend using ssh keys to connect without passwords but user passwords can be included in the yaml.
 
+== Quickstart
+
+1. Download the latest uber-jar https://github.com/Hyperfoil/qDup/releases[release]
+2. add you private key to the target servers
+....
+cat ~/.ssh/id_rsa.pub | ssh user@server 'cat >> .ssh/authorized_keys'
+....
+3. create a simple test script
+....
+cat > qdup.xml << 'EOF'
+scripts:
+    tryme:
+    - sh: whoami
+    - sh: date
+    - sh: echo ${{message}}
+hosts:
+    server: user@server_name
+roles:
+    test:
+        hosts:
+        - server
+        run-scripts:
+        - tryme
+states:
+    message: Hello, qDup!
+EOF
+....
+4. run the script
+....
+java -jar qDup-uber.jar -C -B /tmp qdup.yaml
+....
+5. run again with a different message
+....
+java -jar qDup-uber.jar -C -B /tmp  -S message="Greetings, qDup!" qdup.yaml
+....
+
+check the link:./jar[jar] documentation on what else can be done with the uber jar.
+
 == Concepts
 
 qDup scripts contain the following sections;
 
-* scripts - the sequence of commands to run on hosts
-* hosts - the configuration for connecting via ssh
-* roles - assign scripts to hosts to define the steps in the test
-
+* link:./scripts[scripts] - the sequence of commands to run on hosts
+* link:./hosts[hosts] - the configuration for connecting via ssh
+* link:./roles[roles] - assign scripts to hosts to define the steps in the test
+* link:./states[states] - json-like data to
 

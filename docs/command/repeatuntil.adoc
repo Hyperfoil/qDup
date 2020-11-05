@@ -1,0 +1,15 @@
+= repeat-until
+
+The `repeat-until` command is how scripts can repeat a set of tasks until the run signals a specific condition.
+The command is created with a signal name and will invoke the `then` commands until the signal is reached.
+
+[source,yaml]
+----
+- repeat-until: DONE
+  then:
+  - sleep: 60s #always include the sleep!
+  - sh: jstack ${{pid}}
+----
+
+IMPORTANT: Do not forget the `sleep` command in the `then` or the script will loop incredibly fast.
+

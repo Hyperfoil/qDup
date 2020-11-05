@@ -1,0 +1,37 @@
+= wait-for
+
+The `wait-for` command is how scripts pause execution until other scripts have completed
+a set of commands. The other scripts will `signal` the same name as the `wait-for` which
+will tell the current script to continue executing.
+
+[source,yaml]
+----
+scripts:
+  doThis:
+  - sh: doThis.sh
+  - signal: ready
+
+  doThat:
+  - wait-for: ready
+  - sh: doThat.sh
+----
+
+Scripts with `wait-for` will remain paused until either the expected number of `signal`
+or all non-waiting scripts have completed. If all non-waiting scripts have completed then qDup
+will assume the condition did not occur and will cancel the waiting script without aborting the run.
+Cancelling the script without aborting the run lets us add diagnostic scripts for events that do not always occur.
+
+[source,yaml]
+----
+scripts:
+  server:
+  - sh: run_test.sh
+    watch:
+    - regex: IDKWTF #looks for the debug string
+      then:
+      - signal: debug #tells the debug script to start
+  debugResponse:
+  - wait-for: debug
+  - sh: jstack ${{pid}} > /tmp/jstack.txt
+----
+

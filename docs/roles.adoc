@@ -1,0 +1,64 @@
+= qDup roles
+
+The `roles` section is where we tell qDup which scripts to run on which hosts and
+when to run them.
+
+[source,yaml]
+----
+roles:
+  doit:
+    hosts: [server]
+    setup-scripts:
+    - download-runtime
+    - start-runtime
+    run-scripts:
+    - start-driver
+    cleanup-scripts:
+    - remove-runtime
+----
+
+The scripts can be listed by name or also a yaml mapping that sets script specific state values.
+
+[source,yaml]
+----
+roles:
+  doit:
+    hosts: [server]
+    setup-scripts:
+    - download-runtime
+    - start-runtime:
+        with:
+          role: serverA
+    - start-runtime:
+        with:
+          role: serverB
+    run-scripts:
+    - start-driver
+    cleanup-scripts:
+    - remove-runtime
+----
+
+== phases
+There are 3 phase to a qDup run:
+* setup
+* run
+* cleanup
+
+=== setup
+
+The setup phase runs first and is designed for preparing the host for the performance test.
+The scripts in the setup phase run sequentially to ensure a consistent environment for the run phase.
+qDup takes a snapshot of the environment before and after all `setup-scripts` and will apply those changes
+to the ssh terminal for each `run-scripts` and `cleanup-scripts` in the same role.
+
+=== run
+
+The run phase is where all scripts start at the same time (with the environment changes from setup) and
+is designed to perform the performance test.
+
+=== cleanup
+
+Lastly, the cleanup phase is an opportunity to post-process any files and reset the host as necessary.
+Cleanup scripts run sequentially just like setup scripts so that the host is in a consistent state after each run.
+
+

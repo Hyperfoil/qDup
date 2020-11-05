@@ -1,0 +1,23 @@
+= parse
+
+The `parse` command lets uses https://github.com/Hyperfoil/parse[hyperfoil parse]
+to parse the input from the previous command. It can use either the name of an existing
+parser factory (e.g. `Jep271Factory`) or a sequence of text parsing `Exp` using the
+yaml syntax from the parse library.
+
+[source,yaml]
+----
+- sh: cat /tmp/gc.log
+- parse: Jep271Factory
+...
+- sh: cat /tmp/test.log
+- parse:
+  - name: vmhwm
+    pattern: "(?<timestamp>\\d+),(?<vmhwm>\\d+)"
+    rules: [ PreClose ]
+----
+
+The `parse` command will output the json it extracted from the input and invoke the `then`
+commands or it will skip the `then` commands and pass the input to the next sibling.
+
+IMPORTANT: This is a new command and the yaml format may change if parse changes.

@@ -1,0 +1,22 @@
+= echo
+
+This command writes the input (the output from the previous command) to the qDup console log.
+
+[source,yaml]
+----
+- echo #no arguments
+----
+
+We normally use `echo` to `watch` a long-running `sh` command when debugging a script.
+
+.qdup.yaml
+[source,yaml]
+----
+scripts:
+  example:
+  - sh: /root/database_reload.sh
+    watch:
+    - echo #observe the script when writing or debugging
+----
+
+The `echo` command should be removed from a script once it works as expected.

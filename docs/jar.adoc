@@ -1,0 +1,60 @@
+= qDup jar
+
+the main way to run qDup is with the `qDup-uber.jar`. A slim jar without dependencies
+is available when using the qDup java api.
+....
+java -jar qDup-uber.jar -b /tmp/ qdup.yaml util.yaml
+....
+qDup requires a working directory. The `-b /tmp/` tells qDup to create a working folder in the
+`/tmp/` directory. Alternatively, we can use `-B /tmp/` to use `/tmp/` as the working directory.
+
+The next required options are the yaml scripts themselves. qDup will load the files in their listed
+order and will not overwrite scripts or hosts if they appear in more than one file.
+
+qDup will merge role definitions one file can declare a role without hosts and then rely on
+another file to add hosts to the role. A role will not run if it does not have hosts.
+
+.qdup.yaml
+[source,yaml]
+----
+hosts:
+  server: me@myserver.com
+roles:
+  doit: #adds hosts to the role from util.yaml
+    hosts: [server]
+----
+
+.util.yaml
+[source,yaml]
+----
+scripts:
+  setup:
+  - sh: echo "just an example"
+roles:
+  doit: #will not run without adding hosts
+    setup-scripts:
+    - setup
+----
+....
+java -jar qDup-uber.jar -B /tmp/ qdup.yaml util.yaml
+....
+
+== monitoring
+
+qDup starts a json server for run minitoring and debug. The default port is `31337` but can be changed with `--jsonport`.
+The endpoints are the follwing:
+
+GET /state :: current qDup state
+GET /stage :: the current run stage
+GET /active :: list of active commands and context
+GET /session :: list of active ssh terminal sessions
+POST /session/:sessionId :: send text to the ssh terminal session. ^C sends ctrl+C
+GET /signal :: get the signal and their remaining signal counts
+POST /signal/:name :: set the remaining signal count for the target signal
+GET /timer :: get the current command times
+GET /waiter :: get the current waiters
+GET /counter :: get the current counter counts
+GET /pendingDownloads :: get the list of pending downloads
+
+
+

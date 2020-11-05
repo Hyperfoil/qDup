@@ -1,0 +1,24 @@
+= exec
+
+This runs a shell command as though it were passed as an exec argument to ssh.
+The command will have the default environment and home folder and will not
+change the environment for the `sh` commands in the script.
+
+[source,yaml]
+----
+- exec: dstat 1 10
+- exec:
+    comand: dstat 1 10
+    async: true # continue the script while this runs independently
+----
+
+The `exec` command can be created with a single yaml line or with the `async`
+option in the multi-line yaml.
+Using `async` will start the command as an independent script. The `exec` next
+sibling will run while the `exec` is running and any `then` from the `exec` will
+run as part of the new script. Because `async` acts like a new script it will
+create a copy of the current script's `state` and will no modify the same state.
+It will also have a new terminal connection so environment changes will not be shared.
+
+CAUTION: exec is not used in any of our scripts but was added for evaluation.
+It may be removed if it poses more problems for script maintenance than it solves.

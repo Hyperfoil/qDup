@@ -1,0 +1,47 @@
+= signal
+
+The `signal` command is how scripts inform other scripts that they have reached
+a specific point in execution. Scripts can `wait-for` a specific point in execution
+qDup will pause the script until all `signal` for that point have occurred.
+
+[source,yaml]
+----
+scripts:
+  doThis:
+  - sh: doThis.sh
+  - signal: ready
+
+  doThat:
+  - wait-for: ready
+  - sh: doThat.sh
+----
+
+The `signal` and `wait-for` will ensure `doThis.sh` finishes before `doThat.sh` starts
+even if they are run on different hosts. qDup will wait for all `signal: ready` before
+starting the `sh: doThat.sh`. If the `doThis` script was in a role with 4 hosts then
+qDup will expect for calls to `signal: ready` before the `wait-for` ends.
+
+qDup will analyze the scripts and try to calculate the expected number of times signal
+will be called for each named signal but there are times it cannot identify the signal name.
+
+[source,yaml]
+----
+scripts:
+  tricy:
+  - signal: ${{easy}} #defined in yaml
+  - sh: doSimething.sh
+  - regex: name=(?<hard>.*)
+  - signal: ${{hard}} #created a runtime
+state:
+  easy: static
+----
+
+qDup can calculate the signal name for `signal: ${{easy}}` because it is defined in the `state`
+section and does not get changed by a `set-state` or `regex` but it cannot calculate the name
+for `signal: ${{hard}}` because it is created during script execution. If a signal name
+needs to be defined at execution then it is up to the script author to set the signal count.
+We currently set the signal count with `set-signal: ${{hard}} #` where `#` is replaced with a number.
+
+Runtime signal names are seldom necessary and normally only happen when coordinating loops in more than
+one script.
+

@@ -1,0 +1,14 @@
+= done
+
+This command tells qDup that the current phase should be done and to cancel any other scripts that are still running.
+If this sounds like a bad idea then you are right. If you think you should use this command to fix your scripts it means
+something else is wrong with the scripts or how qDup is processing the scripts.
+
+[source,yaml]
+----
+- done #no arguments
+----
+
+WARNING: Please, do not use `done` and if you feel you need to please open a github issue.
+Consider `done` to be deprecated, unsupported, and dangerous. It exists for the rare
+workaround while a bigger problem gets fixed :)

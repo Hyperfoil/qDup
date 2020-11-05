@@ -1,0 +1,12 @@
+= add-prompt
+
+qDup detects the end of the previous command by looking for the bash prompt in the terminal output.
+Some shell programs will chang the prompt during execution (e.g. `psql`). Use `add-prompt`
+to tell qDup to also look for a new propt string so it can correctly detect when the new
+terminal session (e.g. inside psql) is ready for the next command.
+
+[source,yaml]
+----
+- add-prompt: "/] " #jboss-cli
+- add-prompt: "/ #] " #jboss-cli batch
+----

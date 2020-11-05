@@ -1,0 +1,43 @@
+= for-each
+
+The `for-each` command creates a new `state` entry and runs the `then` commands
+for each entry in either the `input` argument or the input from the previous command.
+
+[source,yaml]
+----
+- sh: printf "hello\nworld"
+- for-each: iter #creates the iter state variables and loops over the input
+  then:
+  - log: ${{iter}} #use iter in a command to log hello then world
+- for-each:
+    name: other #creates ot
+    input:
+    - first
+    - second
+  then:
+  - log: ${{other}}
+----
+
+The first `for-each` will split the input based on newlines and set `iter` to "hello" then "world".
+The second `for-each` has an `input` argument and logs "first" then "second". The `input` argument needs
+to be a sequence (list) but each entry will be converted to json if it is not a scalar.
+
+[source,yaml]
+----
+- for-each:
+    name: it
+    input:
+    - name: foo
+      value: bar
+    - name: biz
+      value: buz
+  then:
+  - log: ${{it.name}} = ${{it.value}}
+----
+
+If `for-each` does not have a declared `input` argument then it tries to determine the best way to
+iterate over the input from the previous command. It will check for the following conditions:
+
+1. If the input looks like a json array then `for-each` will iterate over each entry in the array
+2. If the input contains newlines then `for-each` will iterate over each line
+3. Otherwise, `for-each` will strip surrounding brackets and look for a comma or space separated input.

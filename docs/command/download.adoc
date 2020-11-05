@@ -1,0 +1,40 @@
+= download
+
+This command copies a file from the host to the qDup run directory and passes the local file path as output.
+
+[source,yaml]
+----
+- download: path [destination]
+- download:
+    path: /tmp/log/ #the path on the remote host
+    destination: log #the local destination relative to the qdup host output folder
+----
+
+There are 2 arguments to download:
+
+- `path` the path to the file on the remote host. This is a required argument. Relative paths (paths that do not start with `/`) will be prefixed with the current pwd of the remote terminal.
+- `destination` the local path for file copied from the remote host. This is an optional arguent and will default to the filename from the `path`. The `destination` is always relative to the current qDup working directory and host directory.
+
+
+.qdup.yaml
+[source,yaml]
+----
+hosts:
+  server: me@remotehost
+scripts:
+  example:
+  - sh: cd /tmp
+  - download: ./dstat.log
+  - sh: cd
+  - download: /tmp/dstat.log /tmp/dstat.raw #renames the same file
+roles:
+  doit:
+  - hosts: [server]
+  - runs-scripts: [example]
+----
+running the above script with
+....
+java -jar qdup-uber.jar -B /tmp qdup.yaml
+....
+would create `/tmp/server/dstat.log`  `/tmp/server/tmp/dstat.raw` because `-B /tmp` sets the qdup dir,
+the host alias is `server`, and all `destination` paths are relative to the host's output folder, even destinations that start with `/`.

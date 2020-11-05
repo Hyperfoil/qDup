@@ -1,0 +1,100 @@
+= sh
+
+The `sh` command is the main qDup command because it directly interacts with the
+ssh terminal. It can be created with a yaml string or with a mapping that specifies
+the the `command`.
+
+[source,yaml]
+----
+- sh: cd /tmp
+- sh:
+    command: ls
+----
+
+The `sh` mapping can include a `prompt` option to send text to the remote ssh terminal
+in response to messages in the `sh` output similar to using `send-text`.
+
+[source,yaml]
+----
+- sh:
+    command: su
+    prompt:
+      "Password: ": 123456 #super secret root password
+----
+
+qDup checks the exit code of each `sh` command after it completes. The `-x` and `--exitCode`
+arguments that will cause the run to abort if any `sh` command has a non-zero exit code.
+There are some commands that we expect to have a non-zero exit code (e.g. sending `ctrlC` to a `tail -f`).
+The `sh` mapping has an `ignore-exit-code` option for commands we expect to have a non-zero exit code
+
+[source,yaml]
+----
+- sh:
+    command: tail -f /var/log/messages
+    ignore-exit-code: true
+  watch:
+  - regex: done
+    then:
+    - ctrlC #sends ctrl+c to tail -f causing a 127 exit code
+
+----
+
+qDup will not check the exit code of a command if qDup used a new prompt from `add-prompt` to
+detect the end of the command. qDup does this to avoid trying to send shell commands (e.g `echo $?`)
+to what is potentially a command prompt (e.g. `psql`).
+
+== tips
+
+Use yaml literals (`sh: |`) to cat structured text to a file or to a command
+[source,yaml]
+----
+- sh: | #creates a new web.xml for the application
+    cat > ${{dir}}/web.xml << 'EOF'
+    <web-app ... >
+      ...
+    </web-app>
+    EOF
+- sh: | #creates the knative-serving namespace for knative serverless
+    oc apply <<EOF -f -
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: knative-serving
+    ---
+    apiVersion: operator.knative.dev/v1alpha1
+    kind: KnativeServing
+    metadata:
+      name: knative-serving
+      namespace: knative-serving
+    EOF
+----
+We can use state substituion `${{...}}` to coordinate between different components.
+We can also use javscript evaluate `${{=...}}` with javacript string literals quickly template files
+[source,yaml]
+----
+- set-state:
+    key: HOSTS
+    value:
+    - {name: server, ip: 127.0.0.1, mac: "00:aa:bb:cc:dd:ee:01"}
+    - {name: client, ip: 127.0.0.2, mac: "00:aa:bb:cc:dd:ee:02"}
+- sh: |
+    cat > /etc/dhcp/dhcpd.conf <<EOF
+    ...
+    ${{=${{HOSTS}}.reduce((rtrn,entry)->rtrn+`
+    host ${entry.name} {
+      hardware ethernet ${entry.mac}
+      fixed-address ${v.ip};
+    }
+    `,'').trim()}}
+    EOF
+----
+The above example creates a dhcpd.conf with host definitions for each entry in HOSTS.
+remember that variable substituion in javascript string literals uses bash sytnax `${...}`
+and not qDup sntax `${{...}}`. qDup will complete all state substitutions before evaluating
+the javascript. Be sure to wrap string substitutions with quotes otherwise the javascript engine
+will try treat the value as a javascript variable and not a string literal.
+....
+${{= "${{entry.mac}}".toLowerCase().split(":").join("_") }}
+....
+we need the quotes around entry.mac otherwise javacript will try and evalute the mac
+address as an expression.

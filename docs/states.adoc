@@ -1,0 +1,84 @@
+= qDup states
+
+The state is where qDup stores values during a run and how scripts can introduce
+variability into a run. The yaml is converted to json and can be used in any state
+value pattern `${{...}}`.
+
+== defining state
+
+[source,yaml]
+----
+states:
+  count: 100
+  duration: 300
+  users:
+  - name: bill
+    score: 2
+  - name: beth
+    score: 22
+----
+
+the yaml state is globally available but if scripts updated the global state by default then
+`regex: (?<name>.*)` in one script and `set-state: name` in another script would collide.
+qDup avoids script state collision by using a tiered approach to state.
+
+* Shared Global Run State
+** Shared Host State
+*** Script State
+
+Each script defaults new values to its own private state. The values can target the `host` or `run` state by putting a prefix
+before the state name.
+....
+set-state: RUN.name bill
+....
+The `RUN.` prefix tells qDup to add the state entry to the global run state which is shared across all scripts
+....
+set-state: HOST.name bill
+....
+The `HOST.` prefix tells qDup to add the state entry to the shared host state which is schared by all scripts on the current host.
+
+== accessing state
+
+qDup state is accessed using state expressions
+....
+${{count}}
+....
+where `count` is a state entry. Expressions can also access json members
+....
+${{users[0].name}}
+....
+expressions can include a default value with a `:` separator
+....
+${{count:100}}
+....
+
+Scripts do not need to use the prefix to access values from the `host` or `run` state.
+The prefix can be used to only accept values from the target state but this is rarely necessary.
+[source,yaml]
+----
+- sh: echo "hi ${{name}}" #will check default, then host, then run state
+- sh: echo "who is ${{RUN.name}}" #will only check the run state
+----
+
+== javascript expressions
+qDup can evaluate javascript in a javascript state expression
+....
+${{= range(1,10) }}
+....
+The javascript state expression can include nested state expressions which are evaluated before the javascript executes
+and can include a default just like state expressions.
+....
+${{= "${{users[0].name}}".toLowerCase() : john }}
+....
+
+=== javascript globals
+The javascript engine uses ECMAScript 2020 with graaljs. qDup provides a global read-only
+json representation of the current state, signals, and counters under the `$QD` global name.
+This was added recently and is subject to change as we work on the api.
+
+qDup also provides some global methods to help with common tasks
+
+milliseconds(str):: convert the str duration (e.g. `1h 30s`) into millliseconds
+seconds(str):: convert the str duration (e.g. `1h 30s`) into seconds
+range(start,stop,step):: create an array `[start,stop)` with optional `step` increment
+

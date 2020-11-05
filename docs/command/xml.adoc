@@ -1,0 +1,33 @@
+= xml
+
+The `xml` command can read and update xml documents (including xhtml) with xpaths.
+The command can be created with a yaml scalar or mapping. The scalar performs a
+single operation while the mapping can perform multiple operations on the same file.
+
+[source,yaml]
+----
+- xml: /tmp/web.xml>/web-app/display-name #reads the display-name from web.xml
+- xml:
+    path: /tmp/web.xml
+    operations:
+    - "/web-app/display-name == example" #set the display-name
+    - "/web-app ++ <session-config><tracking-mode>COOKIE</tracking-mode></session-config>" #add session-config
+----
+
+== operations
+/path == value ::
+Set all nodes that match the xpath to the target value.
+/path ++ <tag/> ::
+Add a child to each node that matches the xpath.
+/path -- ::
+Delete all nodes that match the xpath.
+/path @key=value ::
+Add an attribute `key="value"` to each node that matches the xpath.
+/path -> VAR ::
+Add the value of each node that matches the xpath to the state variable VAR.
+This will create VAR as an array with length equal to the number of xpath matches.
+
+WARNING: This command is likely to change soon as we finalize the xml operations.
+Expect changes to the operation keys and supported operations.
+
+

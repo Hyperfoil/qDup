@@ -1,0 +1,19 @@
+= send-text
+
+The `send-text` command sends the message to the ssh terminal without waiting for
+the terminal prompt. We use the command when there is a long-running `sh` command
+that does not have a prompt. The `send-text` is designed for `sh` observation in
+`watch`, `timer`, or `on-signal`.
+
+[source,yaml]
+----
+- sh: long-running.sh
+  watch:
+  - regex: ready
+    then:
+    - send-text: start
+  - timer:
+      1s:
+      - send-text: setup
+----
+

@@ -1,0 +1,37 @@
+= ctrlC
+
+Send the ctrl+c interrupt to the terminal. This often interrupts the current shell command (e.g. `tail -f`).
+
+[source,yaml]
+----
+- ctrlC #no arguments
+----
+
+We often use `ctrlC` while observing a long-running command. This can be in a `watch`, `on-signal` or `timer`.
+
+[source,yaml]
+----
+scripts:
+    example:
+    - sh: tail -f /var/log/messages
+      watch:
+      - regex: error
+        then:
+        - ctrlC
+      on-signal:
+        READY: #something else signaled ready
+        - ctrlC
+      timer:
+        30m:  #if tail is still running after 30 minutes
+        - ctrlC
+----
+We can also use `ctrlC` in a `timer` to run a command for a fixed amount of time.
+[source,yaml]
+----
+scripts:
+    example:
+    - sh: collectPerf.sh
+      timer:
+        60s: #collect 60 seconds of performance data
+        - ctrlC
+----
