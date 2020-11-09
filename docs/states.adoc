@@ -80,5 +80,11 @@ qDup also provides some global methods to help with common tasks
 
 milliseconds(str):: convert the str duration (e.g. `1h 30s`) into millliseconds
 seconds(str):: convert the str duration (e.g. `1h 30s`) into seconds
-range(start,stop,step):: create an array `[start,stop)` with optional `step` increment
-
+range(start,stop,step):: create an array `[start,stop)` with optional `step` increment. Range
+is often used with `for-each` or in `sh` when creating a file using javascript string templates.
+[source,yaml]
+----
+- for-each: IT ${{= range(1,10) }}
+  then:
+  - sh: ...
+----

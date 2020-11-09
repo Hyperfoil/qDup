@@ -40,6 +40,7 @@ roles:
 
 == phases
 There are 3 phase to a qDup run:
+
 * setup
 * run
 * cleanup
