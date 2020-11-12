@@ -124,6 +124,21 @@ public class JsonServer implements RunObserver, ContextObserver {
 
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
+        router.route("/").produces("application/json").handler(rc->{
+            Json rtrn = new Json();
+            rtrn.set("GET /state","current qDup state");
+            rtrn.set("GET /stage","the current run stage");
+            rtrn.set("GET /active","list of active commands and context");
+            rtrn.set("GET /session","list of active ssh terminal sessions");
+            rtrn.set("POST /session/:sessionId","send text to the ssh terminal session. ^C sends ctrl+C");
+            rtrn.set("GET /signal","get the signal and their remaining signal counts");
+            rtrn.set("POST /signal/:name","set the remaining signal count for the target signal");
+            rtrn.set("GET /timer","get the current command times");
+            rtrn.set("GET /waiter","get the current waiters");
+            rtrn.set("GET /counter","get the current counter counts");
+            rtrn.set("GET /pendingDownloads","get the list of pending downloads");
+            rc.response().end();
+        });
         router.route("/state").produces("application/json").handler(rc->{
            rc.response().end(filter(run.getConfig().getState().toJson().toString()));
         });
