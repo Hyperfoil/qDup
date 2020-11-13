@@ -460,7 +460,6 @@ public class JarMain {
         }
 
         RunConfig config = runConfigBuilder.buildConfig(yamlParser);
-
         if (jarMain.isTest()) {
             //logger.info(config.debug());
             System.out.printf("%s", config.debug(true));
@@ -536,6 +535,7 @@ public class JarMain {
             });
         }
 
+        config.getSettings().set("check-exit-code",jarMain.checkExitCode());
 
         final Run run = new Run(jarMain.getOutputPath(), config, dispatcher);
 
