@@ -6,6 +6,7 @@ import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import io.hyperfoil.tools.yaup.xml.XmlOperation;
 import io.hyperfoil.tools.yaup.xml.pojo.Xml;
+import io.hyperfoil.tools.yaup.xml.pojo.XmlPath;
 
 import java.io.File;
 import java.io.IOException;
@@ -81,16 +82,27 @@ public class XmlCmd extends Cmd {
                 String operation = Cmd.populateStateVariables(operations.get(i),this,context);
                 operation = removeQuotes(operation);
                 XmlOperation xmlOperation = XmlOperation.parse(operation);
-                if(XmlOperation.Operation.None.equals(xmlOperation.getOperation()) &&
-                    xmlOperation.getPath().contains(SET_STATE_KEY) ){
-                    String path = xmlOperation.getPath().substring(0,xmlOperation.getPath().indexOf(SET_STATE_KEY)).trim();
-                    String stateValue = xmlOperation.getPath().substring(xmlOperation.getPath().indexOf(SET_STATE_KEY)+SET_STATE_KEY.length()).trim();
+                if( XmlOperation.Operation.None.equals(xmlOperation.getOperation()) ){
+                    if (xmlOperation.getPath().contains(SET_STATE_KEY)) {
 
-                    stateValue = Cmd.populateStateVariables(stateValue,this,context);
-                    xmlOperation = XmlOperation.parse(path);
-                    String response = xml.apply(xmlOperation);
-                    context.getState().set(stateValue,response);
-                }else {
+                        String path = xmlOperation.getPath().substring(0, xmlOperation.getPath().indexOf(SET_STATE_KEY)).trim();
+                        String stateValue = xmlOperation.getPath().substring(xmlOperation.getPath().indexOf(SET_STATE_KEY) + SET_STATE_KEY.length()).trim();
+
+                        stateValue = Cmd.populateStateVariables(stateValue, this, context);
+                        xmlOperation = XmlOperation.parse(path);
+
+                        List<Xml> found = xml.getAll(path);
+                        String response = xml.apply(xmlOperation);
+                        context.getState().set(stateValue, response);
+                    } else {
+                        List<Xml> found = xml.getAll(xmlOperation.getPath());
+
+                        String response = xml.apply(xmlOperation);
+                        if (!response.isEmpty()) {
+                            output = response;
+                        }
+                    }
+                } else {
                     String response = xml.apply(xmlOperation);
                     if (!response.isEmpty()) {
                         output = response;
