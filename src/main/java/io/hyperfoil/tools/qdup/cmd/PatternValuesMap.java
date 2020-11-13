@@ -19,9 +19,12 @@ import java.util.stream.Collectors;
  * Provides a Map facade over the command's state and with variables
  * This supports Graaljs treating state as a simple javascript object and lets yaup StringUtil.populatePattern
  * use the current variables from any scope (State or with's)
+ *
+ * Needs to be a ProxyObject to support state['key']=... in jsCmd
+ *
  */
 //TODO support javascript map and array functions (push, pop, map, filter, etc)
-public class PatternValuesMap implements Map<Object, Object>  /*,ProxyObject*/ {
+public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
 
    public static final String QDUP_GLOBAL = "$QD";
 
@@ -256,7 +259,7 @@ public class PatternValuesMap implements Map<Object, Object>  /*,ProxyObject*/ {
 
    // ProxyObject
    //
-/*
+
    @Override
    public Object getMember(String key) {
       Object rtrn = get(key);
@@ -286,7 +289,6 @@ public class PatternValuesMap implements Map<Object, Object>  /*,ProxyObject*/ {
       state.set(key, ValueConverter.convert(value));
    }
 
-*/
 
 
 }
