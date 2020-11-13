@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 
 import java.io.File;
+import java.nio.file.Paths;
 
 public class QueueDownload extends Cmd {
     private String path;
@@ -27,6 +28,11 @@ public class QueueDownload extends Cmd {
     @Override
     public String toString(){return "queue-download: " + path + (destination.isEmpty()?"":(" -> "+destination));}
 
+    /**
+     * returns true of the the input contains ${ or $ without ${{ or $( or `
+     * @param input
+     * @return
+     */
     public static boolean hasBashEnv(String input){
         return input.matches("[^\\$]*\\$(?!\\{\\{).*") || input.contains("$(") || input.contains("`");
     }
@@ -41,8 +47,16 @@ public class QueueDownload extends Cmd {
         if(hasBashEnv(resolvedPath)){//if the source path has $name or ${name}
             resolvedPath = context.getSession().shSync("echo "+resolvedPath);
         }
-        if(!resolvedPath.startsWith("/")){//relative path
+        if(resolvedPath.startsWith("~/")){
+            String homeDir = context.getSession().shSync("echo ~/");
+            resolvedPath = homeDir+resolvedPath.substring("~/".length());
+        }else if(!resolvedPath.startsWith("/")){//relative path
             //TODO can download paths be relative? probably best if no
+            String pwd = context.getSession().shSync("pwd");
+            if(resolvedPath.startsWith("./")){
+                resolvedPath = resolvedPath.substring("./".length());
+            }
+            resolvedPath = Paths.get(pwd,resolvedPath).toString();
         }
         if(hasBashEnv(resolvedDestination)){//if the destination path has $name or ${name}
             resolvedDestination = context.getSession().shSync("echo "+resolvedDestination);
