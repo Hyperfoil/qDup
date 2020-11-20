@@ -127,6 +127,7 @@ public class RunConfig {
 //    }
 
     public Set<String> getRoleNames(){return roles.keySet();}
+    public Map<String, Role> getRoles(){ return roles;}
     public Role getRole(String name){
         return roles.get(name);
     }
