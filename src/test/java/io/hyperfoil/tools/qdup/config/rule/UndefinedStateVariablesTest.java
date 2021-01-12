@@ -51,7 +51,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
     }
 
@@ -83,7 +83,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
     }
 
@@ -111,7 +111,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertTrue("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
     }
 
@@ -138,7 +138,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertTrue("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("unexpected number of variables: "+rule.getUsedVariables(),1,rule.getUsedVariables().size());
 
@@ -168,7 +168,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
 
         assertEquals("unexpected number of variables: "+rule.getUsedVariables(),2,rule.getUsedVariables().size());
 
@@ -199,7 +199,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertTrue("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("unexpected number of variables: "+rule.getUsedVariables(),1,rule.getUsedVariables().size());
     }
@@ -232,7 +232,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
     }
 
@@ -261,7 +261,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         Script script = config.getScript("test");
 
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
@@ -301,7 +301,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("unexpected number of variables: "+rule.getUsedVariables(),8,rule.getUsedVariables().size());
     }
@@ -329,7 +329,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("unexpected number of variables: "+rule.getUsedVariables(),3,rule.getUsedVariables().size());
     }
@@ -365,7 +365,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         UndefinedStateVariables rule = new UndefinedStateVariables(parser);
         summary.addRule("state",rule);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
 
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("unexpected number of variables: "+rule.getUsedVariables(),7,rule.getUsedVariables().size());

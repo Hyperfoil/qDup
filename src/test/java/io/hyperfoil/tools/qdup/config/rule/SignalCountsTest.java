@@ -92,7 +92,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
 
         assertEquals("signal count for FOO_READY: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("FOO_READY"));
@@ -130,7 +130,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for sig: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("sig"));
     }
@@ -164,7 +164,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertTrue("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("expect 1 error",1,summary.getErrors().size());
         assertEquals("signal count for sig: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("sig"));
@@ -199,7 +199,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for sig: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("sig"));
     }
@@ -231,7 +231,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for sig: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("sig"));
     }
@@ -262,7 +262,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for sig: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("sig"));
     }
@@ -293,7 +293,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertTrue("expect errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("expected number of errors",1,summary.getErrors().size());
         assertEquals("signal count for BIZ",1,signalCounts.getSignalCount("BIZ"));
@@ -324,7 +324,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
 
         assertTrue("expect errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("expected number of errors",1,summary.getErrors().size());
@@ -352,7 +352,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertTrue("expect errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("expected number of errors",1,summary.getErrors().size());
         assertEquals("signal count for FOO",1,signalCounts.getSignalCount("FOO"));
@@ -379,7 +379,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertTrue("expect errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("expected number of errors",1,summary.getErrors().size());
         assertEquals("signal count for FOO",0,signalCounts.getSignalCount("FOO"));
@@ -409,7 +409,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",1,signalCounts.getSignalCount("FOO"));
     }
@@ -439,7 +439,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",1,signalCounts.getSignalCount("FOO"));
     }
@@ -466,7 +466,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",1,signalCounts.getSignalCount("FOO"));
     }
@@ -486,7 +486,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for foo",1,signalCounts.getSignalCount("foo"));
 
@@ -517,7 +517,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for foo",1,signalCounts.getSignalCount("foo"));
 
@@ -540,7 +540,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",1,signalCounts.getSignalCount("FOO"));
     }
@@ -565,7 +565,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",2,signalCounts.getSignalCount("FOO"));
 
@@ -595,7 +595,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",2,signalCounts.getSignalCount("FOO"));
     }
@@ -626,7 +626,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",4,signalCounts.getSignalCount("FOO"));
     }
@@ -655,7 +655,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",4,signalCounts.getSignalCount("FOO"));
     }
@@ -694,7 +694,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO: "+signalCounts.getCounts(),4,signalCounts.getSignalCount("FOO"));
         assertEquals("signal count for alpha: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("alpha"));
@@ -729,7 +729,7 @@ public class SignalCountsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
         summary.addRule("signals",signalCounts);
-        summary.scan(config.getRoles(),builder);
+        summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",4,signalCounts.getSignalCount("FOO"));
     }

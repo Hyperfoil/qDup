@@ -41,7 +41,7 @@ public class NonObservingCommandsTest extends SshTestBase {
         RunSummary summary = new RunSummary();
         NonObservingCommands rule = new NonObservingCommands();
         summary.addRule("observer",rule);
-        summary.scan(config.getRoles(), builder);
+        summary.scan(config.getRolesValues(), builder);
         assertTrue("expect errors:\n" + summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")), summary.hasErrors());
     }
 
@@ -70,7 +70,7 @@ public class NonObservingCommandsTest extends SshTestBase {
             RunSummary summary = new RunSummary();
             NonObservingCommands rule = new NonObservingCommands();
             summary.addRule("observer",rule);
-            summary.scan(config.getRoles(), builder);
+            summary.scan(config.getRolesValues(), builder);
             assertTrue("expect errors:\n" + summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")), summary.hasErrors());
         }
 
@@ -98,7 +98,7 @@ public class NonObservingCommandsTest extends SshTestBase {
             RunSummary summary = new RunSummary();
             NonObservingCommands rule = new NonObservingCommands();
             summary.addRule("observer",rule);
-            summary.scan(config.getRoles(), builder);
+            summary.scan(config.getRolesValues(), builder);
             assertTrue("expect errors:\n" + summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")), summary.hasErrors());
         }
         @Test
@@ -124,7 +124,7 @@ public class NonObservingCommandsTest extends SshTestBase {
             RunSummary summary = new RunSummary();
             NonObservingCommands rule = new NonObservingCommands();
             summary.addRule("observer",rule);
-            summary.scan(config.getRoles(), builder);
+            summary.scan(config.getRolesValues(), builder);
             assertTrue("expect errors:\n" + summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")), summary.hasErrors());
         }
     }

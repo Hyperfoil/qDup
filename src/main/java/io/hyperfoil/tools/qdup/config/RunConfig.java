@@ -131,7 +131,7 @@ public class RunConfig {
     public Role getRole(String name){
         return roles.get(name);
     }
-    public Collection<Role> getRoles(){return roles.values();}
+    public Collection<Role> getRolesValues(){return roles.values();}
 
     /**
      * Gets all the hosts that are used in a role
