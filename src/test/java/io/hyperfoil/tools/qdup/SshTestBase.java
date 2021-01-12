@@ -47,7 +47,7 @@ public class SshTestBase {
         tmpDir = null;
     }
 
-    //    static {
+//    static {
 //        try {
 //            DockerClientFactory.instance().client();
 //        } catch (DockerException e) {

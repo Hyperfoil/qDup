@@ -175,8 +175,6 @@ public class State {
         return childStates.get(name);
     }
     public void set(String key,Object value){
-
-
         value = convertType(value);
         State target = this;
         boolean isSecret = key.startsWith(SecretFilter.SECRET_NAME_PREFIX);
@@ -188,7 +186,7 @@ public class State {
         do {
             if(target.prefix!=null && key.startsWith(target.prefix)){
                 String newKey = key.substring(target.prefix.length());
-                        //use chain set to break .'s itno child objects
+                        //use chain set to break .'s into child objects
                 Json.chainSet(target.json,newKey,value);
                 return;
             }

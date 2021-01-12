@@ -18,6 +18,24 @@ import static org.junit.Assert.*;
 
 public class SetStateTest extends SshTestBase {
 
+
+   @Test
+   public void key_uses_array_index(){
+      SpyContext spyContext = new SpyContext();
+      spyContext.getState().set("FOO",Json.fromString("[{\"name\":\"one\"},{\"name\":\"two\"}]"));
+
+      SetState setState = new SetState("FOO[0].value","uno");
+      setState.run("",spyContext);
+      assertTrue("state should have FOO",spyContext.getState().has("FOO"));
+      assertTrue("state should have FOO[0]: "+spyContext.getState().get("FOO[0]"),spyContext.getState().has("FOO[0]"));
+      Object obj = spyContext.getState().get("FOO[0]");
+      assertNotNull(obj);
+      assertTrue("FOO[0] should be json: "+obj,obj instanceof Json);
+      Json json = (Json)obj;
+      assertTrue("FOO[0] should have value key: "+json,json.has("value"));
+      assertEquals("FOO[0].value should be uno","uno",json.get("value"));
+   }
+
    @Test
    public void replace_same_name_from_state(){
       SetState setState = new SetState("FOO","${{FOO:bar}}");
