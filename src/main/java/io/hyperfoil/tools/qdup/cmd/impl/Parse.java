@@ -4,6 +4,7 @@ import io.hyperfoil.tools.parse.JsonConsumer;
 import io.hyperfoil.tools.parse.Parser;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.function.Supplier;
@@ -12,7 +13,7 @@ public class Parse extends Cmd {
 
    private String config;
 
-   public Parse(String cofig) {
+   public Parse(String config) {
       this.config = config;
    }
 

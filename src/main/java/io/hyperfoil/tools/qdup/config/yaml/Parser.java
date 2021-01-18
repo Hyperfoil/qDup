@@ -304,8 +304,12 @@ public class Parser {
                 Parse.class,
                 "parse",
                 (cmd) -> cmd.getConfig(),
-                (str,prefix,suffix) -> new Parse(str),
-                (json) -> new Parse(json.toString())
+                (str,prefix,suffix) -> {
+                    return new Parse(str);
+                },
+                (json) -> {
+                    return new Parse(json.toString(0));
+                }
         );
         rtrn.addCmd(
                 Regex.class,
