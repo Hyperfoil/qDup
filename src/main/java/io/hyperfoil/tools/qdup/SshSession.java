@@ -669,7 +669,7 @@ public class SshSession {
         if (ensureConnected()) {
             try {
                 TimeUnit.SECONDS.sleep(1);
-                commandStream.println((command));
+                commandStream.println(command);
                 commandStream.flush();
             } catch (Exception e) {
                 //fire and forget
@@ -778,7 +778,11 @@ public class SshSession {
                     sessionStreams.addInlinePrompts(prompt.keySet(), (name) -> {
                         if (prompt.containsKey(name)) {
                             String response = prompt.get(name);
-                            this.response(response);
+                            if(response.startsWith("^") && response.length()==2){
+                              ctrl(response.charAt(1));
+                            } else {
+                                this.response(response);
+                            }
                         }
                     });
                 }
