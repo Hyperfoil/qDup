@@ -59,4 +59,28 @@ public abstract class CmdWithElse extends Cmd{
             return inThens ? thens.get(cmdIndex-1) : getElses().get(cmdIndex-1);
         }
     }
+
+    @Override
+    public Cmd nextChild(Cmd child){
+        Cmd rtrn = null;
+        int cmdIndex = thens.indexOf(child);
+        if(cmdIndex < 0){
+            //not a then child
+            cmdIndex = elses.indexOf(child);
+            if(cmdIndex < 0){
+                //not an else child either
+                //TODO throw error because current command is not a child?
+            }else if (cmdIndex == elses.size() -1){
+
+            }else{
+                rtrn = elses.get(cmdIndex+1);
+            }
+
+        }else if (cmdIndex == thens.size() -1 ){
+        }else{
+            rtrn = thens.get(cmdIndex+1);
+        }
+        return rtrn;
+    }
+
 }
