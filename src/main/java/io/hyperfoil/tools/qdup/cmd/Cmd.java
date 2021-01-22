@@ -110,6 +110,16 @@ public abstract class Cmd {
    }
 
    public static class NO_OP extends Cmd {
+
+      private String name;
+
+      public NO_OP(){
+         this("NO_OP");
+      }
+      public NO_OP(String name){
+         this.name = name == null ? "NO_OP" : name;
+      }
+
       @Override
       public void run(String input, Context context) {
          context.next(input);
@@ -117,12 +127,12 @@ public abstract class Cmd {
 
       @Override
       public Cmd copy() {
-         return new NO_OP().with(this.withDef);
+         return new NO_OP(name).with(this.withDef);
       }
 
       @Override
       public String toString() {
-         return "NO_OP";
+         return name;
       }
    }
 
@@ -144,6 +154,9 @@ public abstract class Cmd {
       return new Done();
    }
 
+   public static Cmd NO_OP(String name){
+      return new NO_OP(name);
+   }
    public static Cmd NO_OP() {
       return new NO_OP();
    }

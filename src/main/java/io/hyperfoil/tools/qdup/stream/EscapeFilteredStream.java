@@ -5,6 +5,7 @@ import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.Sets;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
@@ -18,6 +19,7 @@ public class EscapeFilteredStream extends MultiStream {
 
     private static final int CR = 13;  //\u000d
     private static final int ESC = 27; //\u001b
+    private static final int NULL = 0; //\u0000
 
     private static final Set<Character> CONTROL_SUFFIX = Sets.of(
             'A',//cursor up
@@ -39,7 +41,7 @@ public class EscapeFilteredStream extends MultiStream {
             's',//save cursor position
             'u', //restore cursor position
             'h',//seen in git output, switches screen?
-            'l'//same as 'h', seen in git and supposedly changes scrrens?
+            'l'//same as 'h', seen in git and supposedly changes screens?
             );
 
     private byte[] buffered;
@@ -70,7 +72,6 @@ public class EscapeFilteredStream extends MultiStream {
     public void close()throws IOException {
         flushBuffer();
     }
-
 
     public void reset(){
         writeIndex = 0;

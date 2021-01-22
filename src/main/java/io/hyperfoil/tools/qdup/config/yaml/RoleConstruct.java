@@ -47,7 +47,7 @@ public class RoleConstruct extends DeferableConstruct {
                 }
             });
         }else{
-            throw new YAMLException(section+" must a sequence"+tupleValue.getStartMark());
+            throw new YAMLException(section+" must be a sequence"+tupleValue.getStartMark());
         }
         return scriptCmds;
     };

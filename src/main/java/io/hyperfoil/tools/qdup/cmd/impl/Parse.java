@@ -35,6 +35,7 @@ public class Parse extends Cmd {
          abort("failed to populate template pattern in "+populatedConfig);
       }
       Parser p = Parser.fromJson(parserConfig);
+
       Json result = new Json();
       p.add(json ->result.add(json));
 

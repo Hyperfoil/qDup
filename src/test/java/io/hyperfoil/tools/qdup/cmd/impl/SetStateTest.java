@@ -20,6 +20,22 @@ public class SetStateTest extends SshTestBase {
 
 
    @Test
+   public void quote_key(){
+      SpyContext spyContext = new SpyContext();
+      spyContext.getState().set("FOO",Json.fromString("{\"key\":\"value\"}"));
+      spyContext.getState().set("VERSION","1.1.0");
+
+      SetState setState = new SetState("FOO.\"${{VERSION}}\".value","found");
+      setState.run("",spyContext);
+
+      Object obj = spyContext.getState().get("FOO");
+      assertNotNull(obj);
+      assertTrue("FOO should be json "+obj,obj instanceof Json);
+      Json json = (Json)obj;
+      assertTrue("FOO should have a '1.1.0' member",json.has("1.1.0"));
+   }
+
+   @Test
    public void key_uses_array_index(){
       SpyContext spyContext = new SpyContext();
       spyContext.getState().set("FOO",Json.fromString("[{\"name\":\"one\"},{\"name\":\"two\"}]"));
