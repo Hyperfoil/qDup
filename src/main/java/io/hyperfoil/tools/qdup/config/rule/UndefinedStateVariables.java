@@ -119,7 +119,11 @@ public class UndefinedStateVariables implements RunRule {
             setVariables.containsKey(trimmed) ||
                 setVariables.keys().stream()
                     .filter(var -> {
-                        return trimmed.startsWith(var);})
+
+                        return trimmed.equals(var) ||
+                        (trimmed.startsWith(var)  && trimmed.length() > var.length() && ".[".contains(""+trimmed.charAt(var.length()))) ||
+                        (var.startsWith(trimmed) && var.length() > trimmed.length() && ".[".contains(""+var.charAt(trimmed.length())) );
+                    })
                     .findAny().orElse(null) != null;
     }
 

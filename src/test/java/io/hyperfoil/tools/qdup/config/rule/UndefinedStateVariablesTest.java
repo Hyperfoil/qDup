@@ -16,6 +16,42 @@ import static org.junit.Assert.*;
 public class UndefinedStateVariablesTest extends SshTestBase {
 
     @Test
+    public void value_set_as_path_used_as_parent(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+                "scripts:",
+                "  test:",
+                "    - for-each:",
+                "        name: FOO",
+                "        input:",
+                "          - { name: \"one\", pattern: \"uno\"}",
+                "          - { name: \"two\", pattern: \"dos\"}",
+                "      then:",
+                "      - sh: echo string",
+                "        then:",
+                "        - set-state: RUN.results.${{FOO.name}} ${{FOO.pattern}}",
+                "    - sh: echo ${{RUN.results}}",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - test",
+                "states:",
+                "  from_state: in_state"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("config should not have errors: "+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        RunSummary summary = new RunSummary();
+        UndefinedStateVariables rule = new UndefinedStateVariables(parser);
+        summary.addRule("state",rule);
+        summary.scan(config.getRolesValues(),builder);
+        assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+    }
+
+    @Test
     public void value_from_foreach_in_regex_disable_statescan(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
