@@ -644,6 +644,7 @@ public class Run implements Runnable, DispatchObserver {
         if(!connectSessions.isEmpty()) {
             ok = connectAll(connectSessions, 60);
             if (!ok) {
+                getRunLogger().error("failed to connect all ssh sessions for setup");
                 abort(false);
             }
 
@@ -732,6 +733,7 @@ public class Run implements Runnable, DispatchObserver {
 
             }
             if(!ok){
+                getRunLogger().error("failed to connect all ssh sessions for run");
                 abort(false);
             }
         }else{
@@ -799,6 +801,7 @@ public class Run implements Runnable, DispatchObserver {
         if(!connectSessions.isEmpty()){
             ok = connectAll(connectSessions,60);
             if(!ok){
+                getRunLogger().error("failed to connect all ssh sessions for cleanup");
                 abort(false);
             }
 
