@@ -14,6 +14,7 @@ public class ReadState extends CmdWithElse {
     private boolean ran = false;
     public ReadState(String key){
         this.key = key;
+        setStateScan(false); //disable state-scan so un-used state can be checked
     }
 
     public String getKey(){return key;}

@@ -124,6 +124,30 @@ public class UndefinedStateVariablesTest extends SshTestBase {
     }
 
     @Test
+    public void read_state_not_cause_error(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+                "scripts:",
+                "  use:",
+                "    - read-state: ${{never-set}}",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - use"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        RunSummary summary = new RunSummary();
+        UndefinedStateVariables rule = new UndefinedStateVariables(parser);
+        summary.addRule("state",rule);
+        summary.scan(config.getRolesValues(),builder);
+        assertFalse("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+    }
+
+    @Test
     public void error_set_after_used_separate_phase(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
@@ -315,6 +339,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "    - set-state: from_pattern ${{explicit}}",
                 "    - set-state: from_pattern_default ${{missing:in_default}}",
                 "    - set-state: from_pattern_with ${{from_with}}",
+                "    - set-state: from_pattern_with ${{from_with}}_${{missing:in_default}}",
                 "    - set-state: from_pattern_state ${{from_state}}",
                 "    - sh: ${{explicit}}",
                 "    - sh: ${{from_pattern}}",
@@ -380,6 +405,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "    - log: ${{from_with}}",
                 "    - sh: ${{from_state}}",
                 "    - sh: ${{undefined_with_default:defaultValue}}",
+                "    - sh: ${{from_with}}_${{undefined_with_default:defaultValue}}",
                 "    - sh: ${{undefined_with_empty_default:}}",
                 "    - sh: ${{RUN.run_undefined_with_empty_default:}}",
                 "    - sh: ${{stateJson.key}}",
@@ -405,5 +431,42 @@ public class UndefinedStateVariablesTest extends SshTestBase {
 
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("unexpected number of variables: "+rule.getUsedVariables(),7,rule.getUsedVariables().size());
+    }
+
+    @Test
+    public void valid_default_value_in_subscript(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+                "scripts:",
+                "  create-runtime-name: #PATH > RUN.RUNTIME_NAME, RUN.ARCHIVE_NAME",
+                "    - read-state: ${{PATH}}",
+                "      then:",
+                "      - regex: .*?\\/(?<name>[^/]+?)\\.(?<type>zip|tar.gz|tgz)",
+                "        then:",
+                "        - set-state: RUN.RUNTIME_NAME ${{name}}_${{suffix:2010}}",
+                "        - set-state: RUN.ARCHIVE_NAME ${{name}}.${{type}}",
+                "  test:",
+                "    - script: create-runtime-name",
+                "      with:",
+                "        PATH: foo/bar.tar.gz",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - test:",
+                "states:",
+                "  defined: foo",
+                "  from_state: bar"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        RunSummary summary = new RunSummary();
+        UndefinedStateVariables rule = new UndefinedStateVariables(parser);
+        summary.addRule("state",rule);
+        summary.scan(config.getRolesValues(),builder);
+
+        assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
     }
 }

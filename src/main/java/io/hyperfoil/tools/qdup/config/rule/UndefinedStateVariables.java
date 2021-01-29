@@ -5,6 +5,7 @@ import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
+import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 import io.hyperfoil.tools.qdup.cmd.impl.SetState;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
