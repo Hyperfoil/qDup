@@ -2,6 +2,9 @@ package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.yaup.AsciiArt;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 /**
  * Created by wreicher
  * A POJO for the host connection information. Does not support saving passwords, set up qdup keys :)
@@ -62,7 +65,13 @@ public class Host {
     public int getPort(){return port;}
 
     @Override
-    public String toString(){return userName+(hasPassword()?":"+password:"")+"@"+hostName+":"+port;}
+    public String toString(){
+        return userName+(hasPassword()?":"+password:"")+"@"+hostName+":"+port;
+    }
+
+    public String getSafeString(){
+        return userName+(hasPassword()?":********":"")+"@"+hostName+":"+port;
+    }
 
     @Override
     public int hashCode(){return toString().hashCode();}
