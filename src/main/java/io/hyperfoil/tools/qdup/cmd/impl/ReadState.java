@@ -25,20 +25,41 @@ public class ReadState extends CmdWithElse {
     }
 
 
+    private boolean stateMissing(){
+        return populatedKey == null || populatedKey.isEmpty() || Cmd.hasStateReference(populatedKey,this);
+    }
+
     @Override
     public void run(String input, Context context) {
         ran = true;
         //use getStateValue in case it is in WITH or contest
         Object value = Cmd.populateStateVariables(key, this, context.getState(), null);
         populatedKey = value == null ? "" : value.toString();
-        if(populatedKey == null || populatedKey.isEmpty() || Cmd.hasStateReference(populatedKey,this)){
-            context.skip(input);
+        if(stateMissing()){
+            if(hasElse()){
+                context.next(input);
+            }else {
+                context.skip(input);
+            }
         }else{
 //TODO should we also support read-state: KEY in addition to read-state: ${{KEY}}
 //            if(context.getState().has(populatedKey,true)){
 //                context.next(context.getState().get(populatedKey).toString());
 //            }
             context.next(populatedKey);
+        }
+    }
+
+    @Override
+    public Cmd getNext(){
+        if(ran && stateMissing()){
+            if(hasElse()){
+                return getElses().get(0);
+            }else{
+                return super.getNext();
+            }
+        }else{
+            return super.getNext();
         }
     }
 

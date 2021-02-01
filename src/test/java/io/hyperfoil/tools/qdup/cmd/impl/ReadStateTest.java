@@ -1,13 +1,26 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class ReadStateTest {
 
+
+   @Test
+   public void run_getNext_returns_else(){
+      SpyContext context = new SpyContext();
+      context.getState().set("key","value");
+      ReadState readState = new ReadState("${{missing}}");
+      readState.onElse(Cmd.NO_OP());
+      readState.doRun("input",context);
+      assertEquals("read-state should call next with input","input",context.getNext());
+      Cmd next = readState.getNext();
+      assertNotNull("read-state next should return else when missing",next);
+      assertTrue("next should be no-op",next instanceof Cmd.NO_OP);
+   }
 
    @Test
    public void read_from_state(){
