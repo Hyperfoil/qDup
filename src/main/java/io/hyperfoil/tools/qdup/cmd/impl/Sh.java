@@ -104,6 +104,8 @@ public class Sh extends Cmd {
         if(context.getSession()!=null && context.getSession().isOpen() && SshSession.PROMPT.equals(getPreviousPrompt())){
             String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
             context.getSession().shSync("(exit $__qdup_ec);");
+            context.getSession().flushAndResetBuffer();
+
             //not working in lab :(
             if(toLog != null && !toLog.isBlank()) {
                 if ("0".equals(response)) {
