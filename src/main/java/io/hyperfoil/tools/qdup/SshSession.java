@@ -622,6 +622,16 @@ public class SshSession {
     public boolean usesDelay() {
         return sessionStreams.getDelay() > 0;
     }
+
+    public void flushAndResetBuffer(){
+        try {
+            sessionStreams.flush(); //to remove any motd that may be in the stream
+            sessionStreams.reset(); //to remove any motd that may be in the stream
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public int getDelay() {
         return sessionStreams.getDelay();
     }
