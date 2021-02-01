@@ -250,7 +250,7 @@ public class JsonServer implements RunObserver, ContextObserver {
               rc.response().setStatusCode(400).end("missing signal name");
            }
         });
-        router.route("/timer").produces("applicaiton/json").handler(rc->{
+        router.route("/timer").produces("application/json").handler(rc->{
            String response = run != null ? run.getProfiles().toString() : "{}";
            rc.response().end(filter(response));
         });

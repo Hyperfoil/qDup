@@ -15,7 +15,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -158,7 +157,7 @@ public class Dispatcher {
             Json entry = new Json();
             Cmd currentCmd = context.getCurrentCmd();
             entry.set("name",Cmd.populateStateVariables(currentCmd.toString(),currentCmd,context));
-            entry.set("host",context.getSession().getHost().toString());
+            entry.set("host",context.getSession().getHost().getSafeString());
             entry.set("uid",currentCmd.getUid());
             entry.set("contextId",context.getContextId());
             entry.set("script",rootCmd.getUid()+":"+rootCmd.toString());
