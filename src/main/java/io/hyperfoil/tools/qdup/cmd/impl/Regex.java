@@ -139,11 +139,7 @@ public class Regex extends CmdWithElse {
 
    @Override
    public Cmd copy() {
-      Regex rtrn = new Regex(this.patternString, this.miss);
-      if(hasElse()){
-         getElses().forEach(c->rtrn.onElse(c.deepCopy()));
-      }
-      return rtrn;
+      return new Regex(this.patternString, this.miss);
    }
 
 

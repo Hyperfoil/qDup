@@ -83,4 +83,15 @@ public abstract class CmdWithElse extends Cmd{
         return rtrn;
     }
 
+    @Override
+    public Cmd deepCopy() {
+        Cmd rtrn = super.deepCopy();
+        if(rtrn instanceof CmdWithElse){
+            CmdWithElse cmdWithElse = (CmdWithElse)rtrn;
+            if(hasElse()){
+                getElses().forEach(c->cmdWithElse.onElse(c.deepCopy()));
+            }
+        }
+        return rtrn;
+    }
 }
