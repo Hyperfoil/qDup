@@ -8,12 +8,25 @@ import java.io.File;
 public class Download extends Cmd {
     private String path;
     private String destination;
-    public Download(String path, String destination){
+    private Long maxSize;
+
+    public Download(String path, String destination, Long maxSize ){
         this.path = path;
         this.destination = destination;
+        if(maxSize < 0) {
+            this.maxSize = null;
+        } else {
+            this.maxSize = maxSize;
+        }
+    }
+    public Download(String path, String destination ){
+        this(path,destination, null);
     }
     public Download(String path){
-        this(path,"");
+        this(path,"", null);
+    }
+    public Download(String path, Long maxSize){
+        this(path,"", maxSize);
     }
     public String getPath(){return path;}
     public String getDestination(){return destination;}
@@ -30,13 +43,24 @@ public class Download extends Cmd {
             destinationFile.mkdirs();
         }
 
-        context.getLocal().download(remotePath,destinationPath,context.getSession().getHost());
+        boolean canDownload = true;
+
+        if(maxSize != null){
+            Long remoteFileSize = context.getLocal().remoteFileSize(remotePath,context.getSession().getHost());
+            if(remoteFileSize > maxSize){
+                canDownload = false;
+                logger.warn("File: {} is {} bytes, which is larger than max size: {}", remotePath, remoteFileSize, maxSize);
+            }
+        }
+        if(canDownload) {
+            context.getLocal().download(remotePath, destinationPath, context.getSession().getHost());
+        }
         context.next(path);
     }
 
     @Override
     public Cmd copy() {
-        return new Download(this.path,this.destination);
+        return new Download(this.path,this.destination, this.maxSize);
     }
     @Override
     public String toString(){return "download: "+path+" "+destination;}

@@ -4,16 +4,18 @@ This command copies a file from the host to the qDup run directory and passes th
 
 [source,yaml]
 ----
-- download: path [destination]
+- download: path [destination] [max-size]
 - download:
     path: /tmp/log/ #the path on the remote host
     destination: log #the local destination relative to the qdup host output folder
+    max-size: 1000 #the maximum size file to download.
 ----
 
 There are 2 arguments to download:
 
 - `path` the path to the file on the remote host. This is a required argument. Relative paths (paths that do not start with `/`) will be prefixed with the current pwd of the remote terminal.
 - `destination` the local path for file copied from the remote host. This is an optional arguent and will default to the filename from the `path`. The `destination` is always relative to the current qDup working directory and host directory.
+- `max-size` the maximum file size to download. This is an optional argument and if the file is larger than the maximum size set, the file will not be downloaded and a WARN message will be written to the run log.  Max-size can be specified as number of bytes, or using standard notation, e.g. 5MB, 1GB etc
 
 
 .qdup.yaml

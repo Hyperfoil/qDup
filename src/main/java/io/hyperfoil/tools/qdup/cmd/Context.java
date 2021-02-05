@@ -34,7 +34,7 @@ public interface Context {
     SshSession getSession();
     Host getHost();
     State getState();
-    void addPendingDownload(String path,String destination);
+    void addPendingDownload(String path,String destination, Long maxSize);
     void addPendingDelete(String path);
     void abort(Boolean skipCleanup);
     void done();

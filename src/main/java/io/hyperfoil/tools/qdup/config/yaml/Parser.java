@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.Role;
+import io.hyperfoil.tools.qdup.config.converter.FileSizeConverter;
 import io.hyperfoil.tools.yaup.StringUtil;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -153,11 +154,13 @@ public class Parser {
                         return new Download(str);
                     } else if (split.size() == 2) {
                         return new Download(split.get(0), split.get(1));
+                    } else if (split.size() == 3) {
+                        return new Download(split.get(0), split.get(1), FileSizeConverter.toBytes(split.get(2)));
                     } else {
                         throw new YAMLException("cannot create download from " + str);
                     }
                 },
-                (json) -> new Download(json.getString("path"), json.getString("destination", ""))
+                (json) -> new Download(json.getString("path"), json.getString("destination", ""), FileSizeConverter.toBytes(json.getString("max-size", null)))
 
         );
         rtrn.addCmd(
@@ -233,12 +236,14 @@ public class Parser {
                         return new QueueDownload(split.get(0));
                     } else if (split.size() == 2) {
                         return new QueueDownload(split.get(0), split.get(1));
+                    } else if (split.size() == 3) {
+                        return new QueueDownload(split.get(0), split.get(1), FileSizeConverter.toBytes(split.get(2)));
                     } else {
                         throw new YAMLException("cannot create queue-download from " + str);
                     }
                 },
                 (json) -> {
-                    return new QueueDownload(json.getString("path"), json.getString("destination", ""));
+                    return new QueueDownload(json.getString("path"), json.getString("destination", ""), FileSizeConverter.toBytes(json.getString("max-size", null)));
                 }
         );
         rtrn.addCmd(

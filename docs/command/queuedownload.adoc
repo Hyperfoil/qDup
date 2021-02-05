@@ -12,5 +12,6 @@ The download will only happen after cleanup if `queue-download` is called in `cl
 - queue-download:
     path: /tmp/gc.log
     destination: driver1/gc.log
+    max-size: 10000
 ---
 

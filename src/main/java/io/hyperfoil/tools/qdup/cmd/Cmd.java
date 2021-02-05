@@ -299,6 +299,14 @@ public abstract class Cmd {
       return new Download(path, destination);
    }
 
+   public static Cmd download(String path, Long maxSize) {
+      return new Download(path, maxSize);
+   }
+
+   public static Cmd download(String path, String destination, Long maxSize) {
+      return new Download(path, destination, maxSize);
+   }
+
    public static Cmd upload(String path, String destination) {
       return new Upload(path, destination);
    }
@@ -337,6 +345,14 @@ public abstract class Cmd {
 
    public static Cmd queueDownload(String path, String destination) {
       return new QueueDownload(path, destination);
+   }
+
+   public static Cmd queueDownload(String path, String destination, Long maxSize) {
+      return new QueueDownload(path, destination, maxSize);
+   }
+
+   public static Cmd queueDownload(String path, Long maxSize) {
+      return new QueueDownload(path, maxSize);
    }
 
    public static Cmd readState(String name) {
