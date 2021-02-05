@@ -11,16 +11,31 @@ public class QueueDownload extends Cmd {
     private String populatedPath;
     private String destination;
     private String populatedDestination;
-    public QueueDownload(String path, String destination){
+    private Long maxSize;
+
+    public QueueDownload(String path, String destination, Long maxFileSize){
         this.path = path;
         this.destination = destination;
         if(this.destination==null){
             this.destination="";
         }
+        if( maxFileSize != null && maxFileSize > 0) {
+            this.maxSize = maxFileSize;
+        } else {
+            this.maxSize = null;
+        }
+
+    }
+    public QueueDownload(String path, String destination){
+        this(path, destination, null);
     }
     public QueueDownload(String path){
         this(path,"");
     }
+    public QueueDownload(String path, Long maxFileSize) {
+        this(path,"", maxFileSize);
+    }
+
     public String getPath(){return path;}
     public String getDestination(){return destination;}
 
@@ -63,7 +78,7 @@ public class QueueDownload extends Cmd {
         }
         populatedPath = resolvedPath;
         populatedDestination = resolvedDestination;
-        context.addPendingDownload(resolvedPath,resolvedDestination);
+        context.addPendingDownload(resolvedPath,resolvedDestination, maxSize);
 
         File destinationFile = new File(resolvedDestination);
         if(!destinationFile.exists()){
@@ -74,15 +89,21 @@ public class QueueDownload extends Cmd {
 
     @Override
     public Cmd copy() {
-        return new QueueDownload(path,destination);
+        return new QueueDownload(path,destination,maxSize);
     }
 
     @Override
     public String getLogOutput(String output,Context context){
+        StringBuilder logBuild = new StringBuilder("queue-download: ");
         if(populatedPath!=null){
-            return "queue-download: "+populatedPath+" "+populatedDestination;
+            logBuild.append(populatedPath).append(" ").append(populatedDestination);
         }else{
-            return "queue-download: "+path+" "+destination;
+            logBuild.append(path).append(" ").append(destination);
         }
+        if( maxSize != null){
+            logBuild.append(" max-size: ").append(maxSize);
+        }
+
+        return logBuild.toString();
     }
 }

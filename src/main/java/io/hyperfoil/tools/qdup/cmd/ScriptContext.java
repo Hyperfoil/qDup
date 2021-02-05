@@ -185,8 +185,8 @@ public class ScriptContext implements Context, Runnable{
 
     public State getState(){return state;}
     @Override
-    public void addPendingDownload(String path,String destination){
-        run.addPendingDownload(session.getHost(),path,destination);
+    public void addPendingDownload(String path,String destination, Long maxSize){
+        run.addPendingDownload(session.getHost(),path,destination, maxSize);
     }
     @Override
     public void addPendingDelete(String path){

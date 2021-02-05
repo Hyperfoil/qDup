@@ -10,6 +10,10 @@ import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -132,6 +136,16 @@ public class Local {
       }
    }
 
+   public long remoteFileSize(String path, Host host){
+      if (path == null || path.isEmpty() ) {
+         return -1;
+      } else {
+         logger.info("Local.remoteFileSize({}:{})", host, path);
+         return rsyncFileSize(host, path);
+      }
+
+   }
+
    private String prepSshString(int port) {
       String rtrn = this.ssh;
       rtrn+=" -o StrictHostKeyChecking=no";
@@ -154,15 +168,13 @@ public class Local {
       }
       return rtrn;
    }
-   private void rsyncSend(Host host, String path, String dest) {
-      File sourceFile = new File(path);
-      if(!sourceFile.exists()){
-         logger.error("Cannot send {} because it does not exist",path);
-         return;
-      }
-      ProcessBuilder builder = new ProcessBuilder();
-      String sshOpt = prepSshString(host.getPort());
+
+   private List<String> rsyncBaseCmd(Host host){
+
       List<String> cmd = new LinkedList<>();
+
+      String sshOpt = prepSshString(host.getPort());
+
       if(host.hasPassword()){
          cmd.add("sshpass");
          cmd.add("-p");
@@ -172,41 +184,59 @@ public class Local {
       cmd.add("--archive");
       cmd.add("--verbose");
       cmd.add("--compress");
-      cmd.add("--ignore-times");
       //TODO only add --rsh sshOpt if needed?
       cmd.add("--rsh");
       cmd.add(sshOpt);
-      cmd.add(path);
-      cmd.add(host.getUserName() + "@" + host.getHostName() + ":" + dest);
-      builder.command(cmd);
-      logger.debug("Running rsync command : " + cmd.stream().collect(Collectors.joining(" ")));
-      try {
-         Process p = builder.start();
-         final InputStream inputStream = p.getInputStream();
-         final OutputStream outputStream = p.getOutputStream();
-         final InputStream errorStream = p.getErrorStream();
 
-         int result = p.waitFor();
-         logger.debug("rsyncSend.result = {}", result);
-         String line = null;
-         BufferedReader reader = null;
-         reader = new BufferedReader(new InputStreamReader(errorStream));
-         while ((line = reader.readLine()) != null) {
-            logger.error("  E: {}", line);
-         }
-         reader = new BufferedReader(new InputStreamReader(inputStream));
-         while ((line = reader.readLine()) != null) {
-            logger.trace("  I: {}", line);
-         }
+      return cmd;
+   }
 
-      } catch (IOException e) {
-         e.printStackTrace();
-      } catch (InterruptedException e) {
-         logger.warn("rysnc was interrupted: " + path);
-         Thread.interrupted();
+   private void rsyncSend(Host host, String path, String dest) {
+      File sourceFile = new File(path);
+      if(!sourceFile.exists()){
+         logger.error("Cannot send {} because it does not exist",path);
+         return;
       }
 
+      List<String> cmd = rsyncBaseCmd(host);
+      cmd.add("--ignore-times");
+      cmd.add(path);
+      cmd.add(host.getUserName() + "@" + host.getHostName() + ":" + dest);
+
+      runRsyncCmd(cmd, "rsyncSend", line -> logger.trace("  I: {}", line));
+
    }
+
+   private long rsyncFileSize(Host host, String path){
+      AtomicLong fileSize = new AtomicLong(-1);
+      Pattern p = Pattern.compile("total size is (?<fileSize>\\d{1,3}(?:[,.]\\d{3})*)(\\s|\\w|[,.]|\\(|\\))*");
+
+      List<String> cmd = rsyncBaseCmd(host);
+      if(path.contains("/./")){
+         cmd.add("--relative");
+      }
+      cmd.add(host.getUserName() + "@" + host.getHostName() + ":" + path);
+      cmd.add("--stats");
+      cmd.add("--dry-run");
+
+      runRsyncCmd(cmd, "rsyncFetch", line -> {
+                 Matcher m = p.matcher(line);
+                 while (m.find()) {
+                    String matchedFileSize = m.group("fileSize");
+                    if(matchedFileSize != null && !"".equals(matchedFileSize)){
+                       matchedFileSize = matchedFileSize.replaceAll(",","");
+                       try {
+                          fileSize.set(Long.parseLong(matchedFileSize));
+                       } catch (NumberFormatException nfe){
+                          logger.error("Failed to parse fileSize as a number: {}", matchedFileSize);
+                       }
+                    }
+                 }
+              });
+
+      return fileSize.get();
+   }
+
    private void rsyncFetch(Host host, String path, String dest) {
       File destinationFile = new File(dest);
       if (!destinationFile.exists()) {
@@ -219,26 +249,19 @@ public class Local {
          }
       }
 
-      ProcessBuilder builder = new ProcessBuilder();
-      String sshOpt = prepSshString(host.getPort());
-      List<String> cmd = new LinkedList<>();
-      if(host.hasPassword()){
-         cmd.add("sshpass");
-         cmd.add("-p");
-         cmd.add(host.getPassword());
-      }
-      cmd.add("/usr/bin/rsync");
-      cmd.add("--archive");
-      cmd.add("--verbose");
-      cmd.add("--compress");
+      List<String> cmd = rsyncBaseCmd(host);
       if(path.contains("/./")){
          cmd.add("--relative");
       }
-      //TODO only add --rsh sshOpt if needed?
-      cmd.add("--rsh");
-      cmd.add(sshOpt);
       cmd.add(host.getUserName() + "@" + host.getHostName() + ":" + path);
       cmd.add(dest);
+
+      runRsyncCmd(cmd, "rsyncFetch", line -> logger.trace("  I: {}", line));
+
+   }
+
+   private void runRsyncCmd(List<String> cmd, String action, Consumer<String> lineConsumer){
+      ProcessBuilder builder = new ProcessBuilder();
       builder.command(cmd);
       logger.debug("Running rsync command : " + cmd.stream().collect(Collectors.joining(" ")));
       try {
@@ -249,7 +272,7 @@ public class Local {
          final InputStream errorStream = p.getErrorStream();
 
          int result = p.waitFor();
-         logger.debug("rsyncFetch.result = {}", result);
+         logger.debug(action.concat("result = {}"), result);
          String line = null;
          BufferedReader reader = null;
          reader = new BufferedReader(new InputStreamReader(errorStream));
@@ -258,14 +281,14 @@ public class Local {
          }
          reader = new BufferedReader(new InputStreamReader(inputStream));
          while ((line = reader.readLine()) != null) {
-            logger.trace("  I: {}", line);
+            lineConsumer.accept(line);
          }
 
       } catch (IOException e) {
          e.printStackTrace();
       } catch (InterruptedException e) {
-         e.printStackTrace();
+//         logger.warn("rysnc was interrupted: " + path);
+         Thread.interrupted();
       }
-
    }
 }

@@ -85,12 +85,15 @@ public class Run implements Runnable, DispatchObserver {
     class PendingDownload {
         private String path;
         private String destination;
-        public PendingDownload(String path,String destination){
+        private Long maxSize;
+        public PendingDownload(String path,String destination, Long maxSize){
             this.path = path;
             this.destination = destination;
+            this.maxSize = maxSize;
         }
         public String getPath(){return path;}
         public String getDestination(){return destination;}
+        public Long getMaxSize(){return maxSize;}
     }
 
     private volatile Stage stage = Stage.Pending;
@@ -265,8 +268,8 @@ public class Run implements Runnable, DispatchObserver {
     public void addPendingDelete(Host host,String path){
         pendingDeletes.put(host,path);
     }
-    public void addPendingDownload(Host host,String path,String destination){
-        pendingDownloads.put(host,new PendingDownload(path,destination));
+    public void addPendingDownload(Host host,String path,String destination, Long maxSize){
+        pendingDownloads.put(host,new PendingDownload(path,destination,maxSize));
     }
     public void runPendingDeletes(){
         if(!pendingDeletes.isEmpty()){
@@ -303,7 +306,17 @@ public class Run implements Runnable, DispatchObserver {
                     if(downloadDestination == null || downloadPath == null){
                         logger.error("NULL in queue-download "+downloadPath+" -> "+downloadDestination);
                     }else {
-                        local.download(pendingDownload.getPath(), pendingDownload.getDestination(), host);
+                        if(pendingDownload.maxSize == null){
+                            local.download(pendingDownload.getPath(), pendingDownload.getDestination(), host);
+                        } else {
+                            if( local.remoteFileSize(pendingDownload.getPath(), host) <= pendingDownload.maxSize ){
+                                local.download(pendingDownload.getPath(), pendingDownload.getDestination(), host);
+                            }
+                            else {
+                                logger.warn("Download File: `{}`; exceeded max size: {} bytes", pendingDownload.path, pendingDownload.maxSize);
+                            }
+                        }
+
                     }
                 }
             }

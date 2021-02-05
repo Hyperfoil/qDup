@@ -152,7 +152,7 @@ public class SpyContext implements Context {
     }
 
     @Override
-    public void addPendingDownload(String path, String destination) {
+    public void addPendingDownload(String path, String destination, Long maxSize) {
 
     }
     @Override

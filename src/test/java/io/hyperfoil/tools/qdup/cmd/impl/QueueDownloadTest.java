@@ -1,11 +1,13 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.converter.FileSizeConverter;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
@@ -168,4 +170,50 @@ public class QueueDownloadTest extends SshTestBase {
         downloadFile.getParentFile().delete();
         new File("/tmp/date.txt").delete();
     }
+
+    @Test
+    public void maxFileSize(){
+
+        String maxSize = "5MB";
+
+        String largeFilePath = "/tmp/large.file";
+        String smallFilePath = "/tmp/small.file";
+
+        RunConfigBuilder builder = getBuilder();
+
+        Script runScript = new Script("run-queue");
+        runScript.then(Cmd.sh("echo 'Allocating files'"));
+        runScript.then(Cmd.sh("fallocate -l 10MB ".concat(largeFilePath)));
+        runScript.then(Cmd.sh("fallocate -l 1MB ".concat(smallFilePath)));
+
+        runScript.then(Cmd.queueDownload(largeFilePath, FileSizeConverter.toBytes(maxSize)));
+        runScript.then(Cmd.queueDownload(smallFilePath, FileSizeConverter.toBytes(maxSize)));
+
+        builder.addScript(runScript);
+
+        builder.addHostAlias("local",getHost().toString());
+        builder.addHostToRole("role","local");
+        builder.addRoleRun("role","run-queue",new HashMap<>());
+
+        RunConfig config = builder.buildConfig(Parser.getInstance());
+
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run run = new Run(tmpDir.toString(),config,dispatcher);
+        run.run();
+
+        long remoteLargeFileSize = run.getLocal().remoteFileSize(largeFilePath, getHost());
+
+        long remoteSmallFileSize = run.getLocal().remoteFileSize(smallFilePath, getHost());
+
+        assertEquals(10000000l, remoteLargeFileSize);
+        assertEquals(1000000l, remoteSmallFileSize);
+
+        assertTrue(new File(tmpDir.toString().concat("/").concat(getHost().getHostName()).concat("/").concat("small.file")).exists());
+        assertFalse(new File(tmpDir.toString().concat("/").concat(getHost().getHostName()).concat("/").concat("large.file")).exists());
+
+        new File(tmpDir.toString()).delete();
+    }
+
 }

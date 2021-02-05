@@ -21,9 +21,6 @@ import static org.junit.Assert.assertTrue;
 
 public class UploadTest extends SshTestBase {
 
-//    @Rule
-//    public final TestServer testServer = new TestServer();
-
     @Test
     public void uploadFile(){
         try {
