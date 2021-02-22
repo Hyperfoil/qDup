@@ -186,7 +186,9 @@ public class Parser {
                 (cmd) -> ((cmd.getName() + " " + (cmd.getDeclaredInput().trim().isEmpty() ? "" : "'" + cmd.getDeclaredInput()).trim() + "'")),
                 (str,prefix,suffix) -> {
                     List<String> split = Parser.split(str,prefix,suffix);
-                    if (split.size() <= 1) {
+                    if (str.isBlank() || split.size() < 1){
+                        throw new YAMLException("cannot create for-each without arguments");
+                    }else if (split.size() == 1) {
                         return new ForEach(split.get(0));
                     } else if (split.size() == 2) {
                         return new ForEach(split.get(0), split.get(1));
@@ -673,6 +675,7 @@ public class Parser {
             loaded = yaml.loadAs(content, YamlFile.class);
         } catch (YAMLException e) {
                 logger.error("Failed to load {} as yaml\n{}", path, e.getMessage());
+
         } catch (RuntimeException e) {
             logger.error("Failed to load {}\n{}", path, e.getMessage());
         }
