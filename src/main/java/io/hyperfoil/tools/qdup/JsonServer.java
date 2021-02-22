@@ -137,7 +137,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             rtrn.set("GET /waiter","get the current waiters");
             rtrn.set("GET /counter","get the current counter counts");
             rtrn.set("GET /pendingDownloads","get the list of pending downloads");
-            rc.response().end();
+            rc.response().end(rtrn.toString(2));
         });
         router.route("/state").produces("application/json").handler(rc->{
            rc.response().end(filter(run.getConfig().getState().toJson().toString()));
