@@ -9,6 +9,7 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Objects;
@@ -191,6 +192,44 @@ public class SetStateTest extends SshTestBase {
          "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
          "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
          "  charlie: {name: \"cat\"}"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+
+      Object FOO = config.getState().get("FOO");
+      assertTrue("FOO should be json",FOO instanceof Json);
+      assertEquals("FOO[0].test = worked","worked",((Json)FOO).getJson(0,new Json(false)).getString("test",""));
+      //assertEquals("expect script:foo to finish before script:update starts","-SET-phase",config.getState().get("FOO"));
+   }
+
+   @Test @Ignore
+   public void set_scoped_state(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+              "  foo:",
+              "  - set-state: HOST. []",
+              "  - set-state:",
+              "      key: RUN.FOO ",
+              "      value: \"${{ [...${{RUN.FOO}},{'test':'worked'}] }}\"",
+              "      separator: _",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts:",
+              "      - foo:",
+              "states:",
+              "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+              "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+              "  charlie: {name: \"cat\"}"
       )));
 
       RunConfig config = builder.buildConfig(parser);

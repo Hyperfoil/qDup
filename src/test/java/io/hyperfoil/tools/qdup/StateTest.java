@@ -1,15 +1,50 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.qdup.cmd.ContextObserver;
+import io.hyperfoil.tools.qdup.cmd.Dispatcher;
+import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 import io.hyperfoil.tools.yaup.json.Json;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 public class StateTest extends SshTestBase{
+
+    @Test
+    public void run_read_in_cleanup_from_host_insetup(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",stream(""+
+            "scripts:",
+            "  buz:",
+            "  - read-state: ${{key}}",
+            "    then:",
+            "    - set-state: RUN.found true",
+            "  biz:",
+            "  - set-state: HOST.key value",
+            "hosts:",
+            "  local: " + getHost(),
+            "roles:",
+            "  doit:",
+            "    hosts: [local]",
+            "    setup-scripts: [biz]",
+            "    cleanup-scripts: [buz]"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+        assertTrue("state should have found\n"+config.getState().toJson().toString(2),config.getState().has("found"));
+    }
 
     @Test
     public void array_state(){

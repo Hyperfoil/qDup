@@ -661,6 +661,49 @@ public class SignalCountsTest extends SshTestBase {
     }
 
     @Test
+    public void signal_in_watch(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal_in_watch",stream(""+
+                "scripts:",
+                "  sig:",
+                "    - sh: tail -f /var/log/messages",
+                "      watch:",
+                "      - regex: READY",
+                "        then:",
+                "        - ctrlC:",
+                "        - log: going to signal ${{name}}",
+                "        - signal: ${{name}}",
+                "  wat:",
+                "    - wait-for: ${{to_wait}}",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  water:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - wat:",
+                "        with:",
+                "          to_wait: FOO",
+                "  siger:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - sig:",
+                "        with:",
+                "          name: FOO"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+
+        RunSummary summary = new RunSummary();
+        SignalCounts signalCounts = new SignalCounts();
+        summary.addRule("signals",signalCounts);
+        summary.scan(config.getRolesValues(),builder);
+        summary.close(builder,summary);
+        assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        assertEquals("signal count for FOO:\n"+signalCounts.getSignalNames(),1,signalCounts.getSignalCount("FOO"));
+    }
+
+    @Test
     public void signal_repeated_sub_script(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();

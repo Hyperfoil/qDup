@@ -59,7 +59,7 @@ public class ForEach extends LoopCmd {
       toSplit = toSplit.replaceAll("\\\\n", "\\\\\\\\n");
       final List<Object> split = new ArrayList<>();
       Json json;
-      if (Json.isJsonLike(toSplit) && (json = Json.fromJs(toSplit)) != null) {
+      if (Json.isJsonLike(toSplit) && (json = Json.fromJs(toSplit)) != null && !json.isEmpty()) {
          if (json.isArray()) {
             split.addAll(json.values());
          } else {
