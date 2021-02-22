@@ -347,7 +347,7 @@ public class JarMain {
         passphrase = commandLine.getOptionValue("passphrase", RunConfigBuilder.DEFAULT_PASSPHRASE);
         timeout = Integer.parseInt(commandLine.getOptionValue("timeout", "" + RunConfigBuilder.DEFAULT_SSH_TIMEOUT));
         commandThreads = Integer.parseInt(commandLine.getOptionValue("commandPool", "24"));
-        scheduledThreads = Integer.parseInt(commandLine.getOptionValue("scheduledPool", "4"));
+        scheduledThreads = Integer.parseInt(commandLine.getOptionValue("scheduledPool", "24"));
         yamlPaths = commandLine.getArgList();
         stateProps = commandLine.getOptionProperties("S");
         removeStateProperties = commandLine.getOptionProperties("SX");

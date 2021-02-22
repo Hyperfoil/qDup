@@ -212,7 +212,7 @@ public class Coordinator {
         }else {
             //TODO this is a race condition, need a check after adding to the list as well. Refactor out of signal to use same check code
             if(signalLatches.get(name).get() <=0){
-                logger.info("waitFor {} count = {}, invoking next",name, signalLatches.get(name).get());
+                logger.debug("waitFor {} count = {}, invoking next",name, signalLatches.get(name).get());
                 waiter.next();
             }else {
                 logger.debug("waitFor {} count = {}, queueing",name, signalLatches.get(name).get());

@@ -31,7 +31,8 @@ public class Env {
         "SELINUX_ROLE_REQUESTED",
         "SELINUX_USE_CURRENT_RANGE",
         "HOSTNAME",
-        "HISTCMD"
+        "HISTCMD",
+        "__qdup_ec"
     );
 
 
