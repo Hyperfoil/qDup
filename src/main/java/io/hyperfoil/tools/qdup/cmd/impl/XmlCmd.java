@@ -54,7 +54,7 @@ public class XmlCmd extends Cmd {
     public void run(String input, Context context) {
         Xml xml = null;
         boolean successful = true;
-        String output = input;
+        String output = "";
         File tmpDest = null;
         try {
             String remotePath = Cmd.populateStateVariables(path,this,context);
@@ -105,7 +105,9 @@ public class XmlCmd extends Cmd {
                 } else {
                     String response = xml.apply(xmlOperation);
                     if (!response.isEmpty()) {
-                        output = response;
+                        output = output+System.lineSeparator()+response;
+                    }else{
+                        
                     }
                 }
             }
@@ -121,6 +123,9 @@ public class XmlCmd extends Cmd {
             successful = false;
             output = "COULD NOT LOAD: "+path;
         } finally {
+            if(output.isBlank()){
+                output = input;
+            }
             if(successful){
                 context.next(output);
             }else{
