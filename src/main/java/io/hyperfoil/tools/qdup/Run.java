@@ -632,7 +632,8 @@ public class Run implements Runnable, DispatchObserver {
                            return session.isOpen();
                        }
                        else {
-                            session.close();
+                           logger.error("failed to connect "+host.getSafeString());
+                           session.close();
                            return false;
                        }
                    });
@@ -705,6 +706,7 @@ public class Run implements Runnable, DispatchObserver {
                                 timer.start("waiting for start");
                                 return rtrn;
                             } else {
+                                logger.error("failed to connect "+host.getSafeString());
                                 session.close();
                                 return false;
                             }
@@ -790,6 +792,7 @@ public class Run implements Runnable, DispatchObserver {
                             return session.isOpen();
                         }
                         else {
+                            logger.error("failed to connect "+host.getSafeString());
                             session.close();
                             return false;
                         }
