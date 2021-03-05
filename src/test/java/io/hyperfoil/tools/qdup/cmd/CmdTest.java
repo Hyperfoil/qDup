@@ -355,6 +355,16 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
+   public void populateStateVariables_with_javascript(){
+      State state = new State("RUN.");
+      state.set("FOO", Json.fromString("[\"uno\",\"dos\"]"));
+      Cmd cmd = Cmd.NO_OP();
+      cmd.with("value","${{= [ ...${{RUN.FOO}}, \"tres\" ] }}");
+      String populated = Cmd.populateStateVariables("${{value}}", cmd, state, null, new Cmd.Ref(cmd));
+      assertEquals("should populate from state", "[\"uno\",\"dos\",\"tres\"]", populated);
+   }
+
+   @Test
    public void populateStateVariables_with_json_from_ref(){
       State state = new State("RUN.");
       state.set("FOO", "bar");

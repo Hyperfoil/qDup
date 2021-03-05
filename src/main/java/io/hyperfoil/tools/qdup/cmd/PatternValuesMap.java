@@ -71,7 +71,7 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
          Cmd.Ref target = ref;
          do {
             if (target.getCommand() != null && target.getCommand().hasWith(key.toString()) ) {
-               rtrn = target.getCommand().getWith(key.toString());
+               rtrn = target.getCommand().getWith(key.toString(),state);
             }
          } while ((target = target.getParent()) != null && rtrn == null);
          if (rtrn != null) {
@@ -79,7 +79,7 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
          }
       }
       if (state != null) {
-         if (state.has(key.toString())) {
+         if (state.has(key.toString(),true)) {
             return true;
          }
       }
@@ -115,7 +115,12 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
          //this support with: {FOO: ${{FOO}} } so script variables can be mapped to a state variable with the same name
          //technically that does not need to happen but it should be supported
          if (cmd.hasWith(key.toString())){
-            Object found = cmd.getWith(key.toString(),state==null ? new State(State.RUN_PREFIX) : state);
+
+            Object found = cmd.getWith(key.toString(),state);
+            if(found == null){
+               //this is an error, what causes this
+
+            }
             if(!found.toString().contains(cmd.getPatternPrefix()+key.toString())){
                return found;
             }else{
@@ -285,7 +290,8 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
    }
 
    @Override
-   public void putMember(String key, Value value) {
+   public void putMember(String key, Value value)
+   {
       state.set(key, ValueConverter.convert(value));
    }
 

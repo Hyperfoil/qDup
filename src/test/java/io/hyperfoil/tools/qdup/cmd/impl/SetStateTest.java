@@ -207,6 +207,150 @@ public class SetStateTest extends SshTestBase {
       //assertEquals("expect script:foo to finish before script:update starts","-SET-phase",config.getState().get("FOO"));
    }
 
+
+   @Test
+   public void with_references_script_state(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+             "scripts:",
+              "  foo:",
+              "  - sh: hostname",
+              "  - set-state: hostname",
+              "  - set-state: ${{key:hostname}} ${{value:}}",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts:",
+              "      - foo:",
+              "          with:",
+              "            key: RUN.FOO",
+              "            value: ${{hostname}}"
+
+
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+
+      Object FOO = config.getState().get("FOO");
+      assertNotNull("FOO should exist",FOO);
+      assertTrue("FOO should be a string "+FOO,FOO instanceof String);
+      assertFalse("FOO should not be empty "+FOO,((String)FOO).isBlank());
+      //assertEquals("expect script:foo to finish before script:update starts","-SET-phase",config.getState().get("FOO"));
+   }
+
+   @Test @Ignore
+   public void with_array_references_script_state_missing_javascript_prefix(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+          "scripts:",
+           "  foo:",
+           "  - sh: hostname",
+           "  - set-state: hostname",
+           "  - set-state: ${{key:hostname}} ${{value:${{hostname}}}}",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local ]",
+           "    run-scripts:",
+           "      - foo:",
+           "          with:",
+           "            key: RUN.FOO",
+           "            value: ${{[...${{RUN.FOO:[]}},${{hostname}}]}}"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+
+      Object FOO = config.getState().get("FOO");
+      assertNotNull("FOO should exist",FOO);
+      assertTrue("FOO should be a string "+FOO,FOO instanceof String);
+      assertFalse("FOO should not be empty "+FOO,((String)FOO).isBlank());
+      //assertEquals("expect script:foo to finish before script:update starts","-SET-phase",config.getState().get("FOO"));
+   }
+
+   @Test
+   public void previous_set_state(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+              "  foo:",
+              "  - sh: hostname",
+              "  - set-state: hostname",
+              "  - set-state: RUN.FOO ${{hostname}}",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local ]",
+              "    run-scripts:",
+              "      - foo:"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+
+      Object FOO = config.getState().get("FOO");
+      assertNotNull("FOO should exist",FOO);
+      assertTrue("FOO should be a string "+FOO,FOO instanceof String);
+      assertFalse("FOO should not be empty "+FOO,((String)FOO).isBlank());
+      //assertEquals("expect script:foo to finish before script:update starts","-SET-phase",config.getState().get("FOO"));
+   }
+
+   @Test
+   public void with_array_references_script_state(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+         "scripts:",
+         "  foo:",
+         "  - sh: hostname",
+         "  - set-state: hostname",
+         "  - set-state: ${{key:hostname}} ${{value:${{hostname}}}}",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts:",
+         "      - foo:",
+         "          with:",
+         "            key: RUN.FOO",
+         "            value: ${{=[ \"${{hostname}}\" , ...${{RUN.FOO:[]}} ]}}"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("config should not have errors\n"+config.getErrorStrings(),config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+
+      Object FOO = config.getState().get("FOO");
+      assertNotNull("FOO should exist",FOO);
+      assertTrue("FOO should be json "+FOO,FOO instanceof Json);
+      //assertEquals("expect script:foo to finish before script:update starts","-SET-phase",config.getState().get("FOO"));
+   }
+
    @Test @Ignore
    public void set_scoped_state(){
       Parser parser = Parser.getInstance();

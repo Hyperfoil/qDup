@@ -1,11 +1,14 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.yaup.PopulatePatternException;
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.util.Collections;
+
+import static org.junit.Assert.*;
 
 public class PatternValuesMapTest {
 
@@ -21,6 +24,37 @@ public class PatternValuesMapTest {
         assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be value","value",map.get("key"));
     }
+    @Test
+    public void find_from_state_with_prefix(){
+        Cmd cmd = Cmd.sh("ls");
+        State state = new State(State.RUN_PREFIX);
+        state.set("key","value");
+        Cmd.Ref ref = new Cmd.Ref(cmd);
+
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+
+        assertTrue("map should have key",map.containsKey("RUN.key"));
+        assertEquals("key should be value","value",map.get("RUN.key"));
+    }
+
+    @Test
+    public void find_from_state_with_javascript(){
+        Cmd cmd = Cmd.sh("ls");
+        State state = new State(State.RUN_PREFIX);
+        state.set("key",Json.fromString("[ \"uno\", \"dos\"]"));
+        Cmd.Ref ref = new Cmd.Ref(cmd);
+
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+
+        try {
+            String response = StringUtil.populatePattern("${{= [...${{RUN.key}}, \"tres\"] }}", map, Collections.emptyList(), StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+            assertTrue("response should be valid json",Json.isJsonLike(response));
+            assertEquals("should populate from state", "[\"uno\",\"dos\",\"tres\"]", response);
+        } catch (PopulatePatternException e) {
+            fail(e.getMessage());
+        }
+    }
+
     @Test
     public void find_from_with(){
         Cmd cmd = Cmd.sh("ls");

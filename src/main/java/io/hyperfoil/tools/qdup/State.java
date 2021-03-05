@@ -90,6 +90,14 @@ public class State {
     }
 
     public boolean hasParent(){return parent()!=null;}
+
+    public State rootState(){
+        State rtrn = this;
+        while(rtrn.hasParent()){
+            rtrn = rtrn.parent();
+        }
+        return rtrn;
+    }
     State parent(){return parent;}
 
     public State(String prefix){

@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -351,7 +352,7 @@ public abstract class Cmd {
       return rtrn;
    }
    public Object getWith(String name){
-      return getWith(name,new State(State.RUN_PREFIX));
+      return getWith(name,null);
    }
    public Object getWith(String name,State state) {
       Object value = null;
@@ -361,7 +362,7 @@ public abstract class Cmd {
          if(value!=null){//we found something
             if(Cmd.hasStateReference(value.toString(),target)){//
                //target.loadWithDefs(state);
-               if (value.toString().contains(name)) { //do not use targets's with if it is value is referencing name (avoid loops)
+               if (value.toString().contains(name)) { //do not use targets's with if it's value is referencing name (avoid loops)
                   value = Cmd.populateStateVariables(value.toString(), null,  state, null);
                } else {
                   value = Cmd.populateStateVariables(value.toString(), target, state, null);
@@ -837,7 +838,11 @@ public abstract class Cmd {
                updatedKey = key;
             }
             if(v instanceof String && Cmd.hasStateReference((String) v,this)){
-               String populatedV = populateStateVariables((String)v,this.getStateParent(),state,coordinator);
+               String populatedV = populateStateVariables((String)v,this.hasStateParent() ? this.getStateParent() : this,state,coordinator);
+               if(Cmd.hasStateReference(populatedV,this)){
+                  //failed to update the value?
+                  populatedV = (String)v;
+               }
                Object convertedV = State.convertType(populatedV);
                withActive.set(updatedKey,convertedV);
                if(isSecret){
@@ -855,18 +860,10 @@ public abstract class Cmd {
 
    public final void doRun(String input, Context context) {
       loadWithDefs(context.getState(),context.getCoordinator());
-         //replace with values if they have ${{ and check for secrets
-
-
-         //TODO the is currently being handles by populateStateVariables
-         // a good idea might be to create a new context for this and this.then()
-//            for(String key : with.keySet()){
-//                context.getState().set(key,with.get(key));
-//            }
+      //replace with values if they have ${{ and check for secrets
       if(hasParent()){
          getParent().preChild(this);
       }
-      //TODO move to ScriptContext.run() so it is called before timer.start(cmd.toString())
       try{
          preRun(input,context);
       }catch (Exception e){

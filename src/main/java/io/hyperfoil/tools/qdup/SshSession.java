@@ -503,17 +503,18 @@ public class SshSession {
                 //TODO use atomic boolean to set expecting response and check for true bfore release?
                 if(permits() == 0) {
                     shellLock.release();
+                    if (isTracing()) {
+                        try {
+                            sessionStreams.getTrace().write("RELEASE".getBytes());
+                        } catch (IOException e) {
+                        }
+                    }
                 }else{
                     //this should only happen if reconnected
                     logger.debug("skipping release, suspect reconnect");
                 }
                 shObservers(output,name);
-                if (isTracing()) {
-                    try {
-                        sessionStreams.getTrace().write("RELEASE".getBytes());
-                    } catch (IOException e) {
-                    }
-                }
+
                 if (permits() > 1) {
                     logger.error("ShSession " + getName() + " " + getLastCommand() + " release -> permits==" + permits() + "\n" + output);
                     assert permits() == 1;
