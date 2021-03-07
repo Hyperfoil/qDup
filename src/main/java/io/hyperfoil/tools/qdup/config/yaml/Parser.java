@@ -393,7 +393,8 @@ public class Parser {
                     json.getString("key"),
                     json.getString("value", null),
                     json.getString("separator", StringUtil.PATTERN_DEFAULT_SEPARATOR),
-                    json.getBoolean("silent", false)
+                    json.getBoolean("silent", false),
+                    json.getBoolean("autoConvert", true)
                 )
         );
         rtrn.addCmd(

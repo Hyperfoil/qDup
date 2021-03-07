@@ -4,7 +4,6 @@ import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -14,7 +13,9 @@ import org.slf4j.ext.XLoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -244,6 +245,10 @@ public abstract class Cmd {
 
    public static Regex regex(String pattern) {
       return new Regex(pattern);
+   }
+
+   public static Regex regex(String pattern, boolean autoConvert) {
+      return new Regex(pattern, false, autoConvert);
    }
 
    public static Cmd repeatUntil(String name) {
@@ -622,9 +627,6 @@ public abstract class Cmd {
    }
 
    public Cmd with(String key, Object value) {
-      if(value instanceof String){
-         value = State.convertType(value);
-      }
       withDef.set(key, value);
       withActive.set(key, value);
       return this;

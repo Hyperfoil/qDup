@@ -19,16 +19,21 @@ public class Regex extends CmdWithElse {
    private boolean miss = false;
    private Map<String, String> matches;
    private boolean ran = false;
+   private boolean autoConvert = true;
 
    public Regex(String pattern) {
       this(pattern, false);
    }
 
    public Regex(String pattern, boolean miss) {
+      this(pattern, miss, true);
+   }
+   public Regex(String pattern, boolean miss, boolean autoConvert) {
       this.pattern = pattern;
       this.miss = miss;
       this.patternString = StringUtil.removeQuotes(pattern).replaceAll("\\\\\\\\(?=[dDsSwW\\(\\)remo])", "\\\\");
       this.matches = new HashMap<>();
+      this.autoConvert = autoConvert;
    }
 
 
@@ -48,6 +53,10 @@ public class Regex extends CmdWithElse {
 
    public String getPattern() {
       return patternString;
+   }
+
+   public Boolean isAutoConvert(){
+      return autoConvert;
    }
 
    @Override
@@ -95,7 +104,7 @@ public class Regex extends CmdWithElse {
                }
                if (!matches.isEmpty()) {
                   for (String key : matches.keySet()) {
-                     context.getState().set(key, matches.get(key));
+                     context.getState().set(key, matches.get(key), this.autoConvert);
                   }
                }
             }
@@ -139,7 +148,7 @@ public class Regex extends CmdWithElse {
 
    @Override
    public Cmd copy() {
-      return new Regex(this.patternString, this.miss);
+      return new Regex(this.patternString, this.miss, this.autoConvert);
    }
 
 

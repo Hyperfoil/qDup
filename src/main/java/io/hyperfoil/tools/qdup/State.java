@@ -136,19 +136,26 @@ public class State {
         }
         secretFilter.loadSecrets(state.getSecretFilter());
     }
+
     public void load(Json json){
         json.forEach((key,value)->{
-            set(key.toString(),value);
-//            if(value instanceof Json){
+            if(value instanceof Json){
+                if (((Json)value).has("value") && ((Json)value).has("autoConvert") && ((Json)value).size() == 2) {
+                    String stateValue = ((Json)value).getString("value");
+                    boolean autoConvert = ((Json)value).getBoolean("autoConvert");
+                    set(key.toString(), stateValue, autoConvert);
+                } else {
+                    set(key.toString(),value.toString(), true);
+                }
 //                String childPrefix = null;
 //                if(RUN_PREFIX.equals(this.prefix)){
 //                    childPrefix = HOST_PREFIX;
 //                }
 //                State childState = getChild(key.toString(),childPrefix);
 //                childState.load((Json)value);
-//            }else{
-//                set(key.toString(),value.toString());
-//            }
+            }else{
+                set(key.toString(),value.toString(), true);
+            }
         });
     }
 
@@ -182,8 +189,16 @@ public class State {
         childStates.putIfAbsent(name,new State(this,prefix));
         return childStates.get(name);
     }
-    public void set(String key,Object value){
-        value = convertType(value);
+
+    public void set(String key,Object value) {
+        this.set( key, value, true);
+    }
+
+    public void set(String key, Object value, boolean autoConvert){
+        if (autoConvert) {
+            value = convertType(value);
+        }
+
         State target = this;
         boolean isSecret = key.startsWith(SecretFilter.SECRET_NAME_PREFIX);
 

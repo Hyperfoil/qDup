@@ -305,4 +305,53 @@ public class RegexTest extends SshTestBase {
 //        assertFalse("should not contain \\\\\\\\", regex.getPattern().contains("\\\\\\\\"));
 //        assertTrue("should contain \\d", regex.getPattern().contains("\\d"));
     }
+
+    @Test
+    public void capture_group_auto_convert() {
+        Cmd regex = Cmd.regex("Please open the following file: /tmp/perf-test/build/reports/gatling/(?<framework>.*)-(?<timestamp>\\d*)/index.html", false);
+        SpyContext context = new SpyContext();
+        regex.run(
+                "Please open the following file: /tmp/perf-test/build/reports/gatling/quarkus-20210307110018725/index.html",
+                context);
+        assertEquals("capture framework from pattern", "quarkus", context.getState().get("framework"));
+        assertEquals("capture timestamp from pattern", "20210307110018725", context.getState().get("timestamp"));
+
+
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("", stream("" +
+                        "scripts:",
+                "  foo:",
+                "  - sh: \"echo 'Please open the following file: /tmp/perf-test/build/reports/gatling/quarkussimulation-20210307110018725/index.html'\"",
+                "    then: ",
+                "    - regex: ",
+                "        pattern: \"Please open the following file: /tmp/perf-test/build/reports/gatling/(?<framework>.*)-(?<timestamp>\\\\d*)/index.html\" ",
+                "        autoConvert: false",
+                "      then: ",
+                "      - set-state: ",
+                "          key: RUN.TIMESTAMP ",
+                "          value: ${{timestamp}} ",
+                "          autoConvert: false",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        Dispatcher dispatcher = new Dispatcher();
+
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+
+        assertTrue("state should have timestamp", state.has("TIMESTAMP"));
+        assertEquals("timestamp should be 20210307110018725", "20210307110018725", state.getString("TIMESTAMP"));
+
+    }
+
 }
