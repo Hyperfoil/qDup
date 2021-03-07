@@ -92,6 +92,20 @@ public class SetStateTest extends SshTestBase {
    }
 
    @Test
+   public void check_state_type_casting() {
+
+      SetState setState = new SetState("timestamp","20210307110018725", false);
+      setState.setPatternSeparator("_");
+      SpyContext spyContext = new SpyContext();
+
+      setState.run("",spyContext);
+
+      assertTrue("state should have a timestamp",spyContext.getState().has("timestamp"));
+      assertEquals("capture timestamp from pattern", "20210307110018725", spyContext.getState().get("timestamp"));
+
+   }
+
+   @Test
    public void replace_regex_in_yaml_cmd_separator(){
       String mac = "00:11:22:33:44:0b";
       Parser parser = Parser.getInstance();

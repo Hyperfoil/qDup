@@ -8,6 +8,7 @@ import java.util.*;
 public class RegexMapping extends CmdMapping {
 
    public static final String MISS = "miss";
+   public static final String AUTO_CONVERT = "autoConvert";
    public static final String PATTERN = "pattern";
    public static final String ELSE = "else";
 
@@ -22,6 +23,7 @@ public class RegexMapping extends CmdMapping {
                   Map<Object,Object> regexMap = new HashMap<>();
                   regexMap.put(PATTERN,r.getPattern());
                   regexMap.put(MISS,r.isMiss());
+                  regexMap.put(AUTO_CONVERT,r.isAutoConvert());
                   return regexMap;
                }else{
                   return r.getPattern();

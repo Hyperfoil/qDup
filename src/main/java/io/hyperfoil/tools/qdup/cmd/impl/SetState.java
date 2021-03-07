@@ -14,20 +14,27 @@ public class SetState extends Cmd {
     String value;
     String populatedKey;
     String populatedValue;
+    Boolean autoConvert;
 
     public SetState(String key) {
         this(key, null);
     }
 
     public SetState(String key, String value) {
-        this(key,value,StringUtil.PATTERN_DEFAULT_SEPARATOR,false);
+        this(key,value,StringUtil.PATTERN_DEFAULT_SEPARATOR,false, true);
     }
-    public SetState(String key, String value,String separator, boolean silent) {
+
+    public SetState(String key, String value, boolean autoConvert) {
+        this(key,value,StringUtil.PATTERN_DEFAULT_SEPARATOR, false, autoConvert);
+    }
+
+    public SetState(String key, String value, String separator, boolean silent, boolean autoConvert) {
         super(silent);
         this.key = key;
         this.value = value;
         setPatternSeparator(separator);
         //this.separator = separator;
+        this.autoConvert = autoConvert;
     }
 
     public String getKey() {
@@ -59,12 +66,12 @@ public class SetState extends Cmd {
                 if (Json.isJsonLike(populatedValue) /*&& populatedValue.contains(StringUtil.PATTERN_PREFIX) && populatedValue.contains(StringUtil.PATTERN_SUFFIX)*/) {
                     Json fromPopulatedValue = Json.fromString(populatedValue);
                     if (fromPopulatedValue!=null && !fromPopulatedValue.isEmpty()) {
-                        context.getState().set(populatedKey, fromPopulatedValue);
+                        context.getState().set(populatedKey, fromPopulatedValue, autoConvert);
                     } else {
-                        context.getState().set(populatedKey, populatedValue);
+                        context.getState().set(populatedKey, populatedValue, autoConvert);
                     }
                 } else {
-                    context.getState().set(populatedKey, populatedValue);
+                    context.getState().set(populatedKey, populatedValue, autoConvert);
                 }
             }catch (Exception e){
                 e.printStackTrace();
@@ -75,7 +82,7 @@ public class SetState extends Cmd {
 
     @Override
     public Cmd copy() {
-        return new SetState(key, value, getPatternSeparator(), silent);
+        return new SetState(key, value, getPatternSeparator(), silent, autoConvert);
     }
 
     @Override

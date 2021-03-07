@@ -9,7 +9,11 @@ public class RegexConstruct extends CmdConstruct {
       super(
          "regex",
          (str,prefix,suffix)->new Regex(str),
-         (json)-> new Regex(json.getString("pattern",""),json.getBoolean("miss",false))
+         (json)-> new Regex(
+                 json.getString(RegexMapping.PATTERN,"")
+                 ,json.getBoolean(RegexMapping.MISS,false)
+                 ,json.getBoolean(RegexMapping.AUTO_CONVERT,false)
+         )
       );
       this.addTopLevelkey("else",(cmd,node)->{
          if(cmd instanceof Regex && node instanceof SequenceNode){
