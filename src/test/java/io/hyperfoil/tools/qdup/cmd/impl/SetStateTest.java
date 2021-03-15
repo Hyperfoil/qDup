@@ -348,6 +348,52 @@ public class SetStateTest extends SshTestBase {
       Object FOO = config.getState().get("FOO");
       assertNotNull("FOO should exist",FOO);
       assertTrue("FOO should be json "+FOO,FOO instanceof Json);
+      Json target = (Json)FOO;
+      assertTrue("FOO should be an array",target.isArray());
+      assertEquals("FOO should have 1 entry",1,target.size());
+
+   }
+
+   @Test
+   public void array_initialized_before_spread(){
+      String key = "config-quickstart.JVM.10";
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+              "  foo:",
+              "  - set-state: RUN.${{key}}.foo []",
+              "  - set-state: value 206640",
+              "  - set-state: RUN.${{key}}.foo ${{=[...${{RUN.${{key}}.foo}} , ${{value}}]}}",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts:",
+              "      - foo:",
+              "          with:",
+              "            key: \""+key+"\""
+
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("config should not have errors\n"+config.getErrorStrings(),config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+
+      Object FOO = config.getState().get(key);
+      assertNotNull(key+" should exist",FOO);
+      assertTrue(key+" should be json "+FOO,FOO instanceof Json);
+      Json target = (Json)FOO;
+      assertTrue(key+".foo should exist "+target,target.has("foo"));
+      Json foo = target.getJson("foo");
+      assertTrue("foo should be an array "+foo,foo.isArray());
+      assertEquals("foo should have 1 entry",1,foo.size());
+      assertEquals("foo[0] should equal value",206640l,foo.get(0));
       //assertEquals("expect script:foo to finish before script:update starts","-SET-phase",config.getState().get("FOO"));
    }
 
