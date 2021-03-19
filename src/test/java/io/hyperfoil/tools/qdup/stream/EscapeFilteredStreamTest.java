@@ -10,6 +10,24 @@ import static org.junit.Assert.*;
 
 public class EscapeFilteredStreamTest {
 
+
+    private String filterPerCharacter(String input,boolean close){
+        EscapeFilteredStream fs = new EscapeFilteredStream();
+        ByteArrayOutputStream bao = new ByteArrayOutputStream();
+        fs.addStream("bao",bao);
+
+        try {
+            for(int i=0; i<input.getBytes().length; i++) {
+                fs.write(input.getBytes(), i, 1);
+            }
+            if(close) {
+                fs.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new String(bao.toByteArray());
+    }
     private String filter(String input){
         return filter(input,false);
     }
@@ -28,6 +46,13 @@ public class EscapeFilteredStreamTest {
         }
 
         return new String(bao.toByteArray());
+    }
+
+    @Test
+    public void single_character_write(){
+        String input = "test input";
+        String output = filterPerCharacter(input,true);
+        assertEquals(input,output);
     }
 
     @Test

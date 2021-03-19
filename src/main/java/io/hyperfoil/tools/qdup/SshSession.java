@@ -265,8 +265,6 @@ public class SshSession {
         this.timeout = timeout;
         this.setupCommand = setupCommand;
         this.trace = trace;
-        this.trace = true;
-
         shellLock = new Semaphore(1);
 
         lineObservers = new ConcurrentHashMap<>();
@@ -610,10 +608,12 @@ public class SshSession {
         return Status.Ready.equals(status);
     }
     public void setTrace(boolean trace) throws IOException {
+        this.trace = trace;
         if (trace) {
-            String path = getHost().toString() + (hasName() ? "." + getName() : "");
+            String path =  hasName() ? getName() : getHost().toString();
             sessionStreams.setTrace(path);
         }
+
     }
     public boolean isOpen() {
         boolean rtrn = channelShell != null && channelShell.isOpen() && clientSession != null && clientSession.isOpen();

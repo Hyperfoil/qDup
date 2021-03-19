@@ -61,6 +61,8 @@ public class SessionStreams extends MultiStream {
       promptStream = new SuffixStream(name+"-prompt",null);
       lineEmittingStream = new LineEmittingStream(name);
 
+      addStream("efs",escapeFilteredStream);
+
       escapeFilteredStream.addStream("semaphore", suffixStream);
 
       suffixStream.addStream("filtered", filteredStream);
@@ -82,19 +84,20 @@ public class SessionStreams extends MultiStream {
    }
 
    public void write(String towrite) throws IOException {
-      if(towrite != null){
-         escapeFilteredStream.write(towrite.getBytes(),0,towrite.getBytes().length);
-      }
+      super.write(towrite.getBytes());
    }
 
    @Override
    public void write(int b) throws IOException {
-
+      logger.debug(getName()+".write(int)="+b);
+      super.write(b);
    }
+
 
    @Override
    public void write(byte b[], int off, int len) throws IOException {
-      escapeFilteredStream.write(b,off,len);
+      super.write(b,off,len);
+      //escapeFilteredStream.write(b,off,len);
    }
    @Override
    public void flush() throws IOException{
@@ -133,9 +136,12 @@ public class SessionStreams extends MultiStream {
    }
    public void setTrace(String path) throws IOException{
       if(!hasTrace()){
-         String tracePath = Files.createTempFile(path,".log").toAbsolutePath().toString();
-         FileOutputStream traceStream = new FileOutputStream(tracePath);
-         escapeFilteredStream.addStream("trace",traceStream);
+         String rawTracePath = Files.createTempFile("qdup."+path,".raw.log").toAbsolutePath().toString();
+         FileOutputStream rawTraceStream = new FileOutputStream(rawTracePath);
+         String efsTracePath = Files.createTempFile("qdup."+path,".efs.log").toAbsolutePath().toString();
+         FileOutputStream efsTraceStream = new FileOutputStream(efsTracePath);
+         escapeFilteredStream.addStream("trace",efsTraceStream);
+         addStream("trace",rawTraceStream);
       }
    }
    public OutputStream getTrace(){

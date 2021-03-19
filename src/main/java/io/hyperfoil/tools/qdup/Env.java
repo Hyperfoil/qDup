@@ -168,6 +168,7 @@ public class Env {
 
 
     public static void parse(String input,Map<String,String> rtrn){
+        logger.debug("Env "+input);
         if(input!=null && !input.isEmpty()){
             String split[] = input.split("\r?\n");
             String prevKey="";

@@ -420,8 +420,6 @@ public class ScriptContext implements Context, Runnable{
                 long timestamp = System.currentTimeMillis();
                 setStartTime(timestamp);
                 setUpdateTime(timestamp);
-
-
                 if (cmd.hasSignalWatchers()){
                     Supplier<String> inputSupplier = ()->getSession().peekOutput();
                     for(String name : cmd.getSignalNames()){
@@ -479,7 +477,7 @@ public class ScriptContext implements Context, Runnable{
                                     watcherContext.forceCurrentCmd(watcher);
                                     watcher.doRun(line, watcherContext);
                                 } catch (Exception e) {
-                                    logger.warn("Exception from watcher " + watcher + "\n  curentCmd=" + watcherContext.getCurrentCmd(), e);
+                                    logger.warn("Exception from watcher " + watcher + "\n  currentCmd=" + watcherContext.getCurrentCmd(), e);
                                 }
                             }
                         }

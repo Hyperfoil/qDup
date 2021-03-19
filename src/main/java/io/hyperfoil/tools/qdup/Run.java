@@ -745,7 +745,8 @@ public class Run implements Runnable, DispatchObserver {
     }
 
     private boolean isTrace(String value){
-        return config.getTracePatterns().stream().anyMatch(pattern -> value.contains(pattern) || Pattern.matches(pattern,value));
+        return true; //temporarily debug everything
+        //return config.getTracePatterns().stream().anyMatch(pattern -> value.contains(pattern) || Pattern.matches(pattern,value));
     }
 
     private boolean queueCleanupScripts(){
