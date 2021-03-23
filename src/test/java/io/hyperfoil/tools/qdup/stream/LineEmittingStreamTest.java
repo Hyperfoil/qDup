@@ -7,10 +7,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class LineEmittingStreamTest {
+
+    @Test
+    public void buffer_part_of_write(){
+        LineEmittingStream stream = new LineEmittingStream();
+        List<String> lines = new ArrayList<>();
+        stream.addConsumer(line->lines.add(line));
+
+        try{
+            stream.write("uno\ndos\ntr");
+            stream.write("es\n");
+        }catch (IOException e){
+            fail(e.getMessage());
+        }
+        assertEquals("expect 3 lines\n"+lines,3,lines.size());
+        assertEquals("lines[0]","uno",lines.get(0));
+        assertEquals("lines[1]","dos",lines.get(1));
+        assertEquals("lines[2]","tres",lines.get(2));
+
+    }
 
     @Test
     public void buffer_flush(){

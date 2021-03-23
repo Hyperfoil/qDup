@@ -39,7 +39,9 @@ public class LineEmittingStream extends OutputStream {
         return consumers.remove(consumer);
     }
 
-    public void reset() { writeIndex = 0; }
+    public void reset() {
+        writeIndex = 0;
+    }
 
     public void forceEmit(){
         if(writeIndex >0) {
@@ -68,6 +70,11 @@ public class LineEmittingStream extends OutputStream {
 
     @Override
     public void write(int i) throws IOException {}
+
+    public void write(String content) throws IOException {
+        write(content.getBytes());
+    }
+
     @Override
     public void write(byte b[]) throws IOException {
         write(b,0,b.length);
@@ -89,12 +96,12 @@ public class LineEmittingStream extends OutputStream {
                         }
                         System.arraycopy(b, off, buffered, writeIndex, off + i - writeFrom);
                         writeIndex = writeIndex + off + i - writeFrom;
+
                         emit(buffered, 0, writeIndex);
                         reset();
                     }
                     if (i + 1 < len && (b[off + i + 1] == 10 || b[off + i + 1] == 13)) {//skip the next CR or LR
-                        writeFrom++;//skip over the CR or LR
-                        i++;//same
+                        i++;//skip over the CR or LR
                     }
                     writeFrom = off + i + 1;//+1 to skip over the current CR|LR
                 }
@@ -109,7 +116,7 @@ public class LineEmittingStream extends OutputStream {
                     buffered = newBuffered;
                 }
 
-                System.arraycopy(b, off, buffered, writeIndex, toBuffer);
+                System.arraycopy(b, writeFrom, buffered, writeIndex, toBuffer);
                 writeIndex += toBuffer;
             }
         }catch(Exception e){

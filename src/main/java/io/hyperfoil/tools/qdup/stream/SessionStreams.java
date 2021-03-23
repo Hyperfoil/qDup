@@ -89,7 +89,7 @@ public class SessionStreams extends MultiStream {
 
    @Override
    public void write(int b) throws IOException {
-      logger.debug(getName()+".write(int)="+b);
+      logger.warn(getName()+".write(int)="+b);
       super.write(b);
    }
 
@@ -147,6 +147,9 @@ public class SessionStreams extends MultiStream {
    public OutputStream getTrace(){
       return escapeFilteredStream.getStream("trace");
    }
+   public OutputStream getRawTrace(){
+      return getStream("trace");
+   }
 
    public void setCommand(String command){
       filteredStream.addFilter("command",command,"");
@@ -156,6 +159,7 @@ public class SessionStreams extends MultiStream {
       if(hasTrace()){
          try {
             getTrace().write(output.getBytes());
+            getRawTrace().write(output.getBytes());
          } catch (IOException e) {
             //e.printStackTrace();
          }
