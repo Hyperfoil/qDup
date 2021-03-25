@@ -277,6 +277,7 @@ public class RunTest extends SshTestBase {
       ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(4, runnable -> new Thread(runnable, "scheduled"));
       RunConfigBuilder builder = getBuilder();
       SshSession sshSession = new SshSession(
+              getHost().toString(),
               getHost(),
               builder.getKnownHosts(),
               builder.getIdentity(),

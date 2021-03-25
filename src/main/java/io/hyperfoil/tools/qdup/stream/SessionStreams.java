@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -134,11 +136,12 @@ public class SessionStreams extends MultiStream {
    public boolean hasTrace(){
       return escapeFilteredStream.hasStream("trace");
    }
-   public void setTrace(String path) throws IOException{
+   public void setTrace(String traceName) throws IOException{
       if(!hasTrace()){
-         String rawTracePath = Files.createTempFile("qdup."+path,".raw.log").toAbsolutePath().toString();
+         String tDir = System.getProperty("java.io.tmpdir");
+         String rawTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName,".raw.log")).toAbsolutePath().toString();
          FileOutputStream rawTraceStream = new FileOutputStream(rawTracePath);
-         String efsTracePath = Files.createTempFile("qdup."+path,".efs.log").toAbsolutePath().toString();
+         String efsTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName,".efs.log")).toAbsolutePath().toString();
          FileOutputStream efsTraceStream = new FileOutputStream(efsTracePath);
          escapeFilteredStream.addStream("trace",efsTraceStream);
          addStream("trace",rawTraceStream);

@@ -252,13 +252,13 @@ public class SshSession {
     private Semaphore connectingSemaphore = new Semaphore(1);
     private StampedLock connectingLock = new StampedLock();
     public SshSession(Host host) {
-        this(host, RunConfigBuilder.DEFAULT_KNOWN_HOSTS, RunConfigBuilder.DEFAULT_IDENTITY, RunConfigBuilder.DEFAULT_PASSPHRASE, RunConfigBuilder.DEFAULT_SSH_TIMEOUT, "", null, false);
+        this(host.getHostName(),host, RunConfigBuilder.DEFAULT_KNOWN_HOSTS, RunConfigBuilder.DEFAULT_IDENTITY, RunConfigBuilder.DEFAULT_PASSPHRASE, RunConfigBuilder.DEFAULT_SSH_TIMEOUT, "", null, false);
     }
 
-    public SshSession(Host host, String knownHosts, String identity, String passphrase, int timeout, String setupCommand, ScheduledThreadPoolExecutor executor, boolean trace) {
+    public SshSession(String name,Host host, String knownHosts, String identity, String passphrase, int timeout, String setupCommand, ScheduledThreadPoolExecutor executor, boolean trace) {
 
         this.host = host;
-        this.name = host != null ? host.toString() : "null";
+        this.name = name;
         this.knownHosts = knownHosts;
         this.identity = identity;
         this.passphrase = passphrase;
@@ -304,7 +304,7 @@ public class SshSession {
         }
     }
     public SshSession openCopy() {
-        return new SshSession(host, knownHosts, identity, passphrase, timeout, setupCommand, executor, trace);
+        return new SshSession(getName(),host, knownHosts, identity, passphrase, timeout, setupCommand, executor, trace);
     }
 
     public void addLineObserver(String name, Consumer<String> consumer) {

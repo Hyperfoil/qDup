@@ -228,6 +228,7 @@ public class SshTestBase {
         String currentDir = System.getProperty("user.dir");
         String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
         SshSession sshSession = new SshSession(
+                getHost().toString(),
                 getHost(),
                 userHome+"/.ssh/known_hosts",
                 getIdentity(),

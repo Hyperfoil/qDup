@@ -40,6 +40,7 @@ public class JarMain {
     private final Properties stateProps;
     private final Properties removeStateProperties;
     private final String trace;
+    private final String traceName;
 
     private String outputPath;
     private String version;
@@ -291,6 +292,15 @@ public class JarMain {
                         .type(String.class)
                         .build()
         );
+        options.addOption(
+                Option.builder("RN")
+                        .longOpt("traceName")
+                        .argName("pattern")
+                        .hasArg()
+                        .desc("unique ID pattern for trace files")
+                        .type(String.class)
+                        .build()
+        );
 
         //exit code checking
         options.addOption(
@@ -351,7 +361,6 @@ public class JarMain {
         yamlPaths = commandLine.getArgList();
         stateProps = commandLine.getOptionProperties("S");
         removeStateProperties = commandLine.getOptionProperties("SX");
-        trace = commandLine.getOptionValue("trace", "");
         test = commandLine.hasOption("test");
         breakpoints = commandLine.hasOption("breakpoint") ? Arrays.asList(commandLine.getOptionValues("breakpoint")) : Collections.EMPTY_LIST;
         colorTerminal = commandLine.hasOption("colorTerminal");
@@ -361,6 +370,10 @@ public class JarMain {
         outputPath = null;
         DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
         String uid = dt.format(LocalDateTime.now());
+
+        trace = commandLine.getOptionValue("trace", "");
+        traceName = commandLine.getOptionValue("traceName",""+uid);
+
         if (commandLine.hasOption("basePath")) {
             outputPath = commandLine.getOptionValue("basePath") + "/" + uid;
         } else if (commandLine.hasOption("fullPath")) {
@@ -481,6 +494,11 @@ public class JarMain {
             });
             System.exit(1);
             return;
+        }
+
+
+        if(jarMain.hasTrace()){
+            config.getSettings().set(RunConfig.TRACE_NAME,jarMain.traceName);
         }
 
         final AtomicInteger factoryCounter = new AtomicInteger(0);

@@ -51,6 +51,7 @@ public class SshSessionTest extends SshTestBase{
         String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
 
         SshSession sshSession = new SshSession(
+                getHost().toString(),
                 getHost(),
                 userHome+"/.ssh/known_hosts",
                 getIdentity(),
@@ -69,6 +70,7 @@ public class SshSessionTest extends SshTestBase{
         String currentDir = System.getProperty("user.dir");
         String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
         SshSession sshSession = new SshSession(
+                getHost().toString(),
                 getHost(),
                 userHome+"/.ssh/known_hosts",
                 getIdentity(),
@@ -90,6 +92,7 @@ public class SshSessionTest extends SshTestBase{
         String userHome = System.getProperty("user.home");
         String currentDir = System.getProperty("user.dir");
         SshSession sshSession = new SshSession(
+                getHost().toString(),
                 getHost(),
                 userHome+"/.ssh/known_hosts",
                 getIdentity(),
@@ -108,6 +111,7 @@ public class SshSessionTest extends SshTestBase{
         String userHome = System.getProperty("user.home");
         String currentDir = System.getProperty("user.dir");
         SshSession sshSession = new SshSession(
+                getHost().toString(),
                 getHost(),
                 userHome+"/.ssh/known_hosts",
                 getIdentity(),
@@ -138,6 +142,7 @@ public class SshSessionTest extends SshTestBase{
         String userHome = System.getProperty("user.home");
         String currentDir = System.getProperty("user.dir");
         SshSession sshSession = new SshSession(
+                getHost().toString(),
                 getHost(),
                 userHome+"/.ssh/known_hosts",
                 getIdentity(),
@@ -179,7 +184,9 @@ public class SshSessionTest extends SshTestBase{
     //failing sometimes?
     @Test
     public void echo_PS1(){
-            SshSession sshSession = new SshSession(getHost(),
+            SshSession sshSession = new SshSession(
+                getHost().toString(),
+                getHost(),
                "/dev/null",
                getIdentity(),
                null,

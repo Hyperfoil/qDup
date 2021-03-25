@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 public class RunConfig {
 
 
+    public static final String TRACE_NAME = "TRACE_NAME";
+
     public static final String MAKE_TEMP_KEY = "MKTEMP";
     public static final String REMOVE_TEMP_KEY = "RMTEMP";
 

@@ -263,14 +263,16 @@ public class Run implements Runnable, DispatchObserver {
     public void runPendingDeletes(){
         if(!pendingDeletes.isEmpty()){
             for(Host host : pendingDeletes.keys()){
-                SshSession sshSession = new SshSession(host,
-                   config.getKnownHosts(),
-                   config.getIdentity(),
-                   config.getPassphrase(),
-                   config.getTimeout(),
-                   "",
-                   getDispatcher().getScheduler(),
-                   false
+                SshSession sshSession = new SshSession(
+                    host.getHostName(),
+                    host,
+                    config.getKnownHosts(),
+                    config.getIdentity(),
+                    config.getPassphrase(),
+                    config.getTimeout(),
+                    "",
+                    getDispatcher().getScheduler(),
+                    false
                 );
 
                 Set<String> deleteList = pendingDeletes.get(host);
@@ -483,16 +485,17 @@ public class Run implements Runnable, DispatchObserver {
         Script setup = removeTempDirectory();
         config.getAllHostsInRoles().forEach(host->{
             connectSessions.add(()->{
-                String name = "post-cleanup@"+host.getShortHostName();
+                String name = "post-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
                 SshSession session = new SshSession(
-                   host,
-                   config.getKnownHosts(),
-                   config.getIdentity(),
-                   config.getPassphrase(),
-                   config.getTimeout(),
-                   "",getDispatcher().getScheduler(),
-                   isTrace(name));
-                session.setName(name);
+                    name,
+                    host,
+                    config.getKnownHosts(),
+                    config.getIdentity(),
+                    config.getPassphrase(),
+                    config.getTimeout(),
+                    "",
+                    getDispatcher().getScheduler(),
+                    isTrace(name));
                 if ( session.isReady() ) {
                     //TODO configure session delay
                     //session.setDelay(SuffixStream.NO_DELAY);
@@ -535,16 +538,16 @@ public class Run implements Runnable, DispatchObserver {
         Script setup = createTempDirectory();
         config.getAllHostsInRoles().forEach(host->{
             connectSessions.add(()->{
-                String name = "pre-setup@"+host.getShortHostName();
+                String name = "pre-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
                 SshSession session = new SshSession(
-                   host,
-                   config.getKnownHosts(),
-                   config.getIdentity(),
-                   config.getPassphrase(),
-                   config.getTimeout(),
-                   "",getDispatcher().getScheduler(),
-                   isTrace(name));
-                session.setName(name);
+                    name,
+                    host,
+                    config.getKnownHosts(),
+                    config.getIdentity(),
+                    config.getPassphrase(),
+                    config.getTimeout(),
+                    "",getDispatcher().getScheduler(),
+                    isTrace(name));
                 if ( session.isReady() ) {
                     //TODO configure session delay
                     //session.setDelay(SuffixStream.NO_DELAY);
@@ -607,8 +610,9 @@ public class Run implements Runnable, DispatchObserver {
 
                role.getHosts(config).forEach(host->{
                    connectSessions.add(()->{
-                       String name = roleName+"-setup@"+host.getShortHostName();
+                       String name = roleName+"-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
                        SshSession session = new SshSession(
+                               name,
                                host,
                                config.getKnownHosts(),
                                config.getIdentity(),
@@ -616,7 +620,6 @@ public class Run implements Runnable, DispatchObserver {
                                config.getTimeout(),
                                "", getDispatcher().getScheduler(),
                                 isTrace(name));
-                       session.setName(name);
                        if ( session.isReady() ) {
                            //TODO configure session delay
                            //session.setDelay(SuffixStream.NO_DELAY);
@@ -675,9 +678,10 @@ public class Run implements Runnable, DispatchObserver {
                         }
                         String setupCommand = env.getDiff().getCommand();
                         connectSessions.add(() -> {
-                            String name = script.getName() + "@" + host.getShortHostName();
+                            String name = script.getName()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
                             timer.start("connect:" + host.toString());
                             SshSession session = new SshSession(
+                                    name,
                                     host,
                                     config.getKnownHosts(),
                                     config.getIdentity(),
@@ -688,7 +692,6 @@ public class Run implements Runnable, DispatchObserver {
                                     isTrace(name)
 
                             );
-                            session.setName(name);
                             if (session.isReady()) {
                                 //session.setDelay(SuffixStream.NO_DELAY);
                                 timer.start("context:" + host.toString());
@@ -745,8 +748,8 @@ public class Run implements Runnable, DispatchObserver {
     }
 
     private boolean isTrace(String value){
-        return true; //temporarily debug everything
-        //return config.getTracePatterns().stream().anyMatch(pattern -> value.contains(pattern) || Pattern.matches(pattern,value));
+        //return true; //temporarily debug everything
+        return config.getTracePatterns().stream().anyMatch(pattern -> value.contains(pattern) || Pattern.matches(pattern,value));
     }
 
     private boolean queueCleanupScripts(){
@@ -767,8 +770,9 @@ public class Run implements Runnable, DispatchObserver {
                 role.getHosts(config).forEach(host->{
                     String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
                     connectSessions.add(()->{
-                        String name = roleName + "-cleanup@" + host.getShortHostName();
+                        String name = roleName + "-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
                         SshSession session = new SshSession(
+                                name,
                                 host,
                                 config.getKnownHosts(),
                                 config.getIdentity(),
@@ -777,7 +781,6 @@ public class Run implements Runnable, DispatchObserver {
                                 setupCommand,
                                 getDispatcher().getScheduler(),
                                 isTrace(name));
-                        session.setName(name);
                         if ( session.isReady() ) {
 
                             //session.setDelay(SuffixStream.NO_DELAY);
@@ -817,11 +820,8 @@ public class Run implements Runnable, DispatchObserver {
     private void postRun(){
         logger.debug("{}.postRun",this);
         String tree = config.getState().tree();
-
         String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
-
         stateLogger.debug("{} closing state:\n{}",config.getName(),filteredTree);
-
         runLatch.countDown();
     }
     public Dispatcher getDispatcher(){return dispatcher;}
