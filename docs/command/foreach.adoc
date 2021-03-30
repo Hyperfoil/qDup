@@ -20,7 +20,7 @@ for each entry in either the `input` argument or the input from the previous com
 
 The first `for-each` will split the input based on newlines and set `iter` to "hello" then "world".
 The second `for-each` has an `input` argument and logs "first" then "second". The `input` argument needs
-to be a sequence (list) but each entry will be converted to json if it is not a scalar.
+to be a sequence (list) but each entry will be converted to JSON if it is not a scalar.
 
 [source,yaml]
 ----
@@ -38,6 +38,6 @@ to be a sequence (list) but each entry will be converted to json if it is not a 
 If `for-each` does not have a declared `input` argument then it tries to determine the best way to
 iterate over the input from the previous command. It will check for the following conditions:
 
-1. If the input looks like a json array then `for-each` will iterate over each entry in the array
+1. If the input looks like a JSON array then `for-each` will iterate over each entry in the array
 2. If the input contains newlines then `for-each` will iterate over each line
 3. Otherwise, `for-each` will strip surrounding brackets and look for a comma or space separated input.

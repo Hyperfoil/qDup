@@ -1,0 +1,15 @@
+= Debugging with qDup
+
+qDup.jar starts a JSON server with the below endpoints at hostname:31337
+
+* `/state` - GET the active state
+* `/stage` - GET the current run stage [setup, run, cleanup]
+* `/active` - GET the active commands and their current output
+* `/session` - GET the active ssh sessions 
+* `/session/:sessionId` - POST a string to send it to the remote session. ^C will send a ctrl+c
+* `/signal` - the timestamp each signal was reached or the remaining count for each signal
+* `/signal/:name` - POST a number to set the current signal count
+* `/timer` - GET the command timers that track start and end time for each command
+* `/counter` - GET the current value for each counter
+* `/waiter` - GET the waiting commands for all signal names
+* `/pendingDownloads` - what files are queued for download from which hosts

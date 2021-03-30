@@ -1,6 +1,7 @@
 = abort
 
-End the current command run with an optional error message
+End the current command run with an optional error message. Aborted runs will still
+downlaod any files from `queue-download` and will still run cleanup scripts.
 
 [source,yaml]
 ----

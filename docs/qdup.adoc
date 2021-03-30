@@ -1,0 +1,49 @@
+= qDup YAML
+Configuration files can include the following sections:
+
+__name__ the name of the benchmark
+```YAML
+name : test
+```
+__scripts__ a map of scriptName : command tree
+```YAML
+scripts:
+  test-script :
+  - log: "${{greeting}}, world"
+```
+__hosts__ a map of name : host
+```YAML
+hosts:
+ - local : me@localhost:22
+ - server :
+   - username: user
+   - hostname: server
+   - port: 22 # port is optional and will default to 22
+```
+__roles__ a map of roleName : a hosts list and at least one of:
+`setup-scripts`, `run-scripts`, `cleanup-scripts`. If the hosts list is missing
+then the role is ignored. The reserved role name `ALL` applies to all hosts used in the run.
+```YAML
+roles:
+  test:
+    hosts: [local]
+    run-scripts: [test-script]
+  notTest:
+    hosts: = ALL - tests                  #host expressions start with = and include +, -, and other role names
+    run-scripts: [notTest-script]
+  ALL:                                    #ALL automatically includes all hosts from other roles
+    setup-scripts: [some-script]
+```
+
+__states__ a map of name : value used for variable substitution in the run
+
+a nested map of name : value pairs used to inject variables
+into the run configuration. Children are either a name : value pair or the name of a host.
+Hosts can have name : value pairs or the name of a script as children.
+Scripts are the lowest level in the state tree and therefore they can only have name : value pairs as children
+```YAML
+states:
+  foo : bar
+  biz : buzz
+```
+

@@ -1,0 +1,9 @@
+= countdown
+
+Decrease a `name` counter which starts with `initial`.
+Child commands will be invoked each time after `name` counter reaches 0.
+
+[source,yaml]
+----
+- countdown: myvar 5
+----

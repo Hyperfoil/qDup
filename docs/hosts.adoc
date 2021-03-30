@@ -1,6 +1,6 @@
 = qDup hosts
 
-The `hosts` section in qDup is a yaml mapping that assigns an alias for a username + host combination.
+The `hosts` section in qDup is a YAML mapping that assigns an alias for a username + host combination.
 
 [source,yaml]
 ----
@@ -24,7 +24,7 @@ ssh port but a password and port number can be added to the configuration.
 hosts:
   alias: me:12345@myserver.com:22
 ----
-There is also a move verbose mapping format for those who like to write more yaml.
+There is also a move verbose mapping format for those who like to write more YAML.
 [source,yaml]
 ----
 hosts:

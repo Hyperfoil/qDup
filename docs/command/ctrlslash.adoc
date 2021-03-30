@@ -1,0 +1,8 @@
+= ctrl/
+
+Send the ctrl+/ interrupt to the terminal.
+
+[source,yaml]
+----
+- ctrl/ #no arguments
+----

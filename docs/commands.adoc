@@ -1,7 +1,8 @@
 = qDup commands
 
 Commands are the steps for qDup scripts. All of the comamnds can be created with a
-yaml key and scalar value, but some commands support mappings for more complex use cases.
+YAML key and scalar value, but some commands support mappings for more complex use cases.
+
 [source,yaml]
 ----
 - sh: cd /tmp/
@@ -12,23 +13,66 @@ yaml key and scalar value, but some commands support mappings for more complex u
 Above is an example of the `sh` scalar and a more complicated mapping that sets the
 sh `ignore-exit-code` option.
 
-== command options
-The qDup commands require the top level and can include some globally supported top level keys.
+## Commands
+Commands can be used in one of two ways:
 
-silent:: does not include the command output in the qDup run.log. Mostly used with `sh`
+* `- command : <argumentString>`
+Commands that support multiple arguments will try and parse the
+argumentString to identify the appropriate arguments.
+
+* `- command : { argumentName: argumentValue, ...}`
+Arguments are explicitly mapped to the command's declared argument names.
+This is the least ambiguous but most verbose and is rarely necessary.
+
+== Available commands
+link:./command/abort.adoc[abort]:: Abort the run
+link:./command/addprompt.adoc[add-prompt]:: Add a shell prompt
+link:./command/countdown.adoc[ctrlC]:: Count down a variable
+link:./command/ctrlc.adoc[ctrlC]:: Send ctrl+c to the ssh terminal
+link:./command/ctrlslash.adoc[ctrl/]:: Send ctrl+/ to the ssh terminal
+link:./command/ctrlu.adoc[ctrlU]:: Send ctrl+U to the ssh terminal
+link:./command/ctrlz.adoc[ctrlZ]:: Send ctrl+Z to the ssh terminal
+link:./command/done.adoc[done]:: Tell qDup that the current stage is done
+link:./command/download.adoc[download]:: Download a file from the host
+link:./command/echo.adoc[echo]:: Send the input to the console
+link:./command/exec.adoc[exec]:: Send an exec command to the ssh terminal
+link:./command/foreach.adoc[for-each]:: Repeat the `then` command for each entry in the input
+link:./command/js.adoc[js]:: Run the javascript function
+link:./command/log.adoc[log]:: Write the message to the qDup run.log
+link:./command/parse.adoc[parse]:: Use the https://github.com/Hyperfoil/parse[parse] library to parse the input
+link:./command/queuedownload.adoc[queue-download]:: Queue a file for download after the run or cleanup stage
+link:./command/readsignal.adoc[read-signal]:: Read the current signal and invoke the `then` commands if it was signalled
+link:./command/readstate.adoc[read-state]:: Evaluate the state expression and invoke the `then` commands if it is not empty
+link:./command/regex.adoc[regex]:: Match a https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html[Pattern] to the input string
+link:./command/repeatuntil.adoc[repeat-until]:: Repeat the `then` commands until the signal occurs
+link:./command/script.adoc[script]:: Run the named script
+link:./command/sendtext.adoc[send-text]:: Send text to the current ssh terminal
+link:./command/setsignal.adoc[set-signal]:: Set the expected number of signals for the named signal
+link:./command/sh.adoc[sh]:: Send the sh command to the current ssh terminal
+link:./command/signal.adoc[signal]:: Signal the named coordination point
+link:./command/sleep.adoc[sleep]:: Pause the current script for the desired duration
+link:./command/upload.adoc[upload]:: Upload a local file to the remote host
+link:./command/waitfor.adoc[wait-for]:: Wait for the named coordiation point to be fully signalled
+link:./command/xml.adoc[xml]:: Perform the listed xml operations
+
+== Global options
+
+The qDup commands require the top level command and can include some globally supported options.
+
+silent:: Does not include the command output in the qDup run.log. Mostly used with `sh`
 [source,yaml]
 ----
 - sh: tail -f server.log"
   silent: true
 ----
-with:: add command specific state entries that will only be visible to the command and its children
+with:: Add command specific state entries that will only be visible to the command and its children
 [source,yaml]
 ----
 - sh: echo "hello, ${{name}}"
   with:
     name: beth
 ----
-watch:: a list of commands that are invoked with each new line of output
+watch:: A list of commands that are invoked with each new line of output
 [source,yaml]
 ----
 - sh: tail -f server.log
@@ -37,7 +81,7 @@ watch:: a list of commands that are invoked with each new line of output
     then:
     - abort: error during start
 ----
-then:: a list of commands to run if this command exits normally. For example, `regex` will
+then:: A list of commands to run if this command exits normally. For example, `regex` will
 invoke the `then` commands it if matches, otherwise it invokes its `else` commands.
 [source,yaml]
 ----
@@ -45,7 +89,7 @@ invoke the `then` commands it if matches, otherwise it invokes its `else` comman
   then:
   - sh: mkdir test
 ----
-on-signal:: a map of signal names and list of commands to run if the signal occurs while the parent command is running.
+on-signal:: A map of signal names and list of commands to run if the signal occurs while the parent command is running.
 This is primarily for long-running `sh` commands that may need to react to other scripts.
 [source,yaml]
 ----
@@ -54,7 +98,7 @@ This is primarily for long-running `sh` commands that may need to react to other
     READY:
     - ctrlC #end the tail when the server script signals READY
 ----
-timer:: a map of a duration to a list of commands to run if the current command is running after the duration.
+timer:: A map of a duration to a list of commands to run if the current command is running after the duration.
 This too is promarily for long-running `sh` commands that need to have fixed time interactions.
 [source,yaml]
 ----
@@ -63,7 +107,7 @@ This too is promarily for long-running `sh` commands that need to have fixed tim
     60s:
     - ctrlC #only collect stats for 60s
 ----
-prefix:: use a different state expression prefix. The default is `${{`
+prefix:: Use a different state expression prefix. The default is `${{`
 [source,yaml]
 ----
 - sh: echo "hello <<name}}"
@@ -75,26 +119,26 @@ suffix:: use a different state expressing suffix. The default is `}}`
 - sh: echo "hello ${{name>>"
   suffix: ">>"
 ----
-separator:: use a different state expression separator. The default is `:`
+separator:: Use a different state expression separator. The default is `:`
 [source,yaml]
 ----
 - sh: echo "hello ${{name_friend}}"
   separator: "_"
 ----
-js-prefix:: use a different javascript prefix. The default is `=`
+js-prefix:: Use a different javascript prefix. The default is `=`
 [source,yaml]
 ----
 - sh: echo ${{_ range(1,1)}}
   js-prefix: "_"
 ----
-idle-timer:: set the idle checker timeout.
+idle-timer:: Set the idle checker timeout.
 This is mostly for long-running `sh` commands to avoid unecessary warning message.
 [source,yaml]
 ----
 - sh: doSometing.sh
   idle-timer: 30m #do not expect output for 30 minutes
 ----
-state-scan:: set false to disable the static state analysis. qDup will abort if a state
+state-scan:: Set false to disable the static state analysis. qDup will abort if a state
 reference appears to occur before the value is defined but it cannot evaluate some expressions
 that are defined at runtime.
 [source,yaml]
@@ -103,30 +147,3 @@ that are defined at runtime.
 - regex: (?<key>[^=]*)=(?<value>.*)
 - sh: export ${{options.${{key}}}}="${{options.${{key}}.${{value}}"
 ----
-
-== available commands
-link:./command/abort.adoc[abort]:: abort the run
-link:./command/addprompt.adoc[add-prompt]:: add a shell prompt
-link:./command/ctrlc.adoc[ctrlC]:: send ctrl+c to the ssh terminal
-link:./command/done.adoc[done]:: tell qDup that the current stage is done
-link:./command/download.adoc[download]:: download a file from the host
-link:./command/echo.adoc[echo]::send the input to the console
-link:./command/exec.adoc[exec]:: send an exec command to the ssh terminal
-link:./command/foreach.adoc[for-each]:: repeat the `then` command for each entry in the input
-link:./command/js.adoc[js]:: run the javascript function
-link:./command/log.adoc[log]:: write the message to the qDup run.log
-link:./command/parse.adoc[parse]:: use the https://github.com/Hyperfoil/parse[parse] library to parse the input
-link:./command/queuedownload.adoc[queue-download]:: queue a file for download after the run or cleanup stage
-link:./command/readsignal.adoc[read-signal]:: read the current signal and invoke the `then` commands if it was signalled
-link:./command/readstate.adoc[read-state]:: evaluate the state expression and invoke the `then` commands if it is not empty
-link:./command/regex.adoc[regex]:: match a https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html[Pattern] to the input string
-link:./command/repeatuntil.adoc[repeat-until]:: repeat the `then` commands until the signal occurs
-link:./command/script.adoc[script]:: run the named script
-link:./command/sendtext.adoc[send-text]:: send text to the current ssh terminal
-link:./command/setsignal.adoc[set-signal]:: set the expected number of signals for the named signal
-link:./command/sh.adoc[sh]:: send the sh command to the current ssh terminal
-link:./command/signal.adoc[signal]:: signal the named coordination point
-link:./command/sleep.adoc[sleep]:: pause the current script for the desired duration
-link:./command/upload.adoc[upload]:: upload a local file to the remote host
-link:./command/waitfor.adoc[wait-for]:: wait for the named coordiation point to be fully signalled
-link:./command/xml.adoc[xml]:: perform the listed xml operations

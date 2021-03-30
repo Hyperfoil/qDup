@@ -1,7 +1,7 @@
 = script
 
 The `script` command will invoke another script using the same ssh terminal as the current script.
-The simple yaml syntax just accepts the target script `name` but the yaml mapping syntax can also
+The simple YAML syntax just accepts the target script `name` but the YAML mapping syntax can also
 include an `async` option. Setting `async: true` will create a new ssh terminal and
 
 [source,yaml]

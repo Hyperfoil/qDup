@@ -8,7 +8,7 @@ java -jar qDup-uber.jar -b /tmp/ qdup.yaml util.yaml
 qDup requires a working directory. The `-b /tmp/` tells qDup to create a working folder in the
 `/tmp/` directory. Alternatively, we can use `-B /tmp/` to use `/tmp/` as the working directory.
 
-The next required options are the yaml scripts themselves. qDup will load the files in their listed
+The next required options are the YAML scripts themselves. qDup will load the files in their listed
 order and will not overwrite scripts or hosts if they appear in more than one file.
 
 qDup will merge role definitions one file can declare a role without hosts and then rely on
@@ -41,7 +41,7 @@ java -jar qDup-uber.jar -B /tmp/ qdup.yaml util.yaml
 
 == monitoring
 
-qDup starts a json server for run minitoring and debug. The default port is `31337` but can be changed with `--jsonport`.
+qDup starts a JSON server for run minitoring and debug. The default port is `31337` but can be changed with `--jsonport`.
 The endpoints are the follwing:
 
 GET /state :: current qDup state

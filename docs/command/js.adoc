@@ -5,7 +5,7 @@ The 'js' command is an opportunity to execute arbitrary javascript code on the
 The 'then' commands will run if the function returns a "truthy" object or will be
 skilled if the function does not return, returns `null`, `false`, or a string containing `"false"`
 
-[souce,yaml]
+[source,yaml]
 ----
 - js: |
     (input,state) => {

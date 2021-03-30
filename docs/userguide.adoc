@@ -3,26 +3,36 @@
 :example-caption!:
 :sectnums:
 
-
 == Introduction
 
 qDup is an agent-less, automation and coordination tool; used to coordinate tasks across multiple machines without any agents running on the target machines.
 
 qDup allows for the co-ordination of many activities across multiple machines, allowing complex co-ordination of benchmarking steps to be managed and repeatable.
 
-qDup uses ssh, no special agents or languages required.
-We recommend using ssh keys to connect without passwords but user passwords can be included in the yaml.
+qDup uses SSH, no special agents or languages required. We recommend using SSH keys to connect without passwords but user passwords can be included in the YAML files.
+
+The main workflow is broken into 3 stages: setup, run, cleanup
+
+Setup scripts are executed **sequentially** with a shared SSH session to help capture all the changes and ensure a consistent state for the run stage.
+Any environment changes to the setup SSH session will be copied to all the run stage sessions.
+
+Run scripts are executed in parallel and will start with the environment changes from the setup stage.
+
+Cleanup scripts are executed **sequentially** with a shared SSH session to ensure a consistent ending state.
+They occur after any pending `queue-download` from the run stage so it is safe to cleanup anything left on the hosts
 
 == Quickstart
 
-1. Download the latest uber-jar https://github.com/Hyperfoil/qDup/releases[release]
-2. add you private key to the target servers
+* Download the latest uber-jar https://github.com/Hyperfoil/qDup/releases[release]
+
+* Add you private key to the target servers
 ....
 cat ~/.ssh/id_rsa.pub | ssh user@server 'cat >> .ssh/authorized_keys'
 ....
-3. create a simple test script
+
+* Create a simple test script
 ....
-cat > qdup.xml << 'EOF'
+cat > helloworld.yaml << 'EOF'
 scripts:
     tryme:
     - sh: whoami
@@ -40,23 +50,26 @@ states:
     message: Hello, qDup!
 EOF
 ....
-4. run the script
+
+Check the link:./qdup.adoc[qdup] documentation for the structure of the YAML file.
+
+* Run the script
 ....
 java -jar qDup-uber.jar -C -B /tmp qdup.yaml
 ....
-5. run again with a different message
+
+* Run again with a different message
 ....
 java -jar qDup-uber.jar -C -B /tmp  -S message="Greetings, qDup!" qdup.yaml
 ....
 
-check the link:./jar.adoc[jar] documentation on what else can be done with the uber jar.
+Check the link:./jar.adoc[jar] documentation on what else can be done with the uber jar.
 
 == Concepts
 
 qDup scripts contain the following sections;
 
-* link:./scripts.adoc[scripts] - the sequence of commands to run on hosts
-* link:./hosts.adoc[hosts] - the configuration for connecting via ssh
-* link:./roles.adoc[roles] - assign scripts to hosts to define the steps in the test
-* link:./states.adoc[states] - json-like data to
-
+* link:./scripts.adoc[scripts] - The sequence of commands to run on hosts
+* link:./hosts.adoc[hosts] - The configuration for connecting via SSH
+* link:./roles.adoc[roles] - Assign scripts to hosts to define the steps in the test
+* link:./states.adoc[states] - JSON-like data that describes the run-time state
