@@ -17,7 +17,7 @@ roles:
     - remove-runtime
 ----
 
-The scripts can be listed by name or also a yaml mapping that sets script specific state values.
+The scripts can be listed by name or also a YAML mapping that sets script specific state values.
 
 [source,yaml]
 ----

@@ -1,0 +1,8 @@
+= ctrlU
+
+Send the ctrl+U interrupt to the terminal.
+
+[source,yaml]
+----
+- ctrlU #no arguments
+----

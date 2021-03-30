@@ -1,0 +1,44 @@
+## Monitoring
+### watch
+Some commands (e.g. `sh` commands) can provide output updates during execution.
+A child command with the `watch` prefix will receive each new line of
+output from the parent command as they are available (instead of after
+the parent completes). This is mostly used to monitor output with `regex`
+and to subsequently call `signal: STATE` or `ctrlC` the command when a
+condition is met.
+```YAML
+- sh: tail -f /tmp/server.log
+  watch:
+  - regex: .*?FATAL.*
+    then:
+    - ctrlC:
+    - abort: FATAL error
+```
+Note: `sh`, `wait-for`, and `repeat-until` cannot be used in `watch`
+because they can block the execution of other watchers.
+
+### timer
+Another option for long running commands is to set a timer that will
+execute if the command has been active for longer than the timeout.
+```YAML
+ - wait-for: SERVER_STARTED
+   timer:
+     60s:
+     - log: still waiting 
+     120_000: #ms
+     - abort: server took too long to start, aborting
+```
+Note: `sh`, `wait-for`, and `repeat-until` cannot be used in a timer
+because they can block the execution of other timers
+
+### on-signal
+A long running command might need to be altered if another script sends a signal.
+For example a signal to stop a trace process with `ctrlC` or to send text to an interactive command (e.g. top).
+```YAML
+- sh: top
+  on-signal:
+    DONE:
+    - send-text: q
+``` 
+Note: `sh`, `wait-for`, and `repeat-until` cannot be used in an on-signal
+because they can block the execution of other timers

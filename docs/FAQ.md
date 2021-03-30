@@ -14,7 +14,7 @@ org.apache.sshd.common.SshException: No more authentication methods available
 
 A: qDup  uses ssh terminal sessions so need to be able to connect to the target machine without providing a password via prompt. This error is caused by not having the correct ssh credentials configured for the client machine trying to connect to the server machine. Please ensure that you can open a ssh terminal to ``user@myserver.com`` from the client machine you are running the qDup script from without needing to enter a password prompt.
 
-## Failed to load qdup.yaml as yaml only
+## Failed to load qdup.yaml as YAML only
 
 Q: Why does the parser fail with the following error message?
 ```

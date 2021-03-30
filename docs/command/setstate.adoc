@@ -14,8 +14,8 @@ only a `key` then the value will be the input from the previous command.
 ----
 
 `set-state` can use the `RUN.` and `HOST.` prefixes to target the global run state or
-current host state.  The `value` can be a simple scalar (.e.g string) or a yaml structure that
-will be converted into json.
+current host state.  The `value` can be a simple scalar (.e.g string) or a YAML structure that
+will be converted into JSON.
 
 [source,yaml]
 ----

@@ -1,5 +1,14 @@
 = qDup Scripts
 
+A `Script` a is tree of commands that run one at a time. Each command accepts
+a `String` input from the previous sibling (or parent if no sibling
+is available) as well as the current `Context`. Commands pass execution
+to their children commands by default (depth first execution) but they can
+skip their children commands when appropriate. The `regex` command, for
+example, will skip its children commands if the pattern does not match
+the input. The `abort` command is a special case that will not pass
+execution because it ends the execution.
+
 Scripts are how qDup stores the automation tasks.
 Think of scripts as a sequence of qDup commands.
 [source,yaml]

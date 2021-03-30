@@ -1,7 +1,7 @@
 = xml
 
 The `xml` command can read and update xml documents (including xhtml) with xpaths.
-The command can be created with a yaml scalar or mapping. The scalar performs a
+The command can be created with a YAML scalar or mapping. The scalar performs a
 single operation while the mapping can perform multiple operations on the same file.
 
 [source,yaml]

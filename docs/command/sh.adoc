@@ -1,7 +1,7 @@
 = sh
 
 The `sh` command is the main qDup command because it directly interacts with the
-ssh terminal. It can be created with a yaml string or with a mapping that specifies
+ssh terminal. It can be created with a YAML string or with a mapping that specifies
 the the `command`.
 
 [source,yaml]
@@ -45,7 +45,7 @@ to what is potentially a command prompt (e.g. `psql`).
 
 == tips
 
-Use yaml literals (`sh: |`) to cat structured text to a file or to a command
+Use YAML literals (`sh: |`) to cat structured text to a file or to a command
 [source,yaml]
 ----
 - sh: | #creates a new web.xml for the application

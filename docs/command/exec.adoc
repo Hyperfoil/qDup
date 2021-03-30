@@ -12,8 +12,8 @@ change the environment for the `sh` commands in the script.
     async: true # continue the script while this runs independently
 ----
 
-The `exec` command can be created with a single yaml line or with the `async`
-option in the multi-line yaml.
+The `exec` command can be created with a single YAML line or with the `async`
+option in the multi-line YAML.
 Using `async` will start the command as an independent script. The `exec` next
 sibling will run while the `exec` is running and any `then` from the `exec` will
 run as part of the new script. Because `async` acts like a new script it will

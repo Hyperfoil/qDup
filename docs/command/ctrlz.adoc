@@ -1,0 +1,8 @@
+= ctrlZ
+
+Send the ctrl+Z interrupt to the terminal.
+
+[source,yaml]
+----
+- ctrlZ #no arguments
+----

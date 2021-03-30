@@ -1,3 +1,5 @@
+# Release of qDup
+
 This document summarizes all the steps needed to release next version of qDup.
 
 It is assumed that you have all the priviledges on Sonatype, GitHub push rights and set up GPG keys.

@@ -1,10 +1,21 @@
 = qDup states
 
 The state is where qDup stores values during a run and how scripts can introduce
-variability into a run. The yaml is converted to json and can be used in any state
+variability into a run. The YAML is converted to JSON and can be used in any state
 value pattern `${{...}}`.
 
-== defining state
+Commands can reference state variables by name with `${{name}}` and `regex` can define
+new entries with standard java regex capture groups `(?<name>.*)`
+```YAML
+- sh: tail -f /tmp/server.log
+  watch:
+- regex : ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
+  then:
+  - log : eap ${{eapVersion}} started in ${{eapStartTime}}
+  - ctrlC
+```
+
+== Defining state
 
 [source,yaml]
 ----
@@ -18,7 +29,7 @@ states:
     score: 22
 ----
 
-the yaml state is globally available but if scripts updated the global state by default then
+The YAML state is globally available but if scripts updated the global state by default then
 `regex: (?<name>.*)` in one script and `set-state: name` in another script would collide.
 qDup avoids script state collision by using a tiered approach to state.
 
@@ -37,13 +48,13 @@ set-state: HOST.name bill
 ....
 The `HOST.` prefix tells qDup to add the state entry to the shared host state which is schared by all scripts on the current host.
 
-== accessing state
+== Accessing state
 
 qDup state is accessed using state expressions
 ....
 ${{count}}
 ....
-where `count` is a state entry. Expressions can also access json members
+where `count` is a state entry. Expressions can also access JSON members
 ....
 ${{users[0].name}}
 ....
@@ -60,8 +71,23 @@ The prefix can be used to only accept values from the target state but this is r
 - sh: echo "who is ${{RUN.name}}" #will only check the run state
 ----
 
-== javascript expressions
+== JavaScript expressions
 qDup can evaluate javascript in a javascript state expression
+
+The `${{=` state prefix tells qDup to use the javascript engine to evaluate the content. 
+This lets us use javascript methods, string templates, any arithmetic operations.
+A `:` can also be used to define a default value should any of the state variable names not be defined
+```YAML
+ - sh: tail -f /tmp/server.log
+   timer: 
+     ${{= ${{RAMP_UP}} + ${{MEASURE}} + ${{RAMP_DOWN}} : 100}}:
+     - echo : "${{= ${{RAMP_UP}}+${{MEASURE}}+${{RAMP_DOWN}} : 100}}ms have has elapsed"
+     - echo : "$[[> $[[RAMP_UP]]+$[[MEASURE]]+$[[RAMP_DOWN]] _ 100]]ms have has elapsed"
+       prefix: "$[[" #use a custom state reference prefix
+       suffix: "]]" #use a custom state reference suffix
+       js-prefix: ">" #used after state prefix to tell qDup to use the javascript engine
+       separator: "_" #use a custom separator between state expression and the default value
+```
 ....
 ${{= range(1,10) }}
 ....
@@ -71,9 +97,9 @@ and can include a default just like state expressions.
 ${{= "${{users[0].name}}".toLowerCase() : john }}
 ....
 
-=== javascript globals
+=== JavaScript globals
 The javascript engine uses ECMAScript 2020 with graaljs. qDup provides a global read-only
-json representation of the current state, signals, and counters under the `$QD` global name.
+JSON representation of the current state, signals, and counters under the `$QD` global name.
 This was added recently and is subject to change as we work on the api.
 
 qDup also provides some global methods to help with common tasks
