@@ -97,7 +97,6 @@ public class RunTest extends SshTestBase {
    }
 
 
-
    @Test
    public void pwd_in_dollar() {
       Parser parser = Parser.getInstance();
@@ -105,7 +104,7 @@ public class RunTest extends SshTestBase {
       builder.loadYaml(parser.loadFile("pwd", stream("" +
          "scripts:",
          "  foo:",
-         "    - sh: echo \"pwd is: $(pwd)\"",
+         "    - sh: echo \"pwd is:$(pwd)\"",
          "    - echo:",
          "hosts:",
          "  local: " + getHost(),
