@@ -2,7 +2,7 @@ name: example                                # the name of the test we plan to r
 scripts:                                     # scripts are the series of commands to run a test
   sync-time:                                 # the unique script name
   - sh: ntpdate -u time.google.com           # runs ntpdate in the remote shell
-  widflyScript:                              # the name of a new script
+  wildflyScript:                             # the name of a new script
   - sh: cd ${{WF_HOME}}                      # cd to the WF_HOME state variable
   - sh: rm ./standalone/log/*                # remove the old logs
   - queue-download: ./standalone/log         # save the files after the script stops
@@ -39,7 +39,7 @@ roles:                            # roles are how scripts are applied to hosts
     setup-scripts:                # scripts run sequentially before the run stage
     run-scripts:                  # scripts run in parallel during the run stage
       - wildflyScript             # wildflyScript will run on each host
-      - wildflyScript:            # run a second copy of widflyScript
+      - wildflyScript:            # run a second copy of wildflyScript
           with:                   # with allows an override for state variables
            WF_HOME : /dev/wf-x    # WF_HOME will be different for this instance of wildflyScript
     cleanup-scripts:              # scripts run sequentially after the run stage
