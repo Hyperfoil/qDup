@@ -33,7 +33,6 @@ public class SetState extends Cmd {
         this.key = key;
         this.value = value;
         setPatternSeparator(separator);
-        //this.separator = separator;
         this.autoConvert = autoConvert;
     }
 
@@ -62,9 +61,9 @@ public class SetState extends Cmd {
                 if(populatedValue.contains(getPatternPrefix()) || populatedKey.contains(getPatternPrefix())){
                     //TODO populatedValue should already resolve patterns, any pattern prefix means it failed to resolve?
                 }
-                //why was the following pattern check here?
-                if (Json.isJsonLike(populatedValue) /*&& populatedValue.contains(StringUtil.PATTERN_PREFIX) && populatedValue.contains(StringUtil.PATTERN_SUFFIX)*/) {
-                    Json fromPopulatedValue = Json.fromString(populatedValue);
+                if (Json.isJsonLike(populatedValue) || (StringUtil.isQuoted(populatedValue) && Json.isJsonLike(StringUtil.removeQuotes(populatedValue)))) {
+                    String target = StringUtil.isQuoted(populatedValue) ? StringUtil.removeQuotes(populatedValue) : populatedValue;
+                    Json fromPopulatedValue = Json.fromString(target);
                     if (fromPopulatedValue!=null && !fromPopulatedValue.isEmpty()) {
                         context.getState().set(populatedKey, fromPopulatedValue, autoConvert);
                     } else {

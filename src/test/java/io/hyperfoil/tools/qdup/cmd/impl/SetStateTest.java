@@ -330,6 +330,36 @@ public class SetStateTest extends SshTestBase {
    }
 
    @Test
+   public void set_state_quoted_json(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+         "scripts:",
+         "  foo:",
+         "  - set-state: RUN.FOO '{ \"some\":\"object\"}'",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts:",
+         "      - foo:"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("config should not have errors\n"+config.getErrorStrings(),config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+
+      Object FOO = config.getState().get("FOO");
+      assertNotNull("FOO should exist",FOO);
+      assertTrue("FOO should be json "+FOO+" but is "+FOO.getClass().getSimpleName(),FOO instanceof Json);
+   }
+
+   @Test
    public void with_array_references_script_state(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();

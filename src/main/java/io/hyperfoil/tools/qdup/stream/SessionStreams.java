@@ -98,6 +98,9 @@ public class SessionStreams extends MultiStream {
 
    @Override
    public void write(byte b[], int off, int len) throws IOException {
+      if(hasTrace()){
+         trace("[--qdup--]");
+      }
       super.write(b,off,len);
       //escapeFilteredStream.write(b,off,len);
    }

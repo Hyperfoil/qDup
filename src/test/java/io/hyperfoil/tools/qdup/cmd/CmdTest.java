@@ -469,6 +469,40 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
+   public void run_with_value_type(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("", stream("" +
+              "scripts:",
+              "  foo:",
+              "  - set-state: RUN.FOO ${{foo}}",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts:",
+              "    - foo:",
+              "        with:",
+              "          host: {name: \"cat\"}",
+              "states:",
+              "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+              "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+              "  charlie: {name: \"cat\"}"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+
+      Cmd foo = config.getScript("foo");
+
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+   }
+
+   @Test
    public void run_with_json() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
@@ -510,6 +544,66 @@ public class CmdTest extends SshTestBase {
       assertTrue("top should have bar", top.hasWith("foo"));
    }
 
+   @Test
+   public void with_integer(){
+      Cmd test = Cmd.NO_OP();
+      test.with("foo",10);
+      Object found = test.getWith("foo");
+      assertNotNull(found);
+      assertEquals(10,found);
+   }
+   @Test
+   public void with_integer_from_state(){
+      Cmd test = Cmd.setState("RUN.foo","${{input}}");
+      test.with("input","${{bar}}");
+      SpyContext spyContext = new SpyContext();
+      spyContext.getState().set("foo",10);
+      test.run("",spyContext);
+      Object found = spyContext.getState().get("foo");
+      assertNotNull(found);
+      assertEquals(10,found);
+   }
+
+   @Test
+   public void with_double(){
+      Cmd test = Cmd.NO_OP();
+      test.with("foo",10.5);
+      Object found = test.getWith("foo");
+      assertNotNull(found);
+      assertTrue("found should be a double: "+found,found instanceof Double);
+      assertEquals(10.5,((Double)found).doubleValue(),0.001);
+   }
+   @Test
+   public void with_double_from_state(){
+      Cmd test = Cmd.setState("RUN.foo","${{input}}");
+      test.with("input","${{bar}}");
+      SpyContext spyContext = new SpyContext();
+      spyContext.getState().set("foo",10.5);
+      test.run("",spyContext);
+      Object found = spyContext.getState().get("foo");
+      assertTrue("found should be a double: "+found,found instanceof Double);
+      assertEquals(10.5,((Double)found).doubleValue(),0.001);
+   }
+   @Test
+   public void with_json(){
+      Cmd test = Cmd.NO_OP();
+      test.with("foo",Json.fromString("{\"key\":\"uno\"}"));
+      Object found = test.getWith("foo");
+      assertNotNull(found);
+      assertTrue("found should be a json: "+found,found instanceof Json);
+      assertEquals(found,Json.fromString("{\"key\":\"uno\"}"));
+   }
+   @Test
+   public void with_json_from_state(){
+      Cmd test = Cmd.setState("RUN.foo","${{input}}");
+      test.with("input","${{bar}}");
+      SpyContext spyContext = new SpyContext();
+      spyContext.getState().set("foo",Json.fromString("{\"key\":\"uno\"}"));
+      test.run("",spyContext);
+      Object found = spyContext.getState().get("foo");
+      assertNotNull(found);
+      assertEquals(found,Json.fromString("{\"key\":\"uno\"}"));
+   }
    @Test
    public void has_with_parent() {
       Cmd top = Cmd.NO_OP();
