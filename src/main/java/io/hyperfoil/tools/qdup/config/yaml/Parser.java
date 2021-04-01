@@ -242,6 +242,37 @@ public class Parser {
                 }
         );
         rtrn.addCmd(
+                JsonCmd.class,
+                "json",
+                new CmdWithElseMapping(
+                        "json",
+                        new CmdEncoder() {
+                            @Override
+                            public Object encode(Cmd cmd) {
+                                if (cmd instanceof JsonCmd) {
+                                    JsonCmd r = (JsonCmd) cmd;
+                                    if (r.hasElse()) {
+                                        Map<Object, Object> map = new HashMap<>();
+                                        map.put("json", r.getPath());
+                                        return map;
+                                    } else {
+                                        return r.getPath();
+                                    }
+                                } else {
+                                    return null;
+                                }
+                            }
+                        }
+                ),
+                new CmdWithElseConstruct(
+                        "json",
+                        (str,prefix,suffix) -> new JsonCmd(str),
+                        (json) -> {
+                            return new JsonCmd(json.getString("path"));
+                        }
+                )
+        );
+        rtrn.addCmd(
                 ReadSignal.class,
                 "read-signal",
                 new CmdWithElseMapping(
@@ -310,14 +341,14 @@ public class Parser {
         );
         //TODO add Reboot to yaml support
         rtrn.addCmd(
-                Parse.class,
+                ParseCmd.class,
                 "parse",
                 (cmd) -> cmd.getConfig(),
                 (str,prefix,suffix) -> {
-                    return new Parse(str);
+                    return new ParseCmd(str);
                 },
                 (json) -> {
-                    return new Parse(json.toString(0));
+                    return new ParseCmd(json.toString(0));
                 }
         );
         rtrn.addCmd(

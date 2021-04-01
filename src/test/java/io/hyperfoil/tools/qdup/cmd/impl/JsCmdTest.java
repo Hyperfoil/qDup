@@ -17,7 +17,6 @@ public class JsCmdTest {
         jsCmd.run("input",context);
 
         assertTrue("return true should call next",context.hasNext());
-
     }
 
     @Test
@@ -160,8 +159,6 @@ public class JsCmdTest {
     @Test
     public void testMissingState(){
         JsCmd jsCmd = new JsCmd("function(input,state){return state['foo'];}");
-        State state = new State(State.RUN_PREFIX);
-
         SpyContext context = new SpyContext();
         jsCmd.doRun("input",context);
         assertFalse("missing state should not go to next: "+context.getNext(),context.hasNext());
@@ -170,7 +167,6 @@ public class JsCmdTest {
     @Test
     public void testSetState(){
         JsCmd jsCmd = new JsCmd("function(input,state){state['foo']='FOO';return true;}");
-
         SpyContext context = new SpyContext();
         jsCmd.run("input",context);
 
