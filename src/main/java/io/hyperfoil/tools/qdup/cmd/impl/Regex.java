@@ -80,7 +80,7 @@ public class Regex extends CmdWithElse {
          renames.put(compName, realName);
       }
       try {
-         Pattern pattern = Pattern.compile(newPattern, Pattern.DOTALL);
+         Pattern pattern = Pattern.compile(newPattern);
 
          Matcher matcher = pattern.matcher(input);
 

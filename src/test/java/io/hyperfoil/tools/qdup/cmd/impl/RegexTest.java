@@ -23,6 +23,22 @@ import static org.junit.Assert.*;
 
 public class RegexTest extends SshTestBase {
 
+    @Test
+    public void regex_dot_star_with_newline(){
+        Regex regex = new Regex(" link currently points to (?<java_home>/.*?)(?:/jre)?/bin/java");
+
+        SpyContext spyContext = new SpyContext();
+
+        regex.run("alternatives --display java\n" +
+                "java - status is manual.\n" +
+                " link currently points to /usr/lib/jvm/java-11-openjdk-11.0.10.0.9-4.el8_3.x86_64/bin/java\n" +
+                "/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.282.b08-2.el8_3.x86_64/jre/bin/java - family java-1.8.0-openjdk.x86_64 priority 1800282",
+                spyContext);
+
+        Object found = spyContext.getState().get("java_home");
+        assertNotNull("state should have java_home\n"+spyContext.getState().tree(),found);
+        assertEquals("/usr/lib/jvm/java-11-openjdk-11.0.10.0.9-4.el8_3.x86_64",found.toString());
+    }
 
     @Test
     public void else_count() {
