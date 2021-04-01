@@ -21,11 +21,6 @@ public class ParserTest extends SshTestBase {
         return Arrays.asList(args).stream().collect(Collectors.joining("\n"));
     }
 
-    @Test
-    public void split_setState_json(){
-        List<String> split = Parser.split("RUN.foo {\"key\":\"uno\",\"value\":\"does\"}");
-        System.out.println(split);
-    }
 
     @Test
     public void split_tab_separated(){

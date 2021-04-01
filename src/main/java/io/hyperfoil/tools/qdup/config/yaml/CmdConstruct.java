@@ -76,7 +76,7 @@ public class CmdConstruct extends DeferableConstruct {
                     MappingNode withMap = (MappingNode)valueNode;
                     Json withJson = json(withMap);
                     withJson.forEach((k,v)->{
-                        cmd.with(k.toString(),v.toString());
+                        cmd.with(k.toString(),v);
                     });
                 }else{
                     throw new YAMLException(CmdMapping.WITH+" requires a map "+valueNode.getStartMark());

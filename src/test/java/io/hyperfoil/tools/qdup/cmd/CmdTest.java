@@ -469,40 +469,6 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
-   public void run_with_value_type(){
-      Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("", stream("" +
-              "scripts:",
-              "  foo:",
-              "  - set-state: RUN.FOO ${{foo}}",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts:",
-              "    - foo:",
-              "        with:",
-              "          host: {name: \"cat\"}",
-              "states:",
-              "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-              "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-              "  charlie: {name: \"cat\"}"
-      )));
-
-      RunConfig config = builder.buildConfig(parser);
-      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
-      Dispatcher dispatcher = new Dispatcher();
-
-      Cmd foo = config.getScript("foo");
-
-      Run doit = new Run(tmpDir.toString(), config, dispatcher);
-      doit.run();
-      dispatcher.shutdown();
-   }
-
-   @Test
    public void run_with_json() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
