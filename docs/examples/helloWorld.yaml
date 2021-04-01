@@ -1,0 +1,17 @@
+scripts:
+  hello-qdup:
+    - sh: echo ${{GREETING}}
+
+hosts:
+  local : ${{USER}}@${{HOST}}
+roles:
+  run-hello-qdup:
+    hosts:
+      - local
+    run-scripts:
+      - hello-qdup
+states:
+  GREETING: Hello qDup!
+  USER:
+  HOST:
+
