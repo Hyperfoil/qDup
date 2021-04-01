@@ -328,6 +328,11 @@ public class JarMain {
                         " " +
                         cmdLineSyntax;
 
+        if (args.length == 0) {
+            formatter.printHelp(cmdLineSyntax, options);
+            System.exit(0);
+        }
+
         try {
             commandLine = parser.parse(options, args);
         } catch (ParseException e) {
