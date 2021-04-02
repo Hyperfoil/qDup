@@ -2,18 +2,21 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
+import io.hyperfoil.tools.qdup.cmd.Result;
+import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class ScriptCmdTest extends SshTestBase {
 
@@ -220,5 +223,47 @@ public class ScriptCmdTest extends SshTestBase {
       dispatcher.shutdown();
 
       assertEquals("script=update should invoke once per arg","-one-two-three-four",config.getState().get("FOO"));
+   }
+
+   @Test
+   public void script_then(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+              "  echo:",
+              "  - sh: echo \"foo\"",
+              "  foo:",
+              "   - script: echo",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+
+      Script foo = config.getScript("foo");
+      assertNotNull("should find foo script",foo);
+      Cmd tail = foo.getTail();
+      assertTrue("tail should be script command "+tail,tail instanceof ScriptCmd);
+
+      AtomicBoolean ran = new AtomicBoolean(false);
+      StringBuilder seen = new StringBuilder();
+      tail.then(Cmd.code((input,state)->{
+         ran.set(true);
+         seen.append(input);
+         return Result.next(input);
+      }));
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+
+      State state = config.getState();
+      assertTrue("code should have run",ran.get());
+      assertEquals("code should see foo as input","foo",seen.toString());
    }
 }

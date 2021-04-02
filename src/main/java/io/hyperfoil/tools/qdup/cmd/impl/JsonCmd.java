@@ -18,7 +18,6 @@ public class JsonCmd extends CmdWithElse {
 
     @Override
     public void run(String input, Context context) {
-        System.out.println(AsciiArt.ANSI_GREEN+"json "+ path +AsciiArt.ANSI_RESET);
         if(!Json.isJsonLike(input)){
             context.skip(input);
         }else{

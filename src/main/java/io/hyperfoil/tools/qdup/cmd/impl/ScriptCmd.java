@@ -7,24 +7,60 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.ScriptContext;
+import io.hyperfoil.tools.yaup.AsciiArt;
+
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /*
 This class is used when referencing a script in a role phase and when referencing a script in another script
 It needs to inject the script command tree when run as a phase reference
 Injecting when referenced inside a script causes it to break when the injection is in a loop
     It cannot inject each time it is called but does need to change the Context currentCmd or inject the first time?
-
  */
-
 public class ScriptCmd extends Cmd {
+    /**
+     * Used to ensure script then's are called after the script with input from the script
+     */
+    private class CallbackCmd extends Cmd {
+        @Override
+        public void run(String input, Context context) {
+            super.setOutput(input);
+            context.next(input);
+        }
+
+        @Override
+        public Cmd getNext(){
+            Cmd rtrn = ScriptCmd.super.getNext();
+            return rtrn;
+        }
+
+        @Override
+        public void setOutput(String output){
+        }
+
+        @Override
+        public Cmd copy() {return null;}
+
+        @Override
+        public String getLogOutput(String output, Context context) {
+            return "";
+        }
+    }
 
     private final String name;
     private final boolean async;
     private final boolean addToCmdTree;
-
     private Cmd foundScript = null;
 
+    @Override
+    public String getOutput() {
+        String rtrn = callback.getOutput();
+        return rtrn;
+    }
+
     private String populatedName = null;
+    private final CallbackCmd callback = new CallbackCmd();
     public ScriptCmd(String name){
         this(name,false,false);
     }
@@ -37,15 +73,13 @@ public class ScriptCmd extends Cmd {
     public boolean isAsync(){return async;}
     public String getName(){return name;}
     @Override
-    public String toString(){return "script-cmd: "+name;}
+    public String toString(){return "script-cmd: " + name;}
 
     @Override
     public Cmd getNext() {
         Cmd rtrn = null;
-        boolean fromParent = false;
         if(hasToCall()){
             rtrn = getToCall();
-            //clearToCall();
         }else{
             rtrn = super.getNext();
         }
@@ -77,17 +111,18 @@ public class ScriptCmd extends Cmd {
 
                 //copy withs because it will not be inherited
                 copyCmd.loadWith(this);
-                //copyCmd.with(getWith(true,true));
 
                 ScriptContext scriptContext = new ScriptContext(ssh,state,run,context.getTimer().start(populatedName,true),copyCmd,context.checkExitCode());
                 if(run!=null){ //register context so phase does not end before script completes
-                    //dispatcher will aslo start the context
+                    //dispatcher will also start the context
                     run.getDispatcher().addScriptContext(scriptContext);
                 }
             }else{
-                //injectThen(copyCmd, context);
                 copyCmd.setParent(this);
                 setToCall(copyCmd);
+                if(hasThens()) {
+                    getToCall().then(callback);
+                }
             }
         }
         context.next(input);

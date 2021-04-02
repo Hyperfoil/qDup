@@ -146,7 +146,6 @@ public class JsonCmdTest extends SshTestBase {
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
-        System.out.println("done it");
         State state = config.getState();
         Object found = state.get("foo");
         assertNotNull("state should contain foo\n"+state.tree(),found);
@@ -177,7 +176,6 @@ public class JsonCmdTest extends SshTestBase {
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
-        System.out.println("done it");
         State state = config.getState();
         Object found = state.get("foo");
         assertNotNull("state should contain foo\n"+state.tree(),found);
