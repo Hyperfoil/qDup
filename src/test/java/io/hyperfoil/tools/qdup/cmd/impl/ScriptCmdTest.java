@@ -233,6 +233,7 @@ public class ScriptCmdTest extends SshTestBase {
               "scripts:",
               "  echo:",
               "  - sh: echo \"foo\"",
+              "  - set-state: RUN.foo",
               "  foo:",
               "   - script: echo",
               "hosts:",
@@ -265,5 +266,9 @@ public class ScriptCmdTest extends SshTestBase {
       State state = config.getState();
       assertTrue("code should have run",ran.get());
       assertEquals("code should see foo as input","foo",seen.toString());
+
+      Object found = state.get("foo");
+      assertNotNull("foo should exist in state\n"+state.tree(),foo);
+      assertEquals("foo should contain foo","foo",foo.toString());
    }
 }

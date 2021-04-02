@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -28,6 +29,109 @@ public abstract class Cmd {
 
    final static long DEFAULT_IDLE_TIMER = 30_000; //30s
    final static long DISABLED_IDLE_TIMER = -1;
+
+   class Thens {
+      private LinkedList<LinkedList<Cmd>> listOfLists;
+
+      public Thens(){
+         listOfLists = new LinkedList<>();
+         listOfLists.add(new LinkedList<>());
+      }
+      public int setCount(){return listOfLists.size();}
+      public boolean isEmpty(){return listOfLists.getFirst().isEmpty();}
+      public void ensureNewSet(){
+         if(!listOfLists.getLast().isEmpty()){
+            listOfLists.add(new LinkedList<>());
+         }
+      }
+      public List<Cmd> getSet(int index){
+         if(index<0 || index>=listOfLists.size()){
+            return Collections.emptyList();
+         }else{
+            return Collections.unmodifiableList(listOfLists.get(index));
+         }
+      }
+      public void injectFirstSet(Cmd cmd){
+         listOfLists.getFirst().addFirst(cmd);
+      }
+      public boolean contains(Cmd cmd){
+         return indexInSet(cmd) > -1;
+      }
+      public void add(Cmd cmd){
+         listOfLists.getLast().add(cmd);
+      }
+      public Cmd getFirst(){
+         return listOfLists.getFirst().isEmpty() ? null : listOfLists.getFirst().getFirst();
+      }
+      public void remove(Cmd cmd){
+         for(int i=0; i<listOfLists.size(); i++){
+            listOfLists.get(i).remove(cmd);
+         }
+      }
+      public void addBeforeLast(Cmd cmd){
+         if(listOfLists.getLast().isEmpty()){
+            listOfLists.getLast().add(cmd);
+         }else {
+            listOfLists.getLast().add(listOfLists.getLast().size() -1, cmd);
+         }
+      }
+      public Cmd getLast(){
+         if(isEmpty()){
+            return null;
+         }else if(listOfLists.getLast().isEmpty()){
+            return listOfLists.get(listOfLists.size()-2).getLast();
+         }else{
+            return listOfLists.getLast().getLast();
+         }
+      }
+      public List<Cmd> listView(){
+         return Collections.unmodifiableList(listOfLists.stream().flatMap(e->e.stream()).collect(Collectors.toList()));
+      }
+      public int indexInSet(Cmd cmd){
+         int rtrn = -1;
+         for(int i=0; i<listOfLists.size(); i++){
+            LinkedList<Cmd> set = listOfLists.get(i);
+            int idx = set.indexOf(cmd);
+            if(idx>-1){
+               rtrn = idx;
+               break; //stop looping once we found it?
+            }
+         }
+         return rtrn;
+      }
+      public Cmd previousCmdOrParent(Cmd cmd){
+         Cmd rtrn = Cmd.this;
+         for ( int i=0; i<listOfLists.size(); i++ ){
+            LinkedList<Cmd> set = listOfLists.get(i);
+            int idx = set.indexOf(cmd);
+            if ( idx>0 ) {
+               rtrn = set.get(idx-1);
+               break;
+            } else if (idx==0 && i>0){
+               //do we want to return from the previous set?
+               //rtrn = listOfLists.get(i-1).getLast();
+            }
+         }
+         return rtrn;
+      }
+      public Cmd getNextSibling(Cmd cmd){
+         Cmd rtrn = null;
+         for(int i=0; i<listOfLists.size(); i++){
+            LinkedList<Cmd> set = listOfLists.get(i);
+            int idx = set.indexOf(cmd);
+            if(idx==-1) {
+
+            }else if(idx<set.size()-1){
+               rtrn = set.get(idx+1);
+               break;
+            }else if ( i < listOfLists.size()-1 && !listOfLists.get(i+1).isEmpty()){
+               rtrn = listOfLists.get(i+1).getFirst();
+               break;
+            }
+         }
+         return rtrn;
+      }
+   }
 
    public static class Ref {
       private Ref parent;
@@ -379,10 +483,6 @@ public abstract class Cmd {
       return value;
    }
 
-//   public static boolean isSingelStageReference(String input) {
-//      return input.startsWith(STATE_PREFIX) && input.equalsIgnoreCase(STATE_SUFFIX) && input.indexOf(STATE_PREFIX, 1) == -1;
-//   }
-
    public static boolean hasStateReference(String input, Cmd cmd){
       if(cmd == null){
          return input.contains(StringUtil.PATTERN_PREFIX);
@@ -393,8 +493,7 @@ public abstract class Cmd {
 
    public static List<String> getStateVariables(String command, Cmd cmd, State state, Coordinator coordinator,Ref ref){
       PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,ref);
-      List<String> rtrn = Collections.EMPTY_LIST;
-      if(cmd==null){
+      List<String> rtrn = Collections.EMPTY_LIST;      if(cmd==null){
          try {
             rtrn = StringUtil.getPatternNames(
                     command,
@@ -460,7 +559,7 @@ public abstract class Cmd {
    protected Json withDef;
    protected Json withActive;
    //private int thenIndex = 0;
-   protected LinkedList<Cmd> thens;
+   protected Thens thens;
    private LinkedList<Cmd> watchers;
    private HashedLists<Long, Cmd> timers;
    private HashedLists<String, Cmd> onSignal;
@@ -488,7 +587,7 @@ public abstract class Cmd {
       this.silent = silent;
       this.withDef = new Json();
       this.withActive = new Json();
-      this.thens = new LinkedList<>();
+      this.thens = new Thens();
       this.watchers = new LinkedList<>();
       this.timers = new HashedLists<>();
       this.onSignal = new HashedLists<>();
@@ -598,7 +697,8 @@ public abstract class Cmd {
    public void injectThen(Cmd command) {
       if(command!=null){
          command.setParent(this);
-         thens.addFirst(command);
+         thens.injectFirstSet(command);
+         //thens.addFirst(command);
       }
    }
 
@@ -695,7 +795,7 @@ public abstract class Cmd {
             cmd.tree(rtrn, correctedIndent + 6, "", debug);
          });
       });
-      thens.forEach((t) -> {
+      thens.listView().forEach((t) -> {
          t.tree(rtrn, correctedIndent + 2, "", debug);
       });
    }
@@ -707,6 +807,11 @@ public abstract class Cmd {
    public void setOutput(String output) {
       this.output = output;
    }
+
+   public int getThenSetCount(){
+      return thens.setCount();
+   }
+
 
    public Cmd getPrevious() {
       Cmd rtrn = null;
@@ -754,28 +859,17 @@ public abstract class Cmd {
    }
 
    public Cmd nextChild(Cmd child){
-      Cmd rtrn = null;
-      int cmdIndex = thens.indexOf(child);
-      if(cmdIndex < 0){
-         //TODO throw error because current command is not a child?
-
-      }else if (cmdIndex == thens.size() -1 ){
-      }else{
-         rtrn = thens.get(cmdIndex+1);
-      }
+      Cmd rtrn = thens.getNextSibling(child);
       return rtrn;
    }
    public Cmd previousChildOrParent(Cmd child){
-      int cmdIndex = thens.indexOf(child);
-      if(cmdIndex < 0){
-         return null;
-      }else if (cmdIndex == 0){
-         return this;
-      }else{
-         return thens.get(cmdIndex-1);
-      }
+      Cmd rtrn = thens.previousCmdOrParent(child);
+      return rtrn;
    }
 
+   public void ensureNewSet(){
+      thens.ensureNewSet();
+   }
    public Cmd then(Cmd command) {
       if(command!=null){
          command.setParent(this);
@@ -801,7 +895,7 @@ public abstract class Cmd {
    }
 
    public List<Cmd> getThens() {
-      return Collections.unmodifiableList(this.thens);
+      return thens.listView();
    }
 
    public boolean hasWatchers() {
@@ -920,8 +1014,10 @@ public abstract class Cmd {
          for (Cmd watcher : this.getWatchers()) {
             clone.watch(watcher.deepCopy());
          }
-         for (Cmd then : this.getThens()) {
-            clone.then(then.deepCopy());
+         for(int i=0; i<getThenSetCount(); i++){
+            List<Cmd> set = thens.getSet(i);
+            clone.ensureNewSet();
+            set.forEach(entry->clone.then(entry.deepCopy()));
          }
          for (long timeout : this.getTimeouts()) {
             for (Cmd timed : this.getTimers(timeout)) {
@@ -955,10 +1051,8 @@ public abstract class Cmd {
 
    public Cmd getTail() {
       Cmd rtrn = this;
-
       while (!rtrn.getThens().isEmpty() ) {
          rtrn = rtrn.thens.getLast();
-
       }
       return rtrn;
    }

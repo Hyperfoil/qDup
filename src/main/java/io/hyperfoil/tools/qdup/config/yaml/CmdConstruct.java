@@ -103,7 +103,8 @@ public class CmdConstruct extends DeferableConstruct {
             case CmdMapping.THEN:
                 if(valueNode instanceof SequenceNode){
                     SequenceNode thenNodes = (SequenceNode)valueNode;
-                   sequenceToCmds(thenNodes).forEach(cmd::then);
+                    cmd.ensureNewSet();
+                    sequenceToCmds(thenNodes).forEach(cmd::then);
                 }else{
                     throw new YAMLException(CmdMapping.THEN+" requires a list of commands "+valueNode.getStartMark());
                 }

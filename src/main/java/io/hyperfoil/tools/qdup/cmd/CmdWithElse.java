@@ -49,36 +49,30 @@ public abstract class CmdWithElse extends Cmd{
 
     @Override
     public Cmd previousChildOrParent(Cmd child){
-        boolean inThens = thens.contains(child);
-        int cmdIndex = inThens ? thens.indexOf(child) : getElses().indexOf(child);
-        if(cmdIndex < 0){
-            return null;
-        }else if (cmdIndex == 0){
-            return this;
+        Cmd rtrn = null;
+        if(thens.contains(child)){
+            rtrn = thens.previousCmdOrParent(child);
         }else{
-            return inThens ? thens.get(cmdIndex-1) : getElses().get(cmdIndex-1);
+            int cmdIndex = getElses().indexOf(child);
+            if (cmdIndex == 0){
+                rtrn = this;
+            } else if (cmdIndex > 0) {
+                rtrn = getElses().get(cmdIndex-1);
+            }
         }
+        return rtrn;
     }
 
     @Override
     public Cmd nextChild(Cmd child){
         Cmd rtrn = null;
-        int cmdIndex = thens.indexOf(child);
-        if(cmdIndex < 0){
-            //not a then child
-            cmdIndex = elses.indexOf(child);
-            if(cmdIndex < 0){
-                //not an else child either
-                //TODO throw error because current command is not a child?
-            }else if (cmdIndex == elses.size() -1){
-
-            }else{
+        if(thens.contains(child)){
+            rtrn = thens.getNextSibling(child);
+        }else{
+            int cmdIndex = elses.indexOf(child);
+            if (cmdIndex > -1 && cmdIndex < elses.size()-1){
                 rtrn = elses.get(cmdIndex+1);
             }
-
-        }else if (cmdIndex == thens.size() -1 ){
-        }else{
-            rtrn = thens.get(cmdIndex+1);
         }
         return rtrn;
     }

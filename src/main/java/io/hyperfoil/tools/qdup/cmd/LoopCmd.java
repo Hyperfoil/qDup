@@ -43,16 +43,23 @@ public abstract class LoopCmd extends Cmd {
    }
 
    @Override
+   public void ensureNewSet(){
+      thens.remove(callback);
+      super.ensureNewSet();
+      thens.add(callback);
+   }
+
+   @Override
    public Cmd then(Cmd command) {
       if(command!=null) {
          command.setParent(this);
          if (hasThens()) {
-            thens.add(thens.size() - 1, command);
+            thens.addBeforeLast(command);
          } else {
             thens.add(command);
          }
       }
-      assert callback.equals(thens.get(thens.size()-1));
+      assert callback.equals(thens.getLast());
       return this;
    }
 

@@ -394,6 +394,7 @@ public class ScriptContext implements Context, Runnable{
     @Override
     public void run() {
         Cmd cmd = getCurrentCmd();
+        Cmd previous = cmd !=null ? cmd.getPrevious() : null;
         String input = cmd != null && cmd.getPrevious() != null ? cmd.getPrevious().getOutput() : "";
         run(cmd,input);
     }

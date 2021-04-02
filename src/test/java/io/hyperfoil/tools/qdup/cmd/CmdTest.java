@@ -393,6 +393,52 @@ public class CmdTest extends SshTestBase {
       assertEquals("expect both values to replace", "foobar", populated);
    }
 
+
+   @Test
+   public void run_multiple_thens_check_input_source() {
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("", stream("" +
+         "scripts:",
+         "  foo:",
+         "  - sh: echo {\"foo\":\"bar\"}",
+         "    then:",
+         "    - json: $.foo",
+         "    then:",
+         "    - set-state: RUN.STORED",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts:",
+         "    - foo:",
+         "states:",
+         "  value: worked"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
+      Script foo = config.getScript("foo");
+      assertNotNull("foo script should exist",foo);
+      Cmd first = foo.getNext();
+
+      assertNotNull("foo script should have a next cmd",first);
+      assertEquals("expect 2 child commands for foo",2,first.getThens().size());
+      assertEquals("expect 2 sets of thens for foo",2,first.getThenSetCount());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+
+      State state = config.getState();
+      assertNotNull("state should exist",state);
+      Object found = state.get("STORED");
+      assertNotNull("state should contain STORED\n"+state.tree(),found);
+      assertTrue("found should be json "+found,found instanceof Json);
+      assertEquals("found should be the full json","{\"foo\":\"bar\"}",found.toString());
+   }
    @Test
    public void run_with_same_name_from_state(){
       Parser parser = Parser.getInstance();
@@ -415,6 +461,7 @@ public class CmdTest extends SshTestBase {
       )));
 
       RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
 
       Cmd foo = config.getScript("foo");
