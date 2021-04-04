@@ -120,7 +120,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>io.hyperfoil.tools.qdup.JarMain</mainClass>
+                            <mainClass>io.hyperfoil.tools.qdup.QDup</mainClass>
                         </manifest>
                         <manifestEntries>
                             <hash>${git.commit.id.abbrev}</hash>
