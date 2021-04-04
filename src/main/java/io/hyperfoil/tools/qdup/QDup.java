@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class JarMain {
+public class QDup {
 
     private static final XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
     private final String knownHosts;
@@ -131,7 +131,7 @@ public class JarMain {
         return hash;
     }
 
-    public JarMain(String... args) {
+    public QDup(String... args) {
         Options options = new Options();
 
         OptionGroup basePathGroup = new OptionGroup();
@@ -319,7 +319,7 @@ public class JarMain {
 
         cmdLineSyntax =
                 "java -jar " +
-                        (new File(JarMain.class
+                        (new File(QDup.class
                                 .getProtectionDomain()
                                 .getCodeSource()
                                 .getLocation()
@@ -388,14 +388,14 @@ public class JarMain {
         }
 
         Properties properties = new Properties();
-        try (InputStream is = JarMain.class.getResourceAsStream("/META-INF/MANIFEST.MF")) {
+        try (InputStream is = QDup.class.getResourceAsStream("/META-INF/MANIFEST.MF")) {
             if (is != null) {
                 properties.load(is);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        try (InputStream is = JarMain.class.getResourceAsStream("/META-INF/maven/io.hyperfoil.tools/qDup/pom.properties")) {
+        try (InputStream is = QDup.class.getResourceAsStream("/META-INF/maven/io.hyperfoil.tools/qDup/pom.properties")) {
             if (is != null) {
                 properties.load(is);
 
@@ -415,13 +415,17 @@ public class JarMain {
     }
 
     public static void main(String[] args) {
-        JarMain jarMain = new JarMain(args);
+        QDup.run(args);
+    }
+
+    public static void run(String[] args) {
+        QDup qDup = new QDup(args);
 
         Parser yamlParser = Parser.getInstance();
-        yamlParser.setAbortOnExitCode(jarMain.checkExitCode());
+        yamlParser.setAbortOnExitCode(qDup.checkExitCode());
         RunConfigBuilder runConfigBuilder = new RunConfigBuilder();
 
-        for (String yamlPath : jarMain.getYamlPaths()) {
+        for (String yamlPath : qDup.getYamlPaths()) {
             File yamlFile = new File(yamlPath);
             if (!yamlFile.exists()) {
                 logger.error("Error: cannot find " + yamlPath);
@@ -457,8 +461,8 @@ public class JarMain {
         }
 
 
-        if (!jarMain.getStateProps().isEmpty()) {
-            jarMain.getStateProps().forEach((k, v) -> {
+        if (!qDup.getStateProps().isEmpty()) {
+            qDup.getStateProps().forEach((k, v) -> {
                 if (v != null && !v.toString().trim().isEmpty()) {
                     runConfigBuilder.forceRunState(k.toString(), v.toString());
                 }
@@ -466,45 +470,44 @@ public class JarMain {
         }
 
 
-        if (!jarMain.getRemoveStateProperties().isEmpty()) {
-            jarMain.getRemoveStateProperties().forEach((k, v) -> {
+        if (!qDup.getRemoveStateProperties().isEmpty()) {
+            qDup.getRemoveStateProperties().forEach((k, v) -> {
                 if (k != null) {
                     runConfigBuilder.forceRunState(k.toString(), "");
                 }
             });
         }
-        if (jarMain.hasTrace()) {
-            runConfigBuilder.trace(jarMain.getTrace());
+        if (qDup.hasTrace()) {
+            runConfigBuilder.trace(qDup.getTrace());
         }
 
-        if (jarMain.getIdentity() != RunConfigBuilder.DEFAULT_IDENTITY) {
-            runConfigBuilder.setIdentity(jarMain.getIdentity());
+        if (qDup.getIdentity() != RunConfigBuilder.DEFAULT_IDENTITY) {
+            runConfigBuilder.setIdentity(qDup.getIdentity());
         }
 
-        if (jarMain.getPassphrase() != RunConfigBuilder.DEFAULT_PASSPHRASE) {
-            runConfigBuilder.setPassphrase(jarMain.getPassphrase());
+        if (qDup.getPassphrase() != RunConfigBuilder.DEFAULT_PASSPHRASE) {
+            runConfigBuilder.setPassphrase(qDup.getPassphrase());
         }
 
-        if (jarMain.getKnownHosts() != RunConfigBuilder.DEFAULT_KNOWN_HOSTS) {
-            runConfigBuilder.setKnownHosts(jarMain.getKnownHosts());
+        if (qDup.getKnownHosts() != RunConfigBuilder.DEFAULT_KNOWN_HOSTS) {
+            runConfigBuilder.setKnownHosts(qDup.getKnownHosts());
         }
 
         RunConfig config = runConfigBuilder.buildConfig(yamlParser);
-
-        if (jarMain.isTest()) {
+        if (qDup.isTest()) {
             //logger.info(config.debug());
             System.out.printf("%s", config.debug(true));
             System.exit(0);
         }
 
-        File outputFile = new File(jarMain.getOutputPath());
+        File outputFile = new File(qDup.getOutputPath());
         if (!outputFile.exists()) {
             outputFile.mkdirs();
         }
 
         //TODO RunConfig should be immutable and terminal color is probably better stored in Run
         //TODO should we separte yaml config from environment config (identity, knownHosts, threads, color terminal)
-        config.setColorTerminal(jarMain.isColorTerminal());
+        config.setColorTerminal(qDup.isColorTerminal());
 
         if (config.hasErrors()) {
             config.getErrors().stream().map(RunError::toString).forEach(error -> {
@@ -515,8 +518,8 @@ public class JarMain {
         }
 
 
-        if(jarMain.hasTrace()){
-            config.getSettings().set(RunConfig.TRACE_NAME,jarMain.traceName);
+        if(qDup.hasTrace()){
+            config.getSettings().set(RunConfig.TRACE_NAME, qDup.traceName);
         }
 
         final AtomicInteger factoryCounter = new AtomicInteger(0);
@@ -534,15 +537,15 @@ public class JarMain {
             rtrn.setUncaughtExceptionHandler(uncaughtExceptionHandler);
             return rtrn;
         };
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(jarMain.getCommandThreads() / 2, jarMain.getCommandThreads(), 30, TimeUnit.MINUTES, workQueue, factory);
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(qDup.getCommandThreads() / 2, qDup.getCommandThreads(), 30, TimeUnit.MINUTES, workQueue, factory);
 
-        ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(jarMain.getScheduledThreads(), runnable -> new Thread(runnable, "qdup-scheduled-" + scheduledCounter.getAndIncrement()));
+        ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(qDup.getScheduledThreads(), runnable -> new Thread(runnable, "qdup-scheduled-" + scheduledCounter.getAndIncrement()));
 
         Dispatcher dispatcher = new Dispatcher(executor, scheduled);
 
-        if (!jarMain.getBreakpoints().isEmpty()) {
+        if (!qDup.getBreakpoints().isEmpty()) {
             Scanner scanner = new Scanner(System.in);
-            jarMain.getBreakpoints().forEach(breakpoint -> {
+            qDup.getBreakpoints().forEach(breakpoint -> {
                 dispatcher.addContextObserver(new ContextObserver() {
                     @Override
                     public void preStart(Context context, Cmd command) {
@@ -571,9 +574,9 @@ public class JarMain {
             });
         }
 
-        config.getSettings().set("check-exit-code",jarMain.checkExitCode());
+        config.getSettings().set("check-exit-code", qDup.checkExitCode());
 
-        final Run run = new Run(jarMain.getOutputPath(), config, dispatcher);
+        final Run run = new Run(qDup.getOutputPath(), config, dispatcher);
 
         logger.info("Starting with output path = " + run.getOutputPath());
 
@@ -584,12 +587,12 @@ public class JarMain {
             }
         }, "shutdown-abort"));
 
-        JsonServer jsonServer = new JsonServer(run, jarMain.getJsonPort());
+        JsonServer jsonServer = new JsonServer(run, qDup.getJsonPort());
 
         jsonServer.start();
 
         long start = System.currentTimeMillis();
-        run.getRunLogger().info("Running qDup version {} @ {}", jarMain.getVersion(), jarMain.getHash());
+        run.getRunLogger().info("Running qDup version {} @ {}", qDup.getVersion(), qDup.getHash());
         run.run();
         long stop = System.currentTimeMillis();
         System.out.printf("Finished in %s at %s%n", StringUtil.durationToString(stop - start), run.getOutputPath());
