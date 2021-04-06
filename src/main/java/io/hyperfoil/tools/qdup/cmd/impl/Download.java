@@ -1,9 +1,12 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 
 import java.io.File;
+import java.util.function.Supplier;
 
 public class Download extends Cmd {
     private String path;
@@ -13,7 +16,7 @@ public class Download extends Cmd {
     public Download(String path, String destination, Long maxSize ){
         this.path = path;
         this.destination = destination;
-        if(maxSize < 0) {
+        if(maxSize != null && maxSize < 0) {
             this.maxSize = null;
         } else {
             this.maxSize = maxSize;
@@ -30,31 +33,12 @@ public class Download extends Cmd {
     }
     public String getPath(){return path;}
     public String getDestination(){return destination;}
+    public Long getMaxSize(){ return maxSize;}
     @Override
     public void run(String input, Context context) {
 
-        String basePath = context.getRunOutputPath()+ File.separator+context.getSession().getHost().getHostName();
-        String userName = context.getSession().getHost().getUserName();
-        String hostName = context.getSession().getHost().getHostName();
-        String remotePath = populateStateVariables(path,this,context);
-        String destinationPath =  populateStateVariables(basePath + File.separator +destination,this,context);
-        File destinationFile = new File(destinationPath);
-        if(!destinationFile.exists()){
-            destinationFile.mkdirs();
-        }
+        execute(context, () -> context.getLocal(), () -> context.getHost());
 
-        boolean canDownload = true;
-
-        if(maxSize != null){
-            Long remoteFileSize = context.getLocal().remoteFileSize(remotePath,context.getSession().getHost());
-            if(remoteFileSize > maxSize){
-                canDownload = false;
-                logger.warn("File: {} is {} bytes, which is larger than max size: {}", remotePath, remoteFileSize, maxSize);
-            }
-        }
-        if(canDownload) {
-            context.getLocal().download(remotePath, destinationPath, context.getSession().getHost());
-        }
         context.next(path);
     }
 
@@ -64,5 +48,31 @@ public class Download extends Cmd {
     }
     @Override
     public String toString(){return "download: "+path+" "+destination;}
+
+    public void execute(Context context, Supplier<Local> localProvider, Supplier<Host> hostSupplier){
+        Local local = localProvider.get();
+        Host host = hostSupplier.get();
+
+        String remotePath = context == null ? path : populateStateVariables(path,this,context);
+        String basePath = context == null ? null : context.getRunOutputPath()+ File.separator+context.getSession().getHost().getHostName();
+        String destinationPath =  context == null ? destination : populateStateVariables(basePath + File.separator +destination,this,context);
+        File destinationFile = new File(destinationPath);
+        if(!destinationFile.exists()){
+            destinationFile.mkdirs();
+        }
+
+        boolean canDownload = true;
+
+        if(maxSize != null){
+            Long remoteFileSize = local.remoteFileSize(remotePath,host);
+            if(remoteFileSize > maxSize){
+                canDownload = false;
+                logger.warn("Download File: `{}`; is larger {} than max size: {} bytes", remotePath, remoteFileSize, maxSize);
+            }
+        }
+        if(canDownload) {
+            local.download(remotePath, destinationPath, host);
+        }
+    }
 
 }
