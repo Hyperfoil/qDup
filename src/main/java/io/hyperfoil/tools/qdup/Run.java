@@ -12,6 +12,7 @@ import io.hyperfoil.tools.qdup.cmd.DispatchObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.ScriptContext;
+import io.hyperfoil.tools.qdup.cmd.impl.Download;
 import io.hyperfoil.tools.qdup.cmd.impl.RoleEnv;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.Role;
@@ -82,20 +83,6 @@ public class Run implements Runnable, DispatchObserver {
         }
     }
 
-    class PendingDownload {
-        private String path;
-        private String destination;
-        private Long maxSize;
-        public PendingDownload(String path,String destination, Long maxSize){
-            this.path = path;
-            this.destination = destination;
-            this.maxSize = maxSize;
-        }
-        public String getPath(){return path;}
-        public String getDestination(){return destination;}
-        public Long getMaxSize(){return maxSize;}
-    }
-
     private volatile Stage stage = Stage.Pending;
 
     private final List<RunObserver> runObservers;
@@ -109,7 +96,7 @@ public class Run implements Runnable, DispatchObserver {
     private Profiles profiles;
     private Local local;
 
-    private HashedSets<Host,PendingDownload> pendingDownloads;
+    private HashedSets<Host, Download> pendingDownloads;
     private HashedSets<Host,String> pendingDeletes;
 
     private CountDownLatch runLatch = new CountDownLatch(1);
@@ -269,7 +256,7 @@ public class Run implements Runnable, DispatchObserver {
         pendingDeletes.put(host,path);
     }
     public void addPendingDownload(Host host,String path,String destination, Long maxSize){
-        pendingDownloads.put(host,new PendingDownload(path,destination,maxSize));
+        pendingDownloads.put(host,new Download(path,destination,maxSize));
     }
     public void runPendingDeletes(){
         if(!pendingDeletes.isEmpty()){
@@ -299,24 +286,14 @@ public class Run implements Runnable, DispatchObserver {
         if(!pendingDownloads.isEmpty()){
             timestamps.put("downloadStart",System.currentTimeMillis());
             for(Host host : pendingDownloads.keys()){
-                Set<PendingDownload> downloadList = pendingDownloads.get(host);
-                for(PendingDownload pendingDownload : downloadList){
+                Set<Download> downloadList = pendingDownloads.get(host);
+                for(Download pendingDownload : downloadList){
                     String downloadPath = pendingDownload.getPath();
                     String downloadDestination = pendingDownload.getDestination();
                     if(downloadDestination == null || downloadPath == null){
                         logger.error("NULL in queue-download "+downloadPath+" -> "+downloadDestination);
                     }else {
-                        if(pendingDownload.maxSize == null){
-                            local.download(pendingDownload.getPath(), pendingDownload.getDestination(), host);
-                        } else {
-                            if( local.remoteFileSize(pendingDownload.getPath(), host) <= pendingDownload.maxSize ){
-                                local.download(pendingDownload.getPath(), pendingDownload.getDestination(), host);
-                            }
-                            else {
-                                logger.warn("Download File: `{}`; exceeded max size: {} bytes", pendingDownload.path, pendingDownload.maxSize);
-                            }
-                        }
-
+                        pendingDownload.execute(null, () -> local, () -> host);
                     }
                 }
             }
@@ -333,8 +310,8 @@ public class Run implements Runnable, DispatchObserver {
         for(Host host : pendingDownloads.keys()){
             Json hostJson = new Json();
             rtrn.set(host.toString(),hostJson);
-            Set<PendingDownload> pendings = pendingDownloads.get(host);
-            for(PendingDownload pending : pendings){
+            Set<Download> pendings = pendingDownloads.get(host);
+            for(Download pending : pendings){
                 Json pendingJson = new Json();
                 pendingJson.set("path",pending.getPath());
                 pendingJson.set("dest",pending.getDestination());

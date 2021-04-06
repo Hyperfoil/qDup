@@ -260,7 +260,7 @@ public class Local {
 
    }
 
-   private void runRsyncCmd(List<String> cmd, String action, Consumer<String> lineConsumer){
+   private void runRsyncCmd(List<String> cmd, String action, Consumer<String> inputStreamConsumer){
       ProcessBuilder builder = new ProcessBuilder();
       builder.command(cmd);
       logger.debug("Running rsync command : " + cmd.stream().collect(Collectors.joining(" ")));
@@ -281,7 +281,7 @@ public class Local {
          }
          reader = new BufferedReader(new InputStreamReader(inputStream));
          while ((line = reader.readLine()) != null) {
-            lineConsumer.accept(line);
+            inputStreamConsumer.accept(line);
          }
 
       } catch (IOException e) {
