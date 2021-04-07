@@ -477,7 +477,20 @@ public class JarMain {
             runConfigBuilder.trace(jarMain.getTrace());
         }
 
+        if (jarMain.getIdentity() != RunConfigBuilder.DEFAULT_IDENTITY) {
+            runConfigBuilder.setIdentity(jarMain.getIdentity());
+        }
+
+        if (jarMain.getPassphrase() != RunConfigBuilder.DEFAULT_PASSPHRASE) {
+            runConfigBuilder.setPassphrase(jarMain.getPassphrase());
+        }
+
+        if (jarMain.getKnownHosts() != RunConfigBuilder.DEFAULT_KNOWN_HOSTS) {
+            runConfigBuilder.setKnownHosts(jarMain.getKnownHosts());
+        }
+
         RunConfig config = runConfigBuilder.buildConfig(yamlParser);
+
         if (jarMain.isTest()) {
             //logger.info(config.debug());
             System.out.printf("%s", config.debug(true));
