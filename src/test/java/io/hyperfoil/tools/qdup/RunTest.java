@@ -884,6 +884,7 @@ public class RunTest extends SshTestBase {
       assertFalse("setup not called:" + setup.toString() + "||", setup.length() == 0);
       assertTrue("postAbort should not be called:" + postAbort.toString() + "||", postAbort.length() == 0);
       assertTrue("run should not be called:" + run.toString() + "||", run.length() == 0);
+      assertTrue("cleanup should be called",cleanupCalled.get());
       assertFalse("cleanup not called:" + cleanup.toString() + "||", cleanup.length() == 0);
 
    }

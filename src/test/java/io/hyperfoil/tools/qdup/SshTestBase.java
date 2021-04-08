@@ -61,12 +61,15 @@ public class SshTestBase {
 
     private static final ScheduledThreadPoolExecutor SCHEDULED_THREAD_POOL_EXECUTOR = new ScheduledThreadPoolExecutor(2);
 
-    public static RunConfigBuilder getBuilder(){
+    public RunConfigBuilder getBuilder(){
+        return getBuilder("qdup");
+    }
+    public RunConfigBuilder getBuilder(String name){
         RunConfigBuilder builder = new RunConfigBuilder();
         builder.setIdentity(getIdentity());
 
         setIdentityFilePerms(getPath("keys"), getKeyDirPerms());
-        setIdentityFilePerms(getPath("keys/qdup"), getPrivKeyPerms());
+        setIdentityFilePerms(getPath("keys/"+name), getPrivKeyPerms());
 
         //set perms
         return builder;
@@ -105,19 +108,11 @@ public class SshTestBase {
     }
 
 
-    public static String getIdentity() {
-        return getIdentityPath().toFile().getPath();
+    public String getIdentity() {
+        return getPath("keys/qdup").toFile().getPath();
     }
 
-    public static Path getIdentityPubPath(){
-        return getPath("keys/qdup.pub");
-    }
-
-    public static Path getIdentityPath(){
-        return getPath("keys/qdup");
-    }
-
-    private static Path getPath(String subDir){
+    static Path getPath(String subDir){
         return  Paths.get(
                 SshTestBase.class.getProtectionDomain().getCodeSource().getLocation().getPath()
         ).resolve(
@@ -137,12 +132,17 @@ public class SshTestBase {
         }
     }
 
+
+
     @BeforeClass
     public static void createContainer() {
+        setup(getPath("keys/qdup.pub"));
 
+    }
+    public static void setup(Path pubPath ){
         String pub = "";
         try {
-            pub = Files.readString(getIdentityPubPath());
+            pub = Files.readString(pubPath);
         } catch (IOException e) {
             e.printStackTrace();
         }

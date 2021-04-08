@@ -29,6 +29,7 @@ import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -279,6 +280,7 @@ public class SshSession {
             blockingSemaphore.release();
         };
         this.executor = executor;
+        System.out.println(getName()+" identity = "+identity);
         connect(this.timeout * 1_000, setupCommand, this.trace);
     }
 
@@ -373,9 +375,11 @@ public class SshSession {
             return true;
         }
         statusUpdater.set(this,Status.Connecting);
+        logger.trace("{} connecting",this.getName());
         boolean rtrn = false;
         try {
             if(Status.Disconnected.equals(previousStatus)){
+                logger.trace("{} connect was disconnected, stopping previous client and shell",this.getName());
                 if(sshClient != null && sshClient.isStarted()){
                     sshClient.stop();
                 }
@@ -389,23 +393,27 @@ public class SshSession {
                 }
             }
             sshClient = SshClient.setUpDefaultClient();
-//            sshClient.addSessionListener(new SessionListener() {
-//                @Override
-//                public void sessionEstablished(Session session) {
-//                }
-//
-//                @Override
-//                public void sessionCreated(Session session) {
-//                }
-//
-//                @Override
-//                public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
-//                }
-//
-//                @Override
-//                public void sessionClosed(Session session) {
-//                }
-//            });
+            sshClient.addSessionListener(new SessionListener() {
+                @Override
+                public void sessionEstablished(Session session) {
+                    logger.trace("{} client established",SshSession.this.getName());
+                }
+
+                @Override
+                public void sessionCreated(Session session) {
+                    logger.trace("{} client created",SshSession.this.getName());
+                }
+
+                @Override
+                public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
+                    logger.trace("{} client disconnected",SshSession.this.getName());
+                }
+
+                @Override
+                public void sessionClosed(Session session) {
+                    logger.trace("{} client disconnected",SshSession.this.getName());
+                }
+            });
             PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.IDLE_TIMEOUT, Long.MAX_VALUE);
             PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO2_READ_TIMEOUT, Long.MAX_VALUE); //so no InterruptedByTimeoutException
             PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO_WORKERS, 1);
@@ -413,6 +421,7 @@ public class SshSession {
             //        sshConfig = new Properties();
             //        sshConfig.put("StrictHostKeyChecking", "no");
             sshClient.setServerKeyVerifier((clientSession1, remoteAddress, serverKey) -> {
+                logger.trace("{} accept server key for {}",SshSession.this.getName(),remoteAddress);
                 return true;
             });
             sshClient.start();
@@ -420,38 +429,40 @@ public class SshSession {
             ConnectFuture future = sshClient.connect(host.getUserName(), host.getHostName(), host.getPort());
             future.await(10,TimeUnit.SECONDS);
             if(!future.isConnected()){
+                logger.trace("{} client failed to connect before timeout",SshSession.this.getHost().getHostName());
                 return false;
             }
             future = future.verify(this.timeout * 2_000);
             future.await(10,TimeUnit.SECONDS);
             if(!future.isConnected()){
+                logger.trace("{} client failed to verify connection before timeout",SshSession.this.getHost().getHostName());
                 return false;
             }
             clientSession = future.getSession();
             clientSession.addSessionListener(new SessionListener() {
                 @Override
                 public void sessionEstablished(Session session) {
-
+                    logger.trace("{} session established",SshSession.this.getName());
                 }
 
                 @Override
                 public void sessionCreated(Session session) {
-
+                    logger.trace("{} session created",SshSession.this.getName());
                 }
 
                 @Override
                 public void sessionPeerIdentificationReceived(Session session, String version, List<String> extraLines) {
-
+                    logger.trace("{} session identification received",SshSession.this.getName());
                 }
 
                 @Override
                 public void sessionNegotiationStart(Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal) {
-
+                    logger.trace("{} session negotiation start",SshSession.this.getName());
                 }
 
                 @Override
                 public void sessionNegotiationEnd(Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal, Map<KexProposalOption, String> negotiatedOptions, Throwable reason) {
-
+                    logger.trace("{} session negotiation end",SshSession.this.getName());
                 }
 
                 @Override
@@ -461,29 +472,41 @@ public class SshSession {
 
                 @Override
                 public void sessionException(Session session, Throwable t) {
+                    logger.trace("{} session exception: {}",SshSession.this.getName(),t.getMessage());
                 }
 
                 @Override
                 public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
-
+                    logger.trace("{} session disconnect",SshSession.this.getName());
                 }
 
                 @Override
                 public void sessionClosed(Session session) {
-
+                    logger.trace("{} session closed",SshSession.this.getName());
                 }
             });
 
             URLResource urlResource = new URLResource(Paths.get(identity).toUri().toURL());
             try (InputStream inputStream = urlResource.openInputStream()) {
-                clientSession.addPublicKeyIdentity(GenericUtils.head(SecurityUtils.loadKeyPairIdentities(
+                Iterable<KeyPair> keyPairs = SecurityUtils.loadKeyPairIdentities(
                         clientSession,
                         urlResource,
                         inputStream,
                         (session, resourceKey, retryIndex) -> passphrase
-                )));
+                );
+                KeyPair keyPair = GenericUtils.head(keyPairs);
+                if(keyPair == null){
+                    if(passphrase == RunConfigBuilder.DEFAULT_PASSPHRASE){
+                        logger.error("cannot connect {} using {} without a passphrase",getName(),identity);
+                    }else{
+                        logger.error("cannot connect {} using {} using the provided passphrase",getName(),identity);
+                    }
+                    return false; // we failed to connect
+                }
+                clientSession.addPublicKeyIdentity(keyPair);
             }
             if (host.hasPassword()) {
+                logger.trace("{} adding password-identity",SshSession.this.getName());
                 clientSession.addPasswordIdentity(host.getPassword());
             }
             //clientSession.auth().verify(this.timeout * 1_000);
@@ -583,12 +606,16 @@ public class SshSession {
             logger.debug("Exception while connecting to {}@{}\n{}", host.getUserName(), host.getHostName(), e.getMessage(), e);
         } finally {
             logger.trace("{} session.isOpen={} shell.isOpen={}",
-                    this.getHost().getHostName(),
+                    this.getName(),
                     clientSession == null ? "false" : clientSession.isOpen(),
                     channelShell == null ? "false" : channelShell.isOpen()
             );
             rtrn = isOpen();
         }
+        logger.trace("{} connect returning {}",
+                this.getName(),
+                rtrn
+        );
         return rtrn;
     }
     public boolean waitForReady(){

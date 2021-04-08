@@ -64,6 +64,7 @@ public class Dispatcher {
     private final ScheduledThreadPoolExecutor scheduler;
     private ScheduledFuture<?> nannyFuture;
     private final AtomicBoolean isRunning;
+    private final AtomicBoolean isStopping;
     private final Consumer<Long> nannyTask;
 
     private final boolean autoClose;
@@ -288,6 +289,7 @@ public class Dispatcher {
 
         };
         this.isRunning = new AtomicBoolean(false);
+        this.isStopping = new AtomicBoolean(false);
     }
 
     public ScheduledThreadPoolExecutor getScheduler(){return scheduler;}
@@ -351,6 +353,7 @@ public class Dispatcher {
 
     public void start(){ //start all the scripts attached to this dispatcher
         if(isRunning.compareAndSet(false,true)){
+            isStopping.set(false);
             dispatchObservers.forEach(c->c.preStart());
             logger.info("starting {} scripts", scriptContexts.size());
             if(!scriptContexts.isEmpty()){
@@ -400,27 +403,28 @@ public class Dispatcher {
         stop(true);
     }
     public void stop(boolean wait){
-        if(isRunning.compareAndSet(true,false)){
-            logger.debug("stop");
+        if(isStopping.compareAndSet(false,true)){
+            if(isRunning.compareAndSet(true,false)){
+                logger.debug("stop");
 
-            if(nannyFuture!=null){
-                boolean cancelledFuture= nannyFuture.cancel(true);
-                nannyFuture = null;
+                if(nannyFuture!=null){
+                    boolean cancelledFuture= nannyFuture.cancel(true);
+                    nannyFuture = null;
+                }
+                //needs to occur before we notify observers because observers can queue next stage
+                scriptContexts.values().forEach(ctx->{
+                    ctx.closeLineQueue();
+                    ctx.getSession().close(wait);
+                });
+                scriptContexts.clear();
             }
-            //needs to occur before we notify observers because observers can queue next stage
-            scriptContexts.values().forEach(ctx->{
-                ctx.closeLineQueue();
-                ctx.getSession().close(wait);
+            dispatchObservers.forEach(c -> {
+                try{
+                    c.postStop();
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
             });
-            scriptContexts.clear();
-
-           dispatchObservers.forEach(c -> {
-               try{
-                  c.postStop();
-               }catch(Exception e){
-                  e.printStackTrace();
-               }
-           });
         }else{
             logger.warn("ignoring stop call when already stopped");
         }

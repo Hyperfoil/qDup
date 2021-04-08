@@ -189,7 +189,10 @@ public class Run implements Runnable, DispatchObserver {
     @Override
     public void postStop(){
         timestamps.put(stage.getName()+"Stop",System.currentTimeMillis());
-        nextStage();
+        boolean started = nextStage();
+        if(!started){
+
+        }
         //this.setupEnvDiff.clear();//why are we clearing the setup env diff? don't we need it for cleanup too?
     }
     private boolean nextStage(){
@@ -234,8 +237,13 @@ public class Run implements Runnable, DispatchObserver {
                     postRun();//release any latches blocking a call to run()
                 }
                 break;
+            case PostCleanup:
             default:
+                //happens for abort
+                postRun();
+                break;
         }
+
         if(startDispatcher){
             if(hasRunObserver()){
                 for(RunObserver observer: runObservers){
@@ -366,6 +374,7 @@ public class Run implements Runnable, DispatchObserver {
             } else {
                 logger.warn("Skipping cleanup - Abort has been defined to not run any cleanup scripts");
                 stageUpdated.set(this, Stage.PostCleanup);//set the stage as PostCleanup so dispatcher.stop call to DispatchObserver.postStop will set it to Done
+
             }
             dispatcher.stop(false);//interrupts working threads and stops dispatching next commands
             //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts

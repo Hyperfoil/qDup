@@ -48,7 +48,8 @@ public class Local {
       this.passphrase = passphrase;
 
       if (hasIdentity() && hasPassphrase()) {
-         storePassphrase(getIdentity(), getPassphrase());
+         //TODO need fix: removed because we get an exception if there is a passPhrase to store
+         //storePassphrase(getIdentity(), getPassphrase());
       }
    }
 
