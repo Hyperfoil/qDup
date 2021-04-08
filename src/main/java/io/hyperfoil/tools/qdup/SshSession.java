@@ -485,6 +485,11 @@ public class SshSession {
                 }
             });
 
+            if(RunConfigBuilder.DEFAULT_PASSPHRASE==passphrase){
+                logger.trace("{} using {} identity without passphrase",getName(),identity);
+            }else{
+                logger.trace("{} using {} identity with a passphrase",getName(),identity);
+            }
             URLResource urlResource = new URLResource(Paths.get(identity).toUri().toURL());
             try (InputStream inputStream = urlResource.openInputStream()) {
                 Iterable<KeyPair> keyPairs = SecurityUtils.loadKeyPairIdentities(
