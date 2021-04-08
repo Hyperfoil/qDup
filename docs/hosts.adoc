@@ -48,5 +48,5 @@ Then run the script reading the password from a tmp file so it is not in the bas
 ....
 java -jar qdup-uber.jar -b /tmp/ -S _password="$(cat /tmp/secret.txt)" qdup.yaml
 ....
-`-S _password` sets the state variable password and the `__` prefix tells qDup to treat the
+`-S \_password` sets the state variable `password` and the `_` prefix tells qDup to treat the
 value as a secret and replace it with `\****` in the logs.

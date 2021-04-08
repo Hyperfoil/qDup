@@ -30,6 +30,8 @@ They occur after any pending `queue-download` from the run stage so it is safe t
 cat ~/.ssh/id_rsa.pub | ssh user@server 'cat >> .ssh/authorized_keys'
 ....
 
+TIP: For more information on how to configure ssh, please refer to link:./ssh-config.adoc[ssh-config]
+
 * Create a simple test script
 ....
 cat > helloworld.yaml << 'EOF'
