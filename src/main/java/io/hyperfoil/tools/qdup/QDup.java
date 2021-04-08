@@ -246,7 +246,7 @@ public class QDup {
                 Option.builder("p")
                         .longOpt("passphrase")
                         .desc("qdup passphrase for identify file [null]")
-                        .hasArgs()
+                        .hasArg()
                         .optionalArg(true)
                         .argName("password")
                         .type(String.class)
