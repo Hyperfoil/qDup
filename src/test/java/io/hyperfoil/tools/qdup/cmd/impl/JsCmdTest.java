@@ -9,6 +9,14 @@ import static org.junit.Assert.*;
 
 public class JsCmdTest {
 
+    @Test
+    public void return_regex_capture(){
+        JsCmd jsCmd = new JsCmd("function(a,b){ let rtrn = a.match(/<(.*)>/); return rtrn[1];}");
+        SpyContext context = new SpyContext();
+        jsCmd.run("<h1>",context);
+        assertEquals("js should return h1","h1",context.getNext());
+
+    }
 
     @Test
     public void return_true(){

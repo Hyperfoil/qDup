@@ -87,7 +87,7 @@ public class SetState extends Cmd {
     @Override
     public String getLogOutput(String output, Context context) {
         String useKey = populatedKey != null ? populatedKey : key;
-        String useValue = populatedValue != null ? populatedValue : value;
+        String useValue = populatedValue != null ? populatedValue : value != null ? value : "";
 
         if(isSilent()){
             return "set-state: " + useKey;

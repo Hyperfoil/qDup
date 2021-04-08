@@ -280,7 +280,6 @@ public class SshSession {
             blockingSemaphore.release();
         };
         this.executor = executor;
-        System.out.println(getName()+" identity = "+identity);
         connect(this.timeout * 1_000, setupCommand, this.trace);
     }
 

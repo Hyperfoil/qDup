@@ -395,103 +395,103 @@ public class ScriptContext implements Context, Runnable{
     public void run() {
         Cmd cmd = getCurrentCmd();
         Cmd previous = cmd !=null ? cmd.getPrevious() : null;
-        String input = cmd != null && cmd.getPrevious() != null ? cmd.getPrevious().getOutput() : "";
+        String input = previous != null ? previous.getOutput() : "";
         run(cmd,input);
     }
     public void run(Cmd cmd,String input){
-            if (cmd == null) {
-                observerDone();//this context is finished
-            } else {
-                observerPreStart(cmd);
-                getTimer().start(cmd.toString());
-                if (!lineQueue.isEmpty()) {//clear any unhandled output lines
-                    //TODO log that we are clearing orphaned lines
-                    //need to make sure we don't clear if another thread needs to pickup up the CLOSE_QUEUE
-                    try{
-                        lineQueueSemaphore.acquire();
-                        lineQueue.clear();
-                    } catch (InterruptedException e) {
-                        System.out.printf("Interrupted cmd=%s%n",cmd.toString());
-                        e.printStackTrace();
-                    } finally {
-                        lineQueueSemaphore.release();
-                    }
+        if (cmd == null) {
+            observerDone();//this context is finished
+        } else {
+            observerPreStart(cmd);
+            getTimer().start(cmd.toString());
+            if (!lineQueue.isEmpty()) {//clear any unhandled output lines
+                //TODO log that we are clearing orphaned lines
+                //need to make sure we don't clear if another thread needs to pickup up the CLOSE_QUEUE
+                try{
+                    lineQueueSemaphore.acquire();
+                    lineQueue.clear();
+                } catch (InterruptedException e) {
+                    System.out.printf("Interrupted cmd=%s%n",cmd.toString());
+                    e.printStackTrace();
+                } finally {
+                    lineQueueSemaphore.release();
+                }
 
-                }
-                long timestamp = System.currentTimeMillis();
-                setStartTime(timestamp);
-                setUpdateTime(timestamp);
-                if (cmd.hasSignalWatchers()){
-                    Supplier<String> inputSupplier = ()->getSession().peekOutput();
-                    for(String name : cmd.getSignalNames()){
-                        String populatedName = null;
-                        try {
-                            populatedName = StringUtil.populatePattern(name,new PatternValuesMap(cmd,this,null));
-                        } catch (PopulatePatternException e) {
-                            logger.warn(e.getMessage());
-                            populatedName = "";
-                        }
-                        List<Cmd> toCall = cmd.getSignal(name);
-                        Cmd root = new ActiveCheckCmd(getCurrentCmd());
-                        SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getTimer(),root,this);
-                        toCall.forEach(root::then);
-                        signalCmds.put(name,root);
-                        getCoordinator().waitFor(populatedName,root,syncContext,inputSupplier);
-                    }
-                }
-                if (cmd.hasTimers()) {
-                    for (Long timeout : cmd.getTimeouts()) {
-                        List<Cmd> toCall = cmd.getTimers(timeout);
-                        Cmd noOp = Cmd.NO_OP(""+timeout);
-                        noOp.setStateParent(cmd);
-                        toCall.forEach(noOp::then);
-                        addTimer(
-                            cmd,
-                            noOp,
-                            timeout
-                        );
-                    }
-                }
-                if (cmd.hasWatchers()) {
-                    String line = "";
+            }
+            long timestamp = System.currentTimeMillis();
+            setStartTime(timestamp);
+            setUpdateTime(timestamp);
+            if (cmd.hasSignalWatchers()){
+                Supplier<String> inputSupplier = ()->getSession().peekOutput();
+                for(String name : cmd.getSignalNames()){
+                    String populatedName = null;
                     try {
-                        getTimer().start("watch.acquire:"+cmd.toString());
-                        lineQueueSemaphore.acquire();
-                        getTimer().start("watch.start:"+cmd.toString());
-                        assert lineQueueSemaphore.availablePermits() == 0;
-
-                        cmd.doRun(input, this);
-                        while (!CLOSE_QUEUE.equals(line = lineQueue.take())) {
-                            logger.trace("watch.line: {}",line);
-                            for (Cmd watcher : cmd.getWatchers()) {
-                                SyncContext watcherContext = new SyncContext(
-                                   this.getSession(),
-                                   this.getState(),
-                                   this.getRun(),
-                                   this.getTimer(),
-                                   cmd,
-                                   this
-                                );
-                                try {
-
-                                    logger.trace("watcher.run {}",watcher);
-                                    watcherContext.forceCurrentCmd(watcher);
-                                    watcher.doRun(line, watcherContext);
-                                } catch (Exception e) {
-                                    logger.warn("Exception from watcher " + watcher + "\n  currentCmd=" + watcherContext.getCurrentCmd(), e);
-                                }
-                            }
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } finally {
-                        getTimer().start("watch.release:"+cmd.toString());
-                        lineQueueSemaphore.release();
-                        assert lineQueueSemaphore.availablePermits() == 1;
+                        populatedName = StringUtil.populatePattern(name,new PatternValuesMap(cmd,this,null));
+                    } catch (PopulatePatternException e) {
+                        logger.warn(e.getMessage());
+                        populatedName = "";
                     }
-                } else {
-                    cmd.doRun(input, this);
+                    List<Cmd> toCall = cmd.getSignal(name);
+                    Cmd root = new ActiveCheckCmd(getCurrentCmd());
+                    SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getTimer(),root,this);
+                    toCall.forEach(root::then);
+                    signalCmds.put(name,root);
+                    getCoordinator().waitFor(populatedName,root,syncContext,inputSupplier);
                 }
             }
+            if (cmd.hasTimers()) {
+                for (Long timeout : cmd.getTimeouts()) {
+                    List<Cmd> toCall = cmd.getTimers(timeout);
+                    Cmd noOp = Cmd.NO_OP(""+timeout);
+                    noOp.setStateParent(cmd);
+                    toCall.forEach(noOp::then);
+                    addTimer(
+                        cmd,
+                        noOp,
+                        timeout
+                    );
+                }
+            }
+            if (cmd.hasWatchers()) {
+                String line = "";
+                try {
+                    getTimer().start("watch.acquire:"+cmd.toString());
+                    lineQueueSemaphore.acquire();
+                    getTimer().start("watch.start:"+cmd.toString());
+                    assert lineQueueSemaphore.availablePermits() == 0;
+
+                    cmd.doRun(input, this);
+                    while (!CLOSE_QUEUE.equals(line = lineQueue.take())) {
+                        logger.trace("watch.line: {}",line);
+                        for (Cmd watcher : cmd.getWatchers()) {
+                            SyncContext watcherContext = new SyncContext(
+                               this.getSession(),
+                               this.getState(),
+                               this.getRun(),
+                               this.getTimer(),
+                               cmd,
+                               this
+                            );
+                            try {
+
+                                logger.trace("watcher.run {}",watcher);
+                                watcherContext.forceCurrentCmd(watcher);
+                                watcher.doRun(line, watcherContext);
+                            } catch (Exception e) {
+                                logger.warn("Exception from watcher " + watcher + "\n  currentCmd=" + watcherContext.getCurrentCmd(), e);
+                            }
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    getTimer().start("watch.release:"+cmd.toString());
+                    lineQueueSemaphore.release();
+                    assert lineQueueSemaphore.availablePermits() == 1;
+                }
+            } else {
+                cmd.doRun(input, this);
+            }
+        }
     }
 }

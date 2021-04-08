@@ -55,7 +55,7 @@ public class ScriptCmd extends Cmd {
 
     @Override
     public String getOutput() {
-        String rtrn = callback.getOutput();
+        String rtrn = callback.getOutput() == null ? super.getOutput() : callback.getOutput();
         return rtrn;
     }
 
@@ -97,6 +97,7 @@ public class ScriptCmd extends Cmd {
     public void run(String input, Context context) {
         clearToCall();
         populatedName = populateStateVariables(name,this,context);
+
         Script toCall = context.getScript(populatedName,this);
         Cmd originalNext = getNext();
         if(toCall == null){

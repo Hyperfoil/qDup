@@ -226,6 +226,52 @@ public class ScriptCmdTest extends SshTestBase {
    }
 
    @Test
+   public void script_input(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+         "scripts:",
+         "  echo:",
+         "  - set-state: RUN.scriptInput",
+         "  foo:",
+         "   - sh: echo \"foo\"",
+         "   - script: echo",
+         "hosts:",
+         "  local: " + getHost(),
+         "roles:",
+         "  doit:",
+         "    hosts: [local]",
+         "    run-scripts: [foo]"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+
+      Script script = config.getScript("echo");
+      assertNotNull("should find foo script",script);
+      Cmd tail = script.getTail();
+
+      AtomicBoolean ran = new AtomicBoolean(false);
+      StringBuilder seen = new StringBuilder();
+      tail.then(Cmd.code((input,state)->{
+         ran.set(true);
+         seen.append(input);
+         return Result.next(input);
+      }));
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
+
+      State state = config.getState();
+      assertTrue("code should have run",ran.get());
+      assertEquals("code should see foo as input","foo",seen.toString());
+
+      Object found = state.get("scriptInput");
+      assertNotNull("scriptInput should exist in state\n"+state.tree(),found);
+      assertEquals("scriptInput should contain foo","foo",found.toString());
+   }
+
+   @Test
    public void script_then(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
