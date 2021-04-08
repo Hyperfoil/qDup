@@ -7,17 +7,22 @@ import io.hyperfoil.tools.qdup.stream.SessionStreams;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.resource.URLResource;
@@ -423,6 +428,38 @@ public class SshSession {
                 logger.trace("{} accept server key for {}",SshSession.this.getName(),remoteAddress);
                 return true;
             });
+            if(host.hasPassword()){
+                logger.trace("{} setting client password provider {}",getName(),identity);
+                sshClient.setPasswordIdentityProvider(() -> Arrays.asList(host.getPassword()));
+            }
+            if(passphrase != RunConfigBuilder.DEFAULT_PASSPHRASE){
+                logger.trace("{} setting client passphrase",getName());
+                sshClient.setFilePasswordProvider((SessionContext sessionContext, NamedResource namedResource, int i)->{
+                    return passphrase;
+                });
+            }
+            if(!RunConfigBuilder.DEFAULT_IDENTITY.equals(identity)){
+                logger.trace("{} setting client identity {}",getName(),identity);
+                URLResource urlResource = new URLResource(Paths.get(identity).toUri().toURL());
+                try (InputStream inputStream = urlResource.openInputStream()) {
+                    Iterable<KeyPair> keyPairs = SecurityUtils.loadKeyPairIdentities(
+                            clientSession,
+                            urlResource,
+                            inputStream,
+                            (session, resourceKey, retryIndex) -> passphrase
+                    );
+                    KeyPair keyPair = GenericUtils.head(keyPairs);
+                    if(keyPair == null){
+                        if(passphrase == RunConfigBuilder.DEFAULT_PASSPHRASE){
+                            logger.error("{} cannot set client identity {} without a passphrase",getName(),identity);
+                        }else{
+                            logger.error("{} cannot set client identity {} using the provided passphrase",getName(),identity);
+                        }
+                        return false; // we failed to connect
+                    }
+                    sshClient.setKeyIdentityProvider((sessionContext -> {return keyPairs;}));
+                }
+            }
             sshClient.start();
 
             ConnectFuture future = sshClient.connect(host.getUserName(), host.getHostName(), host.getPort());
