@@ -4,29 +4,24 @@ package io.hyperfoil.tools.qdup;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.stream.MultiStream;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
-import io.hyperfoil.tools.yaup.AsciiArt;
-import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.PtyMode;
-import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.resource.URLResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -35,6 +30,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -418,9 +414,9 @@ public class SshSession {
                     logger.trace("{} client disconnected",SshSession.this.getName());
                 }
             });
-            PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.IDLE_TIMEOUT, Long.MAX_VALUE);
-            PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO2_READ_TIMEOUT, Long.MAX_VALUE); //so no InterruptedByTimeoutException
-            PropertyResolverUtils.updateProperty(sshClient, ClientFactoryManager.NIO_WORKERS, 1);
+            CoreModuleProperties.IDLE_TIMEOUT.set(sshClient, Duration.ofSeconds(3600));
+            CoreModuleProperties.NIO2_READ_TIMEOUT.set(sshClient, Duration.ofSeconds(3600));
+            CoreModuleProperties.NIO_WORKERS.set(sshClient, 1);
             // StrictHostKeyChecking=no
             //        sshConfig = new Properties();
             //        sshConfig.put("StrictHostKeyChecking", "no");
