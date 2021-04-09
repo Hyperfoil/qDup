@@ -551,7 +551,9 @@ public class SshSession {
                 clientSession.addPasswordIdentity(host.getPassword());
             }
             //clientSession.auth().verify(this.timeout * 1_000);
+            logger.trace("{} authenticating client session",getName());
             boolean sessionResponse = clientSession.auth().verify().await(this.timeout * 1_000);
+            logger.trace("{} waiting for authentication",getName());
             clientSession.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.AUTHED), 0L);
 
             //setup all the streams
@@ -585,7 +587,9 @@ public class SshSession {
             sessionStreams.addPrompt(PROMPT, PROMPT, "");
             sessionStreams.addPromptCallback(this.semaphoreCallback);
 
+            logger.trace("{} creating channel shell",getName());
             channelShell = clientSession.createShellChannel();
+
             channelShell.getPtyModes().put(PtyMode.ECHO, 1);//need echo for \n from real SH but adds gargage chars for test :(
             channelShell.setPtyType("vt100"); // channelShell.setPtyType("xterm");
             channelShell.setPtyColumns(10 * 1024);//hack to get around " \r" when line is longer than shell width
@@ -601,10 +605,12 @@ public class SshSession {
             setTrace(trace);
 
             if (timeoutMillis > 0) {
+                logger.trace("{} opening and verifying channel shell with {} timeout",getName(),timeoutMillis);
                 boolean response = channelShell.open().verify().await(timeoutMillis);
                 //channelShell.open().verify(timeoutMillis).isOpened();
 
             } else {
+                logger.trace("{} opening and verifying channel shell",getName());
                 channelShell.open().verify().isOpened();
             }
             commandStream = new PrintStream(channelShell.getInvertedIn());
@@ -644,7 +650,7 @@ public class SshSession {
 
         } catch (GeneralSecurityException | IOException e) {
             //e.printStackTrace();
-            logger.debug("Exception while connecting to {}@{}\n{}", host.getUserName(), host.getHostName(), e.getMessage(), e);
+            logger.debug("Exception while connecting to {}@{} using {}\n{}", host.getUserName(), host.getHostName(), identity, e.getMessage(), e);
         } finally {
             logger.trace("{} session.isOpen={} shell.isOpen={}",
                     this.getName(),
