@@ -157,8 +157,11 @@ public class FilteredStream extends MultiStream{
                         String matchedName = "";
 
                         //hack because ConcurrentModificationException from Sh calling before loop finishes :(
-                        Set<String> filterNames = new HashSet<>(filters.keySet());
-                        for(String name : filterNames){
+                        //Set<String> filterNames = new HashSet<>(filters.keySet());
+                        //for(String name : filterNames){
+                        String filterNames[] = filters.keySet().toArray(new String[0]);
+                        for(int i=0; i<filterNames.length; i++){
+                            String name = filterNames[i];
                             byte[] filter = filters.get(name);
                             if(filter!=null){
                                 int prefixLength = prefixLength(buffered, filter, currentIndex, writeIndex-currentIndex);
