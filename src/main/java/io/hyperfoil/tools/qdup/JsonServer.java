@@ -172,10 +172,18 @@ public class JsonServer implements RunObserver, ContextObserver {
             if(found != null){
                 String send  = rc.getBodyAsString();
                 if(send != null && !send.trim().isEmpty()){
-                   if("^C".equals(send)){
-                      if(found.getSession()!=null){
-                         found.getSession().ctrlC();
-                      }
+                   if("^C".equals(send.toUpperCase())) {
+                       if (found.getSession() != null) {
+                           found.getSession().ctrlC();
+                       }
+                   }else if ("^\\".equals(send)) {
+                       if (found.getSession() != null) {
+                           found.getSession().ctrl('\\');
+                       }
+                   }else if (send.startsWith("^") && send.length()==2){
+                       if(found.getSession() != null) {
+                           found.getSession().ctrl(send.charAt(1));
+                       }
                    }else{
                       if(found.getSession()!=null){
                          found.getSession().response(send);
