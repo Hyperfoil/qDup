@@ -6,6 +6,7 @@ import org.slf4j.ext.XLoggerFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,7 @@ public class FilteredStream extends MultiStream{
     public FilteredStream(String name){
         super(name);
         buffered = new byte[20*1024];//4k was growing with most runs, 20k seems to work better
-        filters = new LinkedHashMap<>();//to ensure key order
+        filters = new ConcurrentHashMap<>();//to ensure key order
         replacements = new HashMap<>();
         observers = new LinkedList<>();
     }
