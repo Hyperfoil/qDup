@@ -179,7 +179,7 @@ public class SshTestBase {
         hostname = container.getContainerIpAddress();
         //host = new Host(System.getProperty("user.name"),hostname);
         //host = new Host("root",hostname,"password",container.getMappedPort(22));
-        host = new Host("root",hostname,null,container.getMappedPort(22));
+        host = new Host("root",hostname,null,container.getMappedPort(22),null);
     }
     private static Host host;
 

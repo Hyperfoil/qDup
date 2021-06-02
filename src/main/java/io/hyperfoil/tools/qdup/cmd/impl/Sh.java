@@ -53,9 +53,11 @@ public class Sh extends Cmd {
     public void run(String input, Context context) {
         populatedCommand = populateStateVariables(command,this,context);
         if(Cmd.hasStateReference(populatedCommand,this)){
+            List<String> missing = Cmd.getStateVariables(populatedCommand,this,context);
             context.error(
-               String.format("Abort! Failed to populate pattern: %s",
-                  command
+               String.format("Abort! Failed to populate pattern: %s%n missing %s",
+                  command,
+                  missing
                )
             );
             context.abort(false);
@@ -102,7 +104,7 @@ public class Sh extends Cmd {
         String toLog = getLogOutput(output,context);
         //not working in benchlab?
 
-        if(context.getSession()!=null && context.getSession().isOpen() && SshSession.PROMPT.equals(getPreviousPrompt())){
+        if(context.getSession()!=null && context.getSession().isOpen() && SshSession.PROMPT.equals(getPreviousPrompt()) && context.getSession().getHost().isSh()){
             String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
             context.getSession().shSync("(exit $__qdup_ec);");
             context.getSession().flushAndResetBuffer();

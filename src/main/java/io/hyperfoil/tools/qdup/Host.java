@@ -1,10 +1,5 @@
 package io.hyperfoil.tools.qdup;
 
-import io.hyperfoil.tools.yaup.AsciiArt;
-
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
 /**
  * Created by wreicher
  * A POJO for the host connection information. Does not support saving passwords, set up qdup keys :)
@@ -12,7 +7,7 @@ import java.util.stream.Collectors;
 public class Host {
 
     public static final String HOST_PATTERN = "\\w+(?::.*?)@\\w[\\w\\-]*(?:\\.\\w[\\w\\-])*(?::\\d+)*.*";
-
+    public static final String NO_PROMPT = null;
     public static Host parse(String fullyQualified) {
         Host rtrn = null;
         if (fullyQualified.contains("@")) {
@@ -29,7 +24,7 @@ public class Host {
                 port = Integer.parseInt(hostname.substring(hostname.indexOf(":") + 1));
                 hostname = hostname.substring(0, hostname.indexOf(":"));
             }
-            rtrn = new Host(username, hostname, password, port);
+            rtrn = new Host(username, hostname, password, port, null);
         }
         return rtrn;
     }
@@ -39,18 +34,27 @@ public class Host {
     private String password;
     private String userName;
     private int port;
+    private boolean isSh = true;
+    private String prompt = null; //
     public Host(String userName,String hostName){
         this(userName,hostName,DEFAULT_PORT);
     }
     public Host(String userName,String hostName,int port){
-        this(userName,hostName,null,port);
+        this(userName,hostName,null,port,NO_PROMPT);
     }
-    public Host(String userName,String hostName,String password,int port){
+    public Host(String userName,String hostName,String password,int port){this(userName, hostName,password,port,NO_PROMPT);}
+    public Host(String userName,String hostName,String password,int port,String prompt){
         this.userName = userName;
         this.hostName = hostName;
         this.password = password;
         this.port = port;
+        this.isSh = prompt == NO_PROMPT || prompt.isBlank();
+        this.prompt = prompt;
     }
+
+    public boolean hasPrompt(){return prompt!=null;}
+    public String getPrompt(){return prompt;}
+    public boolean isSh(){return isSh;}
     public boolean hasPassword(){return password!=null && !password.isEmpty();}
     public String getPassword(){return password;}
     public String getUserName(){return userName;}

@@ -26,7 +26,8 @@ public class HostConstruct extends DeferableConstruct {
                         json.getString("username"),
                         json.getString("hostname"),
                         json.getString("password",null),
-                        (int)json.getLong("port",Host.DEFAULT_PORT)
+                        (int)json.getLong("port",Host.DEFAULT_PORT),
+                        json.getString("prompt",null)
                 );
             }
             Set<Object> extra = Sets.unique(json.keys(),Sets.of("hostname","username","password","port"));
