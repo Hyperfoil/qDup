@@ -143,7 +143,7 @@ public class Dispatcher {
         scriptContexts.values().forEach(context->{
             Json entry = new Json();
             entry.set("id", context.getContextId());
-            entry.set("host", context.getHost().toString());
+            entry.set("host", context.getHost().getSafeString());
             entry.set("script", context.getRootCmd().toString());
             entry.set("cmdUid", context.getRootCmd().getUid());
 
@@ -412,9 +412,14 @@ public class Dispatcher {
                     nannyFuture = null;
                 }
                 //needs to occur before we notify observers because observers can queue next stage
-                scriptContexts.values().forEach(ctx->{
+                scriptContexts.forEach((cmd,ctx)->{
+                    if(cmd instanceof Sh){
+                        String peekOutput = ctx.getSession().peekOutput();
+                        cmd.postRun(peekOutput,ctx);
+                    }
                     ctx.closeLineQueue();
                     ctx.getSession().close(wait);
+
                 });
                 scriptContexts.clear();
             }

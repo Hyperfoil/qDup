@@ -16,7 +16,7 @@ public class Echo extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        logger.info(input); //TODO should echo also go to the run logger?
+        //logger.info(input);
         context.next(input);
     }
 

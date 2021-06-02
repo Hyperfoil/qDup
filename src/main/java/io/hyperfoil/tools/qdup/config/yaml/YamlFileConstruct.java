@@ -142,7 +142,8 @@ public class YamlFileConstruct extends DeferableConstruct {
                                        json.getString("username"),
                                        json.getString("hostname"),
                                        json.getString("password",null),
-                                       (int)json.getLong("port",Host.DEFAULT_PORT)
+                                       (int)json.getLong("port",Host.DEFAULT_PORT),
+                                        json.getString("prompt",null)
                                     ).toString());
                                 }else{
                                     throw new YAMLException("cannot create host from "+hostNode.getStartMark());

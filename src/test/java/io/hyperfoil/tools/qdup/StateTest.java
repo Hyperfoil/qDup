@@ -18,6 +18,35 @@ import static org.junit.Assert.*;
 
 public class StateTest extends SshTestBase{
 
+
+    @Test
+    public void has_jsonpath_search_found(){
+        State s = new State("");
+        s.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
+        boolean found = s.has("key[?(@.key == \"uno-uno\")]");
+        assertTrue(found);
+    }
+    @Test
+    public void has_jsonpath_search_missing(){
+        State s = new State("");
+        s.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
+        boolean found = s.has("key[?(@.key == \"uno-dos\")]");
+        assertTrue(found);
+    }
+    @Test
+    public void get_jsonpath_search_found(){
+        State s = new State("");
+        s.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
+        Object found = s.get("key[?(@.key == \"uno-uno\")]");
+    }
+    @Test
+    public void get_jsonpath_search_missing(){
+        State s = new State("");
+        s.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
+        Object found = s.get("key[?(@.key == \"uno-dos\")]");
+    }
+
+
     @Test
     public void run_read_in_cleanup_from_host_insetup(){
         Parser parser = Parser.getInstance();

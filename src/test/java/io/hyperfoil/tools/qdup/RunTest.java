@@ -11,6 +11,7 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -120,6 +121,45 @@ public class RunTest extends SshTestBase {
 
       doit.run();
       //TODO post doit validation?
+   }
+
+   @Test
+   public void duplicate_script_different_with(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+        "scripts:",
+        "  foo:",
+        "    - log: value=${{value}}",
+        "    - set-state: RUN.foo ${{= [ ...${{RUN.foo:[]}} ,  '${{value:missing}}' ] }}",
+        "hosts:",
+        "  local: " + getHost(),
+        "roles:",
+        "  doit:",
+        "    hosts: [local]",
+        "    run-scripts:",
+        "    - foo:",
+        "        with:",
+        "           value: 'one'",
+        "    - foo:",
+        "        with:",
+        "           value: 'two'",
+        "states:",
+        "  foo: []"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+
+      State state = config.getState();
+      assertTrue("state.foo should exist",state.has("foo"));
+      assertTrue("foo should be json: "+state.get("foo"),state.get("foo") instanceof Json);
+      Json foo = (Json)state.get("foo");
+      assertTrue("foo should be an array:"+foo,foo.isArray());
+      assertEquals("foo should have 2 entries",2,foo.size());
    }
 
    @Test
@@ -1234,7 +1274,7 @@ public class RunTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("",stream(""+
-            "scripts:",
+         "scripts:",
          "  foo:",
          "  - sh: sleep 10s",
          "    with:",

@@ -581,6 +581,9 @@ public class SshSession {
                 }
             };
             sessionStreams.addPrompt(PROMPT, PROMPT, "");
+            if(host.hasPrompt()){
+                sessionStreams.addPrompt(host.getPrompt(),host.getPrompt(),"");
+            }
             sessionStreams.addPromptCallback(this.semaphoreCallback);
 
             logger.trace("{} creating channel shell",getName());
@@ -610,7 +613,9 @@ public class SshSession {
                 channelShell.open().verify().isOpened();
             }
             commandStream = new PrintStream(channelShell.getInvertedIn());
-            shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"");
+            if(host.isSh()) {
+                shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"");
+            }
             if (setupCommand != null && !setupCommand.trim().isEmpty()) {
                 shConnecting(setupCommand);
             } else {

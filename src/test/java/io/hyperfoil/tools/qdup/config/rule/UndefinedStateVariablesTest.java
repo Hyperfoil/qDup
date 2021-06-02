@@ -16,6 +16,41 @@ import static org.junit.Assert.*;
 public class UndefinedStateVariablesTest extends SshTestBase {
 
     @Test
+    public void from_separate_file_state_jsonpath_reference_constant_with_minus(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+                "scripts:",
+                "  test:",
+                "  - sh: echo ${{hosts}}",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - test",
+                "states:",
+                "  from_state: in_state"
+        )));
+        builder.loadYaml(parser.loadFile("state",stream(""+
+                "states:",
+                "  hosts:",
+                "  - name: foo-bar",
+                "    ip: \"127.0.0.1\"",
+                "  - name: bar",
+                "    ip: \"0.0.0.0\""
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("config should not have errors: "+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        RunSummary summary = new RunSummary();
+        UndefinedStateVariables rule = new UndefinedStateVariables(parser);
+        summary.addRule("state",rule);
+        summary.scan(config.getRolesValues(),builder);
+        assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+    }
+
+    @Test
     public void value_set_as_path_used_as_parent(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();

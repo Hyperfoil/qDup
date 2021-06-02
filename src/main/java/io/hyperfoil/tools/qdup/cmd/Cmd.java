@@ -507,6 +507,15 @@ public abstract class Cmd {
       }
    }
 
+   public static List<String> getStateVariables(String command, Cmd cmd, Context context){
+      return getStateVariables(
+              command,
+              cmd,
+              context!=null ? context.getState() : null,
+              command!=null ? context.getCoordinator() : null,
+              new Ref(cmd)
+      );
+   }
    public static List<String> getStateVariables(String command, Cmd cmd, State state, Coordinator coordinator,Ref ref){
       PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,ref);
       List<String> rtrn = Collections.EMPTY_LIST;      if(cmd==null){

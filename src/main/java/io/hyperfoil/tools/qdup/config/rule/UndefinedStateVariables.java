@@ -94,6 +94,17 @@ public class UndefinedStateVariables implements RunRule {
             rtrn = rtrn.substring(SecretFilter.SECRET_NAME_PREFIX.length());
         }
         rtrn = State.removeStatePrefix(rtrn);
+        //if rtrn is a jsonpath we only concern ourselves with the start
+        if(rtrn.contains("?(")){
+            rtrn = rtrn.substring(0,rtrn.indexOf("?("));
+        }
+        if(rtrn.contains("..")){
+            rtrn = rtrn.substring(0,rtrn.indexOf(".."));
+        }
+        if(rtrn.endsWith("[") || rtrn.endsWith(".")){
+            rtrn = rtrn.substring(0,rtrn.length()-1);
+        }
+
         return rtrn;
     }
 
@@ -120,7 +131,6 @@ public class UndefinedStateVariables implements RunRule {
             setVariables.containsKey(trimmed) ||
                 setVariables.keys().stream()
                     .filter(var -> {
-
                         return trimmed.equals(var) ||
                         (trimmed.startsWith(var)  && trimmed.length() > var.length() && ".[".contains(""+trimmed.charAt(var.length()))) ||
                         (var.startsWith(trimmed) && var.length() > trimmed.length() && ".[".contains(""+var.charAt(trimmed.length())) );

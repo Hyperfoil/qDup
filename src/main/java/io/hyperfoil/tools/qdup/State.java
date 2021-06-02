@@ -252,6 +252,12 @@ public class State {
                 currentKey = currentKey.substring(target.prefix.length());
             }
             rtrn = target.json.has(currentKey) || Json.find(target.json,currentKey.startsWith("$") ? currentKey : "$." + currentKey)!=null;
+            if(!rtrn && Json.isJsonSearchPath(currentKey)){
+                String keyPrefix = Json.getPreSearchPath(currentKey);
+                if(!keyPrefix.isBlank()){
+                    rtrn = target.json.has(keyPrefix) || Json.find(target.json,keyPrefix.startsWith("$") ? keyPrefix : "$." + keyPrefix)!=null;
+                }
+            }
             target = target.parent;
         }
         return rtrn;
@@ -301,6 +307,12 @@ public class State {
                     currentKey = currentKey.substring(target.prefix.length());
                 }
                 rtrn = target.json.has(currentKey) ? target.json.get(currentKey) : Json.find(target.json,currentKey.startsWith("$") ? currentKey : "$."+currentKey);
+                if(rtrn == null && Json.isJsonSearchPath(currentKey)){
+                    String keyPrefix = Json.getPreSearchPath(currentKey);
+                    if(!keyPrefix.isBlank()){
+                        rtrn = Json.find(target.json,keyPrefix.startsWith("$") ? keyPrefix : "$." + keyPrefix);
+                    }
+                }
             } while (rtrn == null && (target = target.parent) != null);
         }
         return rtrn;

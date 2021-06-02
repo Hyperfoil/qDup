@@ -45,7 +45,7 @@ public class RegexTest extends SshTestBase {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
+                "scripts:",
                 "  foo:",
                 "  - regex: \"Red Hat Enterprise Linux CoreOS\"",
                 "    then:",
@@ -127,6 +127,46 @@ public class RegexTest extends SshTestBase {
         assertEquals("regex should be MISS", "MISS", state.getString("regex"));
 
     }
+
+    @Test
+    public void debug_alternatives() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("", stream("" +
+                "scripts:",
+                "  foo:",
+                "  - sh: alternatives --display java",
+                "  - regex: \" link currently points to (?<RUN.java_home>/.*?)(?:/jre)?/bin/java\"",
+                "    then:",
+                "    - set-state: RUN.found true",
+                "    else:",
+                "    - set-state: RUN.found false",
+                "hosts:",
+                "  local: " + "jenkins@mwperf-server03.perf.lab.eng.rdu2.redhat.com",//getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]",
+                "states:"
+        )));
+
+        RunConfig config = builder.buildConfig(parser);
+
+        Dispatcher dispatcher = new Dispatcher();
+
+        List<String> signals = new ArrayList<>();
+
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+
+        assertTrue("state should have found", state.has("found"));
+
+    }
+
+
 
     @Test
     public void regex_template_in_pattern() {
