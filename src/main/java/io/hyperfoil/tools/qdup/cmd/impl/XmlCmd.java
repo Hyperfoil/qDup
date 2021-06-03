@@ -75,7 +75,12 @@ public class XmlCmd extends Cmd {
             }else{
                 tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHost().getHostName(),"."+System.currentTimeMillis());
 
-                context.getLocal().download(remotePath,tmpDest.getPath(),context.getSession().getHost());
+                boolean ok = context.getLocal().download(remotePath,tmpDest.getPath(),context.getSession().getHost());
+                if(!ok){
+                    successful=false;
+                    context.error("failed to fetch xml file "+remotePath);
+                    context.abort(false);
+                }
                 xml = Xml.parseFile(tmpDest.getPath());
             }
             for(int i=0; i<operations.size(); i++){
@@ -116,7 +121,12 @@ public class XmlCmd extends Cmd {
                     out.print(xml.documentString());
                     out.flush();
                 }
-                context.getLocal().upload(tmpDest.getPath(), remotePath, context.getSession().getHost());
+                boolean ok = context.getLocal().upload(tmpDest.getPath(), remotePath, context.getSession().getHost());
+                if(!ok){
+                    successful=false;
+                    context.error("failed to upload xml to "+remotePath);
+                    context.abort(false);
+                }
             }
         } catch (IOException e) {
             logger.error("{}@{} failed to create local tmp file",this.toString(),context.getSession().getHost().getHostName(),e);

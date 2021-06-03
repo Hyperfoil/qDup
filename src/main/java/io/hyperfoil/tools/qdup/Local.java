@@ -83,12 +83,12 @@ public class Local {
       return this.passphrase;
    }
 
-   public void upload(String path, String destination, Host host) {
+   public boolean upload(String path, String destination, Host host) {
       if (path == null || path.isEmpty() || destination == null || destination.isEmpty()) {
-
+         return false;
       } else {
          logger.info("Local.upload({},{}@{}:{})", path, host.getUserName(), host.getHostName(), destination);
-         rsyncSend(host, path, destination);
+         return rsyncSend(host, path, destination);
       }
    }
 
@@ -126,13 +126,13 @@ public class Local {
       }
    }
 
-   public void download(String path, String destination, Host host) {
+   public boolean download(String path, String destination, Host host) {
 
       if (path == null || path.isEmpty() || destination == null || destination.isEmpty()) {
-
+         return false;
       } else {
          logger.info("Local.download({}:{},{})", host, path, destination);
-         rsyncFetch(host, path, destination);
+         return rsyncFetch(host, path, destination);
       }
    }
 
@@ -191,11 +191,11 @@ public class Local {
       return cmd;
    }
 
-   private void rsyncSend(Host host, String path, String dest) {
+   private boolean rsyncSend(Host host, String path, String dest) {
       File sourceFile = new File(path);
       if(!sourceFile.exists()){
          logger.error("Cannot send {} because it does not exist",path);
-         return;
+         return false;
       }
 
       List<String> cmd = rsyncBaseCmd(host);
@@ -203,7 +203,7 @@ public class Local {
       cmd.add(path);
       cmd.add(host.getUserName() + "@" + host.getHostName() + ":" + dest);
 
-      runRsyncCmd(cmd, "rsyncSend", line -> logger.trace("  I: {}", line));
+      return runRsyncCmd(cmd, "rsyncSend", line -> logger.trace("  I: {}", line));
 
    }
 
@@ -237,7 +237,7 @@ public class Local {
       return fileSize.get();
    }
 
-   private void rsyncFetch(Host host, String path, String dest) {
+   private boolean rsyncFetch(Host host, String path, String dest) {
       File destinationFile = new File(dest);
       if (!destinationFile.exists()) {
          if (destinationFile.isDirectory()) {
@@ -256,11 +256,12 @@ public class Local {
       cmd.add(host.getUserName() + "@" + host.getHostName() + ":" + path);
       cmd.add(dest);
 
-      runRsyncCmd(cmd, "rsyncFetch", line -> logger.trace("  I: {}", line));
+      return runRsyncCmd(cmd, "rsyncFetch", line -> logger.trace("  I: {}", line));
 
    }
 
-   private void runRsyncCmd(List<String> cmd, String action, Consumer<String> inputStreamConsumer){
+   private boolean runRsyncCmd(List<String> cmd, String action, Consumer<String> inputStreamConsumer){
+      boolean rtrn = true;//worked
       ProcessBuilder builder = new ProcessBuilder();
       builder.command(cmd);
       logger.debug("Running rsync command : " + cmd.stream().collect(Collectors.joining(" ")));
@@ -277,6 +278,10 @@ public class Local {
          BufferedReader reader = null;
          reader = new BufferedReader(new InputStreamReader(errorStream));
          while ((line = reader.readLine()) != null) {
+            if(rtrn){
+               logger.error(" E: {}", cmd.stream().collect(Collectors.joining(" ")));
+               rtrn = false;
+            }
             logger.error("  E: {}", line);
          }
          reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -285,10 +290,13 @@ public class Local {
          }
 
       } catch (IOException e) {
+         rtrn = false;
          e.printStackTrace();
       } catch (InterruptedException e) {
 //         logger.warn("rysnc was interrupted: " + path);
+         rtrn = false;
          Thread.interrupted();
       }
+      return rtrn;
    }
 }
