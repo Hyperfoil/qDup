@@ -60,9 +60,7 @@ public class Download extends Cmd {
         if(!destinationFile.exists()){
             destinationFile.mkdirs();
         }
-
         boolean canDownload = true;
-
         if(maxSize != null){
             Long remoteFileSize = local.remoteFileSize(remotePath,host);
             if(remoteFileSize > maxSize){
@@ -71,7 +69,11 @@ public class Download extends Cmd {
             }
         }
         if(canDownload) {
-            local.download(remotePath, destinationPath, host);
+            boolean worked = local.download(remotePath, destinationPath, host);
+            if(!worked){
+                context.error("failed to download "+remotePath+" to "+destinationPath);
+                context.abort(false);
+            }
         }
     }
 

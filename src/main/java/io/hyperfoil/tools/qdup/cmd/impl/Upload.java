@@ -28,11 +28,15 @@ public class Upload extends Cmd {
             context.getSession().sh("mkdir -p " + populatedDestination);
         }
         
-        context.getLocal().upload(
+        boolean worked = context.getLocal().upload(
             populatedPath,
             populatedDestination,
             context.getSession().getHost()
         );
+        if(!worked){
+            context.error("failed to upload "+populatedPath+" to "+populatedDestination);
+            context.abort(false);
+        }
         context.next(path);
     }
 
