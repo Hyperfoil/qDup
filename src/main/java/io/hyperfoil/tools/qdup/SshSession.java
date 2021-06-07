@@ -426,7 +426,7 @@ public class SshSession {
             });
             if(host.hasPassword()){
                 logger.trace("{} setting client password provider {}",getName(),identity);
-                sshClient.setPasswordIdentityProvider(() -> Arrays.asList(host.getPassword()));
+                sshClient.setPasswordIdentityProvider((sc) -> Arrays.asList(host.getPassword()));
             }
             if(passphrase != RunConfigBuilder.DEFAULT_PASSPHRASE){
                 logger.trace("{} setting client passphrase",getName());
