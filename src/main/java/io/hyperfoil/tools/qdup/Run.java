@@ -131,6 +131,7 @@ public class Run implements Runnable, DispatchObserver {
         consoleLayout.setContext(lc);
         consoleLayout.start();
         consoleAppender = new ConsoleAppender<>();
+        consoleAppender.setName("qdup-console");
         consoleAppender.setEncoder(consoleLayout);
         consoleAppender.setContext(lc);
         consoleAppender.start();
@@ -144,6 +145,7 @@ public class Run implements Runnable, DispatchObserver {
 
         fileAppender = new FileAppender<>();
         fileAppender.setFile(this.outputPath+ File.separator+"run.log");
+        fileAppender.setName("qdup-file");
         fileAppender.setEncoder(fileLayout);
         fileAppender.setContext(lc);
         fileAppender.start();
@@ -388,6 +390,11 @@ public class Run implements Runnable, DispatchObserver {
     public void run() {
         if(Stage.Pending.equals(stage)){
 
+
+
+
+
+
             //TODO enable jitter check? what amount of jitter matters for qDup?
 //            Thread jitterThread = new Thread(new JitterCheck(),"jitter-check");
 //            jitterThread.setDaemon(true);
@@ -427,7 +434,9 @@ public class Run implements Runnable, DispatchObserver {
             //moved to here because abort would avoid the cleanup in postRun()
             //will need to move if runLatch becomes optional
             fileAppender.stop();
+            runLogger.detachAppender(fileAppender);
             consoleAppender.stop();
+            runLogger.detachAppender(consoleAppender);
             writeRunJson();
         }
     }
@@ -484,7 +493,10 @@ public class Run implements Runnable, DispatchObserver {
         Script setup = removeTempDirectory();
         config.getAllHostsInRoles().forEach(host->{
             connectSessions.add(()->{
-                String name = "post-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
+                String name = "post-cleanup@"+host.getShortHostName();
+                if(config.getSettings().has(RunConfig.TRACE_NAME)){
+                    name = name+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
+                }
                 SshSession session = new SshSession(
                     name,
                     host,

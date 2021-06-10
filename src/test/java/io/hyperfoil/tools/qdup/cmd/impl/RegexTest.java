@@ -129,6 +129,45 @@ public class RegexTest extends SshTestBase {
     }
 
     @Test
+    public void override_foreach_with_regex_state() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("", stream("" +
+                "scripts:",
+                "  foo:",
+                "  - for-each: foo [\"uno/one\"]",
+                "    then:",
+                "    - set-state: RUN.before ${{foo}}",
+                "    - regex: \"uno/(?<foo>.*)\"",
+                "      then:",
+                "      - set-state: RUN.during ${{foo}}",//
+                "    - set-state: RUN.after ${{foo}}",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]",
+                "states:"
+        )));
+
+        RunConfig config = builder.buildConfig(parser);
+        Dispatcher dispatcher = new Dispatcher();
+        List<String> signals = new ArrayList<>();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+        System.out.println(state.tree());
+
+        assertEquals("uno/one",state.getString("before"));
+        assertEquals("one",state.getString("during"));//regex does not override for-each because it uses with instead of state
+        assertEquals("uno/one",state.getString("after"));
+
+    }
+
+    @Test @Ignore
     public void debug_alternatives() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
@@ -142,7 +181,7 @@ public class RegexTest extends SshTestBase {
                 "    else:",
                 "    - set-state: RUN.found false",
                 "hosts:",
-                "  local: " + "jenkins@mwperf-server03.perf.lab.eng.rdu2.redhat.com",//getHost(),
+                "  local: " + getHost(),
                 "roles:",
                 "  doit:",
                 "    hosts: [local]",

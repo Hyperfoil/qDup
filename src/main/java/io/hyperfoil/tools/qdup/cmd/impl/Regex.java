@@ -105,6 +105,7 @@ public class Regex extends CmdWithElse {
                if (!matches.isEmpty()) {
                   for (String key : matches.keySet()) {
                      context.getState().set(key, matches.get(key), this.autoConvert);
+                     with(key,matches.get(key));
                   }
                }
             }

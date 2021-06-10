@@ -86,6 +86,40 @@ public class ForEachTest extends SshTestBase {
 
     }
 
+    @Test
+    public void empty_array_of_integers() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("", stream("" +
+                        "scripts:",
+                "  foo:",
+                "  - for-each:",
+                "      name: index",
+                "      input: ${{=[...Array(${{iterations:0}}).keys()]}}",
+                "    then:",
+                "    - set-state:",
+                "        key: RUN.ran",
+                "        value: true",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]"
+        )));
+
+        RunConfig config = builder.buildConfig(parser);
+        Dispatcher dispatcher = new Dispatcher();
+
+        Cmd foo = config.getScript("foo");
+
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+        assertFalse("state should have ran\n"+state.tree(), state.has("ran"));
+    }
 
     @Test
     public void script_with_same_argument() {
@@ -93,7 +127,7 @@ public class ForEachTest extends SshTestBase {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
+                "scripts:",
                 "  foo:",
                 "  - script: bar",
                 "    with:",
