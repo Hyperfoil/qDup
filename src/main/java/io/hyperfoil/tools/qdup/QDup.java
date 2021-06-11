@@ -135,12 +135,6 @@ public class QDup {
         Options options = new Options();
 
         OptionGroup basePathGroup = new OptionGroup();
-        basePathGroup.addOption(Option.builder("W")
-                .longOpt("waml")
-                .required()
-                .desc("convert waml to qd.yaml files")
-                .build()
-        );
         basePathGroup.addOption(Option.builder("T")
                 .longOpt("test")
                 .required()
@@ -370,6 +364,7 @@ public class QDup {
         breakpoints = commandLine.hasOption("breakpoint") ? Arrays.asList(commandLine.getOptionValues("breakpoint")) : Collections.EMPTY_LIST;
         colorTerminal = commandLine.hasOption("colorTerminal");
         jsonPort = Integer.parseInt(commandLine.getOptionValue("jsonport", "" + JsonServer.DEFAULT_PORT));
+
         exitCode = commandLine.hasOption("exitCode");
 
         outputPath = null;
