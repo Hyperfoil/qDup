@@ -158,7 +158,7 @@ public class QDup {
                 .build()
         );
 
-        basePathGroup.setRequired(true);
+        basePathGroup.setRequired(false);
 
         options.addOptionGroup(basePathGroup);
 
@@ -379,7 +379,7 @@ public class QDup {
         } else if (commandLine.hasOption("fullPath")) {
             outputPath = commandLine.getOptionValue("fullPath");
         } else {
-            outputPath = "/tmp";
+            outputPath = "/tmp/"+uid;
         }
 
         Properties properties = new Properties();
@@ -398,8 +398,8 @@ public class QDup {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        version = properties.getProperty("version", "unkonown");
-        hash = properties.getProperty("hash", "unkonown");
+        version = properties.getProperty("version", "unknown");
+        hash = properties.getProperty("hash", "unknown");
 
         if (yamlPaths.isEmpty()) {
             logger.error("Missing required yaml file(s)");
