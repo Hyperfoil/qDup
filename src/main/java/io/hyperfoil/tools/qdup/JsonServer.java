@@ -18,7 +18,9 @@ import org.slf4j.ext.XLoggerFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 import java.util.Map;
 
 public class JsonServer implements RunObserver, ContextObserver {
@@ -289,7 +291,12 @@ public class JsonServer implements RunObserver, ContextObserver {
         router.route("/observe").handler(sockJSHandler);
 
         int foundPort = getPort(port);
-        logger.info("listening on port {}",foundPort);
+        try {
+            logger.info("listening at {}:{}", InetAddress.getLocalHost().getHostName()
+                    ,foundPort);
+        } catch (UnknownHostException e) {
+            logger.info("listening at localhost:{}", foundPort);
+        }
 
         server.requestHandler(router::accept).listen(foundPort/*, InetAddress.getLocalHost().getHostName()*/);
     }
