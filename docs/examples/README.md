@@ -58,3 +58,6 @@ $ jbang -DqDupScript=./docs/examples/wildfly.yaml ./docs/examples/runQDup.java
 
 A qDup script that boots the [WildFly](https://www.wildfly.org/) server.
 
+## [iperf3.yaml](iperf3.yaml)
+
+A qDup script that does an [iperf3](https://iperf.fr/) test run.

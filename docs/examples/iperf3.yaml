@@ -1,0 +1,35 @@
+name: iperf3
+
+scripts:
+  iperfServer:
+  - sh: rm /tmp/iperfserver.log /tmp/iperf3.server.console.log
+  - sh: nohup iperf3 -s --logfile /tmp/iperfserver.log -p 7777 > /tmp/iperf3.server.console.log 2>&1 &
+    then:
+    - regex: "\\[(?<HOST.bgId>\\d+)] (?<RUN.serverPid>\\d+)"
+  - sh: disown -h ${{RUN.serverPid}}
+  - queue-download: /tmp/iperfserver.log   
+  iperfClient:
+  - sh: rm /tmp/iperfclient.log
+  - sh:
+      command: iperf3 -c localhost --logfile /tmp/iperfclient.log -p 7777
+      ignore-exit-code: true
+  - queue-download: /tmp/iperfclient.log 
+  iperfDone:
+  - sh: kill -SIGINT ${{RUN.serverPid}}
+
+hosts:
+  localhost:
+    username: user
+    hostname: host
+    port: 22
+
+roles:
+  iperf:
+    hosts:
+    - localhost
+    setup-scripts:
+      - iperfServer
+    run-scripts:
+      - iperfClient
+    cleanup-scripts:
+      - iperfDone
