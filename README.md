@@ -42,17 +42,18 @@ mvn -DskipTests clean package
 Execute your qDup script using
 
 ```sh
-java -jar qDup-uber.jar -b /tmp test.yaml
+java -jar qDup-uber.jar test.yaml
 ```
 
-The only required options are to either specify the base folder where qDup should create the run folder
-(`-b /tmp`) or to specify the full path where qDup should save the run files (`-B /tmp/myRun`) and a YAML file.
+There are no required options for qDup, but you can specify the base folder where qDup should create the run folder
+(`-b /tmp`) or specify the full path where qDup should save the run files (`-B /tmp/myRun`). The qDup YAML file
+should be the last argument on the command line.
 
-This example shows only 1 YAML file but you can also load helper YAML files with
+The above example shows only 1 YAML file but you can also load helper YAML files with
 shared definitions (e.g. `scripts` or `hosts`)
 
 ```sh
-java -jar qDup-uber.jar -b /tmp test.yaml hosts.yaml scripts.yaml
+java -jar qDup-uber.jar test.yaml hosts.yaml scripts.yaml
 ```
 
 Remember to put your main YAML file first because it will take naming precedence
