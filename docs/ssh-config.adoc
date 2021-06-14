@@ -3,13 +3,13 @@
 :example-caption!:
 :sectnums:
 
-qDup requires a ssh connection from the machine running qDup to the target host running scripts. We recommend that configuring systems to use key based authentication so that a password is not required.
+qDup requires a SSH connection from the machine running qDup to the target host running scripts. We recommend that configuring systems to use key based authentication so that a password is not required.
 
 qDup also supports password based authentication if it is not possible to configure key based authentication.
 
 == Basic Configuration
 
-If you do not have an existing ssh key, generate a new SSH key with;
+If you do not have an existing SSH key, generate a new SSH key with;
 
 [source,shell script]
 ----
@@ -43,23 +43,23 @@ The key's randomart image is:
 
 ----
 
-You can add it to the target host;
+You need to add it to the target host;
 
 [source,shell script]
 ----
-$ ssh-copy-id user@remote_host
+$ ssh-copy-id user@hostname
 ----
 
-Alternatively, you can use ssh to copy your existing key
+Alternatively, you can use SSH to copy your key
 
 [source,shell script]
 ----
-$ cat ~/.ssh/id_rsa.pub | ssh user@remote_host "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >>  ~/.ssh/authorized_keys"
+$ cat ~/.ssh/id_rsa.pub | ssh user@hostname "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >>  ~/.ssh/authorized_keys"
 ----
 
 == Using Specific SSH Keys
 
-It is possible to generate a new rsa specifically for use with qDup;
+It is possible to generate a new RSA specifically for use with qDup;
 
 [source,shell script]
 ----
@@ -86,48 +86,42 @@ The key's randomart image is:
 +----[SHA256]-----+
 ----
 
-A new rsa key `/home/user/.ssh/id_qdup` will be created
+A new RSA key `/home/user/.ssh/id_qdup` will be created
 
-To use the new key qith qDup, pass the `-i` or `--identity` paramter from the command line, e.g.
-
-[source,shell script]
-----
-$ java -jar qDup-uber.jar -b /tmp -i /home/user/.ssh/id_qdup qdup.yaml
-----
-
-or
+To use the new key with qDup, pass the `-i` or `--identity` parameter from the command line, f.ex.
 
 [source,shell script]
 ----
-$ java -jar qDup-uber.jar -b /tmp --identity=/home/user/.ssh/id_qdup qdup.yaml
+$ java -jar qDup-uber.jar -i /home/user/.ssh/id_qdup qdup.yaml
+----
+
+You will need to add the SSH key to the host
+
+[source,shell script]
+----
+$ cat ~/.ssh/id_qdup.pub | ssh user@hostname "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >>  ~/.ssh/authorized_keys"
 ----
 
 == Encrypted SSH Keys
 
-qDup can decrypt rsa keys that have been encrypted with a passphrase. If a passphrase was provided when the rsa was created, pass the `-p` or `--passphrase` command line option to qDup, e.g.
+qDup can decrypt RSA keys that have been encrypted with a passphrase. If a passphrase was provided when the RSA key was created, pass the `-p` or `--passphrase` command line option to qDup, f.ex.
 
 ----
-$ java -jar qDup-uber.jar -b /tmp -i /home/user/.ssh/id_qdup -p secret /tmp qdup.yaml
-----
-
-or
-
-----
-$ java -jar qDup-uber.jar -b /tmp --identity=/home/user/.ssh/id_qdup --passphrase=secret qdup.yaml
+$ java -jar qDup-uber.jar -i /home/user/.ssh/id_qdup -p secret /tmp qdup.yaml
 ----
 
 == Specifying Known Hosts
 
-By default, remote host keys are stored in `~/.ssh/known_hosts`.  If you want to store the remote host keys in a location other than the default, you can specify the known hosts file location with the `-k` or `--knownHosts` command line option, e.g;
+By default, host keys are stored in `~/.ssh/known_hosts`. If you want to store the host keys in another location than the default, you can specify the known hosts file location with the `-k` or `--knownHosts` command line option, f.ex;
 ----
-$ java -jar qDup-uber.jar -b /tmp --knownHosts=/home/user/.ssh/alt_known_hosts qdup.yaml
+$ java -jar qDup-uber.jar -k /home/user/.ssh/alt_known_hosts qdup.yaml
 ----
 
 == Password Based Authentication
 
 WARNING: Password based authentication is not recommended
 
-If you cannot use ssh keys and must include the password you should use a state variable and pass the value as a secret through the command line
+If you cannot use SSH keys and must include the password you should use a state variable and pass the value as a secret through the command line
 
 [source,yaml]
 ----
@@ -135,7 +129,7 @@ hosts:
   alias: me:${{password}}@myserver.com:2222
 ----
 
-alternatively, you can specify the connection information in the expanded notation;
+Alternatively, you can specify the connection information in the expanded notation;
 
 [source,yaml]
 ----
@@ -149,7 +143,7 @@ hosts:
 
 Then run the script reading the password from a tmp file so it is not in the bash history
 ....
-java -jar qdup-uber.jar -b /tmp -S _password="$(cat /tmp/secret.txt)" qdup.yaml
+java -jar qDup-uber.jar -S _password="$(cat /tmp/secret.txt)" qdup.yaml
 ....
 `-S \_password` sets the state variable `password` and the `_` prefix tells qDup to treat the
 value as a secret and replace it with `\****` in the logs.
