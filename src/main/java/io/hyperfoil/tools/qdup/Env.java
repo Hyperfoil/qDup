@@ -208,7 +208,9 @@ public class Env {
         common.forEach(key->{
             String beforeValue = getBefore(key);
             String afterValue = getAfter(key);
-            if(!beforeValue.equals(afterValue)){
+            if(beforeValue == null){
+                sets.put(key,afterValue); //added to the NPE for #88 but how is this possible?
+            }else if(!beforeValue.equals(afterValue)){
                 sets.put(key,afterValue);
             }
         });
