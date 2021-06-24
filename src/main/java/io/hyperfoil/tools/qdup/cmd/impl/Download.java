@@ -71,8 +71,10 @@ public class Download extends Cmd {
         if(canDownload) {
             boolean worked = local.download(remotePath, destinationPath, host);
             if(!worked){
-                context.error("failed to download "+remotePath+" to "+destinationPath);
-                context.abort(false);
+                if(context!=null) {
+                    context.error("failed to download " + remotePath + " to " + destinationPath);
+                    context.abort(false);
+                }
             }
         }
     }
