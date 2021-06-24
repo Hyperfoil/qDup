@@ -52,7 +52,7 @@ public class CmdConstruct extends DeferableConstruct {
 
     public void populate(final Cmd cmd,MappingNode mappingNode) {
         for(NodeTuple nodeTuple : mappingNode.getValue()){
-            populate(cmd, nodeTuple);
+            populate(cmd, nodeTuple, mappingNode);
         }
     }
     public List<Cmd> sequenceToCmds(SequenceNode thenNodes){
@@ -67,7 +67,7 @@ public class CmdConstruct extends DeferableConstruct {
        });
        return rtrn;
     }
-    public void populate(final Cmd cmd, NodeTuple nodeTuple){
+    private void populate(final Cmd cmd, NodeTuple nodeTuple, MappingNode parentNode){
         String key = ((ScalarNode)nodeTuple.getKeyNode()).getValue();
         Node valueNode = nodeTuple.getValueNode();
         switch (key){
@@ -79,7 +79,7 @@ public class CmdConstruct extends DeferableConstruct {
                         cmd.with(k.toString(),v);
                     });
                 }else{
-                    throw new YAMLException(CmdMapping.WITH+" requires a map "+valueNode.getStartMark());
+                    throw new YAMLException(CmdMapping.WITH+" requires a map "+nodeTuple.getKeyNode().getStartMark());
                 }
                 break;
             case CmdMapping.SILENT:
@@ -89,7 +89,7 @@ public class CmdConstruct extends DeferableConstruct {
                         cmd.setSilent(true);
                     }
                 }else{
-                    throw new YAMLException(CmdMapping.SILENT+" requires a scalar"+valueNode.getStartMark());
+                    throw new YAMLException(CmdMapping.SILENT+" requires a scalar "+valueNode.getStartMark());
                 }
                 break;
             case CmdMapping.WATCH:
@@ -250,14 +250,22 @@ public class CmdConstruct extends DeferableConstruct {
             if(tagValue instanceof ScalarNode){
                 if(supportString()){
                     String value = ((ScalarNode)tagValue).getValue();
-                    rtrn = fromString.apply(value,stateIndicators.get(CmdMapping.PREFIX),stateIndicators.get(CmdMapping.SUFFIX));
+                    try {
+                        rtrn = fromString.apply(value, stateIndicators.get(CmdMapping.PREFIX), stateIndicators.get(CmdMapping.SUFFIX));
+                    }catch(YAMLException e){
+                        throw new YAMLException(e.getMessage()+node.getStartMark());
+                    }
                 }else{
-                    throw new YAMLException(tag+" does not support scalar values "+tagValue.getStartMark());
+                    throw new YAMLException(tag+" does not support scalar values "+node.getStartMark());
                 }
             }else{
                 if(supportsJson()){
                     Json json = json(tagValue);
-                    rtrn = fromJson.apply(json);
+                    try {
+                        rtrn = fromJson.apply(json);
+                    }catch(YAMLException e){
+                        throw new YAMLException(e.getMessage()+node.getStartMark());
+                    }
                 }else{
                     throw new YAMLException(tag+" does not support list|map values "+tagValue.getStartMark());
                 }
