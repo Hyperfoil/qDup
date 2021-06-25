@@ -414,8 +414,8 @@ public class SshSession {
                     logger.trace("{} client disconnected",SshSession.this.getName());
                 }
             });
-            CoreModuleProperties.IDLE_TIMEOUT.set(sshClient, Duration.ofSeconds(3600));
-            CoreModuleProperties.NIO2_READ_TIMEOUT.set(sshClient, Duration.ofSeconds(3600));
+            CoreModuleProperties.IDLE_TIMEOUT.set(sshClient, Duration.ofSeconds(7*24*3600));
+            CoreModuleProperties.NIO2_READ_TIMEOUT.set(sshClient, Duration.ofSeconds(7*24*3600));
             CoreModuleProperties.NIO_WORKERS.set(sshClient, 1);
             // StrictHostKeyChecking=no
             //        sshConfig = new Properties();

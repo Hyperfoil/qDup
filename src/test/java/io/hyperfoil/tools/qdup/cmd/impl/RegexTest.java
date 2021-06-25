@@ -89,6 +89,47 @@ public class RegexTest extends SshTestBase {
     }
 
     @Test
+    public void case_insensitive_match_true_or_yes() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("", stream("" +
+                "scripts:",
+                "  foo:",
+                "  - read-state: ${{data}}",
+                "  - regex: \"(?i)true|yes\"",
+                "    then:",
+                "    - set-state: RUN.regex MATCHED",
+                "    else:",
+                "    - set-state: RUN.regex MISS",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]",
+                "states:",
+                "  data: \"True\""
+        )));
+
+        RunConfig config = builder.buildConfig(parser);
+
+        Dispatcher dispatcher = new Dispatcher();
+
+        List<String> signals = new ArrayList<>();
+
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+
+        assertTrue("state should have regex", state.has("regex"));
+        assertEquals("regex should be MISS", "MATCHED", state.getString("regex"));
+
+    }
+
+
+    @Test
     public void timer_resolve_with_reference() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
