@@ -10,6 +10,8 @@ import io.hyperfoil.tools.qdup.cmd.ScriptContext;
 import io.hyperfoil.tools.yaup.AsciiArt;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /*
@@ -84,6 +86,15 @@ public class ScriptCmd extends Cmd {
             rtrn = super.getNext();
         }
         return rtrn;
+    }
+
+    @Override
+    public<T> void walk(BiFunction<Cmd,Boolean,T> converter, boolean isWatching, List<T> rtrn){
+        if(isAsync()){
+            super.walk(converter,false,rtrn);
+        }else{
+            super.walk(converter,isWatching,rtrn);
+        }
     }
 
     private void clearToCall(){this.foundScript = null;}
