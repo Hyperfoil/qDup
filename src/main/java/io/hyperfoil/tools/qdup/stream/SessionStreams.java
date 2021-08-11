@@ -142,9 +142,9 @@ public class SessionStreams extends MultiStream {
    public void setTrace(String traceName) throws IOException{
       if(!hasTrace()){
          String tDir = System.getProperty("java.io.tmpdir");
-         String rawTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName,".raw.log")).toAbsolutePath().toString();
+         String rawTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName+".raw.log")).toAbsolutePath().toString();
          FileOutputStream rawTraceStream = new FileOutputStream(rawTracePath);
-         String efsTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName,".efs.log")).toAbsolutePath().toString();
+         String efsTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName+".efs.log")).toAbsolutePath().toString();
          FileOutputStream efsTraceStream = new FileOutputStream(efsTracePath);
          escapeFilteredStream.addStream("trace",efsTraceStream);
          addStream("trace",rawTraceStream);
