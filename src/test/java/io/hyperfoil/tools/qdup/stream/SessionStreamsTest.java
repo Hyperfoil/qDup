@@ -89,7 +89,7 @@ public class SessionStreamsTest {
       String output = sessionStreams.currentOutput();
 
       assertFalse("do not merge env lines because of previous filter",output.contains(":SSH_CONNECTION"));
-      assertTrue("do not remove trailing command",output.endsWith("env"));
+      assertTrue("do not remove trailing command",output.endsWith("env\n"));
       assertEquals(input,output);
    }
 
