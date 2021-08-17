@@ -114,6 +114,7 @@ public class FilteredStream extends MultiStream{
 
     @Override
     public void write(byte b[]) throws IOException {
+
         write(b,0,b.length);
     }
 
@@ -123,13 +124,14 @@ public class FilteredStream extends MultiStream{
             int flushIndex = 0;
             int trailingPrefixIndex = Integer.MAX_VALUE;
 
-
             while(postFilterDrop > 0 && len > 0 && (b[off] == '\r' || b[off] == '\n') ){
                 off++;
                 len--;
                 postFilterDrop--;
             }
-
+            if(len>0){//if we are writing something then we are no longer post filter
+                postFilterDrop=0;
+            }
             if(filters.isEmpty()){
                 if(writeIndex > 0){//something was buffered, probably back when there were filters
 
@@ -181,7 +183,7 @@ public class FilteredStream extends MultiStream{
                             }
                         }
                         if(filtered){
-                            tellObservers(matchedName);
+                            //tellObservers(matchedName); //FIX, move to after using hte filter
                             postFilterDrop += 2;
                             if ( flushIndex < currentIndex) {
                                 superWrite(buffered,flushIndex, currentIndex - flushIndex);
@@ -205,6 +207,7 @@ public class FilteredStream extends MultiStream{
                             currentIndex = nextIndex;
                             flushIndex = currentIndex;
                             trailingPrefixIndex = Integer.MAX_VALUE;
+                            tellObservers(matchedName); //FIX, move to after using hte filter
                         }
                     }while(filtered);
                 }

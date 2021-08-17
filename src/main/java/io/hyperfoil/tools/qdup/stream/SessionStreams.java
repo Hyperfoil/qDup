@@ -57,11 +57,11 @@ public class SessionStreams extends MultiStream {
    public SessionStreams(String name, ScheduledThreadPoolExecutor executor){
       super(name);
       shStream = new ByteArrayOutputStream();
-      escapeFilteredStream = new EscapeFilteredStream(name);
-      filteredStream = new FilteredStream(name);
+      escapeFilteredStream = new EscapeFilteredStream(name+"-efs");
+      filteredStream = new FilteredStream(name+"-fs");
       suffixStream = new SuffixStream(name+"-suffix", executor);
       promptStream = new SuffixStream(name+"-prompt",null);
-      lineEmittingStream = new LineEmittingStream(name);
+      lineEmittingStream = new LineEmittingStream(name+"-les");
 
       addStream("efs",escapeFilteredStream);
 
@@ -69,6 +69,8 @@ public class SessionStreams extends MultiStream {
 
       suffixStream.addStream("filtered", filteredStream);
       suffixStream.addStream("prompt-callback", promptStream);
+
+      filteredStream.addObserver(this::clearCommand);
 
       //move before opening connection or sending
       //was getting a ConcurrentModificationException with this after the setup sh() calls
@@ -142,6 +144,7 @@ public class SessionStreams extends MultiStream {
    public void setTrace(String traceName) throws IOException{
       if(!hasTrace()){
          String tDir = System.getProperty("java.io.tmpdir");
+         logger.info("streamtracing "+traceName+" to "+tDir);
          String rawTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName+".raw.log")).toAbsolutePath().toString();
          FileOutputStream rawTraceStream = new FileOutputStream(rawTracePath);
          String efsTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName+".efs.log")).toAbsolutePath().toString();
@@ -155,6 +158,12 @@ public class SessionStreams extends MultiStream {
    }
    public OutputStream getRawTrace(){
       return getStream("trace");
+   }
+
+   private void clearCommand(String name){
+      if("command".equals(name)) {
+         filteredStream.remove("command");
+      }
    }
 
    public void setCommand(String command){

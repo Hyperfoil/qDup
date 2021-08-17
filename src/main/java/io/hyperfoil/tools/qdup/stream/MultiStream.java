@@ -115,10 +115,12 @@ public class MultiStream extends OutputStream{
     }
     @Override
     public void write(byte b[]) throws IOException {
+
         write(b,0,b.length);
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
+
         for (OutputStream s : streams.values()) {
             try {
                 s.write(b, off, len);
