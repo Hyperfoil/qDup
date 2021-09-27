@@ -573,8 +573,12 @@ public abstract class Cmd {
             return StringUtil.populatePattern(command, map, evals, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          }
       } catch (PopulatePatternException pe){
-         //pe.printStackTrace();
-         logger.debug(pe.getMessage());//changed to debug because runs now fail when patterns are missing
+         if(pe.isJsFailure()){
+            logger.error(pe.getMessage());// warn when js evaluation fails
+         } else {
+            //pe.printStackTrace();
+            logger.debug(pe.getMessage());//changed to debug because runs now fail when patterns are missing
+         }
          //return command;//must return input to show there are unpopulated patterns
          return pe.getResult();//should still contain the missing entries
       }
