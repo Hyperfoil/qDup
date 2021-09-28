@@ -93,7 +93,7 @@ public class SyncContext implements Context, Runnable{
     @Override
     public void terminal(String output){
         String filteredMessage = state.getSecretFilter().filter(output);
-        run.getRunLogger().info(filteredMessage);
+        run.log(filteredMessage);
     }
     @Override
     public boolean isColorTerminal(){
@@ -135,20 +135,21 @@ public class SyncContext implements Context, Runnable{
 
     @Override
     public void log(String message) {
-        String filteredMessage = state.getSecretFilter().filter(message);
-        getRunLogger().info(filteredMessage);
+        if(scriptContext !=null){
+            scriptContext.log(message);
+        }else{
+            String filteredMessage = state.getSecretFilter().filter(message);
+            run.log(filteredMessage);
+        }
+
     }
 
     @Override
     public void error(String message) {
         String filteredMessage = state.getSecretFilter().filter(message);
-        getRunLogger().error(filteredMessage);
+        run.error(filteredMessage);
     }
 
-
-    private Logger getRunLogger() {
-        return run.getRunLogger();
-    }
     @Override
     public Json getTimestamps(){
         return Json.fromMap(run.getTimestamps());

@@ -1,12 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.ConsoleAppender;
-import ch.qos.logback.core.FileAppender;
+import com.oracle.truffle.api.object.Layout;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.DispatchObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
@@ -23,7 +17,16 @@ import io.hyperfoil.tools.yaup.HashedSets;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.config.AppenderRef;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -32,6 +35,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -52,12 +59,14 @@ import java.util.stream.Collectors;
  */
 public class Run implements Runnable, DispatchObserver {
 
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    public static final String RUN_LOGGER_NAME = "qdup.run";
+
+
+    private static final XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+
     private final static AtomicReferenceFieldUpdater<Run,Stage> stageUpdated = AtomicReferenceFieldUpdater.newUpdater(Run.class, Stage.class,"stage");
 
     //TODO does a static logger name retain file appenders from previous Runs?
-    public static final String RUN_LOGGER_NAME = "qdup.run";
-    public static final String STATE_LOGGER_NAME = "qdup.run.state";
 
     class JitterCheck implements Runnable{
 
@@ -100,10 +109,11 @@ public class Run implements Runnable, DispatchObserver {
     private HashedSets<Host,String> pendingDeletes;
 
     private CountDownLatch runLatch = new CountDownLatch(1);
-    private Logger runLogger;
-    private Logger stateLogger;
-    private ConsoleAppender<ILoggingEvent> consoleAppender;
-    private FileAppender<ILoggingEvent> fileAppender;
+
+    XLogger runLogger;// = XLoggerFactory.getXLogger(RUN_LOGGER_NAME);
+    XLogger stateLogger;// = XLoggerFactory.getXLogger(STATE_LOGGER_NAME);
+
+    FileAppender logAppender;
 
     public Run(String outputPath,RunConfig config,Dispatcher dispatcher){
         if(config==null || dispatcher==null){
@@ -125,39 +135,6 @@ public class Run implements Runnable, DispatchObserver {
         this.coordinator = new Coordinator();
         this.local = new Local(config);
 
-        LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-        PatternLayoutEncoder consoleLayout = new PatternLayoutEncoder();
-        consoleLayout.setPattern ("%date{HH:mm:ss.SSS} %msg%n");
-        consoleLayout.setContext(lc);
-        consoleLayout.start();
-        consoleAppender = new ConsoleAppender<>();
-        consoleAppender.setName("qdup-console");
-        consoleAppender.setEncoder(consoleLayout);
-        consoleAppender.setContext(lc);
-        consoleAppender.start();
-
-
-        PatternLayoutEncoder fileLayout = new PatternLayoutEncoder();
-        fileLayout.setPattern("%date %msg%n");
-        fileLayout.setContext(lc);
-        fileLayout.start();
-        fileLayout.setOutputPatternAsHeader(true);
-
-        fileAppender = new FileAppender<>();
-        fileAppender.setFile(this.outputPath+ File.separator+"run.log");
-        fileAppender.setName("qdup-file");
-        fileAppender.setEncoder(fileLayout);
-        fileAppender.setContext(lc);
-        fileAppender.start();
-
-        stateLogger = (Logger) LoggerFactory.getLogger(STATE_LOGGER_NAME);
-        runLogger = (Logger) LoggerFactory.getLogger(RUN_LOGGER_NAME);
-        runLogger.addAppender(fileAppender);
-        if(!runLogger.isAttached(consoleAppender)) {
-            runLogger.addAppender(consoleAppender);
-        }
-        runLogger.setLevel(Level.DEBUG);
-        runLogger.setAdditive(false); /* set to true if root should log too */
         coordinator.addObserver((signal_name)->{
             runLogger.info(
                     "{}reached {}{}",
@@ -170,16 +147,108 @@ public class Run implements Runnable, DispatchObserver {
         this.pendingDeletes = new HashedSets<>();
     }
 
+    private boolean removeLogger(){
+        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        final Configuration config = ctx.getConfiguration();
+        LoggerConfig loggerConfig = LoggerConfig.createLogger(false, Level.INFO, Run.RUN_LOGGER_NAME,"false",new AppenderRef[0],null,config,null);
+
+        if(logAppender!=null){
+            ctx.getLogger(Run.RUN_LOGGER_NAME).removeAppender(logAppender);
+            loggerConfig.removeAppender(logAppender.getName());
+            logAppender.stop();
+
+            String loggerName = getLoggerName();
+
+            ctx.getLogger(runLogger.getName()).removeAppender(logAppender);
+            if(ctx.getLogger(Run.RUN_LOGGER_NAME).getAppenders().containsKey(Run.RUN_LOGGER_NAME)){
+                Appender toRemove = ctx.getLogger(Run.RUN_LOGGER_NAME).getAppenders().get(Run.RUN_LOGGER_NAME);
+                ctx.getLogger(Run.RUN_LOGGER_NAME).removeAppender(toRemove);
+                loggerConfig.removeAppender(Run.RUN_LOGGER_NAME);
+                if(toRemove.isStarted()){
+                    toRemove.stop();
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private String getLoggerName(){
+        String loggerName = "qdup."+getOutputPath().replaceAll(FileSystems.getDefault().getSeparator(),"_");
+        return loggerName;
+    }
+
+    boolean ensureLogger(){
+        if(logAppender == null || !((FileAppender)logAppender).getFileName().contains(getOutputPath())){
+            synchronized (this){
+                final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+                final Configuration config = ctx.getConfiguration();
+                String loggerName = getLoggerName();
+                LoggerConfig runLoggerConfig = LoggerConfig.createLogger(true, Level.INFO, loggerName,"false",new AppenderRef[0],null,config,null);
+                config.addLogger(runLoggerConfig.getName(),runLoggerConfig);
+                runLoggerConfig.setAdditive(true); //doesn't work
+                runLogger = XLoggerFactory.getXLogger(loggerName);
+                LoggerConfig stateLoggerConfig = LoggerConfig.createLogger(true, Level.ALL, runLogger.getName()+".state","false",new AppenderRef[0],null,config,null);
+                stateLoggerConfig.setAdditive(true);
+                config.addLogger(stateLoggerConfig.getName(),stateLoggerConfig);
+                stateLogger = XLoggerFactory.getXLogger(runLogger.getName()+".state");
+                if (logAppender == null) {
+                    Path outputPath = Paths.get(getOutputPath());
+                    if(!Files.exists(outputPath)){
+                        try {
+                            Files.createDirectories(outputPath);
+                        } catch (IOException e) {
+                            logger.error("error creating output directory "+getOutputPath(),e);
+                            return false;
+                        }
+                    }
+                    logAppender = FileAppender.newBuilder()
+                            //unique name for restart issue
+                            .setName(Run.RUN_LOGGER_NAME)
+                            .withFileName(Paths.get(getOutputPath(),"run.log").toString())
+                            .withImmediateFlush(true)
+                            .withAppend(false)
+                            .setLayout(
+                                    PatternLayout.newBuilder()
+                                            .withPattern("%d{HH:mm:ss.SSS} %msg%n%throwable")
+                                            .build()
+                            ).build();
+                    logAppender.start();
+                    ctx.updateLoggers();
+                    config.getLoggers().get(loggerName).addAppender(logAppender, Level.ALL,null);
+                    ctx.updateLoggers();
+                }
+            }
+        }
+
+
+        return logAppender == null;
+    }
+
+
     public void addRunObserver(RunObserver observer){this.runObservers.add(observer);}
     public void removeRunObserver(RunObserver observer){this.runObservers.remove(observer);}
     public boolean hasRunObserver(){return !this.runObservers.isEmpty();}
 
+
+    public void error(String message){
+        ensureLogger();
+        runLogger.error(message);
+
+    }
+    public void log(String message){
+        ensureLogger();
+        runLogger.info(message);
+    }
+
     @Override
     public void preStart(){
+        ensureLogger();
         timestamps.put(stage.getName()+"Start",System.currentTimeMillis());
     }
     @Override
     public void postStop(){
+        ensureLogger();
         timestamps.put(stage.getName()+"Stop",System.currentTimeMillis());
         boolean started = nextStage();
         if(!started){
@@ -223,17 +292,20 @@ public class Run implements Runnable, DispatchObserver {
                 }
                 break;
             case Cleanup:
-                if(stageUpdated.compareAndSet(this,Stage.Cleanup,Stage.Done)) {
+                if(stageUpdated.compareAndSet(this,Stage.Cleanup,Stage.PostCleanup)) {
                     runPendingDownloads();//download anything queued during cleanup
                     runPendingDeletes();
-                    postRun();//release any latches blocking a call to run()
+                    nextStage();
+                    //postRun();//release any latches blocking a call to run()
                 }
                 break;
             case PostCleanup:
             default:
-                //happens for abort
-                postRun();
-                break;
+                if(stageUpdated.compareAndSet(this,Stage.PostCleanup,Stage.Done)){
+                    //happens for abort
+                    postRun();
+                    break;
+                }
         }
 
         if(startDispatcher){
@@ -251,8 +323,14 @@ public class Run implements Runnable, DispatchObserver {
     public Local getLocal(){return local;}
     public RunConfig getConfig(){return config;}
     public boolean isAborted(){return aborted.get();}
-    public Logger getRunLogger(){return runLogger;}
-    public Logger getStateLogger(){return stateLogger;}
+    public Logger getRunLogger(){
+        ensureLogger();
+        return runLogger;
+    }
+    public Logger getStateLogger(){
+        ensureLogger();
+        return stateLogger;
+    }
 
     public void addPendingDelete(Host host,String path){
         pendingDeletes.put(host,path);
@@ -388,12 +466,8 @@ public class Run implements Runnable, DispatchObserver {
 
     @Override
     public void run() {
+        ensureLogger();
         if(Stage.Pending.equals(stage)){
-
-
-
-
-
 
             //TODO enable jitter check? what amount of jitter matters for qDup?
 //            Thread jitterThread = new Thread(new JitterCheck(),"jitter-check");
@@ -402,6 +476,7 @@ public class Run implements Runnable, DispatchObserver {
 
             timestamps.put("start",System.currentTimeMillis());
             if(config.hasErrors()){
+                logger.error("cannot start run due to config errors");
                 config.getErrors().forEach(e->logger.error(e.toString()));
                 config.getErrors().forEach(e->runLogger.error(e.toString()));
                 timestamps.put("stop",System.currentTimeMillis());
@@ -409,12 +484,14 @@ public class Run implements Runnable, DispatchObserver {
             }
             boolean coordinatorInitialized = initializeCoordinator();
             if(!coordinatorInitialized){
+                logger.error("cannot start run due to coordinator errors");
                 timestamps.put("stop",System.currentTimeMillis());
                 return;
             }
             String tree = config.getState().tree();
 
             String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
+            logger.error("hi mom");
             stateLogger.debug("{} starting state:\n{}",config.getName(),filteredTree);
             boolean ok = nextStage();
             if(ok) {
@@ -433,10 +510,9 @@ public class Run implements Runnable, DispatchObserver {
             }
             //moved to here because abort would avoid the cleanup in postRun()
             //will need to move if runLatch becomes optional
-            fileAppender.stop();
-            runLogger.detachAppender(fileAppender);
-            consoleAppender.stop();
-            runLogger.detachAppender(consoleAppender);
+
+            //logAppender.stop(5,TimeUnit.SECONDS);
+            removeLogger();
             writeRunJson();
         }
     }
@@ -832,12 +908,12 @@ public class Run implements Runnable, DispatchObserver {
         logger.debug("{}.postRun",this);
         String tree = config.getState().tree();
         String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
+
         stateLogger.debug("{} closing state:\n{}",config.getName(),filteredTree);
         runLatch.countDown();
     }
     public Dispatcher getDispatcher(){return dispatcher;}
     public Coordinator getCoordinator(){return coordinator;}
     public String getOutputPath(){ return outputPath;}
-
     public Map<String,Long> getTimestamps(){return timestamps;}
 }

@@ -11,6 +11,7 @@ import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.json;
 
@@ -261,6 +262,12 @@ public class CmdConstruct extends DeferableConstruct {
             }else{
                 if(supportsJson()){
                     Json json = json(tagValue);
+                    Set<String> jsonKeys = json.keys().stream().map(Object::toString).collect(Collectors.toSet());
+                    List<String> reserved = jsonKeys.stream().filter(k->CmdMapping.RESERVED_WORDS.contains(k)).collect(Collectors.toList());
+                    //removed because sh supports silent as we as the base cmd
+//                    if(!reserved.isEmpty()){
+//                        throw new YAMLException(tag+" has "+reserved+" at wrong yaml indentation "+node.getStartMark());
+//                    }
                     try {
                         rtrn = fromJson.apply(json);
                     }catch(YAMLException e){

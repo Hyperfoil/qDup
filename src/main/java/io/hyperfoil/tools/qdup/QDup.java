@@ -1,17 +1,14 @@
 package io.hyperfoil.tools.qdup;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import ch.qos.logback.core.util.StatusPrinter;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.ContextObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunError;
+import io.hyperfoil.tools.qdup.config.log4j.QdupConfigurationFactory;
 import org.apache.commons.cli.*;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.core.config.ConfigurationFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.qdup.config.RunConfig;
@@ -29,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class QDup {
 
@@ -54,9 +52,12 @@ public class QDup {
     private boolean colorTerminal;
     private int jsonPort;
 
+    private List<Stage> skipStages;
 
     private boolean exitCode = false;
 
+
+    public List<Stage> getSkipStages(){return skipStages;}
     public boolean checkExitCode(){return exitCode;}
 
     public boolean isColorTerminal() {
@@ -267,15 +268,15 @@ public class QDup {
         );
 
         //logging
-        options.addOption(
-                Option.builder("l")
-                        .longOpt("logback")
-                        .argName("path")
-                        .hasArg()
-                        .desc("logback configuration path")
-                        .type(String.class)
-                        .build()
-        );
+//        options.addOption(
+//                Option.builder("l")
+//                        .longOpt("logback")
+//                        .argName("path")
+//                        .hasArg()
+//                        .desc("logback configuration path")
+//                        .type(String.class)
+//                        .build()
+//        );
 
         options.addOption(
                 Option.builder("R")
@@ -303,6 +304,17 @@ public class QDup {
                         .hasArg(false)
                         .desc("flag to enable exit code checking")
                         .build()
+        );
+
+        //execute-stages
+        options.addOption(
+                Option.builder()
+                    .longOpt("execute-stages")
+                    .hasArgs()
+                    .desc("execute some or all of setup, run, cleanup")
+                    .valueSeparator(',')
+                    .numberOfArgs(3)
+                    .build()
         );
 
         CommandLineParser parser = new DefaultParser();
@@ -336,20 +348,20 @@ public class QDup {
         }
 
         //load a custom logback configuration
-        if (commandLine.hasOption("logback")) {
-            String configPath = commandLine.getOptionValue("logback");
-            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-
-            try {
-                JoranConfigurator configurator = new JoranConfigurator();
-                configurator.setContext(context);
-                context.reset();
-                configurator.doConfigure(configPath);
-            } catch (JoranException je) {
-                // StatusPrinter will handle this
-            }
-            StatusPrinter.printInCaseOfErrorsOrWarnings(context);
-        }
+//        if (commandLine.hasOption("logback")) {
+//            String configPath = commandLine.getOptionValue("logback");
+//            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+//
+//            try {
+//                JoranConfigurator configurator = new JoranConfigurator();
+//                configurator.setContext(context);
+//                context.reset();
+//                configurator.doConfigure(configPath);
+//            } catch (JoranException je) {
+//                // StatusPrinter will handle this
+//            }
+//            StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+//        }
 
         knownHosts = commandLine.getOptionValue("knownHosts", RunConfigBuilder.DEFAULT_KNOWN_HOSTS);
         identity = commandLine.getOptionValue("identity", RunConfigBuilder.DEFAULT_IDENTITY);
@@ -366,6 +378,28 @@ public class QDup {
         jsonPort = Integer.parseInt(commandLine.getOptionValue("jsonport", "" + JsonServer.DEFAULT_PORT));
 
         exitCode = commandLine.hasOption("exitCode");
+
+        if(commandLine.hasOption("execute-stages")){
+            String stageStrs[] = commandLine.getOptionValues("execute-stages");
+            List<Stage> stages = Arrays.stream(stageStrs)
+                    .map(stageStr->{
+                        Stage found = Arrays.stream(Stage.values())
+                                .filter(stage -> stageStr.equalsIgnoreCase(stage.name()))
+                                .findFirst()
+                                .orElse(Stage.Undefined);
+                        if(found == Stage.Undefined){
+                            logger.error("{} does not match a stage [setup, run, cleanup]",stageStr);
+                        }
+                        return found;
+                    }).collect(Collectors.toList());
+            List<Stage> skipStages = Arrays.asList(Stage.Setup,Stage.Run,Stage.Cleanup);
+            skipStages.removeAll(stages);
+            if(!skipStages.isEmpty()){
+
+            }
+        }
+
+
 
         outputPath = null;
         DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -410,6 +444,7 @@ public class QDup {
     }
 
     public static void main(String[] args) {
+        ConfigurationFactory.setConfigurationFactory(new QdupConfigurationFactory());
         QDup.run(args);
     }
 
@@ -423,8 +458,20 @@ public class QDup {
         for (String yamlPath : qDup.getYamlPaths()) {
             File yamlFile = new File(yamlPath);
             if (!yamlFile.exists()) {
-                logger.error("Error: cannot find " + yamlPath);
-                System.exit(1);//return error to shell / jenkins
+
+                String content = (new Local(null)).getRemote(yamlPath);
+                if(content == null || content.isBlank()){
+                    logger.error("Error: cannot find or load " + yamlPath);
+                    System.exit(1);//return error to shell / jenkins
+                }else{
+                    YamlFile file = yamlParser.loadFile(yamlPath,content);
+                    if(file == null){
+                        logger.error("Aborting run due to error reading {}", yamlPath);
+                        System.exit(1);
+                    }
+                    runConfigBuilder.loadYaml(file);
+                }
+
             } else {
                 if (yamlFile.isDirectory()) {
                     logger.trace("loading directory: " + yamlPath);

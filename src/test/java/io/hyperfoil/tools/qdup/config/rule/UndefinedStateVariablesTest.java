@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
 import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.cmd.PatternValuesMap;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
@@ -156,6 +157,30 @@ public class UndefinedStateVariablesTest extends SshTestBase {
         summary.addRule("state",rule);
         summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+    }
+
+    @Test
+    public void qdup_timestamps_not_cause_error(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+                "scripts:",
+                "  use:",
+                "    - sh: echo ${{"+ PatternValuesMap.QDUP_GLOBAL +".state.foo.bar}}",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - use"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        RunSummary summary = new RunSummary();
+        UndefinedStateVariables rule = new UndefinedStateVariables(parser);
+        summary.addRule("state",rule);
+        summary.scan(config.getRolesValues(),builder);
+        assertFalse("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
     }
 
     @Test

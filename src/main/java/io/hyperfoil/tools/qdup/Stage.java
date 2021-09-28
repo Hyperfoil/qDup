@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup;
 
-public enum Stage {
+public enum Stage  implements Comparable<Stage>{
+    Undefined("undefined",-1,true),
     Pending("pending",0,true),
     PreSetup("pre-setup",1,true),
     Setup("setup",2,true),
@@ -17,6 +18,22 @@ public enum Stage {
         this.isSequential = isSequential;
     }
 
+    private Stage getStage(int order){
+        switch (order){
+            case 0: return Pending;
+            case 1: return PreSetup;
+            case 2: return Setup;
+            case 3: return Run;
+            case 4: return Cleanup;
+            case 5: return PostCleanup;
+            case 6: return Done;
+        }
+        return Undefined;
+    }
+    public Stage getNext(){
+        return getStage(order+1);
+    }
+    public Stage getPrevious(){return getStage(order-1);}
     public boolean isBefore(Stage stage){
         return this.order < stage.order;
     }
@@ -28,4 +45,6 @@ public enum Stage {
         return name;
     }
     public boolean isSequential(){return isSequential;}
+
+
 }

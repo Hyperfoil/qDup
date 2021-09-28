@@ -247,11 +247,13 @@ public class Dispatcher {
                 if(command.hasIdleTimer() &&  timestamp - lastUpdate > command.getIdleTimer()){
                     if(command instanceof Sh){
                         String output = context.getSession().peekOutput();
+                        boolean hasPrompt = output.contains(SshSession.PROMPT);
                         String parentName = null;
                         if (command.getParent() instanceof Script)
                             parentName = ((Script) (command).getParent()).getName();
                         if(!command.isSilent()){
-                            logger.warn("{}Nanny found idle{}\n  command={}\n  host={}\n  contextId={} script={}\n  idle={}\n  lastLine={}",
+                            logger.warn("{}Nanny found idle{}\n  command={}\n  host={}\n  contextId={} script={}\n  idle={}\n  lastLine={}"
+                                    + (hasPrompt ? "\n  output includes qdup prompt, a background or child process may be running independent of the current command" : ""),
                                     context.isColorTerminal() ? AsciiArt.ANSI_RED : "",
                                     context.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
                                     command,

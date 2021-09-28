@@ -15,6 +15,7 @@ public class CtrlSignal extends Cmd {
 
    @Override
    public void run(String input, Context context) {
+
       context.getSession().ctrl(signal);
       context.next(input); //now waits for shell to return prompt
 

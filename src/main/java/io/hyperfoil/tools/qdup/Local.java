@@ -1,13 +1,20 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
+import java.net.*;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -116,18 +123,57 @@ public class Local {
             while ((line = reader.readLine()) != null) {
                logger.trace("  I: {}", line);
             }
-
          } catch (IOException e) {
             e.printStackTrace();
          } catch (InterruptedException e) {
             e.printStackTrace();
          }
-
       }
    }
 
-   public boolean download(String path, String destination, Host host) {
+   public String getRemote(String path){
+      String rtrn = null;
+      if (rtrn == null && path.contains(":") && !path.startsWith("http") && !path.matches(".*?:\\d+\\S+")){ //try to download the file
+         String hostString = path.substring(0,path.indexOf(":"));
+         String pathString = path.substring(path.indexOf(":"));
+         Host host = Host.parse(hostString);
+         try {
+            File tmpDest = File.createTempFile("qdup-remote","yaml");
+            boolean ok = download(pathString,tmpDest.getPath(),host);
+            if(ok){
+               rtrn = Files.readString(tmpDest.toPath());
+            }
+         } catch (IOException e) {
+            logger.debug("failed to download from "+path);
+         }
+      }
+      if (rtrn == null){
+         HttpClient client = HttpClient.newBuilder().build();
+         HttpRequest request = null;
+         URI uri = null;
+         try {
+            URIBuilder uriBuilder = new URIBuilder(path);
+            if(uriBuilder.getScheme()==null){
+               uriBuilder = new URIBuilder("https://"+path);
+            }
+            uri = uriBuilder.build();
+         }catch (URISyntaxException e){
+            logger.debug("failed to build url from "+path);
+         }
+         try {
+            request = HttpRequest.newBuilder(uri).build();
+            HttpResponse response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            rtrn = response.body().toString();
+         } catch (IOException e) {
+            logger.debug("failed to use "+path+" as a url",e);
+         } catch (InterruptedException e) {
+            logger.debug("interrupted using "+path+" as a url",e);
+         }
+      }
+      return rtrn;
+   }
 
+   public boolean download(String path, String destination, Host host) {
       if (path == null || path.isEmpty() || destination == null || destination.isEmpty()) {
          return false;
       } else {
@@ -143,13 +189,11 @@ public class Local {
          logger.info("Local.remoteFileSize({}:{})", host, path);
          return rsyncFileSize(host, path);
       }
-
    }
 
    private String prepSshString(int port) {
       String rtrn = this.ssh;
       rtrn+=" -o StrictHostKeyChecking=no";
-
       if(hasKnownHosts()){
          rtrn+=" -o UserKnownHostsFile="+(getKnownHosts().contains(" ") ? StringUtil.quote(getKnownHosts(),"'") : getKnownHosts());
       }else{
@@ -162,7 +206,6 @@ public class Local {
       if(Host.DEFAULT_PORT != port){
          rtrn+=" -p "+port;
       }
-
       if (rtrn != null) {
          rtrn = rtrn + " -o StrictHostKeyChecking=no";
       }

@@ -194,7 +194,7 @@ public class SshTestBase {
     public String readFile(Path path) {
         StringBuilder contents = new StringBuilder();
         try {
-            Files.lines(path).forEach(line -> contents.append(line));
+            Files.lines(path).forEach(line -> contents.append(line+System.lineSeparator()));
         } catch (IOException e) {
             e.printStackTrace();
         }

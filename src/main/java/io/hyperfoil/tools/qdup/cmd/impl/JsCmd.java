@@ -5,9 +5,11 @@ import io.hyperfoil.tools.qdup.cmd.PatternValuesMap;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.graaljs.JsException;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 /**
@@ -51,6 +53,10 @@ public class JsCmd extends Cmd {
                 }catch( RuntimeException ise){
                     //todo; raise ISE
                     abort(ise.getMessage()+"\n"+ise.getCause().getMessage());
+                }
+                if (rtrn instanceof JsException){
+                    JsException jsException = (JsException)rtrn;
+                    abort(jsException.getMessage());
                 }
                 if( rtrn==null ||
                     (rtrn instanceof Boolean && !((Boolean)rtrn)) ||
