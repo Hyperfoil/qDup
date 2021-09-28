@@ -27,7 +27,7 @@ This is the least ambiguous but most verbose and is rarely necessary.
 == Available commands
 link:./command/abort.adoc[abort]:: Abort the run
 link:./command/addprompt.adoc[add-prompt]:: Add a shell prompt
-link:./command/countdown.adoc[ctrlC]:: Count down a variable
+link:./command/countdown.adoc[countdown]:: Count down a variable
 link:./command/ctrlc.adoc[ctrlC]:: Send ctrl+c to the ssh terminal
 link:./command/ctrlslash.adoc[ctrl/]:: Send ctrl+/ to the ssh terminal
 link:./command/ctrlu.adoc[ctrlU]:: Send ctrl+U to the ssh terminal
