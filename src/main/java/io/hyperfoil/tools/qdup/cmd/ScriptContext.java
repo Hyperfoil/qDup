@@ -180,6 +180,11 @@ public class ScriptContext implements Context, Runnable{
     }
 
     @Override
+    public Json getTimestamps(){
+        return Json.fromMap(run.getTimestamps());
+    }
+
+    @Override
     public Host getHost() {
         return session.getHost();
     }
