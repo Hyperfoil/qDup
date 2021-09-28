@@ -12,6 +12,7 @@ import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.json;
 

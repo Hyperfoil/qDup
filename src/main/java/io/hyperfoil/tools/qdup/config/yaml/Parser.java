@@ -10,6 +10,8 @@ import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.converter.FileSizeConverter;
 import io.hyperfoil.tools.yaup.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
@@ -37,7 +39,8 @@ import java.util.stream.Collectors;
 
 public class Parser {
 
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    final static XLogger logger = XLoggerFactory.getXLogger(Parser.class.getName());
+//    final static Logger logger = LoggerFactory.getLogger(Parser.class.getName());
 
     public static Parser getInstance() {
         Parser rtrn = new Parser();
@@ -802,8 +805,7 @@ public class Parser {
         try {
             loaded = yaml.loadAs(content, YamlFile.class);
         } catch (YAMLException e) {
-                logger.error("Failed to load {} as yaml\n{}", path, e.getMessage());
-
+            logger.error("Failed to load {} as yaml\n{}", path, e.getMessage());
         } catch (RuntimeException e) {
             logger.error("Failed to load {}\n{}", path, e.getMessage());
         }

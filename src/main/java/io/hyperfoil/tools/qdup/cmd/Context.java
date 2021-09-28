@@ -19,7 +19,6 @@ public interface Context {
     void skip(String output);
     void update(String output);
 
-    //Logger getRunLogger();
     void log(String message);
     void error(String message);
     void terminal(String output);
@@ -43,7 +42,6 @@ public interface Context {
     Local getLocal();
     void schedule(Runnable runnable, long delayMs);
     Coordinator getCoordinator();
-
     Json getTimestamps();
     void close();
 

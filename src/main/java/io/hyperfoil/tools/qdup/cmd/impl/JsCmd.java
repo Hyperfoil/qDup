@@ -7,9 +7,11 @@ import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.graaljs.JsException;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 /**
@@ -61,6 +63,10 @@ public class JsCmd extends CmdWithElse {
                     //todo; raise ISE
                     context.error(ise.getMessage()+"\n"+ise.getCause().getMessage());
                     context.abort(false);
+                }
+                if (rtrn instanceof JsException){
+                    JsException jsException = (JsException)rtrn;
+                    abort(jsException.getMessage());
                 }
                 if( rtrn==null ||
                     (rtrn instanceof Boolean && !((Boolean)rtrn)) ||

@@ -1,14 +1,14 @@
 package io.hyperfoil.tools.qdup;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import ch.qos.logback.core.util.StatusPrinter;
-import io.hyperfoil.tools.qdup.cmd.*;
+import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.qdup.cmd.ContextObserver;
+import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunError;
+import io.hyperfoil.tools.qdup.config.log4j.QdupConfigurationFactory;
 import org.apache.commons.cli.*;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.core.config.ConfigurationFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.qdup.config.RunConfig;
@@ -285,15 +285,15 @@ public class QDup {
         );
 
         //logging
-        options.addOption(
-                Option.builder("l")
-                        .longOpt("logback")
-                        .argName("path")
-                        .hasArg()
-                        .desc("logback configuration path")
-                        .type(String.class)
-                        .build()
-        );
+//        options.addOption(
+//                Option.builder("l")
+//                        .longOpt("logback")
+//                        .argName("path")
+//                        .hasArg()
+//                        .desc("logback configuration path")
+//                        .type(String.class)
+//                        .build()
+//        );
 
         options.addOption(
                 Option.builder("R")
@@ -362,20 +362,20 @@ public class QDup {
         }
 
         //load a custom logback configuration
-        if (commandLine.hasOption("logback")) {
-            String configPath = commandLine.getOptionValue("logback");
-            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-
-            try {
-                JoranConfigurator configurator = new JoranConfigurator();
-                configurator.setContext(context);
-                context.reset();
-                configurator.doConfigure(configPath);
-            } catch (JoranException je) {
-                // StatusPrinter will handle this
-            }
-            StatusPrinter.printInCaseOfErrorsOrWarnings(context);
-        }
+//        if (commandLine.hasOption("logback")) {
+//            String configPath = commandLine.getOptionValue("logback");
+//            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+//
+//            try {
+//                JoranConfigurator configurator = new JoranConfigurator();
+//                configurator.setContext(context);
+//                context.reset();
+//                configurator.doConfigure(configPath);
+//            } catch (JoranException je) {
+//                // StatusPrinter will handle this
+//            }
+//            StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+//        }
 
         knownHosts = commandLine.getOptionValue("knownHosts", RunConfigBuilder.DEFAULT_KNOWN_HOSTS);
         identity = commandLine.getOptionValue("identity", RunConfigBuilder.DEFAULT_IDENTITY);
@@ -437,6 +437,7 @@ public class QDup {
     }
 
     public static void main(String[] args) {
+        ConfigurationFactory.setConfigurationFactory(new QdupConfigurationFactory());
         QDup toRun = new QDup(args);
         boolean ok = toRun.run();
         if(!ok){

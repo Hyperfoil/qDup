@@ -16,6 +16,8 @@
         <version.maven.gpg>1.6</version.maven.gpg>
         <version.maven.source>3.2.0</version.maven.source>
         <version.maven.javadoc>3.2.0</version.maven.javadoc>
+        <version.log4j>2.14.1</version.log4j>
+        <version.slf4j>1.7.32</version.slf4j>
     </properties>
 
     <scm>
@@ -109,6 +111,14 @@
                                     <mainClass>io.hyperfoil.tools.qdup.QDup</mainClass>
                                 </transformer>
                             </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>**/Log4j2Plugins.dat</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>
@@ -138,11 +148,21 @@
             <version>1.16.2</version>
             <scope>test</scope>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-simple</artifactId>-->
+<!--            <version>1.7.32</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+
+<!--
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-jexl3</artifactId>
             <version>3.1</version>
         </dependency>
+-->
+
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
@@ -166,22 +186,27 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
+            <version>${version.slf4j}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-ext</artifactId>
-            <version>1.7.35</version>
+            <version>${version.slf4j}</version>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.10</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${version.log4j}</version>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>1.2.10</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${version.log4j}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${version.log4j}</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>

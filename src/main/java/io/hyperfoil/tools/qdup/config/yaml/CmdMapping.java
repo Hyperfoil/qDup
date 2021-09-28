@@ -7,6 +7,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.yaml.Defer;
 import io.hyperfoil.tools.yaup.yaml.Mapping;
 import io.hyperfoil.tools.yaup.yaml.WithDefer;
+import org.yaml.snakeyaml.events.Event;
 
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -25,7 +26,20 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
     public static final String IDLE_TIMER = "idle-timer";
     public static final String STATE_SCAN = "state-scan";
 
-
+    public static final List<String> RESERVED_WORDS = Arrays.asList(
+      WITH,
+      THEN,
+      TIMER,
+      ON_SIGNAL,
+      WATCH,
+      SILENT,
+      PREFIX,
+      SUFFIX,
+      SEPARATOR,
+      JS_PREFIX,
+      IDLE_TIMER,
+      STATE_SCAN
+    );
 
 
     public static final Set<String> COMMAND_KEYS = Collections.unmodifiableSet(Sets.of(

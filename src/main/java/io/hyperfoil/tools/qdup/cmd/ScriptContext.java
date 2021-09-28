@@ -157,7 +157,9 @@ public class ScriptContext implements Context, Runnable{
 
     public Run getRun(){return run;}
 
-    private Logger getRunLogger(){return run.getRunLogger();}
+    public Logger getRunLogger(){
+        return run.getRunLogger();
+    }
 
     public SystemTimer getContextTimer(){return timer;}
     public SystemTimer getCommandTimer(){return cmdTimer;}
@@ -176,7 +178,6 @@ public class ScriptContext implements Context, Runnable{
     public Json getTimestamps(){
         return Json.fromMap(run.getTimestamps());
     }
-
 
     @Override
     public Host getHost() {
