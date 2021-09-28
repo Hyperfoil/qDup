@@ -52,7 +52,7 @@ public class SpyContext implements Context {
     public Json getTimestamps(){
         return new Json(false);
     }
-
+    
     @Override
     public void next(String output) {
         next = output;
