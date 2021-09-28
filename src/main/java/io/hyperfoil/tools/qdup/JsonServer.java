@@ -132,7 +132,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             rtrn.set("GET /stage","the current run stage");
             rtrn.set("GET /active","list of active commands and context");
             rtrn.set("GET /session","list of active ssh terminal sessions");
-            rtrn.set("POST /session/:sessionId","send text to the ssh terminal session. ^C sends ctrl+C");
+            rtrn.set("POST /session/:sessionId","send text to the ssh terminal session. ^C sends ctrl+C, ^next forces next command, ^skip forces skip command");
             rtrn.set("GET /signal","get the signal and their remaining signal counts");
             rtrn.set("POST /signal/:name","set the remaining signal count for the target signal");
             rtrn.set("GET /timer","get the current command times");
@@ -177,21 +177,36 @@ public class JsonServer implements RunObserver, ContextObserver {
                    if("^C".equals(send.toUpperCase())) {
                        if (found.getSession() != null) {
                            found.getSession().ctrlC();
+                           rc.response().end("ok ^C");
                        }
                    }else if ("^\\".equals(send)) {
                        if (found.getSession() != null) {
                            found.getSession().ctrl('\\');
+                           rc.response().end("ok ^\\");
                        }
-                   }else if (send.startsWith("^") && send.length()==2){
-                       if(found.getSession() != null) {
-                           found.getSession().ctrl(send.charAt(1));
+                   }else if (send.startsWith("^")){
+
+                       if(send.equals("^next")){
+                           found.next(found.getCurrentCmd().getOutput());
+                       }else if (send.equals("^skip")){
+                           found.skip(found.getCurrentCmd().getOutput());
+                       }else if(send.length()==2){
+                           if(found.getSession() != null) {
+                               found.getSession().ctrl(send.charAt(1));
+                               rc.response().end("ok ^"+send.charAt(1));
+                           }
                        }
+
                    }else{
                       if(found.getSession()!=null){
                          found.getSession().response(send);
+                          rc.response().end("ok");
                       }
                    }
-                  rc.response().end("ok");
+                   if(!rc.response().ended()){
+                      rc.response().setStatusCode(400).end("missing ssh session");
+
+                   }
                 }else{
                    rc.response().setStatusCode(400).end("missing command body"+cmdUid);
                 }
@@ -206,7 +221,7 @@ public class JsonServer implements RunObserver, ContextObserver {
            if(name != null && !name.trim().isEmpty()){
               String body = rc.getBodyAsString();
               if(body != null && !body.trim().isEmpty()){
-                 String populatedBody = Cmd.populateStateVariables(body,null,run.getConfig().getState(),run.getCoordinator());
+                 String populatedBody = Cmd.populateStateVariables(body,null,run.getConfig().getState(),run.getCoordinator(),Json.fromMap(run.getTimestamps()));
                  if(populatedBody.matches("\\d{1,32}")){
                     try {
                        int amount = Integer.parseInt(populatedBody);
