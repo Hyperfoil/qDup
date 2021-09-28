@@ -66,6 +66,47 @@ public class ScriptCmdTest extends SshTestBase {
    }
 
    @Test
+   public void async_using_with_referencing_script_state_on_script(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+              "  update:",
+              "  - sleep: 2s",
+              "  - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg}}",
+              "  foo:",
+              "  - set-state: BIZ BUZ",
+              "  - script: ",
+              "      name: update",
+              "      async: true",
+              "    with:",
+              "      arg: ${{BIZ}}",
+              "  - set-state: RUN.FOO ${{RUN.FOO:}}-SET",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]",
+              "states:",
+              "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+              "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+              "  charlie: {name: \"cat\"}"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      Dispatcher dispatcher = new Dispatcher();
+      Cmd foo = config.getScript("foo");
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+      assertEquals("expect script:foo to finish before script:update starts","-SET-BUZ",config.getState().get("FOO"));
+   }
+
+
+
+   @Test
    public void async_using_with_on_script(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();

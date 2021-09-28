@@ -1,7 +1,5 @@
 package io.hyperfoil.tools.qdup;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.cmd.impl.AddPrompt;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
@@ -15,15 +13,21 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.*;
+import org.apache.logging.log4j.core.appender.AbstractAppender;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.config.Property;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.io.Serializable;
+import java.nio.file.FileSystems;
+import java.util.*;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,6 +43,21 @@ import static org.junit.Assert.fail;
 
 
 public class RunTest extends SshTestBase {
+
+   public static class ListAppender extends AbstractAppender {
+
+      private final List<LogEvent> log;
+
+      public ListAppender(String name, List<LogEvent> testLog) {
+         super(name, null, null, false, new Property[0]);
+         this.log = testLog;
+      }
+
+      @Override
+      public void append(LogEvent event) {
+         log.add(event);
+      }
+   }
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
@@ -230,6 +249,26 @@ public class RunTest extends SshTestBase {
       assertTrue("state should have bar",state.has("bar"));
       assertFalse("state should not have biz",state.has("biz"));
    }
+   @Test
+   public void logger_removal(){
+
+      org.apache.logging.log4j.core.Logger logger = (org.apache.logging.log4j.core.Logger) LogManager.getLogger("foo");
+
+      LoggerContext loggerContext = (LoggerContext) LogManager.getContext(false);
+      Configuration configuration = loggerContext.getConfiguration();
+      LoggerConfig rootLoggerConfig = configuration.getLoggerConfig("");
+
+      List<LogEvent> events = new LinkedList<>();
+      ListAppender appender = new ListAppender("removal",events);
+
+      rootLoggerConfig.addAppender(appender, Level.ALL,null);
+
+      logger.addAppender(appender);
+      appender.start();
+      logger.setLevel(Level.ALL);
+      logger.trace("greetings");
+      LogManager.getRootLogger().info("hi mom");
+   }
 
    @Test(timeout = 10_000)
    public void watch_signal() {
@@ -312,6 +351,31 @@ public class RunTest extends SshTestBase {
       doit.run();
       //TODO post doit validation?
    }
+
+   @Test @Ignore
+   public void too_much_output() {
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+              "scripts:",
+              "  foo:",
+              "    - sh: \"while :; do echo 'Hit CTRL+C'; done\"",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      //TODO post doit validation?
+   }
+
 
    @Test
    public void duplicate_script_different_with(){
@@ -757,8 +821,9 @@ public class RunTest extends SshTestBase {
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
 
+
       String logContents = readFile(tmpDir.getPath().resolve("run.log"));
-      assertTrue("run log is empty", logContents.length() > 0);
+      assertTrue("run log is empty\n"+logContents+"\n"+logContents.length(), logContents.length() > 0);
       Boolean containsUnsubstituted = logContents.contains("signal: ${{OBJ.name}}-started");
       assertTrue("File contains ${{OBJ.name}}-started", !containsUnsubstituted);
 
@@ -793,9 +858,9 @@ public class RunTest extends SshTestBase {
               "  OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]"
       )));
 
-      Logger root = (Logger) LoggerFactory.getLogger(Run.STATE_LOGGER_NAME);
+//      Logger root = (Logger) LoggerFactory.getLogger(Run.STATE_LOGGER_NAME);
       //set log level to INFO to disable STATE logger
-      root.setLevel(Level.INFO);
+      /*root.setLevel(Level.INFO);*/
 
       RunConfig config = builder.buildConfig(parser);
 
@@ -803,15 +868,20 @@ public class RunTest extends SshTestBase {
 
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
-
+      doit.ensureLogger();//forcing the setup early
+      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+      Configuration cfg = ctx.getConfiguration();
+      String loggerName = "qdup."+doit.getOutputPath().replaceAll(FileSystems.getDefault().getSeparator(),"_");
+      cfg.getLoggerConfig(loggerName+".state").setLevel(Level.INFO);
+      ctx.updateLoggers();
       doit.run();
 
       String logContents = readFile(tmpDir.getPath().resolve("run.log"));
-
-      Boolean containsStrartingState = logContents.contains("starting state:");
+      assertTrue("run log is empty "+logContents.length(), logContents.length() > 0);
+      Boolean containsStartingState = logContents.contains("starting state:");
       Boolean containsOutputState = logContents.contains("closing state:");
-      assertTrue("File contains starting state", !containsStrartingState);
-      assertTrue("File contains closing state", !containsOutputState);
+      assertTrue("File should not contain starting state:\n"+logContents, !containsStartingState);
+      assertTrue("File should not contain closing state:\n"+logContents, !containsOutputState);
 
    }
 
@@ -1202,11 +1272,9 @@ public class RunTest extends SshTestBase {
       )));
 
       RunConfig config = builder.buildConfig(parser);
-
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
-
       List<String> signals = new ArrayList<>();
-
       dispatcher.addContextObserver(new ContextObserver() {
          @Override
          public void preStart(Context context, Cmd command) {

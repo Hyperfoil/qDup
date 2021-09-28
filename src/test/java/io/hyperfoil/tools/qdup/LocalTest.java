@@ -7,11 +7,26 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class LocalTest extends SshTestBase{
 
+
+    @Test
+    public void getRemote_url_https(){
+        Local local = new Local(null);
+        String content = local.getRemote("https://raw.githubusercontent.com/Hyperfoil/qDup/master/src/main/resources/sample.yaml");
+        assertNotNull(content);
+        assertTrue(content,content.length() > 0);
+    }
+
+    @Test
+    public void getRemote_url(){
+        Local local = new Local(null);
+        String content = local.getRemote("raw.githubusercontent.com/Hyperfoil/qDup/master/src/main/resources/sample.yaml");
+        assertNotNull(content);
+        assertTrue(content,content.length() > 0);
+    }
 
     @Test
     public void upload(){
