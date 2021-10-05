@@ -488,9 +488,9 @@ public abstract class Cmd {
             if(Cmd.hasStateReference(value.toString(),target)){//
                //target.loadWithDefs(state);
                if (value.toString().contains(name)) { //do not use targets's with if it's value is referencing name (avoid loops)
-                  value = Cmd.populateStateVariables(value.toString(), null,  state, null);
+                  value = Cmd.populateStateVariables(value.toString(), null,  state, null, null, null);
                } else {
-                  value = Cmd.populateStateVariables(value.toString(), target, state, null);
+                  value = Cmd.populateStateVariables(value.toString(), target, state, null, null, null);
                }
             }
          }
@@ -512,48 +512,38 @@ public abstract class Cmd {
               command,
               cmd,
               context!=null ? context.getState() : null,
-              command!=null ? context.getCoordinator() : null,
+              context!=null ? context.getCoordinator() : null,
+              context!=null ? context.getTimestamps() : null,
               new Ref(cmd)
       );
    }
-   public static List<String> getStateVariables(String command, Cmd cmd, State state, Coordinator coordinator,Ref ref){
-      PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,ref);
-      List<String> rtrn = Collections.EMPTY_LIST;      if(cmd==null){
-         try {
-            rtrn = StringUtil.getPatternNames(
-                    command,
-                    map,
-                    StringUtil.PATTERN_PREFIX,
-                    StringUtil.PATTERN_DEFAULT_SEPARATOR,
-                    StringUtil.PATTERN_SUFFIX,
-                    StringUtil.PATTERN_JAVASCRIPT_PREFIX
-            );
-         } catch (PopulatePatternException e) {}
-      }else{
-         try {
-            rtrn = StringUtil.getPatternNames(
-                    command,
-                    map,
-                    StringUtil.PATTERN_PREFIX,
-                    StringUtil.PATTERN_DEFAULT_SEPARATOR,
-                    StringUtil.PATTERN_SUFFIX,
-                    StringUtil.PATTERN_JAVASCRIPT_PREFIX
-            );
-         } catch (PopulatePatternException e) {}
-      }
+   public static List<String> getStateVariables(String command, Cmd cmd, State state, Coordinator coordinator,Json timestamps,Ref ref){
+      PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,timestamps,ref);
+      List<String> rtrn = Collections.EMPTY_LIST;
+      try {
+         rtrn = StringUtil.getPatternNames(
+                 command,
+                 map,
+                 StringUtil.PATTERN_PREFIX,
+                 StringUtil.PATTERN_DEFAULT_SEPARATOR,
+                 StringUtil.PATTERN_SUFFIX,
+                 StringUtil.PATTERN_JAVASCRIPT_PREFIX
+         );
+      } catch (PopulatePatternException e) {}
       return rtrn;
    }
    public static String populateStateVariables(String command, Cmd cmd, Context context) {
       return populateStateVariables(command, cmd,
               context == null ? null : context.getState(),
               context == null ? null : context.getCoordinator(),
+              context == null ? null : context.getTimestamps(),
               new Ref(cmd)
       );
    }
-   public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator) {
-      return populateStateVariables(command, cmd, state, coordinator, new Ref(cmd));
+   public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator, Json timestamps) {
+      return populateStateVariables(command, cmd, state, coordinator, timestamps, new Ref(cmd));
    }
-   public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator, Ref ref) {
+   public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator, Json timestamps, Ref ref) {
       List<String> evals = Arrays.asList(
               "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
               "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}",
@@ -565,7 +555,7 @@ public abstract class Cmd {
       if(!hasStateReference(command,cmd)){
          return command;
       }
-      PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,ref);
+      PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,timestamps,ref);
       try {
          if(cmd!=null){
             return StringUtil.populatePattern(command,map,evals,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
@@ -954,7 +944,7 @@ public abstract class Cmd {
             Object updatedKey = k;
             if(Cmd.hasStateReference(key,this)){
                //using state parent to prevent loop when trying to resolve self references
-               key = Cmd.populateStateVariables(key,this.getStateParent(),state,coordinator);
+               key = Cmd.populateStateVariables(key,this.getStateParent(),state,coordinator,null);
                updatedKey = key;
             }
             if(key.startsWith(SecretFilter.SECRET_NAME_PREFIX)){
@@ -963,7 +953,7 @@ public abstract class Cmd {
                updatedKey = key;
             }
             if(v instanceof String && Cmd.hasStateReference((String) v,this)){
-               String populatedV = populateStateVariables((String)v,this.hasStateParent() ? this.getStateParent() : this,state,coordinator);
+               String populatedV = populateStateVariables((String)v,this.hasStateParent() ? this.getStateParent() : this,state,coordinator,null);
                if(Cmd.hasStateReference(populatedV,this)){
                   //failed to update the value?
                   populatedV = (String)v;
@@ -1005,7 +995,9 @@ public abstract class Cmd {
    public abstract void run(String input, Context context);
    public abstract Cmd copy();
 
-   public void preRun(String input,Context context){}
+   public void preRun(String input,Context context){
+
+   }
    public void postRun(String output,Context context){
       String toLog = getLogOutput(output,context);
       if(toLog != null && !toLog.isBlank()){

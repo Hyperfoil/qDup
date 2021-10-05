@@ -40,7 +40,7 @@ public class ReadSignal extends CmdWithElse {
     public void run(String input, Context context) {
         ran = true;
         //use getStateValue in case it is in WITH or contest
-        Object value = Cmd.populateStateVariables(name, this, context.getState(), null);
+        Object value = Cmd.populateStateVariables(name, this, context.getState(), null, context.getTimestamps());
         populatedName = value == null ? "" : value.toString();
         if(missingName()){
             if(hasElse()){

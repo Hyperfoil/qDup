@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -13,26 +14,87 @@ import static org.junit.Assert.*;
 public class PatternValuesMapTest {
 
     @Test
+    public void timestamps_yaup_javascript(){
+        Cmd cmd = Cmd.sh("ls");
+        Json timestamps = new Json(false);
+        timestamps.set("start",1L);
+
+        State state = new State(State.RUN_PREFIX);
+        Cmd.Ref ref = new Cmd.Ref(cmd);
+
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,timestamps,ref);
+        String response = Cmd.populateStateVariables("${{="+PatternValuesMap.QDUP_GLOBAL+"."+PatternValuesMap.QDUP_GLOBAL_TIMESTAMPS+".start}}",cmd,state,null,timestamps,ref);
+
+        assertEquals("should find timestamps","1",response);
+    }
+
+    @Test
+    public void qdup_global_timestamps_found(){
+        Cmd cmd = Cmd.sh("ls");
+        Json timestamps = new Json(false);
+        timestamps.set("start",1L);
+
+        State state = new State(State.RUN_PREFIX);
+        Cmd.Ref ref = new Cmd.Ref(cmd);
+
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,timestamps,ref);
+        String response = Cmd.populateStateVariables("${{"+PatternValuesMap.QDUP_GLOBAL+".timestamps.start}}",cmd,state,null,timestamps,ref);
+
+        assertEquals("should find timestamps","1",response);
+    }
+    @Test
+    public void qdup_global_timestamps_missing(){
+        Cmd cmd = Cmd.sh("ls");
+        Json timestamps = new Json(false);
+        timestamps.set("start",1L);
+
+        State state = new State(State.RUN_PREFIX);
+        Cmd.Ref ref = new Cmd.Ref(cmd);
+
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,timestamps,ref);
+        String input = "${{"+PatternValuesMap.QDUP_GLOBAL+"."+PatternValuesMap.QDUP_GLOBAL_TIMESTAMPS+".wrong}}";
+        String response = Cmd.populateStateVariables(input,cmd,state,null,timestamps,ref);
+
+        assertEquals("should find timestamps",input,response);
+    }
+    @Test
+    public void qdup_global_state_missing(){
+        Cmd cmd = Cmd.sh("ls");
+        Json timestamps = new Json(false);
+        timestamps.set("start",1L);
+
+        State state = new State(State.RUN_PREFIX);
+        Cmd.Ref ref = new Cmd.Ref(cmd);
+
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,timestamps,ref);
+        String input = "${{"+PatternValuesMap.QDUP_GLOBAL+"."+PatternValuesMap.QDUP_GLOBAL_STATE+".foo.bar.wrong}}";
+        String response = Cmd.populateStateVariables(input,cmd,state,null,timestamps,ref);
+
+        assertEquals("should find timestamps",input,response);
+    }
+
+
+    @Test
     public void jsonpath_find(){
         Cmd cmd = Cmd.sh("ls");
         State state = new State(State.RUN_PREFIX);
         state.set("hosts",Json.fromString("[{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:eb:51\",\"hostname\":\"mwperf-server01.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.1\",\"name\":\"mwperf-server01\",\"publicIp\":\"10.1.184.215\",\"publicMac\":\"0c:29:ef:78:eb:52\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:eb:5e\",\"hostname\":\"mwperf-server02.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.2\",\"name\":\"mwperf-server02\",\"publicIp\":\"10.1.184.216\",\"publicMac\":\"0c:29:ef:78:eb:5f\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:eb:6b\",\"hostname\":\"mwperf-server03.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.3\",\"name\":\"mwperf-server03\",\"publicIp\":\"10.1.184.217\",\"publicMac\":\"0c:29:ef:78:eb:6c\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:eb:78\",\"hostname\":\"mwperf-server04.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.4\",\"name\":\"mwperf-server04\",\"publicIp\":\"10.1.184.218\",\"publicMac\":\"0c:29:ef:78:eb:79\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server05.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server05\",\"publicIp\":\"10.1.184.219\",\"publicMac\":\"\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:c6:9e\",\"hostname\":\"mwperf-server06.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.6\",\"name\":\"mwperf-server06\",\"publicIp\":\"10.1.184.220\",\"publicMac\":\"0c:29:ef:78:c6:9f\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:c6:ab\",\"hostname\":\"mwperf-server07.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.7\",\"name\":\"mwperf-server07\",\"publicIp\":\"10.1.184.221\",\"publicMac\":\"0c:29:ef:78:c6:ac\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:c6:b8\",\"hostname\":\"mwperf-server08.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.8\",\"name\":\"mwperf-server08\",\"publicIp\":\"10.1.184.222\",\"publicMac\":\"0c:29:ef:78:c6:b9\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:ba:51\",\"hostname\":\"mwperf-server09.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.9\",\"name\":\"mwperf-server09\",\"publicIp\":\"10.1.184.223\",\"publicMac\":\"0c:29:ef:78:ba:52\"},{\"publicInterface\":\"em2\",\"privateMac\":\"0c:29:ef:78:ba:5e\",\"hostname\":\"mwperf-server10.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"em1\",\"privateIp\":\"192.168.0.10\",\"name\":\"mwperf-server10\",\"publicIp\":\"10.1.184.224\",\"publicMac\":\"0c:29:ef:78:ba:5f\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:ba:6b\",\"hostname\":\"mwperf-server11.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.11\",\"name\":\"mwperf-server11\",\"publicIp\":\"10.1.184.225\",\"publicMac\":\"0c:29:ef:78:ba:6c\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:ba:78\",\"hostname\":\"mwperf-server12.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.12\",\"name\":\"mwperf-server12\",\"publicIp\":\"10.1.184.226\",\"publicMac\":\"0c:29:ef:78:ba:79\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server13.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server13\",\"publicIp\":\"10.1.184.2xx\",\"publicMac\":\"\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server14.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server14\",\"publicIp\":\"10.1.184.2xx\",\"publicMac\":\"\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server15.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server15\",\"publicIp\":\"10.1.184.2xx\",\"publicMac\":\"\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server16.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server16\",\"publicIp\":\"10.1.184.2xx\",\"publicMac\":\"\"}]"));
         Cmd.Ref ref = new Cmd.Ref(cmd);
 
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
 
-        String response = Cmd.populateStateVariables("${{hosts[?(@.name == \"mwperf-server16\")]}}",cmd,state,null,ref);
+        String response = Cmd.populateStateVariables("${{hosts[?(@.name == \"mwperf-server16\")]}}",cmd,state,null,null,ref);
     }
-    @Test
+    @Test @Ignore
     public void jsonpath_miss(){
         Cmd cmd = Cmd.sh("ls");
         State state = new State(State.RUN_PREFIX);
         state.set("hosts",Json.fromString("[{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:eb:51\",\"hostname\":\"mwperf-server01.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.1\",\"name\":\"mwperf-server01\",\"publicIp\":\"10.1.184.215\",\"publicMac\":\"0c:29:ef:78:eb:52\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:eb:5e\",\"hostname\":\"mwperf-server02.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.2\",\"name\":\"mwperf-server02\",\"publicIp\":\"10.1.184.216\",\"publicMac\":\"0c:29:ef:78:eb:5f\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:eb:6b\",\"hostname\":\"mwperf-server03.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.3\",\"name\":\"mwperf-server03\",\"publicIp\":\"10.1.184.217\",\"publicMac\":\"0c:29:ef:78:eb:6c\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:eb:78\",\"hostname\":\"mwperf-server04.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.4\",\"name\":\"mwperf-server04\",\"publicIp\":\"10.1.184.218\",\"publicMac\":\"0c:29:ef:78:eb:79\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server05.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server05\",\"publicIp\":\"10.1.184.219\",\"publicMac\":\"\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:c6:9e\",\"hostname\":\"mwperf-server06.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.6\",\"name\":\"mwperf-server06\",\"publicIp\":\"10.1.184.220\",\"publicMac\":\"0c:29:ef:78:c6:9f\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:c6:ab\",\"hostname\":\"mwperf-server07.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.7\",\"name\":\"mwperf-server07\",\"publicIp\":\"10.1.184.221\",\"publicMac\":\"0c:29:ef:78:c6:ac\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:c6:b8\",\"hostname\":\"mwperf-server08.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.8\",\"name\":\"mwperf-server08\",\"publicIp\":\"10.1.184.222\",\"publicMac\":\"0c:29:ef:78:c6:b9\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:ba:51\",\"hostname\":\"mwperf-server09.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.9\",\"name\":\"mwperf-server09\",\"publicIp\":\"10.1.184.223\",\"publicMac\":\"0c:29:ef:78:ba:52\"},{\"publicInterface\":\"em2\",\"privateMac\":\"0c:29:ef:78:ba:5e\",\"hostname\":\"mwperf-server10.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"em1\",\"privateIp\":\"192.168.0.10\",\"name\":\"mwperf-server10\",\"publicIp\":\"10.1.184.224\",\"publicMac\":\"0c:29:ef:78:ba:5f\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:ba:6b\",\"hostname\":\"mwperf-server11.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.11\",\"name\":\"mwperf-server11\",\"publicIp\":\"10.1.184.225\",\"publicMac\":\"0c:29:ef:78:ba:6c\"},{\"publicInterface\":\"eno2\",\"privateMac\":\"0c:29:ef:78:ba:78\",\"hostname\":\"mwperf-server12.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"eno1\",\"privateIp\":\"192.168.0.12\",\"name\":\"mwperf-server12\",\"publicIp\":\"10.1.184.226\",\"publicMac\":\"0c:29:ef:78:ba:79\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server13.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server13\",\"publicIp\":\"10.1.184.2xx\",\"publicMac\":\"\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server14.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server14\",\"publicIp\":\"10.1.184.2xx\",\"publicMac\":\"\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server15.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server15\",\"publicIp\":\"10.1.184.2xx\",\"publicMac\":\"\"},{\"publicInterface\":\"\",\"privateMac\":\"\",\"hostname\":\"mwperf-server16.perf.lab.eng.rdu2.redhat.com\",\"privateInterface\":\"\",\"privateIp\":\"192.168.0.x\",\"name\":\"mwperf-server16\",\"publicIp\":\"10.1.184.2xx\",\"publicMac\":\"\"}]"));
         Cmd.Ref ref = new Cmd.Ref(cmd);
 
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
 
-        String response = Cmd.populateStateVariables("${{hosts[?(@.name == \"does_not_exist\")]}}",cmd,state,null,ref);
+        String response = Cmd.populateStateVariables("${{hosts[?(@.name == \"does_not_exist\")]}}",cmd,state,null,null,ref);
     }
 
     @Test
@@ -43,9 +105,9 @@ public class PatternValuesMapTest {
         state.set("missingInterface", "eno-02");
         Cmd.Ref ref = new Cmd.Ref(cmd);
 
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,new Json(),ref);
 
-        String response = Cmd.populateStateVariables("${{= ${{hosts}}.filter(host => host.publicInterface === '${{missingInterface}}')[0].privateMac }}", cmd, state, null, ref);
+        String response = Cmd.populateStateVariables("${{= ${{hosts}}.filter(host => host.publicInterface === '${{missingInterface}}')[0].privateMac }}", cmd, state, null, new Json(), ref);
 
         assertNotEquals("0c:29:ef:78:eb:51", response);
     }
@@ -57,7 +119,7 @@ public class PatternValuesMapTest {
         state.set("key","value");
         Cmd.Ref ref = new Cmd.Ref(cmd);
 
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
 
         assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be value","value",map.get("key"));
@@ -69,7 +131,7 @@ public class PatternValuesMapTest {
         state.set("key","value");
         Cmd.Ref ref = new Cmd.Ref(cmd);
 
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
 
         assertTrue("map should have key",map.containsKey("RUN.key"));
         assertEquals("key should be value","value",map.get("RUN.key"));
@@ -81,7 +143,7 @@ public class PatternValuesMapTest {
         State state = new State(State.RUN_PREFIX);
         state.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
         Cmd.Ref ref = new Cmd.Ref(cmd);
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
         try {
             String response = StringUtil.populatePattern("${{key[?(@.key == \"uno-uno\")]}}", map, Collections.emptyList(), StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
         }catch (PopulatePatternException e){
@@ -95,7 +157,7 @@ public class PatternValuesMapTest {
         State state = new State(State.RUN_PREFIX);
         state.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
         Cmd.Ref ref = new Cmd.Ref(cmd);
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
         try {
             String response = StringUtil.populatePattern("${{key[?(@.key == \"uno-dos\")]}}", map, Collections.emptyList(), StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
         }catch (PopulatePatternException e){
@@ -110,7 +172,7 @@ public class PatternValuesMapTest {
         state.set("key",Json.fromString("[ \"uno\", \"dos\"]"));
         Cmd.Ref ref = new Cmd.Ref(cmd);
 
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
 
         try {
             String response = StringUtil.populatePattern("${{= [...${{RUN.key}}, \"tres\"] }}", map, Collections.emptyList(), StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
@@ -128,7 +190,7 @@ public class PatternValuesMapTest {
         cmd.with("key","value");
         Cmd.Ref ref = new Cmd.Ref(cmd);
 
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
 
         assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be value","value",map.get("key"));
@@ -140,7 +202,7 @@ public class PatternValuesMapTest {
         cmd.with("key", "foo");
         Cmd.Ref ref = new Cmd.Ref(cmd);
         Cmd use = Cmd.sh("pwd");
-        PatternValuesMap map = new PatternValuesMap(use,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(use,state,null,null,ref);
 
         assertTrue("map should have key",map.containsKey("key"));
         assertEquals("key should be foo","foo",map.get("key"));
@@ -162,12 +224,12 @@ public class PatternValuesMapTest {
         state.set("biz", "value");
 
         Cmd.Ref ref = new Cmd.Ref(mid);
-        PatternValuesMap map = new PatternValuesMap(bot,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(bot,state,null,null,ref);
 
         assertTrue("map should have key",map.containsKey("foo.bar"));
         assertEquals("key.value should be value","value",map.get("foo.bar"));
 
-        String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state,null);
+        String populated = Cmd.populateStateVariables("${{foo.bar}}", bot, state,null,null);
         assertEquals("with should take priority over state", "value", populated);
     }
 
@@ -180,7 +242,7 @@ public class PatternValuesMapTest {
         cmd.with("key","${{charlie}}");
         Cmd.Ref ref = new Cmd.Ref(cmd);
         Cmd use = Cmd.sh("pwd");
-        PatternValuesMap map = new PatternValuesMap(use,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(use,state,null,null,ref);
         ref.loadAllWithDefs(state,null);
         use.loadAllWithDefs(state,null);
         assertTrue("map should have key",map.containsKey("key.value"));
@@ -195,7 +257,7 @@ public class PatternValuesMapTest {
         cmd.with(Json.fromString("{\"key\":{\"value\":\"foo\"}}"));
         Cmd.Ref ref = new Cmd.Ref(cmd);
         Cmd use = Cmd.sh("pwd");
-        PatternValuesMap map = new PatternValuesMap(use,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(use,state,null,null,ref);
 
         assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
@@ -210,7 +272,7 @@ public class PatternValuesMapTest {
 
         Cmd.Ref ref = new Cmd.Ref(use);
 
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
 
         assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
@@ -226,7 +288,7 @@ public class PatternValuesMapTest {
 
         Cmd.Ref ref = new Cmd.Ref(use);
 
-        PatternValuesMap map = new PatternValuesMap(cmd,state,null,ref);
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
 
         assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));

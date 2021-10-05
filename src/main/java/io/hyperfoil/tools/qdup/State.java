@@ -48,7 +48,7 @@ public class State {
         }
         @Override
         public Object get(String key){
-            String populatedKey = Cmd.populateStateVariables(key,cmd,this,null);
+            String populatedKey = Cmd.populateStateVariables(key,cmd,this,null,null);
             if(cmd.hasWith(populatedKey)){
                 return cmd.getWith(populatedKey);
             }else{
@@ -370,7 +370,7 @@ public class State {
         return buffer.toString();
     }
     public Map<Object,Object> toMap(){
-        return new PatternValuesMap(null,this,null,null);
+        return new PatternValuesMap(null,this,null,null,null);
     }
     public Json toJson(){
         Json rtrn = new Json(false);

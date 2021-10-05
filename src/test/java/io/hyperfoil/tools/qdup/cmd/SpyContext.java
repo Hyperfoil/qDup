@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 
+import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.Logger;
 import org.slf4j.profiler.Profiler;
@@ -45,6 +46,11 @@ public class SpyContext implements Context {
         next=null;
         skip=null;
         updates.clear();
+    }
+
+    @Override
+    public Json getTimestamps(){
+        return new Json(false);
     }
 
     @Override

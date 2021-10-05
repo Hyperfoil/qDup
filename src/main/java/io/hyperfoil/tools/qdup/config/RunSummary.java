@@ -67,7 +67,7 @@ public class RunSummary implements RunRule{
         });
         if (command instanceof ScriptCmd) {
             String scriptName = ((ScriptCmd) command).getName();
-            scriptName = Cmd.populateStateVariables(scriptName,command,config.getState(),null);
+            scriptName = Cmd.populateStateVariables(scriptName,command,config.getState(),null,null);
             if(Cmd.hasStateReference(scriptName,command)){
                 //TODO warn that we cannot
             }else {

@@ -27,9 +27,9 @@ public class CmdSummary {
 
         String commandStr = yamlParser!=null ? yamlParser.dump(yamlParser.representCommand(command)) : command.toString();
         if(Cmd.hasStateReference(commandStr,command)){
-            List<String> references = Cmd.getStateVariables(commandStr,command,config.getState(),null,ref);
+            List<String> references = Cmd.getStateVariables(commandStr,command,config.getState(),null,null, ref);
             references.forEach(this::addUseVariable);
-            String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), null, ref);
+            String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), null, null, ref);
             if(Cmd.hasStateReference(populated,command)){
                 addWarning("Failed to populate pattern",command);
             }
@@ -38,12 +38,12 @@ public class CmdSummary {
             addWarning(command + " cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.",command);
         }
         if (command instanceof Signal) {
-            String populatedSignal = Cmd.populateStateVariables(((Signal) command).getName(), command, config.getState(), null, ref);
+            String populatedSignal = Cmd.populateStateVariables(((Signal) command).getName(), command, config.getState(), null, null, ref);
             addSignal(populatedSignal);
             if(Cmd.hasStateReference(populatedSignal,command)){
             }
         } else if (command instanceof WaitFor) {
-            String populatedWait = Cmd.populateStateVariables(((WaitFor) command).getName(), command, config.getState(), null, ref);
+            String populatedWait = Cmd.populateStateVariables(((WaitFor) command).getName(), command, config.getState(), null, null, ref);
             addWait(populatedWait);
             if(Cmd.hasStateReference(populatedWait,command)){
                 if( ((WaitFor)command).hasInitial()){
@@ -54,7 +54,7 @@ public class CmdSummary {
             }
         } else if (command instanceof ScriptCmd) {
             String scriptName = ((ScriptCmd) command).getName();
-            scriptName = Cmd.populateStateVariables(scriptName,command,config.getState(),null);
+            scriptName = Cmd.populateStateVariables(scriptName,command,config.getState(),null,null);
             Script namedScript = config.getScript(scriptName, command);
             if (namedScript == null) {
                 addWarning("missing script: "+scriptName,command);
@@ -75,13 +75,13 @@ public class CmdSummary {
                 addSetVariable(name);
             }
         } else if (command instanceof SetState) {
-            String str = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, ref);
+            String str = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, null, ref);
             addUseVariable(str);
             if (Cmd.hasStateReference(str, command)) {
                 //we were unable to identify the exact value for a set-state, does that matter?
             }
         } else if (command instanceof SetSignal){
-          String str = Cmd.populateStateVariables(((SetSignal) command).getName(),command,config.getState(), null, ref);
+          String str = Cmd.populateStateVariables(((SetSignal) command).getName(),command,config.getState(), null, null, ref);
           addSignal(str);
           if (Cmd.hasStateReference(str,command)){
               //we were unable to identify the exact value for set-signal, does that matter?

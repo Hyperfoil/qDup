@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
@@ -163,6 +164,13 @@ public class ScriptContext implements Context, Runnable{
     public SshSession getSession(){
         return session;
     }
+
+
+    @Override
+    public Json getTimestamps(){
+        return Json.fromMap(run.getTimestamps());
+    }
+
 
     @Override
     public Host getHost() {

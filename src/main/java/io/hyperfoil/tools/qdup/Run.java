@@ -495,7 +495,7 @@ public class Run implements Runnable, DispatchObserver {
             connectSessions.add(()->{
                 String name = "post-cleanup@"+host.getShortHostName();
                 if(config.getSettings().has(RunConfig.TRACE_NAME)){
-                    name = name+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
+                    name = name+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                 }
                 SshSession session = new SshSession(
                     name,
@@ -549,7 +549,7 @@ public class Run implements Runnable, DispatchObserver {
         Script setup = createTempDirectory();
         config.getAllHostsInRoles().forEach(host->{
             connectSessions.add(()->{
-                String name = "pre-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
+                String name = "pre-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                 SshSession session = new SshSession(
                     name,
                     host,
@@ -621,7 +621,7 @@ public class Run implements Runnable, DispatchObserver {
 
                role.getHosts(config).forEach(host->{
                    connectSessions.add(()->{
-                       String name = roleName+"-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
+                       String name = roleName+"-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                        SshSession session = new SshSession(
                                name,
                                host,
@@ -689,7 +689,7 @@ public class Run implements Runnable, DispatchObserver {
                         }
                         String setupCommand = env.getDiff().getCommand();
                         connectSessions.add(() -> {
-                            String name = script.getName()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
+                            String name = script.getName()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                             timer.start("connect:" + host.toString());
                             SshSession session = new SshSession(
                                     name,
@@ -781,7 +781,7 @@ public class Run implements Runnable, DispatchObserver {
                 role.getHosts(config).forEach(host->{
                     String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
                     connectSessions.add(()->{
-                        String name = roleName + "-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator());
+                        String name = roleName + "-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                         SshSession session = new SshSession(
                                 name,
                                 host,
@@ -839,4 +839,5 @@ public class Run implements Runnable, DispatchObserver {
     public Coordinator getCoordinator(){return coordinator;}
     public String getOutputPath(){ return outputPath;}
 
+    public Map<String,Long> getTimestamps(){return timestamps;}
 }

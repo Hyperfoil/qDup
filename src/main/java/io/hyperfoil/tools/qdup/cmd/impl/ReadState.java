@@ -33,7 +33,7 @@ public class ReadState extends CmdWithElse {
     public void run(String input, Context context) {
         ran = true;
         //use getStateValue in case it is in WITH or contest
-        Object value = Cmd.populateStateVariables(key, this, context.getState(), null);
+        Object value = Cmd.populateStateVariables(key, this, context.getState(), context.getCoordinator(),context.getTimestamps());
         populatedKey = value == null ? "" : value.toString();
         if(stateMissing()){
             if(hasElse()){

@@ -2,6 +2,8 @@ package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.Sets;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
@@ -26,23 +28,31 @@ import java.util.stream.Collectors;
 //TODO support javascript map and array functions (push, pop, map, filter, etc)
 public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
 
-   public static final String QDUP_GLOBAL = "$QD";
+   public static final String QDUP_GLOBAL = "ENV";
+   public static final String QDUP_GLOBAL_STATE = "state";
+   public static final String QDUP_GLOBAL_SIGNALS = "signals";
+   public static final String QDUP_GLOBAL_COUNTERS = "counters";
+   public static final String QDUP_GLOBAL_TIMESTAMPS = "timestamps";
+   public static final Set<String> QDUP_GLOBAL_KEYS = Sets.of(QDUP_GLOBAL_STATE,QDUP_GLOBAL_SIGNALS,QDUP_GLOBAL_COUNTERS,QDUP_GLOBAL_TIMESTAMPS);
 
    private Cmd cmd;
    private State state;
    private Coordinator coordinator;
+   private Json timestamps;
    private Cmd.Ref ref;
 
    public PatternValuesMap(Cmd cmd, Context context, Cmd.Ref ref) {
       this(cmd,
-              context!=null ? context.getState() : null,
-              context!=null ? context.getCoordinator() : null,
+         context!=null ? context.getState() : null,
+         context!=null ? context.getCoordinator() : null,
+         context!=null ? context.getTimestamps() : new Json(),
          ref);
    }
-   public PatternValuesMap(Cmd cmd, State state, Coordinator coordinator, Cmd.Ref ref) {
+   public PatternValuesMap(Cmd cmd, State state, Coordinator coordinator, Json timestamps,Cmd.Ref ref) {
       this.cmd = cmd;
       this.state = state == null ? new State(State.RUN_PREFIX) : state;
       this.coordinator = coordinator;
+      this.timestamps = timestamps==null ? new Json(false) : timestamps;
       this.ref = ref;
    }
 
@@ -58,32 +68,38 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
 
    @Override
    public boolean containsKey(Object key) {
-      if(QDUP_GLOBAL.equals(key)){
-         return true;
+      boolean rtrn = false;
+      if (key.toString().equals(QDUP_GLOBAL)) {
+         rtrn = true;
+      } else if (key.toString().startsWith(QDUP_GLOBAL+".")){
+         String subKey = key.toString().substring(QDUP_GLOBAL.length() + 1);//+1 for the .
+         Object found = Json.find(populateQdupGlobal(),key.toString().replace(QDUP_GLOBAL,"$"),null);
+         boolean isGlobalSubkey = QDUP_GLOBAL_KEYS.stream().anyMatch(global->subKey.startsWith(global));
+         rtrn = isGlobalSubkey;
       }
-      if (cmd != null) {
+      if (cmd != null && !rtrn) {
          if (cmd.hasWith(key.toString())) {
-            return true;
+            rtrn = true;
          }
       }
       if (ref != null) {
-         Object rtrn = null;
+         Object tmp = null;
          Cmd.Ref target = ref;
          do {
             if (target.getCommand() != null && target.getCommand().hasWith(key.toString()) ) {
-               rtrn = target.getCommand().getWith(key.toString(),state);
+               tmp = target.getCommand().getWith(key.toString(),state);
             }
-         } while ((target = target.getParent()) != null && rtrn == null);
-         if (rtrn != null) {
-            return true;
+         } while ((target = target.getParent()) != null && tmp == null);
+         if (tmp != null) {
+            rtrn = true;
          }
       }
-      if (state != null) {
+      if (state != null && !rtrn) {
          if (state.has(key.toString(),true)) {
-            return true;
+            rtrn = true;
          }
       }
-      return false;
+      return rtrn;
    }
 
    @Override
@@ -91,26 +107,42 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
       throw new UnsupportedOperationException("this is a read only map");
    }
 
+   private Json populateQdupGlobal(){
+      Json rtrn = new Json(false);
+      if(state!=null) {
+         rtrn.set("state", state.toJson());
+      }
+      if(coordinator != null) {
+         Json latches = new Json(false);
+         coordinator.getLatches().forEach((k,v)->latches.set(k,v));
+         rtrn.set("signals",latches);
+
+         Json counter = new Json(false);
+         coordinator.getCounters().forEach((k, v) -> counter.set(k, v));
+         rtrn.set("counters", counter);
+      }
+      rtrn.set("timestamps",timestamps);
+      return rtrn;
+   }
+
    @Override
    public Object get(Object key) {
+      Object rtrn = null;
       if(QDUP_GLOBAL.equals(key)){
-         Json rtrn = new Json(false);
-         if(state!=null) {
-            rtrn.set("state", state.toJson());
+         rtrn = populateQdupGlobal();
+      }else if(key.toString().startsWith(QDUP_GLOBAL)){
+         String remainingKey = key.toString().substring(QDUP_GLOBAL.length());
+         if(remainingKey.isBlank()){
+            return populateQdupGlobal();
+         }else if (remainingKey.startsWith(".")){
+            remainingKey = remainingKey.substring(1);
+            Object found = Json.find(populateQdupGlobal(),remainingKey);
+            if(found!=null){
+               rtrn = found;
+            }
          }
-         if(coordinator != null) {
-            Json latches = new Json(false);
-            coordinator.getLatches().forEach((k,v)->latches.set(k,v));
-            rtrn.set("signal",latches);
-
-            Json counter = new Json(false);
-            coordinator.getCounters().forEach((k, v) -> counter.set(k, v));
-            rtrn.set("counter", counter);
-         }
-
-         return rtrn;
       }
-      if (cmd != null) {
+      if (cmd != null && rtrn == null) {
          //only use value from with if it does not contain a reference back to the same key
          //this support with: {FOO: ${{FOO}} } so script variables can be mapped to a state variable with the same name
          //technically that does not need to happen but it should be supported
@@ -122,30 +154,30 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
 
             }
             if(!found.toString().contains(cmd.getPatternPrefix()+key.toString())){
-               return found;
+               rtrn = found;
             }else{
             }
 
          }
       }
-      if (ref != null) {
-         Object rtrn = null;
+      if (ref != null && rtrn == null) {
+         Object tmp = null;
          Cmd.Ref target = ref;
          do {
             if (target.getCommand() != null && target.getCommand().hasWith(key.toString()) && ! target.getCommand().getWith(key.toString()).toString().contains(cmd.getPatternPrefix()+key.toString())) {
-               rtrn = target.getCommand().hasWith(key.toString()) ? target.getCommand().getWith(key.toString()) : null;
+               tmp = target.getCommand().hasWith(key.toString()) ? target.getCommand().getWith(key.toString()) : null;
             }
-         } while ((target = target.getParent()) != null && rtrn == null);
-         if( rtrn != null ){
-            return rtrn;
+         } while ((target = target.getParent()) != null && tmp == null);
+         if( tmp != null ){
+            rtrn = tmp;
          }
       }
-      if (state != null) {
+      if (state != null && rtrn == null) {
          if (state.has(key.toString())) {
-            return state.get(key.toString());
+            rtrn =  state.get(key.toString());
          }
       }
-      return null;
+      return rtrn;
    }
 
 

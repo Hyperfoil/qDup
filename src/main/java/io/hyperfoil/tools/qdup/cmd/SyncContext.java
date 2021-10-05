@@ -7,6 +7,7 @@ import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
+import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
@@ -147,6 +148,10 @@ public class SyncContext implements Context, Runnable{
 
     private Logger getRunLogger() {
         return run.getRunLogger();
+    }
+    @Override
+    public Json getTimestamps(){
+        return Json.fromMap(run.getTimestamps());
     }
 
     @Override

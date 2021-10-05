@@ -377,7 +377,7 @@ public class RunConfigBuilder {
 
    public Script getScript(String name, Cmd command) {
       if (Cmd.hasStateReference(name,command)) {
-         name = Cmd.populateStateVariables(name, command, state, null);
+         name = Cmd.populateStateVariables(name, command, state, null,null);
       }
       Script script = scripts.get(name);
       if (script == null) { // we don't find it

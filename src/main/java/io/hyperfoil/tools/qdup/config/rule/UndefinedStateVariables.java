@@ -12,6 +12,7 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
 
 import java.util.Collection;
@@ -140,6 +141,7 @@ public class UndefinedStateVariables implements RunRule {
 
     @Override
     public void scan(String role, Stage stage, String script, String host, Cmd command, boolean isWatching, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+
         if(!command.isStateScan()){
             return;
         }
@@ -151,18 +153,21 @@ public class UndefinedStateVariables implements RunRule {
                     script,
                     command
             );
-            Cmd.getStateVariables(commandStr,command, config.getState(),null,ref).forEach(v->addUsedVariable(v,rssc));
+            Cmd.getStateVariables(commandStr,command, config.getState(),null,null,ref).forEach(v->addUsedVariable(v,rssc));
             command.loadAllWithDefs(config.getState(),null);
             ref.loadAllWithDefs(config.getState(),null);
-            String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), null, ref);
+            String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), null, null, ref);
             if (Cmd.hasStateReference(populated, command)) {
-                List<String> neededVariables = Cmd.getStateVariables(populated, command, config.getState(), null, ref);
+
+                List<String> neededVariables = Cmd.getStateVariables(populated, command, config.getState(), null, null,ref);
                 neededVariables
                     .stream()
-                    .filter(var->!(
+                    .filter(var->{boolean rtrn = !(
                         command.hasWith(var) ||
                         config.getState().has(var)
-                    ))
+                    );
+                    return rtrn;
+                    })
                     .forEach(neededVariable -> {
                         addNeededVariable(
                             neededVariable,
@@ -186,9 +191,9 @@ public class UndefinedStateVariables implements RunRule {
             ((Regex) command).getCaptureNames().forEach(captureName->{
                 String toUse = captureName;
                 if(Cmd.hasStateReference(toUse,command)){
-                    toUse = Cmd.populateStateVariables(captureName,command, config.getState(), null, ref);
+                    toUse = Cmd.populateStateVariables(captureName,command, config.getState(), null, null, ref);
                     if(Cmd.hasStateReference(toUse,command)){
-                        List<String> references = Cmd.getStateVariables(toUse,command, config.getState(), null, ref);
+                        List<String> references = Cmd.getStateVariables(toUse,command, config.getState(), null, null, ref);
                     }
                 }
                 addSetVariable(toUse,rssc,summary);
@@ -203,7 +208,7 @@ public class UndefinedStateVariables implements RunRule {
             String key = ((SetState) command).getKey();
             String value = ((SetState) command).getValue();
             if(Cmd.hasStateReference(key,command)){
-                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, ref);
+                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, null, ref);
             }
             addSetVariable(key,rssc,summary);
         } else if (command instanceof ForEach){
@@ -216,11 +221,11 @@ public class UndefinedStateVariables implements RunRule {
             String key = ((ForEach)command).getName();
             String value = ((ForEach)command).getDeclaredInput();
             if(Cmd.hasStateReference(key,command)){
-                Cmd.getStateVariables(key,command, config.getState(), null, ref).forEach(v->addUsedVariable(v,rssc));
-                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, ref);
+                Cmd.getStateVariables(key,command, config.getState(), null, null, ref).forEach(v->addUsedVariable(v,rssc));
+                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, null, ref);
             }
             if(Cmd.hasStateReference(value,command)){
-                Cmd.getStateVariables(value,command, config.getState(), null, ref).forEach(v->addUsedVariable(v,rssc));
+                Cmd.getStateVariables(value,command, config.getState(), null, null, ref).forEach(v->addUsedVariable(v,rssc));
             }
             addSetVariable(key,rssc,summary);
         }

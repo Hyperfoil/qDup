@@ -242,7 +242,7 @@ public class RunConfig {
      */
     public Script getScript(String name,Cmd command,State state){
 
-        String populatedName = Cmd.populateStateVariables(name,command,state,null);
+        String populatedName = Cmd.populateStateVariables(name,command,state,null,null);
         return scripts.get(populatedName);
     }
 
