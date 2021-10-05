@@ -416,6 +416,16 @@ public class RegexTest extends SshTestBase {
         Object all = context.getState().get("all");
         assertTrue("state.get(all) should return json", all instanceof Json);
     }
+    @Test
+    public void named_capture_with_underscore_dash() {
+        Cmd regex = Cmd.regex("(?<all_underscore-dash>.*)");
+        SpyContext context = new SpyContext();
+        context.clear();
+        regex.run("foo", context);
+
+        assertEquals("state.get(all_underscore-dash) should be foo", "foo", context.getState().get("all_underscore-dash"));
+    }
+
 
 
     @Test
