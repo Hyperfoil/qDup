@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
@@ -117,9 +118,9 @@ public class RunConfigBuilder {
       errors.add(error);
    }
 
-   public void addErrors(Collection<String> error) {
-      errors.addAll(error);
-   }
+//   public void addErrors(Collection<String> error) {
+//      errors.addAll(error);
+//   }
 
    public int errorCount() {
       return errors.size();
@@ -142,6 +143,9 @@ public class RunConfigBuilder {
          }
       });
       yamlFile.getRoles().forEach((name, role) -> {
+         if(role.hasHostExpression()){
+            setRoleHostExpession(name,role.getHostExpression().getExpression());
+         }
          role.getHostRefs().forEach(hostRef -> {
             addHostToRole(name, hostRef);
          });
@@ -423,7 +427,11 @@ public class RunConfigBuilder {
                seenHosts.putIfAbsent(hostShortname, resolvedHost);
                seenHosts.put(resolvedHost.toString(), resolvedHost);//could duplicate fullyQualified but guarantees to include port
             } else {
-               addError("Role " + roleName + " Host " + hostShortname + " was added without a fully qualified host representation matching user@hostName:port\n hosts:" + hostAlias);
+               if(!Cmd.hasStateReference(hostShortname,null)){
+                  addError("Role " + roleName + " Host " + hostShortname + " was added without a fully qualified host representation matching user@hostName:port\n hosts:" + hostAlias);
+               }else{
+
+               }
                //WTF, how are we missing a host reference?
             }
          }
@@ -455,17 +463,47 @@ public class RunConfigBuilder {
                   i++;
                } else {
                   //how does an expression end with -
-                  addError("host expresion for " + roleName + " should not end with " + token);
+                  addError("host expression for " + roleName + " should not end with " + token);
                }
             } else {
-               addError("host expressions should be = <role> [+-] <role>... but " + roleName + " could not parse " + token + " in: " + expession);
+               if(Cmd.hasStateReference(token,null)){
+                  String populatedToken = Cmd.populateStateVariables(token,null,getState(),null,new Json());
+                  if(Cmd.hasStateReference(populatedToken,null)){
+                     addError("could not fully populate pattern for hosts: "+token);
+                  }else {
+                     if (Json.isJsonLike(populatedToken)) {
+                        Json tokenJson = Json.fromString(populatedToken);
+                        if (tokenJson != null) {
+                           if (tokenJson.isArray()) {
+                              tokenJson.forEach(entry -> {
+                                 String str = entry.toString();
+                                 if(hostAliases.containsKey(str)){
+                                    toAdd.add(hostAliases.get(str));
+                                 }else if (Host.parse(str)!=null){
+                                    toAdd.add(Host.parse(str));
+                                 }
+                              });
+                           }
+                        }
+                     } else if (hostAliases.containsKey(populatedToken)) {
+                        toAdd.add(hostAliases.get(populatedToken));
+                     } else if (Host.parse(populatedToken) != null) {
+                        toAdd.add(Host.parse(populatedToken));
+                     } else {
+                        addError("could not identify a host from "+populatedToken);
+                     }
+                  }
+               }else {
+                  addError("host expressions should be = <role> [+-] <role>... or a ${{}} pattern but " + roleName + " could not parse " + token + " in: " + expession);
+               }
             }
          }
          toAdd.removeAll(toRemove);
          if (!toAdd.isEmpty()) {
             roleHosts.putAll(roleName, toAdd.stream().map(Host::toString).collect(Collectors.toList()));
+            toAdd.forEach(host->seenHosts.putIfAbsent(host.toString(),host));
          } else {
-
+            addError(roleName+" did not create a host from "+expession);
          }
       });
 
@@ -481,13 +519,45 @@ public class RunConfigBuilder {
       roleNames.forEach(roleName -> {
          roles.putIfAbsent(roleName, new Role(roleName));
          roleHosts.get(roleName).forEach(hostRef -> {
+            if(Cmd.hasStateReference(hostRef,null)){
+               hostRef = Cmd.populateStateVariables(hostRef,null,state,null,new Json());
+               if(Cmd.hasStateReference(hostRef,null)){
+                  addError("could not populate "+roleName+" host from "+hostRef);
+               }
+            }
             Host host = seenHosts.get(hostRef);
             if (host != null) {
                roles.get(roleName).addHost(host);
             } else {
-               //TODO error, missing host definition or assume fully qualified name?
+               List<String> hostRefs = new ArrayList<>();
+               if(Json.isJsonLike(hostRef)){
+                  Json json = Json.fromString(hostRef);
+                  if(json.isArray()){
+                     json.values().forEach(v->hostRefs.add(v.toString()));
+                  }else{
+                     hostRefs.add(hostRef);
+                  }
+               }else{
+                  hostRefs.add(hostRef);
+               }
+               hostRefs.forEach(ref->{
+                  if(hostAliases.containsKey(ref)){
+                     Host newHost = hostAliases.get(ref);
+                     if(newHost!=null){
+                        seenHosts.putIfAbsent(ref,newHost);
+                        roles.get(roleName).addHost(newHost);
+                     }else{
+                        addError("could not load "+roleName+" host from alias "+ref);
+                     }
+                  }else if (Host.parse(ref)!=null){
+                     Host newHost = Host.parse(ref);
+                     seenHosts.putIfAbsent(ref,newHost);
+                     roles.get(roleName).addHost(newHost);
+                  }else {
+                     addError("missing host for " + ref);
+                  }
+               });
             }
-
          });
       });
       roleSetup.forEach((roleName, cmds) -> {
@@ -524,11 +594,13 @@ public class RunConfigBuilder {
       summary.addRule("signals",signalCounts);
       summary.addRule("variables",new UndefinedStateVariables(yamlParser));
       summary.addRule("observers",new NonObservingCommands());
-
       summary.scan(roles.values(),this);
 
-
-
+      if(!errors.isEmpty()){
+         errors.forEach(error->{
+            summary.addError("", Stage.Pending,"","",error);
+         });
+      }
          return new RunConfig(
             getName(),
             summary.getErrors(),

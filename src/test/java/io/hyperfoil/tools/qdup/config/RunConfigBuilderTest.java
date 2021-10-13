@@ -26,6 +26,193 @@ import static org.junit.Assert.assertTrue;
 public class RunConfigBuilderTest extends SshTestBase {
 
     @Test
+    public void role_hosts_pattern_as_expression_existing_host(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("first",stream(""+
+            "scripts:",
+            "  foo:",
+            "    - sh: pwd",
+            "hosts:",
+            "  foo: me@localhost",
+            "roles:",
+            "  doit:",
+            "    hosts: ${{hostname}}",
+            "    setup-scripts:",
+            "    - foo",
+            "states:",
+            "  hostname: foo"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+        assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
+        Role role = config.getRole("doit");
+        assertNotNull("doit it should be a role: "+config.getRoleNames(),role);
+        List<Host> declaredHosts = role.getDeclaredHosts();
+        assertEquals("expect 1 host for role",1,declaredHosts.size());
+        Host first = declaredHosts.get(0);
+        assertNotNull("host should not be null",first);
+        assertEquals("me",first.getUserName());
+        assertEquals("localhost",first.getHostName());
+    }
+    @Test
+    public void role_hosts_pattern_as_expression_new_host(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("first",stream(""+
+                "scripts:",
+                "  foo:",
+                "    - sh: pwd",
+                "hosts:",
+                "  foo: you@localhost",
+                "roles:",
+                "  doit:",
+                "    hosts: ${{hostname}}",
+                "    setup-scripts:",
+                "    - foo",
+                "states:",
+                "  hostname: me@localhost"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+        assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
+        Role role = config.getRole("doit");
+        assertNotNull("doit it should be a role: "+config.getRoleNames(),role);
+        List<Host> declaredHosts = role.getDeclaredHosts();
+        assertEquals("expect 1 host for role",1,declaredHosts.size());
+        Host first = declaredHosts.get(0);
+        assertNotNull("host should not be null",first);
+        assertEquals("me",first.getUserName());
+        assertEquals("localhost",first.getHostName());
+    }
+    @Test
+    public void role_hosts_pattern_as_expression_new_host_array(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("first",stream(""+
+                        "scripts:",
+                "  foo:",
+                "    - sh: pwd",
+                "hosts:",
+                "  foo: you@localhost",
+                "roles:",
+                "  doit:",
+                "    hosts: ${{hostname}}",
+                "    setup-scripts:",
+                "    - foo",
+                "states:",
+                "  hostname: ['me@localhost','he@localhost','she@localhost']"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+        assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
+        Role role = config.getRole("doit");
+        assertNotNull("doit it should be a role: "+config.getRoleNames(),role);
+        List<Host> declaredHosts = role.getDeclaredHosts();
+        assertEquals("expect 3 host for role",3,declaredHosts.size());
+        assertTrue("hosts should container me@localhost: "+declaredHosts,declaredHosts.contains(Host.parse("me@localhost")));
+        assertTrue("hosts should container he@localhost: "+declaredHosts,declaredHosts.contains(Host.parse("he@localhost")));
+        assertTrue("hosts should container she@localhost: "+declaredHosts,declaredHosts.contains(Host.parse("she@localhost")));
+    }
+
+    @Test
+    public void role_hosts_pattern_in_list_existing_host(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("first",stream(""+
+                "scripts:",
+                "  foo:",
+                "    - sh: pwd",
+                "hosts:",
+                "  foo: me@localhost",
+                "roles:",
+                "  doit:",
+                "    hosts:",
+                "    - ${{hostname}}",
+                "    setup-scripts:",
+                "    - foo",
+                "states:",
+                "  hostname: foo"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+        assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
+        Role role = config.getRole("doit");
+        assertNotNull("doit it should be a role: "+config.getRoleNames(),role);
+        List<Host> declaredHosts = role.getDeclaredHosts();
+        assertEquals("expect 1 host for role",1,declaredHosts.size());
+        Host first = declaredHosts.get(0);
+        assertNotNull("host should not be null",first);
+        assertEquals("me",first.getUserName());
+        assertEquals("localhost",first.getHostName());
+    }
+
+    @Test
+    public void role_hosts_pattern_in_list_new_host(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("first",stream(""+
+                "scripts:",
+                "  foo:",
+                "    - sh: pwd",
+                "hosts:",
+                "  foo: you@localhost",
+                "roles:",
+                "  doit:",
+                "    hosts:",
+                "    - ${{hostname}}",
+                "    setup-scripts:",
+                "    - foo",
+                "states:",
+                "  hostname: me@localhost"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+        assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
+        Role role = config.getRole("doit");
+        assertNotNull("doit it should be a role: "+config.getRoleNames(),role);
+        List<Host> declaredHosts = role.getDeclaredHosts();
+        assertEquals("expect 1 host for role",1,declaredHosts.size());
+        Host first = declaredHosts.get(0);
+        assertNotNull("host should not be null",first);
+        assertEquals("me",first.getUserName());
+        assertEquals("localhost",first.getHostName());
+    }
+
+    @Test
+    public void role_hosts_pattern_in_list_new_host_array(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("first",stream(""+
+                        "scripts:",
+                "  foo:",
+                "    - sh: pwd",
+                "hosts:",
+                "  foo: you@localhost",
+                "roles:",
+                "  doit:",
+                "    hosts:",
+                "    - ${{hostname}}",
+                "    setup-scripts:",
+                "    - foo",
+                "states:",
+                "  hostname: ['me@localhost','he@localhost','she@localhost']"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+        assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
+        Role role = config.getRole("doit");
+        assertNotNull("doit it should be a role: "+config.getRoleNames(),role);
+        List<Host> declaredHosts = role.getDeclaredHosts();
+        assertEquals("expect 3 host for role",3,declaredHosts.size());
+        assertTrue("hosts should container me@localhost: "+declaredHosts,declaredHosts.contains(Host.parse("me@localhost")));
+        assertTrue("hosts should container he@localhost: "+declaredHosts,declaredHosts.contains(Host.parse("he@localhost")));
+        assertTrue("hosts should container she@localhost: "+declaredHosts,declaredHosts.contains(Host.parse("she@localhost")));
+
+    }
+
+
+    @Test
     public void multiple_yaml_override_state(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
