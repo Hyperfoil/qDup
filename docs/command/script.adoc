@@ -19,4 +19,14 @@ create a copy of the current script's `state` and will no modify the same state.
 Environment changes in the script and its `then` will not be shared with the subsequent commands
 in the original script.
 
+== overriding script state
 
+It is possible to pass state variables when invoking a script to override the default state variables used by the script.
+
+[source,yaml]
+----
+- script: create_unique_name
+- script: setup_runtime
+  with:
+    msg: hello!
+----
