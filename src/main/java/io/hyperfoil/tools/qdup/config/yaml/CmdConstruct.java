@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.config.yaml;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Sleep;
+import io.hyperfoil.tools.yaup.Sets;
 import io.hyperfoil.tools.yaup.StringUtil;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.*;
@@ -261,8 +262,14 @@ public class CmdConstruct extends DeferableConstruct {
             }else{
                 if(supportsJson()){
                     Json json = json(tagValue);
+                    Set<Object> jsonKeys = Sets.of(json.keys().toArray());
+                    jsonKeys.removeAll(expectedKeys);
+                    if(!jsonKeys.isEmpty()){
+                        throw new YAMLException("unexpected key(s) "+jsonKeys+"for "+tag+node.getStartMark());
+                    }
                     try {
                         rtrn = fromJson.apply(json);
+
                     }catch(YAMLException e){
                         throw new YAMLException(e.getMessage()+node.getStartMark());
                     }

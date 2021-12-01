@@ -262,6 +262,33 @@ public class ParserTest extends SshTestBase {
     }
 
     @Test
+    public void error_sh_incorrect_then_indent(){
+        Parser parser = Parser.getInstance();
+        YamlFile loaded = parser.loadFile("/test", join("" +
+            "scripts:",
+            "  foo:",
+            "  - sh: ",
+            "      command: pwd",
+            "      then:",
+            "      - set-state: PWD"
+        ));
+        assertNull("loaded should not be null",loaded);
+    }
+    @Test
+    public void error_regex_incorrect_then_indent(){
+        Parser parser = Parser.getInstance();
+        YamlFile loaded = parser.loadFile("/test", join("" +
+            "scripts:",
+            "  foo:",
+            "  - regex: ",
+            "      pattern: foo",
+            "      then:",
+            "      - abort: boo foo"
+        ));
+        assertNull("loaded should not be null",loaded);
+    }
+
+    @Test
     public void load_yaml(){
         Parser parser = Parser.getInstance();
         YamlFile loaded = parser.loadFile("/test", join("" +

@@ -92,7 +92,8 @@ public class Parser {
                         throw new YAMLException("cannot create countdown from " + str);
                     }
                 },
-                (json) -> new Countdown(json.getString("path"), (int) json.getLong("initial"))
+                (json) -> new Countdown(json.getString("path"), (int) json.getLong("initial")),
+                "path","initial"
 
         );
 
@@ -160,7 +161,8 @@ public class Parser {
                         throw new YAMLException("cannot create download from " + str);
                     }
                 },
-                (json) -> new Download(json.getString("path"), json.getString("destination", ""), FileSizeConverter.toBytes(json.getString("max-size", null)))
+                (json) -> new Download(json.getString("path"), json.getString("destination", ""), FileSizeConverter.toBytes(json.getString("max-size", null))),
+                "path","destination","max-size"
 
         );
         rtrn.addCmd(
@@ -179,7 +181,8 @@ public class Parser {
                 (str,prefix,suffix) -> new Exec(str),
                 (json) -> {
                     return new Exec(json.getString("command"), json.getBoolean("async", false), json.getBoolean("silent", false));
-                }
+                },
+                "command","async","silent"
         );
         //ExitCode
         rtrn.addCmd(
@@ -208,7 +211,8 @@ public class Parser {
                 },
                 (json) -> {
                     return new ForEach(json.getString("name"), json.getString("input", ""));
-                }
+                },
+                "name","input"
         );
         //Invoke
         rtrn.addCmd(
@@ -244,7 +248,8 @@ public class Parser {
                 },
                 (json) -> {
                     return new QueueDownload(json.getString("path"), json.getString("destination", ""), FileSizeConverter.toBytes(json.getString("max-size", null)));
-                }
+                },
+                "path","destination","max-size"
         );
         rtrn.addCmd(
                 JsonCmd.class,
@@ -359,8 +364,42 @@ public class Parser {
         rtrn.addCmd(
                 Regex.class,
                 "regex",
-                new RegexMapping(),
-                new RegexConstruct()
+                new CmdWithElseMapping(
+                        "regex",
+                        new CmdEncoder() {
+                            @Override
+                            public Object encode(Cmd cmd) {
+                                if(cmd instanceof Regex){
+                                    Regex r = (Regex)cmd;
+                                    if(r.isMiss()){
+                                        Map<Object,Object> regexMap = new HashMap<>();
+                                        regexMap.put("miss",r.isMiss());
+                                        regexMap.put("pattern",r.getPattern());
+                                        regexMap.put("autoConvert",r.isAutoConvert());
+                                        return regexMap;
+                                    }else if (!r.isAutoConvert()) {
+                                        Map<Object,Object> regexMap = new HashMap<>();
+                                        regexMap.put("pattern",r.getPattern());
+                                        regexMap.put("autoConvert",r.isAutoConvert());
+                                        return regexMap;
+                                    }else{
+                                        return r.getPattern();
+                                    }
+                                }else{
+                                    return null;
+                                }
+                            }
+                        }
+                ),
+                new CmdWithElseConstruct(
+                        "regex",
+                        (str,prefix,suffix) -> new Regex(str),
+                        (json) -> new Regex(
+                                json.getString("pattern","")
+                                ,json.getBoolean("miss",false)
+                                ,json.getBoolean("autoConvert",false)),
+                        "pattern","miss","autoConvert"
+                )
         );
         rtrn.addCmd(
                 RepeatUntilSignal.class,
@@ -375,6 +414,7 @@ public class Parser {
                 (cmd) -> cmd.getName(),
                 (str,prefix,suffix) -> new ScriptCmd(str),
                 (json) -> new ScriptCmd(json.getString("name"), json.getBoolean("async", false), false)
+                ,"name","async"
         );
         rtrn.addCmd(
                 SendText.class,
@@ -408,6 +448,7 @@ public class Parser {
                     }
                 },
                 (json) -> new SetSignal(json.getString("name"), json.getString("count"), json.getBoolean("reset", false))
+                ,"name","count","reset"
         );
         rtrn.addCmd(
                 SetState.class,
@@ -431,7 +472,8 @@ public class Parser {
                     json.getString("separator", StringUtil.PATTERN_DEFAULT_SEPARATOR),
                     json.getBoolean("silent", false),
                     json.getBoolean("autoConvert", true)
-                )
+                ),
+                "key","value","separator","silent","autoConvert"
         );
         rtrn.addCmd(
                 Sh.class,
@@ -476,7 +518,8 @@ public class Parser {
                         json.getJson("prompt", new Json()).forEach((k, v) -> sh.addPrompt(k.toString(), v.toString()));
                     }
                     return sh;
-                }
+                },
+                "command","prompt","ignore-exit-code","silent"
         );
         rtrn.addCmd(
                 Signal.class,
@@ -508,6 +551,7 @@ public class Parser {
                     }
                 },
                 (json) -> new Upload(json.getString("path"), json.getString("destination", ""))
+                ,"path","destination"
         );
 
         rtrn.addCmd(
@@ -525,6 +569,7 @@ public class Parser {
                     }
                 },
                 (json) -> new WaitFor(json.getString("name"), json.getString("initial", null))
+                ,"name","initial"
         );
         rtrn.addCmd(
                 XmlCmd.class,
@@ -548,7 +593,8 @@ public class Parser {
                         operations.add(entry.toString());
                     });
                     return new XmlCmd(json.getString("path"), operations.toArray(new String[]{}));
-                }
+                },
+                "operations","path"
         );
         CmdMapping<Script> scriptCmdMapping = new CmdMapping<Script>("script", null) {
 
