@@ -262,10 +262,12 @@ public class CmdConstruct extends DeferableConstruct {
             }else{
                 if(supportsJson()){
                     Json json = json(tagValue);
-                    Set<Object> jsonKeys = Sets.of(json.keys().toArray());
-                    jsonKeys.removeAll(expectedKeys);
-                    if(!jsonKeys.isEmpty()){
-                        throw new YAMLException("unexpected key(s) "+jsonKeys+"for "+tag+node.getStartMark());
+                    if(!expectedKeys.isEmpty()) {
+                        Set<Object> jsonKeys = Sets.of(json.keys().toArray());
+                        jsonKeys.removeAll(expectedKeys);
+                        if (!jsonKeys.isEmpty()) {
+                            throw new YAMLException("unexpected key(s) " + jsonKeys + "for " + tag + node.getStartMark());
+                        }
                     }
                     try {
                         rtrn = fromJson.apply(json);
