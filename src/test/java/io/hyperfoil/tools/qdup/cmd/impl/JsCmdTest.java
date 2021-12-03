@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
@@ -8,6 +9,25 @@ import io.hyperfoil.tools.qdup.cmd.SpyContext;
 import static org.junit.Assert.*;
 
 public class JsCmdTest {
+
+
+    @Test
+    public void boolean_expression_true(){
+        JsCmd jsCmd = new JsCmd("true === true");
+        SpyContext context = new SpyContext();
+        jsCmd.run("input",context);
+
+        assertTrue("return true should call next",context.hasNext());
+    }
+    @Test
+    public void boolean_expression_false(){
+        JsCmd jsCmd = new JsCmd("true === false");
+        SpyContext context = new SpyContext();
+        jsCmd.run("input",context);
+
+        assertFalse("return false should call skip",context.hasNext());
+        assertTrue("return false should call skip",context.hasSkip());
+    }
 
     @Test
     public void return_regex_capture(){
@@ -25,6 +45,27 @@ public class JsCmdTest {
         jsCmd.run("input",context);
 
         assertTrue("return true should call next",context.hasNext());
+    }
+    @Test
+    public void return_false(){
+        JsCmd jsCmd = new JsCmd("function(a,b){ return false;}");
+        SpyContext context = new SpyContext();
+        jsCmd.run("input",context);
+
+        assertTrue("return false should call skip",context.hasSkip());
+        assertFalse("return false shoudl call skip",context.hasNext());
+    }
+    @Test
+    public void return_false_with_else(){
+        JsCmd jsCmd = new JsCmd("function(a,b){ return false;}");
+        jsCmd.onElse(Cmd.NO_OP());
+        SpyContext context = new SpyContext();
+        jsCmd.run("input",context);
+
+        assertFalse("return false should call next for else",context.hasSkip());
+        assertTrue("return false should call next for else",context.hasNext());
+        Cmd elseCmd = jsCmd.getNext();
+        assertNotNull("next should not be null",elseCmd);
     }
 
     @Test

@@ -21,6 +21,22 @@ public class ReadStateTest {
       assertNotNull("read-state next should return else when missing",next);
       assertTrue("next should be no-op",next instanceof Cmd.NO_OP);
    }
+   @Test
+   public void read_expression_true_from_state(){
+      SpyContext context = new SpyContext();
+      context.getState().set("key","value");
+      ReadState readState = new ReadState("${{= '${{key}}' === 'value'}}");
+      readState.doRun("input",context);
+      assertEquals("readState should call next with value","true",context.getNext());
+   }
+   @Test
+   public void read_expression_false_from_state(){
+      SpyContext context = new SpyContext(); 
+      context.getState().set("key","value");
+      ReadState readState = new ReadState("${{= '${{key}}' === 'NOTvalue'}}");
+      readState.doRun("input",context);
+      assertEquals("readState should call next with value","false",context.getNext());
+   }
 
    @Test
    public void read_from_state(){
