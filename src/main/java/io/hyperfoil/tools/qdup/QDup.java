@@ -29,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class QDup {
 
@@ -54,6 +55,7 @@ public class QDup {
     private boolean colorTerminal;
     private int jsonPort;
 
+    private List<Stage> skipStages;
 
     private boolean exitCode = false;
 
@@ -129,6 +131,14 @@ public class QDup {
 
     public String getHash() {
         return hash;
+    }
+
+    public boolean hasSkipStages(){
+        return !skipStages.isEmpty();
+    }
+
+    public List<Stage> getSkipStages(){
+        return skipStages;
     }
 
     public QDup(String... args) {
@@ -300,9 +310,19 @@ public class QDup {
         options.addOption(
                 Option.builder("x")
                         .longOpt("exitCode")
-                        .hasArg(false)
                         .desc("flag to enable exit code checking")
                         .build()
+        );
+
+        //only run specific stages
+        options.addOption(
+                Option.builder()
+                    .longOpt("skip-stages")
+                    .hasArgs()
+                    .argName("stage")
+                    .valueSeparator(',')
+                    .desc("only perform specific stages")
+                    .build()
         );
 
         CommandLineParser parser = new DefaultParser();
@@ -373,6 +393,8 @@ public class QDup {
 
         trace = commandLine.getOptionValue("trace", "");
         traceName = commandLine.getOptionValue("traceName",""+uid);
+
+        skipStages = commandLine.hasOption("skip-stages") ? Arrays.asList(commandLine.getOptionValues("skip-stages")).stream().map(str->StringUtil.getEnum(str,Stage.class,Stage.Invalid)).collect(Collectors.toList()) : Collections.EMPTY_LIST;
 
         if (commandLine.hasOption("basePath")) {
             outputPath = commandLine.getOptionValue("basePath") + "/" + uid;
@@ -486,6 +508,10 @@ public class QDup {
 
         if (qDup.getKnownHosts() != RunConfigBuilder.DEFAULT_KNOWN_HOSTS) {
             runConfigBuilder.setKnownHosts(qDup.getKnownHosts());
+        }
+
+        if (qDup.hasSkipStages()){
+            qDup.getSkipStages().forEach(runConfigBuilder::addSkipStage);
         }
 
         RunConfig config = runConfigBuilder.buildConfig(yamlParser);

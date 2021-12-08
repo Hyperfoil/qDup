@@ -22,11 +22,21 @@ import org.slf4j.ext.XLoggerFactory;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
-import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RunConfigBuilder {
+
+   private static final List<Stage> SKIPABLE_STAGES = Arrays.asList(Stage.Setup,Stage.Run,Stage.Cleanup);
 
    private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
    private static final Json EMPTY_ARRAY = new Json();
@@ -81,6 +91,7 @@ public class RunConfigBuilder {
    private Json settings;
 
    private List<String> errors;
+   private List<Stage> skipStages;
 
    private boolean isValid = false;
 
@@ -103,6 +114,7 @@ public class RunConfigBuilder {
       settings = new Json(false);
       settings.set(RunConfig.MAKE_TEMP_KEY,MAKE_TEMP_CMD);
       settings.set(RunConfig.REMOVE_TEMP_KEY,REMOVE_TEMP_CMD);
+      skipStages = new ArrayList<>();
    }
 
 
@@ -121,6 +133,13 @@ public class RunConfigBuilder {
 //   public void addErrors(Collection<String> error) {
 //      errors.addAll(error);
 //   }
+
+   public void addSkipStage(Stage stage){
+      if(SKIPABLE_STAGES.contains(stage)) {
+         skipStages.add(stage);
+      }
+   }
+
 
    public int errorCount() {
       return errors.size();
@@ -613,6 +632,7 @@ public class RunConfigBuilder {
             getPassphrase(),
             timeout,
             getTracePatterns(),
+            skipStages,
             settings
          );
    }

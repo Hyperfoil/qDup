@@ -1,6 +1,9 @@
 package io.hyperfoil.tools.qdup;
 
+import io.hyperfoil.tools.yaup.StringUtil;
+
 public enum Stage {
+    Invalid("invalid",-1,true),
     Pending("pending",0,true),
     PreSetup("pre-setup",1,true),
     Setup("setup",2,true),
@@ -16,7 +19,6 @@ public enum Stage {
         this.order = order;
         this.isSequential = isSequential;
     }
-
     public boolean isBefore(Stage stage){
         return this.order < stage.order;
     }

@@ -104,6 +104,7 @@ public class Run implements Runnable, DispatchObserver {
     private Logger stateLogger;
     private ConsoleAppender<ILoggingEvent> consoleAppender;
     private FileAppender<ILoggingEvent> fileAppender;
+    private List<Stage> skipStages;
 
     public Run(String outputPath,RunConfig config,Dispatcher dispatcher){
         if(config==null || dispatcher==null){
@@ -124,6 +125,7 @@ public class Run implements Runnable, DispatchObserver {
         this.profiles = new Profiles();
         this.coordinator = new Coordinator();
         this.local = new Local(config);
+        this.skipStages = config.getSkipStages();
 
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         PatternLayoutEncoder consoleLayout = new PatternLayoutEncoder();
@@ -201,32 +203,51 @@ public class Run implements Runnable, DispatchObserver {
 //                    startDispatcher = queuePreSetupScripts();
 //                }
                 if(stageUpdated.compareAndSet(this,Stage.Pending, Stage.Setup)){
-                    startDispatcher = queueSetupScripts();
+                    if(skipStages.contains(stage)){
+                        return nextStage();
+                    } else {
+                        startDispatcher = queueSetupScripts();
+                    }
                 }
-
                 break;
             case PreSetup:
                 if(stageUpdated.compareAndSet(this,Stage.PreSetup, Stage.Setup)){
-                    startDispatcher = queueSetupScripts();
+                    if(skipStages.contains(stage)){
+                        return nextStage();
+                    } else {
+                        startDispatcher = queueSetupScripts();
+                    }
                 }
                 break;
             case Setup:
                 //if we are able to set the stage to Run
                 if(stageUpdated.compareAndSet(this,Stage.Setup,Stage.Run)){
-                    startDispatcher = queueRunScripts();
+                    if(skipStages.contains(stage)){
+                        return nextStage();
+                    } else {
+                        startDispatcher = queueRunScripts();
+                    }
                 }
                 break;
             case Run:
                 if(stageUpdated.compareAndSet(this,Stage.Run,Stage.Cleanup)){
-                    runPendingDownloads();
-                    startDispatcher = queueCleanupScripts();
+                    if(skipStages.contains(stage)){
+                        return nextStage();
+                    } else {
+                        runPendingDownloads();
+                        startDispatcher = queueCleanupScripts();
+                    }
                 }
                 break;
             case Cleanup:
                 if(stageUpdated.compareAndSet(this,Stage.Cleanup,Stage.Done)) {
-                    runPendingDownloads();//download anything queued during cleanup
-                    runPendingDeletes();
-                    postRun();//release any latches blocking a call to run()
+                    if(skipStages.contains(stage)){
+                        return nextStage();
+                    } else {
+                        runPendingDownloads();//download anything queued during cleanup
+                        runPendingDeletes();
+                        postRun();//release any latches blocking a call to run()
+                    }
                 }
                 break;
             case PostCleanup:
@@ -235,7 +256,6 @@ public class Run implements Runnable, DispatchObserver {
                 postRun();
                 break;
         }
-
         if(startDispatcher){
             if(hasRunObserver()){
                 for(RunObserver observer: runObservers){

@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
@@ -71,6 +72,8 @@ public class RunConfig {
     private Boolean colorTerminal = false;
     private List<RunError> errors;
 
+    private List<Stage> skipStages;
+
     private Json settings;
 
     private Set<String> tracePatterns;
@@ -89,6 +92,7 @@ public class RunConfig {
             String passphrase,
             Integer timeout,
             Set<String> tracePatterns,
+            List<Stage> skipStages,
             Json settings){
         this.name = name;
         this.errors = errors;
@@ -103,9 +107,13 @@ public class RunConfig {
             this.timeout = timeout;
         }
         this.tracePatterns = new HashSet<>(tracePatterns);
+        this.skipStages = skipStages;
         this.settings = new Json(false);
         this.settings.merge(settings);
     }
+
+    public boolean hasSkipStages(){return !skipStages.isEmpty();}
+    public List<Stage> getSkipStages(){return skipStages;}
 
     public Counters<String> getSignalCounts(){return signalCounts;}
     public boolean hasSetting(String key){

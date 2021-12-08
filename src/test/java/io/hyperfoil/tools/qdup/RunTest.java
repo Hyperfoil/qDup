@@ -41,6 +41,122 @@ public class RunTest extends SshTestBase {
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
+   @Test
+   public void skipStage_setup(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+           "scripts:",
+           "  foo:",
+           "    - set-state: RUN.foo true",
+           "  bar:",
+           "    - set-state: RUN.bar true",
+           "  biz:",
+           "    - set-state: RUN.biz true",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    setup-scripts:",
+           "    - foo",
+           "    run-scripts:",
+           "    - bar",
+           "    cleanup-scripts:",
+           "    - biz"
+      )));
+      builder.addSkipStage(Stage.Setup);
+      RunConfig config = builder.buildConfig(parser);
+
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      State state = config.getState();
+
+      assertFalse("state should not have foo",state.has("foo"));
+      assertTrue("state should have bar",state.has("bar"));
+      assertTrue("state should have biz",state.has("biz"));
+   }
+
+   @Test
+   public void skipStage_run(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+           "scripts:",
+           "  foo:",
+           "    - set-state: RUN.foo true",
+           "  bar:",
+           "    - set-state: RUN.bar true",
+           "  biz:",
+           "    - set-state: RUN.biz true",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    setup-scripts:",
+           "    - foo",
+           "    run-scripts:",
+           "    - bar",
+           "    cleanup-scripts:",
+           "    - biz"
+      )));
+      builder.addSkipStage(Stage.Run);
+      RunConfig config = builder.buildConfig(parser);
+
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      State state = config.getState();
+
+      assertTrue("state should have foo",state.has("foo"));
+      assertFalse("state should not have bar",state.has("bar"));
+      assertTrue("state should have biz",state.has("biz"));
+   }
+   @Test
+   public void skipStage_cleanup(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+                      "scripts:",
+              "  foo:",
+              "    - set-state: RUN.foo true",
+              "  bar:",
+              "    - set-state: RUN.bar true",
+              "  biz:",
+              "    - set-state: RUN.biz true",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    setup-scripts:",
+              "    - foo",
+              "    run-scripts:",
+              "    - bar",
+              "    cleanup-scripts:",
+              "    - biz"
+      )));
+      builder.addSkipStage(Stage.Cleanup);
+      RunConfig config = builder.buildConfig(parser);
+
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      State state = config.getState();
+
+      assertTrue("state should have foo",state.has("foo"));
+      assertTrue("state should have bar",state.has("bar"));
+      assertFalse("state should not have biz",state.has("biz"));
+   }
+
    @Test(timeout = 10_000)
    public void watch_signal() {
       AtomicBoolean stopped = new AtomicBoolean(false);
