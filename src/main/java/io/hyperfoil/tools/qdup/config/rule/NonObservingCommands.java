@@ -12,8 +12,8 @@ import io.hyperfoil.tools.qdup.config.RunSummary;
  */
 public class NonObservingCommands implements RunRule {
     @Override
-    public void scan(String role, Stage stage, String script, String host, Cmd command, boolean isWatching, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
-        if(isWatching){
+    public void scan(String role, Stage stage, String script, String host, Cmd command, Location location, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+        if(location.isWatching()){
             if(command instanceof Sh){
                 summary.addError(
                     role,

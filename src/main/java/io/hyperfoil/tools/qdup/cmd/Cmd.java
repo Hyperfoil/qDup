@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
+import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -13,9 +14,7 @@ import org.slf4j.ext.XLoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -424,37 +423,37 @@ public abstract class Cmd {
    }
 
 
-   public <T> List<T> walk(boolean isWatching,Function<Cmd,T> converter){
+   public <T> List<T> walk(RunRule.Location location, Function<Cmd,T> converter){
       LinkedList<T> rtrn = new LinkedList<>();
-      walk((cmd,b)->converter.apply(cmd),isWatching,rtrn);
+      walk((cmd,b)->converter.apply(cmd), location,rtrn);
       return rtrn;
    }
-   public <T> List<T> walk(boolean isWatching,BiFunction<Cmd,Boolean,T> converter){
+   public <T> List<T> walk(RunRule.Location location, BiFunction<Cmd, RunRule.Location,T> converter){
       LinkedList<T> rtrn = new LinkedList<>();
-      walk(converter,isWatching,rtrn);
+      walk(converter, location,rtrn);
       return rtrn;
    }
 
-   public<T> void walk(boolean isWatching,Function<Cmd,T> converter,List<T> rtrn){
-      walk((cmd,b)->converter.apply(cmd),isWatching,rtrn);
+   public<T> void walk(RunRule.Location location, Function<Cmd,T> converter, List<T> rtrn){
+      walk((cmd,b)->converter.apply(cmd), location,rtrn);
    }
-   public<T> void walk(BiFunction<Cmd,Boolean,T> converter, boolean isWatching,List<T> rtrn){
-      T value = converter.apply(this,isWatching);
+   public<T> void walk(BiFunction<Cmd, RunRule.Location,T> converter, RunRule.Location location, List<T> rtrn){
+      T value = converter.apply(this, location);
       rtrn.add(value);
       if(this.hasThens()){
-         this.getThens().forEach(child->child.walk(converter,isWatching,rtrn));
+         this.getThens().forEach(child->child.walk(converter, location,rtrn));
       }
       if(this.hasWatchers()){
-         this.getWatchers().forEach(child->child.walk(converter,true,rtrn));
+         this.getWatchers().forEach(child->child.walk(converter, RunRule.Location.Watcher,rtrn));
       }
       if(this.hasTimers()){
          this.getTimeouts().forEach(timer->{
-            this.getTimers(timer).forEach(child->child.walk(converter,true,rtrn));
+            this.getTimers(timer).forEach(child->child.walk(converter, RunRule.Location.OnTimer,rtrn));
          });
       }
       if(this.hasSignalWatchers()){
          this.getSignalNames().forEach(signal->{
-            this.getSignal(signal).forEach(child->child.walk(converter,true,rtrn));
+            this.getSignal(signal).forEach(child->child.walk(converter, RunRule.Location.OnSignal,rtrn));
          });
       }
    }

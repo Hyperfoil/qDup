@@ -30,7 +30,7 @@ public class SignalCounts implements RunRule {
     public Counters<String> getCounts(){return signals;}
     public Set<String> getWaiters(){return waits.keys();}
     @Override
-    public void scan(String role, Stage stage, String script, String host, Cmd command, boolean isWatching, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+    public void scan(String role, Stage stage, String script, String host, Cmd command, Location location, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
         if(command instanceof WaitFor){
             String populated = Cmd.populateStateVariables(((WaitFor) command).getName(), command, config.getState(), null, null, ref);
             if(Cmd.hasStateReference(populated,command)){
@@ -44,19 +44,37 @@ public class SignalCounts implements RunRule {
             }
             //make sure signal does not occur after wait-for in same script
             if(!signals.contains(populated) && waits.containsKey(populated)){
-                RSSCRef signalRef = new RSSCRef(role,stage,script,command);
-                waits.get(populated).stream().filter(rssc->{
-                    return signalRef.isSameScript(rssc) ||
-                            rssc.isBeforeOrSequentiallyWith(signalRef);
-                }).forEach(rssc ->{
-                    summary.addError(
-                            rssc.getRole(),
-                            rssc.getStage(),
-                            rssc.getScript(),
-                            rssc.getCommand().toString(),
-                            "wait-for occurs before signal"
-                    );
-                });
+
+                boolean found = false;
+                if(Location.OnTimer.equals(location)){
+                    Cmd target = command;
+                    while (!found && target != null && target.hasStateParent() ){
+                        target = target.getStateParent();
+                        if(target instanceof WaitFor ){
+                            WaitFor waitParent = (WaitFor)target;
+                            String waitSignal = Cmd.populateStateVariables(waitParent.getName(), waitParent, config.getState(), null, null, ref);
+                            if(waitSignal.equals(populated)){
+                                found = true;
+                            }
+                        }
+                    }
+                }
+
+                if(!found) {
+                    RSSCRef signalRef = new RSSCRef(role, stage, script, command);
+                    waits.get(populated).stream().filter(rssc -> {
+                        return signalRef.isSameScript(rssc) ||
+                                rssc.isBeforeOrSequentiallyWith(signalRef);
+                    }).forEach(rssc -> {
+                        summary.addError(
+                                rssc.getRole(),
+                                rssc.getStage(),
+                                rssc.getScript(),
+                                rssc.getCommand().toString(),
+                                "wait-for occurs before signal"
+                        );
+                    });
+                }
             }
             signals.add(populated);
         }else if (command instanceof SetSignal){

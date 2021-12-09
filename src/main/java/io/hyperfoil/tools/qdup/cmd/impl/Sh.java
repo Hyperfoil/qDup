@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.yaup.AsciiArt;
 
 import java.util.*;
@@ -116,7 +117,7 @@ public class Sh extends Cmd {
                 } else {
                     context.error(toLog);
                     if (context.checkExitCode() && !isIgnoreExitCode()) {
-                        boolean couldBeCtrlC = walk(true, (cmd) -> cmd instanceof CtrlC).stream().anyMatch(Boolean::booleanValue);
+                        boolean couldBeCtrlC = walk(RunRule.Location.Watcher, (cmd) -> cmd instanceof CtrlC).stream().anyMatch(Boolean::booleanValue);
                         context.abort(false);
                     }
                 }

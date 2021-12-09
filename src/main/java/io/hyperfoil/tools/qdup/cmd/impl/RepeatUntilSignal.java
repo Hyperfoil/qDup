@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.LoopCmd;
+import io.hyperfoil.tools.qdup.config.RunRule;
 
 public class RepeatUntilSignal extends LoopCmd {
     private String name;
@@ -30,7 +31,7 @@ public class RepeatUntilSignal extends LoopCmd {
     }
 
     public boolean isSelfSignaling(){
-        return walk(false,cmd-> cmd instanceof Signal && ((Signal)cmd).getName().equals(getName())).stream().filter(v->v).findAny().orElse(false);
+        return walk(RunRule.Location.Normal, cmd-> cmd instanceof Signal && ((Signal)cmd).getName().equals(getName())).stream().filter(v->v).findAny().orElse(false);
     }
 
     @Override

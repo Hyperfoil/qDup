@@ -9,6 +9,8 @@ import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.RunSummary;
+import io.hyperfoil.tools.qdup.config.rule.SignalCounts;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -40,6 +42,42 @@ public class RunTest extends SshTestBase {
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
+
+   @Test(timeout = 20_000)
+   public void signal_in_timer_on_waitfor(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("signal",stream(""+
+           "scripts:",
+           "  sig:",
+           "    - sh: pwd",
+           "    - wait-for: sig",
+           "      timer:",
+           "        5s:",
+           "        - set-state: RUN.bizz bizz",
+           "        - signal: sig",
+           "        - set-state: RUN.buzz buzz",
+           "    - set-state: RUN.fizz fuzz",
+           "hosts:",
+           "  test: "+getHost(),
+           "roles:",
+           "  role:",
+           "    hosts: [test]",
+           "    run-scripts:",
+           "    - sig"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      State state = config.getState();
+
+      assertTrue("state should have fizz\n"+state.tree(),state.has("fizz"));
+      assertTrue("state should have bizz\n"+state.tree(),state.has("bizz"));
+      assertTrue("state should have buzz\n"+state.tree(),state.has("buzz"));
+   }
 
    @Test
    public void skipStage_setup(){

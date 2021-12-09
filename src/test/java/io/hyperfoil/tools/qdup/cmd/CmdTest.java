@@ -5,6 +5,7 @@ import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Assert;
@@ -24,20 +25,20 @@ public class CmdTest extends SshTestBase {
    @Test
    public void walk_single_then(){
       AtomicInteger counter = new AtomicInteger(0);
-      BiFunction<Cmd,Boolean,Void> consumer = (cmd, watching)->{counter.incrementAndGet();return null;};
+      BiFunction<Cmd, RunRule.Location,Void> consumer = (cmd, watching)->{counter.incrementAndGet();return null;};
 
       Cmd cmd = Cmd.sh("ls").then(Cmd.sh("pwd"));
-      cmd.walk(false,consumer);
+      cmd.walk(RunRule.Location.Normal,consumer);
 
       assertEquals("walk should run twice",2,counter.get());
    }
    @Test
    public void walk_then_and_else(){
       AtomicInteger counter = new AtomicInteger(0);
-      BiFunction<Cmd,Boolean,Void> consumer = (cmd, watching)->{counter.incrementAndGet();return null;};
+      BiFunction<Cmd, RunRule.Location,Void> consumer = (cmd, watching)->{counter.incrementAndGet();return null;};
 
       Cmd cmd = Cmd.regex("foo").onElse(Cmd.sh("ls")).then(Cmd.sh("pwd"));
-      cmd.walk(false,consumer);
+      cmd.walk(RunRule.Location.Normal,consumer);
 
       assertEquals("walk should run 3 times",3,counter.get());
    }

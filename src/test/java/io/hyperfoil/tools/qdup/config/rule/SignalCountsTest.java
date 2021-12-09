@@ -136,6 +136,36 @@ public class SignalCountsTest extends SshTestBase {
     }
 
     @Test
+    public void signal_in_timer_on_waitfor(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+            "scripts:",
+            "  sig:",
+            "    - wait-for: sig",
+            "      timer:",
+            "        5m:",
+            "        - set-state: fizz fuzz",
+            "          then:",
+            "          - signal: sig",
+            "hosts:",
+            "  local: me@localhost",
+            "roles:",
+            "  role:",
+            "    hosts: [local]",
+            "    run-scripts:",
+            "    - sig"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        RunSummary summary = new RunSummary();
+        SignalCounts signalCounts = new SignalCounts();
+        summary.addRule("signals",signalCounts);
+        summary.scan(config.getRolesValues(),builder);
+        assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        assertEquals("signal count for sig: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("sig"));
+    }
+
+    @Test
     public void error_waitfor_without_signal(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();

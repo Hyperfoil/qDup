@@ -22,7 +22,7 @@ import java.util.regex.Matcher;
  */
 public class CmdSummary {
 
-    private void processCommand(Cmd command, boolean isWatching, RunConfigBuilder config, Cmd.Ref ref) {
+    private void processCommand(Cmd command, RunRule.Location location, RunConfigBuilder config, Cmd.Ref ref) {
         String toString = command.toString();
 
         String commandStr = yamlParser!=null ? yamlParser.dump(yamlParser.representCommand(command)) : command.toString();
@@ -34,7 +34,7 @@ public class CmdSummary {
                 addWarning("Failed to populate pattern",command);
             }
         }
-        if (isWatching && command instanceof Sh) {
+        if (location.isWatching() && command instanceof Sh) {
             addWarning(command + " cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.",command);
         }
         if (command instanceof Signal) {
@@ -60,12 +60,12 @@ public class CmdSummary {
                 addWarning("missing script: "+scriptName,command);
                 //TODO is it an error if a script isn't found?
             } else {
-                walk(namedScript,isWatching,config,ref.add(command));
+                walk(namedScript,location,config,ref.add(command));
                 //processCommand(namedScript, isWatching, config, ref.add(command));
             }
         } else if (command instanceof InvokeCmd) {
             Cmd invokedCmd = ((InvokeCmd) command).getCommand();
-            walk(invokedCmd,isWatching,config,ref.add(command));
+            walk(invokedCmd,location,config,ref.add(command));
             //processCommand(invokedCmd, isWatching, config, ref.add(command));
         } else if (command instanceof Regex) {
             String pattern = ((Regex) command).getPattern();
@@ -99,9 +99,9 @@ public class CmdSummary {
     private Parser yamlParser;
     private Set<String> globalSetVariables;
 
-    private void walk(Cmd command, boolean isWatching, RunConfigBuilder config, Cmd.Ref ref){
-        command.walk(false,(cmd,watching)->{
-            processCommand(cmd,watching,config,ref);
+    private void walk(Cmd command, RunRule.Location location, RunConfigBuilder config, Cmd.Ref ref){
+        command.walk(RunRule.Location.Normal,(cmd, watching)->{
+            processCommand(cmd,location,config,ref);
             return true;
         });
     }
@@ -115,7 +115,7 @@ public class CmdSummary {
         setVariables = new HashSet<>();
         this.yamlParser = yamlParser;
         Cmd.Ref ref = new Cmd.Ref(command);
-        walk(command,false,config,ref);
+        walk(command, RunRule.Location.Normal,config,ref);
     }
 
     public String getName() {

@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
+import io.hyperfoil.tools.qdup.config.RunRule;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -31,10 +32,10 @@ public abstract class CmdWithElse extends Cmd{
     }
 
     @Override
-    public <T> void walk(BiFunction<Cmd,Boolean,T> converter, boolean isWatching, List<T> rtrn){
-        super.walk(converter,isWatching,rtrn);
+    public <T> void walk(BiFunction<Cmd, RunRule.Location,T> converter, RunRule.Location location, List<T> rtrn){
+        super.walk(converter,location,rtrn);
         if(hasElse()){
-            this.getElses().forEach(child->child.walk(converter,isWatching,rtrn));
+            this.getElses().forEach(child->child.walk(converter,location,rtrn));
         }
     }
 

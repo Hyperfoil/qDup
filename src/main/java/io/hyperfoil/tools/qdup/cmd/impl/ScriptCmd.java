@@ -7,6 +7,7 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.ScriptContext;
+import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.yaup.AsciiArt;
 
 import java.util.Arrays;
@@ -89,11 +90,11 @@ public class ScriptCmd extends Cmd {
     }
 
     @Override
-    public<T> void walk(BiFunction<Cmd,Boolean,T> converter, boolean isWatching, List<T> rtrn){
+    public<T> void walk(BiFunction<Cmd, RunRule.Location,T> converter, RunRule.Location location, List<T> rtrn){
         if(isAsync()){
-            super.walk(converter,false,rtrn);
+            super.walk(converter, RunRule.Location.Normal,rtrn);
         }else{
-            super.walk(converter,isWatching,rtrn);
+            super.walk(converter,location,rtrn);
         }
     }
 

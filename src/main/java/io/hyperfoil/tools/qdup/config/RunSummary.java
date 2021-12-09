@@ -31,12 +31,11 @@ public class RunSummary implements RunRule{
         rules.remove(name);
     }
     public void scan(Collection<Role> roles,RunConfigBuilder configBuilder){
-
         roles.forEach(role -> {
             role.getDeclaredHosts().forEach(host -> {
-                role.getSetup().forEach(c -> this.walk(role.getName(), Stage.Setup,c.getName(),host.toString(),c,false,configBuilder,new Cmd.Ref(c)));
-                role.getRun().forEach(c -> this.walk(role.getName(), Stage.Run,c.getName(),host.toString(),c,false,configBuilder,new Cmd.Ref(c)));
-                role.getCleanup().forEach(c -> this.walk(role.getName(), Stage.Cleanup,c.getName(),host.toString(),c,false,configBuilder,new Cmd.Ref(c)));
+                role.getSetup().forEach(c -> this.walk(role.getName(), Stage.Setup,c.getName(),host.toString(),c,Location.Normal,configBuilder,new Cmd.Ref(c)));
+                role.getRun().forEach(c -> this.walk(role.getName(), Stage.Run,c.getName(),host.toString(),c,Location.Normal,configBuilder,new Cmd.Ref(c)));
+                role.getCleanup().forEach(c -> this.walk(role.getName(), Stage.Cleanup,c.getName(),host.toString(),c,Location.Normal,configBuilder,new Cmd.Ref(c)));
             });
         });
         close(configBuilder,this);
@@ -54,16 +53,16 @@ public class RunSummary implements RunRule{
     public List<RunError> getWarnings(){return warnings;}
     public boolean hasErrors(){return !errors.isEmpty();}
     public List<RunError> getErrors(){return errors;}
-    private void walk(String role,Stage stage,String script, String host,Cmd command, boolean isWatching, RunConfigBuilder config, Cmd.Ref ref){
-        command.walk(isWatching,(cmd,watching)->{
+    private void walk(String role, Stage stage, String script, String host, Cmd command, Location location, RunConfigBuilder config, Cmd.Ref ref){
+        command.walk(location,(cmd, watching)->{
             scan(role,stage,script,host,cmd,watching,ref,config,this);
             return true;
         });
     }
     @Override
-    public void scan(String role, Stage stage, String script, String host, Cmd command, boolean isWatching, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+    public void scan(String role, Stage stage, String script, String host, Cmd command, Location location, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
         rules.values().forEach(rule->{
-            rule.scan(role,stage,script,host,command,isWatching,ref,config,this);
+            rule.scan(role,stage,script,host,command, location,ref,config,this);
         });
         if (command instanceof ScriptCmd) {
             String scriptName = ((ScriptCmd) command).getName();
@@ -83,14 +82,14 @@ public class RunSummary implements RunRule{
                 } else {
                     Cmd target = namedScript.deepCopy();
                     target.setStateParent(command); //to maintain reference to with's from
-                    walk(role, stage, script, host, target, isWatching, config, ref.add(command));
+                    walk(role, stage, script, host, target, location, config, ref.add(command));
                 }
             }
         } else if (command instanceof InvokeCmd) {
             Cmd invokedCmd = ((InvokeCmd) command).getCommand().deepCopy();
             invokedCmd.setStateParent(command);
 
-            walk(role,stage,script,host,invokedCmd,isWatching,config,ref.add(command));
+            walk(role,stage,script,host,invokedCmd, location,config,ref.add(command));
         }
     }
 

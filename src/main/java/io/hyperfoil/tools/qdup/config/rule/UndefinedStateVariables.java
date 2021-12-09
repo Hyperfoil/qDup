@@ -5,14 +5,12 @@ import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
-import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 import io.hyperfoil.tools.qdup.cmd.impl.SetState;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
 
 import java.util.Collection;
@@ -140,7 +138,7 @@ public class UndefinedStateVariables implements RunRule {
     }
 
     @Override
-    public void scan(String role, Stage stage, String script, String host, Cmd command, boolean isWatching, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+    public void scan(String role, Stage stage, String script, String host, Cmd command, Location location, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
 
         if(!command.isStateScan()){
             return;
