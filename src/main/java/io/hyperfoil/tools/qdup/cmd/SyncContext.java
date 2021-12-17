@@ -45,6 +45,8 @@ public class SyncContext implements Context, Runnable{
         this.scriptActiveCmd = scriptContext.getCurrentCmd();
     }
 
+    public Run getRun(){ return run;}
+
     @Override
     public Cmd getCurrentCmd(){return currentCmd;}
 

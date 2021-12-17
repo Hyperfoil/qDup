@@ -104,6 +104,56 @@ public class ScriptCmdTest extends SshTestBase {
    }
 
    @Test
+   public void async_in_regex_in_watch(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+           "scripts:",
+           "  doit:",
+           "  - sh: date",
+           "    then:",
+           "    - set-state: RUN.date",
+           "  update:",
+           "  - sh: echo 'uno' >> /tmp/foo.txt",
+           "  - sleep: 2s",
+           "  - sh: echo 'dos' >> /tmp/foo.txt",
+           "  - sleep: 2s",
+           "  - sh: echo 'tres' >> /tmp/foo.txt",
+           "  - set-state: RUN.update true",
+           "  foo:",
+           "  - sleep: 15s",
+           "  - sh: tail -f /tmp/foo.txt",
+           "    watch:",
+           "    - regex: dos",
+           "      then:",
+           "      - script:",
+           "          name: doit",
+           "          async: true",
+           "    - regex: tres",
+           "      then:",
+           "      - ctrlC",
+           "  - set-state: RUN.foo true",
+           "hosts:",
+           "  local: " + getHost(),
+           "roles:",
+           "  doit:",
+           "    hosts: [local]",
+           "    run-scripts: [update,foo]"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      Dispatcher dispatcher = new Dispatcher();
+      Cmd foo = config.getScript("foo");
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+      State state = config.getState();
+      assertTrue("state should have 'date'\n"+state.tree(),state.has("date"));
+      assertTrue("state should have 'foo'\n"+state.tree(),state.has("foo"));
+      assertTrue("state should have 'update'\n"+state.tree(),state.has("update"));
+   }
+
+   @Test
    public void async(){
 
       Parser parser = Parser.getInstance();

@@ -3,10 +3,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
-import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.Context;
-import io.hyperfoil.tools.qdup.cmd.Script;
-import io.hyperfoil.tools.qdup.cmd.ScriptContext;
+import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.yaup.AsciiArt;
 
@@ -121,6 +118,9 @@ public class ScriptCmd extends Cmd {
                 SshSession ssh = context.getSession() != null ? context.getSession().openCopy() : null;
                 State state = context.getState().clone();
                 Run run = context instanceof ScriptContext ? ((ScriptContext)context).getRun() : null;
+                if(run == null && context instanceof SyncContext){
+                    run = ((SyncContext)context).getRun();
+                }
 
                 //copy withs because it will not be inherited
                 copyCmd.loadWith(this);
