@@ -313,7 +313,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             logger.info("listening at localhost:{}", foundPort);
         }
 
-        server.requestHandler(router::accept).listen(foundPort/*, InetAddress.getLocalHost().getHostName()*/);
+        server.requestHandler(router).listen(foundPort/*, InetAddress.getLocalHost().getHostName()*/);
     }
 
     public void stop(){
