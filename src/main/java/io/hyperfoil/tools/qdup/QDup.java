@@ -59,6 +59,8 @@ public class QDup {
 
     private boolean exitCode = false;
 
+    private static RunConfig config;
+
     public boolean checkExitCode(){return exitCode;}
 
     public boolean isColorTerminal() {
@@ -140,6 +142,8 @@ public class QDup {
     public List<Stage> getSkipStages(){
         return skipStages;
     }
+
+    public static String getRunDebug(){ return config.debug(true); };
 
     public QDup(String... args) {
         Options options = new Options();
@@ -514,10 +518,10 @@ public class QDup {
             qDup.getSkipStages().forEach(runConfigBuilder::addSkipStage);
         }
 
-        RunConfig config = runConfigBuilder.buildConfig(yamlParser);
+        config = runConfigBuilder.buildConfig(yamlParser);
         if (qDup.isTest()) {
             //logger.info(config.debug());
-            System.out.printf("%s", config.debug(true));
+            System.out.printf("%s", getRunDebug());
             System.exit(0);
         }
 
