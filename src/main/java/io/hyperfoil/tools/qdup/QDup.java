@@ -59,7 +59,7 @@ public class QDup {
 
     private boolean exitCode = false;
 
-    private static RunConfig config;
+    private RunConfig config;
 
     public boolean checkExitCode(){return exitCode;}
 
@@ -143,7 +143,7 @@ public class QDup {
         return skipStages;
     }
 
-    public static String getRunDebug(){ return config.debug(true); };
+    public String getRunDebug(){ return config == null ? null : config.debug(true); };
 
     public QDup(String... args) {
         Options options = new Options();
@@ -436,17 +436,16 @@ public class QDup {
     }
 
     public static void main(String[] args) {
-        QDup.run(args);
+        new QDup(args).run();
     }
 
-    public static void run(String[] args) {
-        QDup qDup = new QDup(args);
+    public void run() {
 
         Parser yamlParser = Parser.getInstance();
-        yamlParser.setAbortOnExitCode(qDup.checkExitCode());
+        yamlParser.setAbortOnExitCode(checkExitCode());
         RunConfigBuilder runConfigBuilder = new RunConfigBuilder();
 
-        for (String yamlPath : qDup.getYamlPaths()) {
+        for (String yamlPath : getYamlPaths()) {
             File yamlFile = new File(yamlPath);
             if (!yamlFile.exists()) {
                 logger.error("Error: cannot find " + yamlPath);
@@ -482,8 +481,8 @@ public class QDup {
         }
 
 
-        if (!qDup.getStateProps().isEmpty()) {
-            qDup.getStateProps().forEach((k, v) -> {
+        if (!getStateProps().isEmpty()) {
+            getStateProps().forEach((k, v) -> {
                 if (v != null && !v.toString().trim().isEmpty()) {
                     runConfigBuilder.forceRunState(k.toString(), v.toString());
                 }
@@ -491,48 +490,48 @@ public class QDup {
         }
 
 
-        if (!qDup.getRemoveStateProperties().isEmpty()) {
-            qDup.getRemoveStateProperties().forEach((k, v) -> {
+        if (!getRemoveStateProperties().isEmpty()) {
+            getRemoveStateProperties().forEach((k, v) -> {
                 if (k != null) {
                     runConfigBuilder.forceRunState(k.toString(), "");
                 }
             });
         }
-        if (qDup.hasTrace()) {
-            runConfigBuilder.trace(qDup.getTrace());
+        if (hasTrace()) {
+            runConfigBuilder.trace(getTrace());
         }
 
-        if (qDup.getIdentity() != RunConfigBuilder.DEFAULT_IDENTITY) {
-            runConfigBuilder.setIdentity(qDup.getIdentity());
+        if (getIdentity() != RunConfigBuilder.DEFAULT_IDENTITY) {
+            runConfigBuilder.setIdentity(getIdentity());
         }
 
-        if (qDup.getPassphrase() != RunConfigBuilder.DEFAULT_PASSPHRASE) {
-            runConfigBuilder.setPassphrase(qDup.getPassphrase());
+        if (getPassphrase() != RunConfigBuilder.DEFAULT_PASSPHRASE) {
+            runConfigBuilder.setPassphrase(getPassphrase());
         }
 
-        if (qDup.getKnownHosts() != RunConfigBuilder.DEFAULT_KNOWN_HOSTS) {
-            runConfigBuilder.setKnownHosts(qDup.getKnownHosts());
+        if (getKnownHosts() != RunConfigBuilder.DEFAULT_KNOWN_HOSTS) {
+            runConfigBuilder.setKnownHosts(getKnownHosts());
         }
 
-        if (qDup.hasSkipStages()){
-            qDup.getSkipStages().forEach(runConfigBuilder::addSkipStage);
+        if (hasSkipStages()){
+            getSkipStages().forEach(runConfigBuilder::addSkipStage);
         }
 
         config = runConfigBuilder.buildConfig(yamlParser);
-        if (qDup.isTest()) {
+        if (isTest()) {
             //logger.info(config.debug());
             System.out.printf("%s", getRunDebug());
             System.exit(0);
         }
 
-        File outputFile = new File(qDup.getOutputPath());
+        File outputFile = new File(getOutputPath());
         if (!outputFile.exists()) {
             outputFile.mkdirs();
         }
 
         //TODO RunConfig should be immutable and terminal color is probably better stored in Run
         //TODO should we separte yaml config from environment config (identity, knownHosts, threads, color terminal)
-        config.setColorTerminal(qDup.isColorTerminal());
+        config.setColorTerminal(isColorTerminal());
 
         if (config.hasErrors()) {
             config.getErrors().stream().map(RunError::toString).forEach(error -> {
@@ -543,8 +542,8 @@ public class QDup {
         }
 
 
-        if(qDup.hasTrace()){
-            config.getSettings().set(RunConfig.TRACE_NAME, qDup.traceName);
+        if(hasTrace()){
+            config.getSettings().set(RunConfig.TRACE_NAME, traceName);
         }
 
         final AtomicInteger factoryCounter = new AtomicInteger(0);
@@ -562,15 +561,15 @@ public class QDup {
             rtrn.setUncaughtExceptionHandler(uncaughtExceptionHandler);
             return rtrn;
         };
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(qDup.getCommandThreads() / 2, qDup.getCommandThreads(), 30, TimeUnit.MINUTES, workQueue, factory);
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(getCommandThreads() / 2, getCommandThreads(), 30, TimeUnit.MINUTES, workQueue, factory);
 
-        ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(qDup.getScheduledThreads(), runnable -> new Thread(runnable, "qdup-scheduled-" + scheduledCounter.getAndIncrement()));
+        ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(getScheduledThreads(), runnable -> new Thread(runnable, "qdup-scheduled-" + scheduledCounter.getAndIncrement()));
 
         Dispatcher dispatcher = new Dispatcher(executor, scheduled);
 
-        if (!qDup.getBreakpoints().isEmpty()) {
+        if (!getBreakpoints().isEmpty()) {
             Scanner scanner = new Scanner(System.in);
-            qDup.getBreakpoints().forEach(breakpoint -> {
+            getBreakpoints().forEach(breakpoint -> {
                 dispatcher.addContextObserver(new ContextObserver() {
                     @Override
                     public void preStart(Context context, Cmd command) {
@@ -599,9 +598,9 @@ public class QDup {
             });
         }
 
-        config.getSettings().set("check-exit-code", qDup.checkExitCode());
+        config.getSettings().set("check-exit-code", checkExitCode());
 
-        final Run run = new Run(qDup.getOutputPath(), config, dispatcher);
+        final Run run = new Run(getOutputPath(), config, dispatcher);
 
         logger.info("Starting with output path = " + run.getOutputPath());
 
@@ -612,12 +611,12 @@ public class QDup {
             }
         }, "shutdown-abort"));
 
-        JsonServer jsonServer = new JsonServer(run, qDup.getJsonPort());
+        JsonServer jsonServer = new JsonServer(run, getJsonPort());
 
         jsonServer.start();
 
         long start = System.currentTimeMillis();
-        run.getRunLogger().info("Running qDup version {} @ {}", qDup.getVersion(), qDup.getHash());
+        run.getRunLogger().info("Running qDup version {} @ {}", getVersion(), getHash());
         run.run();
         long stop = System.currentTimeMillis();
         System.out.printf("Finished in %s at %s%n", StringUtil.durationToString(stop - start), run.getOutputPath());
