@@ -222,13 +222,13 @@ public class ScriptContext implements Context, Runnable{
     }
     private void observerPreNext(Cmd command,String output){
         if(observer!=null){
-            //observer.preStop(this,command,output);
+            observer.preStop(this,command,output);
             observer.preNext(this,command,output);
         }
     }
     private void observerPreSkip(Cmd command,String output){
         if(observer!=null){
-            //observer.preStop(this,command,output);
+            observer.preStop(this,command,output);
             observer.preSkip(this,command,output);
         }
     }
