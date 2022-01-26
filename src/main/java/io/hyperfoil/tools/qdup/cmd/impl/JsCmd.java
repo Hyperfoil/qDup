@@ -106,4 +106,9 @@ public class JsCmd extends CmdWithElse {
     public Cmd copy() {
         return new JsCmd(this.codeString);
     }
+
+    @Override
+    public String toString(){
+        return "js: "+this.codeString;
+    }
 }
