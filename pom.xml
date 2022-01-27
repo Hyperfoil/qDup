@@ -156,12 +156,12 @@
         <dependency>
             <groupId>io.hyperfoil.tools</groupId>
             <artifactId>yaup</artifactId>
-            <version>0.8.13</version>
+            <version>0.8.14</version>
         </dependency>
         <dependency>
             <groupId>io.hyperfoil.tools</groupId>
             <artifactId>parse</artifactId>
-            <version>0.1.10</version>
+            <version>0.1.11</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

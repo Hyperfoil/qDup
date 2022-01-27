@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.CmdWithElse;
 import io.hyperfoil.tools.qdup.cmd.PatternValuesMap;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.slf4j.ext.XLogger;
@@ -43,6 +44,7 @@ public class JsCmd extends CmdWithElse {
 
     @Override
     public void run(String input, Context context) {
+
             ran = true;
             try{
                 PatternValuesMap map = new PatternValuesMap(this,context,new Ref(this));
@@ -51,14 +53,14 @@ public class JsCmd extends CmdWithElse {
                 if(Json.isJsonLike(input)){
                     jsInput = Json.fromString(input);
                 }
-
                 //Object rtrn = null;
                 try{
                     Object result = StringUtil.jsEval(populatedCodeString,jsInput,map);
                     rtrn = result;
                 }catch( RuntimeException ise){
                     //todo; raise ISE
-                    abort(ise.getMessage()+"\n"+ise.getCause().getMessage());
+                    context.error(ise.getMessage()+"\n"+ise.getCause().getMessage());
+                    context.abort(false);
                 }
                 if( rtrn==null ||
                     (rtrn instanceof Boolean && !((Boolean)rtrn)) ||

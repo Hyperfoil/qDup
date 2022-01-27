@@ -4,10 +4,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
-import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.Context;
-import io.hyperfoil.tools.qdup.cmd.ContextObserver;
-import io.hyperfoil.tools.qdup.cmd.Dispatcher;
+import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunError;
 import org.apache.commons.cli.*;
@@ -577,18 +574,68 @@ public class QDup {
                         boolean matches = commandString.contains(breakpoint) || commandString.matches(breakpoint);
                         if (matches) {
                             System.out.printf(
-                                    "%sBREAKPOINT%s%n" +
+                                    "%sBREAKPOINT starting command%s%n" +
                                             "  breakpoint: %s%n" +
                                             "  command: %s%n" +
                                             "  script: %s%n" +
                                             "  host: %s%n" +
+                                            "  context: %s%n" +
                                             "Press enter to continue:",
                                     config.isColorTerminal() ? AsciiArt.ANSI_RED : "",
                                     config.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
                                     breakpoint,
                                     command.toString(),
                                     command.getHead().toString(),
-                                    context.getHost().toString()
+                                    context.getHost().toString(),
+                                    context instanceof ScriptContext ? ((ScriptContext)context).getContextId() : ""
+                            );
+                            String line = scanner.nextLine();
+                        }
+                    }
+                    @Override
+                    public void preNext(Context context, Cmd command, String output){
+                        String commandString = command.toString();
+                        boolean matches = commandString.contains(breakpoint) || commandString.matches(breakpoint);
+                        if (matches) {
+                            System.out.printf(
+                                    "%sBREAKPOINT after command calls next%s%n" +
+                                            "  breakpoint: %s%n" +
+                                            "  command: %s%n" +
+                                            "  script: %s%n" +
+                                            "  host: %s%n" +
+                                            "  context: %s%n" +
+                                            "Press enter to continue:",
+                                    config.isColorTerminal() ? AsciiArt.ANSI_RED : "",
+                                    config.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
+                                    breakpoint,
+                                    command.toString(),
+                                    command.getHead().toString(),
+                                    context.getHost().toString(),
+                                    context instanceof ScriptContext ? ((ScriptContext)context).getContextId() : ""
+                            );
+                            String line = scanner.nextLine();
+                        }
+                    }
+                    @Override
+                    public void preSkip(Context context, Cmd command, String output){
+                        String commandString = command.toString();
+                        boolean matches = commandString.contains(breakpoint) || commandString.matches(breakpoint);
+                        if (matches) {
+                            System.out.printf(
+                                    "%sBREAKPOINT after command calls skip%s%n" +
+                                            "  breakpoint: %s%n" +
+                                            "  command: %s%n" +
+                                            "  script: %s%n" +
+                                            "  host: %s%n" +
+                                            "  context: %s%n" +
+                                            "Press enter to continue:",
+                                    config.isColorTerminal() ? AsciiArt.ANSI_RED : "",
+                                    config.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
+                                    breakpoint,
+                                    command.toString(),
+                                    command.getHead().toString(),
+                                    context.getHost().toString(),
+                                    context instanceof ScriptContext ? ((ScriptContext)context).getContextId() : ""
                             );
                             String line = scanner.nextLine();
                         }
