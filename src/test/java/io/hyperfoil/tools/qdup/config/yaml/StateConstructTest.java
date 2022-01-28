@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
 
 import io.hyperfoil.tools.yaup.json.Json;
@@ -46,6 +47,21 @@ public class StateConstructTest {
         Json json = (Json)key;
         assertFalse("state[key] should be an object "+json,json.isArray());
         assertEquals("expect 0 children",0,loaded.getChildNames().size());
+    }
+
+    @Test
+    public void nested_private_key(){
+        State loaded = yaml.loadAs("switch:\n  _password: secret",State.class);
+        assertNotNull("should load states",loaded);
+        assertEquals("run prefix",RUN_PREFIX,loaded.getPrefix());
+        Object key = loaded.get("switch");
+        assertNotNull("state[key] should exist",key);
+        assertTrue("state[key] should be json",key instanceof Json);
+        Json json = (Json)key;
+        assertFalse("_password should not be in state\n"+json.toString(2),json.has("_password"));
+        assertTrue("password should be in state\n"+json.toString(2),json.has("password"));
+        SecretFilter filter = loaded.getSecretFilter();
+        assertTrue("secret filter should filter secret: "+filter.getSecrets(),filter.getSecrets().contains("secret"));
     }
 
 

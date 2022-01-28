@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.PatternValuesMap;
+import io.hyperfoil.tools.qdup.cmd.impl.JsCmd;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.*;
@@ -159,6 +160,33 @@ public class State {
         });
     }
 
+    private void scanSecrets(){
+
+        Queue<Json> toScan = new LinkedList<>();
+        toScan.add(json);
+        while(!toScan.isEmpty()){
+            Json scan = toScan.remove();
+            List<Object> keys = new ArrayList<>();
+            scan.forEach((key,value)->{
+                if(key.toString().startsWith(SecretFilter.SECRET_NAME_PREFIX)){
+                    keys.add(key.toString());
+                }
+                if(value instanceof Json){
+                    toScan.add((Json)value);
+                }
+            });
+            if(!keys.isEmpty()){
+                keys.forEach(key->{
+                    String newKey = key.toString().substring(SecretFilter.SECRET_NAME_PREFIX.length());
+                    Object value = scan.get(key);
+                    secretFilter.addSecret(value.toString());
+                    scan.remove(key);
+                    scan.set(newKey,value);
+                });
+            }
+        }
+
+    }
 
     public Map<Object,Object> getOwnState(){
         return Collections.unmodifiableMap(Json.toObjectMap(json));
@@ -200,21 +228,21 @@ public class State {
         }
 
         State target = this;
+        //leave this here to detect _RUN or _HOST
         boolean isSecret = key.startsWith(SecretFilter.SECRET_NAME_PREFIX);
-
         if(isSecret){
             key = key.substring(SecretFilter.SECRET_NAME_PREFIX.length());
             secretFilter.addSecret(value.toString());
         }
-        do {
-            if(target.prefix!=null && key.startsWith(target.prefix)){
-                String newKey = key.substring(target.prefix.length());
-                        //use chain set to break .'s into child objects
-                Json.chainSet(target.json,newKey,value);
-                return;
-            }
-        } while( (target=target.parent)!=null );
-
+            do {
+                if (target.prefix != null && key.startsWith(target.prefix)) {
+                    String newKey = key.substring(target.prefix.length());
+                    //use chain set to break .'s into child objects
+                    Json.chainSet(target.json,newKey,value);
+                    target.scanSecrets();
+                    return;
+                }
+            } while ((target = target.parent) != null);
         //see if the key starts with a child name
         //should a state be able to push to children???
         for(String childName : childStates.keySet()){
@@ -226,6 +254,7 @@ public class State {
         }
         //at this point there wasn't a prefix match
         Json.chainSet(this.json,key,value);
+        scanSecrets();
     }
     public void set(Json json){
         for(Object key : json.keys()){
