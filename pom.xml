@@ -171,7 +171,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-ext</artifactId>
-            <version>1.7.25</version>
+            <version>1.7.35</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -201,7 +201,7 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-vertx</artifactId>
-            <version>3.5.1.Final</version>
+            <version>6.0.0.Final</version>
         </dependency>
         <dependency>
             <groupId>org.yaml</groupId>
