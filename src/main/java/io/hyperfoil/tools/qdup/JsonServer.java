@@ -1,9 +1,10 @@
 package io.hyperfoil.tools.qdup;
 
-import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.Context;
-import io.hyperfoil.tools.qdup.cmd.ContextObserver;
-import io.hyperfoil.tools.qdup.cmd.Dispatcher;
+import io.hyperfoil.tools.parse.ParseCommand;
+import io.hyperfoil.tools.qdup.cmd.*;
+import io.hyperfoil.tools.qdup.cmd.impl.JsCmd;
+import io.hyperfoil.tools.qdup.cmd.impl.ParseCmd;
+import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.bridge.PermittedOptions;
@@ -22,6 +23,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class JsonServer implements RunObserver, ContextObserver {
 
@@ -133,6 +135,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             rtrn.set("GET /active","list of active commands and context");
             rtrn.set("GET /session","list of active ssh terminal sessions");
             rtrn.set("POST /session/:sessionId","send text to the ssh terminal session. ^C sends ctrl+C, ^next forces next command, ^skip forces skip command");
+            rtrn.set("POST /session/:sessionId/regex","test regex on the current output of session ssh buffer");
             rtrn.set("GET /signal","get the signal and their remaining signal counts");
             rtrn.set("POST /signal/:name","set the remaining signal count for the target signal");
             rtrn.set("GET /timer","get the current command times");
@@ -167,6 +170,122 @@ public class JsonServer implements RunObserver, ContextObserver {
               e.printStackTrace();
            }
         });
+        router.post("/session/:sessionId/parse").handler(rc->{
+            String cmdUid = rc.request().getParam("sessionId");
+            Context found = dispatcher.getContext(cmdUid);
+            if(found != null) {
+                String body = rc.getBodyAsString();
+                ParseCmd toRun = new ParseCmd(body);
+
+                State state = new State("");
+                state.addChild("clone","");
+                state.getChild("clone").load(found.getState().toJson());
+
+                Json response = new Json();
+                response.set("parse",Json.isJsonLike(body) ? Json.fromString(body) : body);
+
+                SpyContext spyContext = new SpyContext(null,state,null);
+                String currentOutput = found.getSession().peekOutput();
+                toRun.run(currentOutput,spyContext);
+
+                if(spyContext.getErrors().size()>0){
+                    spyContext.getErrors().forEach(err->response.add("errors",err));
+                    rc.response().end(response.toString());
+                } else if(spyContext.hasSkip()){
+                    response.set("skip",spyContext.getSkip());
+                    rc.response().end(response.toString());
+                } else if(spyContext.hasNext()){
+                    if(Json.isJsonLike(spyContext.getNext())){
+                        response.set("next", Json.fromString(spyContext.getNext()));
+                    }else {
+                        response.set("next", spyContext.getNext());
+                    }
+                    rc.response().end(response.toString());
+                } else{
+                    rc.response().setStatusCode(400).end("unexpected error trying to test parse:\n"+body);
+                }
+
+
+            } else {
+                rc.response().setStatusCode(400).end("could not find session "+cmdUid);
+            }
+        });
+        router.post("/session/:sessionId/js").handler(rc->{
+            String cmdUid = rc.request().getParam("sessionId");
+            Context found = dispatcher.getContext(cmdUid);
+            if(found != null) {
+                String code = rc.getBodyAsString();
+                if(code != null && !code.trim().isEmpty()){
+                    JsCmd toRun = new JsCmd(code);
+
+                    State state = new State("");
+                    state.addChild("clone","");
+                    state.getChild("clone").load(found.getState().toJson());
+
+
+                    SpyContext spyContext = new SpyContext(null,state,null);
+                    String currentOutput = found.getSession().peekOutput();
+                    toRun.run(currentOutput,spyContext);
+                    Json response = new Json();
+                    if(!state.toOwnJson().isEmpty()){
+                        response.set("state",state.toOwnJson());
+                    }
+                    if(spyContext.getErrors().size()>0){
+                        spyContext.getErrors().forEach(err->response.add("errors",err));
+                        rc.response().end(response.toString());
+                    } else if(spyContext.hasSkip()){
+                        response.set("skip",spyContext.getSkip());
+                        rc.response().end(response.toString());
+                    } else if(spyContext.hasNext()){
+                        response.set("next",spyContext.getNext());
+                        rc.response().end(response.toString());
+                    } else{
+                        rc.response().setStatusCode(400).end("unexpected error trying to test js\n"+code);
+                    }
+
+                }else{
+                    rc.response().setStatusCode(400).end("missing code for "+cmdUid);
+                }
+            }else{
+                rc.response().setStatusCode(400).end("could not find session "+cmdUid);
+            }
+        });
+        router.post("/session/:sessionId/regex").handler(rc->{
+            String cmdUid = rc.request().getParam("sessionId");
+            Context found = dispatcher.getContext(cmdUid);
+            if(found != null){
+                String regex = rc.getBodyAsString();
+                if(regex == null || regex.isEmpty()){
+                    rc.response().setStatusCode(400).end("missing regex "+cmdUid);
+                }else{
+                    Regex toRun = new Regex(regex);
+                    State state = new State("");
+                    state.addChild("clone","");
+                    state.getChild("clone").load(found.getState().toJson());
+                    SpyContext spyContext = new SpyContext(null,state,null);
+                    String currentOutput = found.getSession().peekOutput();
+                    toRun.run(currentOutput,spyContext);
+                    Json response = new Json();
+                    if(!state.toOwnJson().isEmpty()){
+                        response.set("state",state.toOwnJson());
+                    }
+                    if(spyContext.getErrors().size()>0) {
+                        spyContext.getErrors().forEach(err -> response.add("errors", err));
+                        rc.response().end(response.toString());
+                    }else if(spyContext.hasSkip()){
+                        response.set("skip",spyContext.getSkip());
+                        rc.response().end(response.toString());
+                    } else if(spyContext.hasNext()){
+                        response.set("next",spyContext.getNext());
+                        rc.response().end(response.toString());
+                    } else{
+                        rc.response().setStatusCode(400).end("unexpected error trying to test regex: "+regex);
+                    }
+                }
+            }else{
+                rc.response().setStatusCode(400).end("could not find session "+cmdUid);
+            }
+        });
         router.post("/session/:sessionId").handler(rc->{
 
             String cmdUid = rc.request().getParam("sessionId");
@@ -198,6 +317,7 @@ public class JsonServer implements RunObserver, ContextObserver {
                        }
 
                    }else{
+                       //does this enable remote code injection before the next cmd?
                       if(found.getSession()!=null){
                          found.getSession().response(send);
                           rc.response().end("ok");
