@@ -93,7 +93,8 @@ public class RunConfig {
             Integer timeout,
             Set<String> tracePatterns,
             List<Stage> skipStages,
-            Json settings){
+            Json settings,
+            List<String> functions){
         this.name = name;
         this.errors = errors;
         this.scripts = scripts;
@@ -110,6 +111,8 @@ public class RunConfig {
         this.skipStages = skipStages;
         this.settings = new Json(false);
         this.settings.merge(settings);
+
+        Cmd.addFunctions(functions);
     }
 
     public boolean hasSkipStages(){return !skipStages.isEmpty();}
