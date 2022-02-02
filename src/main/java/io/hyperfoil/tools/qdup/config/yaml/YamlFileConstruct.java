@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
+import io.hyperfoil.tools.qdup.JsFunction;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
@@ -212,6 +213,19 @@ public class YamlFileConstruct extends DeferableConstruct {
                             });
                         } else {
                             throw new YAMLException("roles requires a mapping");
+                        }
+                        break;
+                    case "functions":
+                        if (valueNode instanceof SequenceNode){
+                            ((SequenceNode)valueNode).getValue().forEach(functionNode->{
+                                Object loaded = deferAs(functionNode,new Tag(JsFunction.class));
+                                if(loaded!=null && loaded instanceof JsFunction){
+                                    JsFunction function = (JsFunction)loaded;
+                                    yamlFile.addFunction(function.getFunction());
+                                }
+                            });
+                        } else {
+                            throw new YAMLException("functions requires a sequence");
                         }
                         break;
                     default:

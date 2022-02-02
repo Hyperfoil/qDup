@@ -8,8 +8,10 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class YamlFile {
@@ -21,6 +23,7 @@ public class YamlFile {
     private Json settings;
     private State state;
     private Map<String, Role> roles;
+    private List<String> functions;
 
     public YamlFile(){
         name = "";
@@ -29,6 +32,7 @@ public class YamlFile {
         state = new State(State.RUN_PREFIX);
         roles = new LinkedHashMap<>();
         settings = new Json(false);
+        functions = new ArrayList<>();
     }
 
     public void addSetting(String key,Object value){
@@ -50,6 +54,8 @@ public class YamlFile {
     public void addRole(String name,Role role){
         roles.putIfAbsent(name,role);
     }
+    public void addFunctions(List<String> functions) { functions.addAll(functions);}
+    public void addFunction(String function) { functions.add(function);}
     public void setName(String name){
         this.name = name;
     }
@@ -78,5 +84,6 @@ public class YamlFile {
     public State getState(){
         return state;
     }
+    public List<String> getFunctions(){ return Collections.unmodifiableList(functions);}
 
 }

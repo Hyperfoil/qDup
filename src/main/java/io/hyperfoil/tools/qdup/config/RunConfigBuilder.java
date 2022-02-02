@@ -46,6 +46,7 @@ public class RunConfigBuilder {
    private static final String ROLES = "roles";
    private static final String HOSTS = "hosts";
    private static final String STATES = "states";
+   private static final String FUNCTIONS = "functions";
    private static final String SETUP_SCRIPTS = "setup-scripts";
    private static final String RUN_SCRIPTS = "run-scripts";
    private static final String CLEANUP_SCRIPTS = "cleanup-scripts";
@@ -90,6 +91,8 @@ public class RunConfigBuilder {
    private Set<String> traceTargets;
    private Json settings;
 
+   private List<String> functions;
+
    private List<String> errors;
    private List<Stage> skipStages;
 
@@ -113,6 +116,7 @@ public class RunConfigBuilder {
       errors = new LinkedList<>();
       settings = new Json(false);
       skipStages = new ArrayList<>();
+      functions = new ArrayList<>();
    }
 
 
@@ -183,6 +187,8 @@ public class RunConfigBuilder {
             settings.set(k, v);
          }
       });
+      functions.addAll(yamlFile.getFunctions());
+
       return errors.isEmpty();
    }
 
@@ -641,7 +647,8 @@ public class RunConfigBuilder {
             timeout,
             getTracePatterns(),
             skipStages,
-            settings
+            settings,
+            functions
          );
    }
 
