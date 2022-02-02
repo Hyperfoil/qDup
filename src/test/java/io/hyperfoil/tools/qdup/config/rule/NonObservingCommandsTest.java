@@ -5,11 +5,13 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class NonObservingCommandsTest extends SshTestBase {
@@ -45,25 +47,59 @@ public class NonObservingCommandsTest extends SshTestBase {
         assertTrue("expect errors:\n" + summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")), summary.hasErrors());
     }
 
+    @Test
+    public void sh_in_async_script_in_timer() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("test", stream("" +
+                "scripts:",
+                "  doit:",
+                "    - sh: echo bad",
+                "  test:",
+                "    - sh: echo foo",
+                "      timer:",
+                "        10m:",
+                "        - script:",
+                "            name: ${{FOO}}",
+                "            async: true",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - test",
+                "states:",
+                "  FOO: doit"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+
+        RunSummary summary = new RunSummary();
+        NonObservingCommands rule = new NonObservingCommands();
+        summary.addRule("observer",rule);
+        summary.scan(config.getRolesValues(), builder);
+        assertFalse("unexpected errors:\n" + summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")), summary.hasErrors());
+    }
+
 
         @Test
         public void sh_in_onsignal () {
             Parser parser = Parser.getInstance();
             RunConfigBuilder builder = new RunConfigBuilder();
             builder.loadYaml(parser.loadFile("test", stream("" +
-                            "scripts:",
-                    "  test:",
-                    "    - sh: echo foo",
-                    "      on-signal:",
-                    "        foo:",
-                    "        - sh: echo bad",
-                    "hosts:",
-                    "  local: me@localhost",
-                    "roles:",
-                    "  role:",
-                    "    hosts: [local]",
-                    "    run-scripts:",
-                    "    - test"
+                "scripts:",
+                "  test:",
+                "    - sh: echo foo",
+                "      on-signal:",
+                "        foo:",
+                "        - sh: echo bad",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - test"
             )));
             RunConfig config = builder.buildConfig(parser);
 
@@ -79,19 +115,19 @@ public class NonObservingCommandsTest extends SshTestBase {
             Parser parser = Parser.getInstance();
             RunConfigBuilder builder = new RunConfigBuilder();
             builder.loadYaml(parser.loadFile("test", stream("" +
-                            "scripts:",
-                    "  test:",
-                    "    - sh: echo foo",
-                    "      timer:",
-                    "        10s:",
-                    "        - sh: echo bad",
-                    "hosts:",
-                    "  local: me@localhost",
-                    "roles:",
-                    "  role:",
-                    "    hosts: [local]",
-                    "    run-scripts:",
-                    "    - test"
+                "scripts:",
+                "  test:",
+                "    - sh: echo foo",
+                "      timer:",
+                "        10s:",
+                "        - sh: echo bad",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - test"
             )));
             RunConfig config = builder.buildConfig(parser);
 
@@ -106,7 +142,7 @@ public class NonObservingCommandsTest extends SshTestBase {
             Parser parser = Parser.getInstance();
             RunConfigBuilder builder = new RunConfigBuilder();
             builder.loadYaml(parser.loadFile("test", stream("" +
-                            "scripts:",
+                    "scripts:",
                     "  test:",
                     "    - sh: echo foo",
                     "      watch:",

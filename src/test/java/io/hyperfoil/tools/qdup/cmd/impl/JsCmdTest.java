@@ -81,6 +81,22 @@ public class JsCmdTest {
         assertEquals("result should be passed","passed",context.getNext());
     }
     @Test
+    public void return_empty_array(){
+        JsCmd jsCmd = new JsCmd("function(a,b){return []}");
+        State state = new State(State.RUN_PREFIX);
+        SpyContext context = new SpyContext();
+        jsCmd.run("input",context);
+        assertTrue("return true should call next",context.hasNext());
+    }
+    @Test
+    public void return_empty_object(){
+        JsCmd jsCmd = new JsCmd("function(a,b){return {}}");
+        State state = new State(State.RUN_PREFIX);
+        SpyContext context = new SpyContext();
+        jsCmd.run("input",context);
+        assertTrue("return true should call next",context.hasNext());
+    }
+    @Test
     public void no_return(){
         JsCmd jsCmd = new JsCmd("function(a,b){}");
         State state = new State(State.RUN_PREFIX);

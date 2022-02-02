@@ -228,7 +228,7 @@ public class State {
         }
 
         State target = this;
-        //leave this here to detect _RUN or _HOST
+        //leave this here to detect _RUN. or _HOST.
         boolean isSecret = key.startsWith(SecretFilter.SECRET_NAME_PREFIX);
         if(isSecret){
             key = key.substring(SecretFilter.SECRET_NAME_PREFIX.length());
@@ -411,6 +411,9 @@ public class State {
             rtrn.set(child,childStates.get(child).toJson());
         }
         return rtrn;
+    }
+    public Json toOwnJson(){
+        return json.clone();
     }
     public void tree(int indent,StringBuilder sb){
         int space = indent>0? indent:1;

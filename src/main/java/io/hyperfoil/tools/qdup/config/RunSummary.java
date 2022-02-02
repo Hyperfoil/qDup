@@ -65,24 +65,26 @@ public class RunSummary implements RunRule{
             rule.scan(role,stage,script,host,command, location,ref,config,this);
         });
         if (command instanceof ScriptCmd) {
-            String scriptName = ((ScriptCmd) command).getName();
+            ScriptCmd scriptCmd = (ScriptCmd)command;
+            String scriptName = scriptCmd.getName();
             scriptName = Cmd.populateStateVariables(scriptName,command,config.getState(),null,null);
             if(Cmd.hasStateReference(scriptName,command)){
                 //TODO warn that we cannot
             }else {
                 Script namedScript = config.getScript(scriptName, command);
                 if (namedScript == null) {
+                    //assume is it an error if a script isn't found?
                     addError(
                             role,
                             stage,
                             script,
                             command.toString(),
                             "missing script: " + scriptName);
-                    //TODO is it an error if a script isn't found?
                 } else {
                     Cmd target = namedScript.deepCopy();
                     target.setStateParent(command); //to maintain reference to with's from
-                    walk(role, stage, script, host, target, location, config, ref.add(command));
+                    Location walkLocaiton = scriptCmd.isAsync() ? Location.Normal : location;
+                    walk(role, stage, script, host, target, walkLocaiton, config, ref.add(command));
                 }
             }
         } else if (command instanceof InvokeCmd) {

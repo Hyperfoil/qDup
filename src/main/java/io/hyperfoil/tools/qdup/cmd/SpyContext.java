@@ -87,7 +87,7 @@ public class SpyContext implements Context {
 
     @Override
     public void error(String message) {
-        log.add(message);
+        error.add(message);
         if(context!=null){
             context.error(message);
         }

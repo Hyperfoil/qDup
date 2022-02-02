@@ -210,7 +210,7 @@ public class CmdConstruct extends DeferableConstruct {
                 }
                 break;
             default:
-                if(getTag().equals(key) || expectedKeys.contains(key)){
+                if(getTag().equals(key) /*|| expectedKeys.contains(key)*/){
                     //ignore
                 }else{
                    if(topLevelKeys.containsKey(key)){
