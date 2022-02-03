@@ -1,5 +1,9 @@
 package io.hyperfoil.tools.qdup;
 
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +13,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Global {
+
+    private static final XLogger logger = XLoggerFactory.getXLogger(Global.class);
 
     private static final Pattern functionPattern = Pattern.compile("^function ([a-zA-Z_{1}][a-zA-Z0-9_]+)\\(");
     private final Map<String, String> jsFunctions;
@@ -43,21 +49,13 @@ public class Global {
     }
 
     public void addAllFunctions(Map<String, String> functionMap) {
-        List<String> nameCollisions = new ArrayList<>();
-        functionMap.forEach((key, value) -> {
-            if (jsFunctions.putIfAbsent(key, value) != null) {
-                nameCollisions.add(key);
-            }
-        });
-
-        if (nameCollisions.size() > 0) {
-            throw new RuntimeException("Mutiple JS Function names detected: " + String.join(", ", nameCollisions));
-        }
+        functionMap.forEach((key, value) -> addFunction(key, value));
     }
 
     public void addFunction(String name, String function) {
         if (jsFunctions.putIfAbsent(name, function) != null) {
-            throw new RuntimeException("Mutiple JS Function names detected: " + name);
+            //TODO:: determine how to correctly handle name collisions, atm a WARN is logged
+            logger.warn("Mutiple JS Function names detected: " + name);
         }
     }
 
