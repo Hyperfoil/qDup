@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.JsFunction;
 import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
@@ -68,7 +69,7 @@ public class RunConfig {
 
     private Map<String,Role> roles;
 
-    private List<String> functions;
+    private List<JsFunction> functions;
 
     private Counters<String> signalCounts;
 
@@ -115,7 +116,7 @@ public class RunConfig {
         this.settings = new Json(false);
         this.settings.merge(settings);
 
-        this.functions = functions;
+        this.functions = JsFunction.fromList(functions);
     }
 
     public boolean hasSkipStages(){return !skipStages.isEmpty();}
@@ -129,7 +130,7 @@ public class RunConfig {
         return hasSetting(key) ? settings.get(key) : defaultValue;
     }
     public Json getSettings(){return settings;}
-    public List<String> getJsFunctions() { return  this.functions;}
+    public List<JsFunction> getJsFunctions() { return  this.functions;}
 
     public Set<String> getTracePatterns(){return tracePatterns;}
     public Set<String> getRoleNames(){return roles.keySet();}

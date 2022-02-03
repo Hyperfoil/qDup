@@ -85,11 +85,12 @@ public class JsFunctionExpressionTest extends SshTestBase {
                 "  doit:",
                 "    hosts: [local]",
                 "    run-scripts: [array-push-test]",
-                "functions:",
-                "  - >",
-                "    function arrayPush(arr, value) {",
-                "      return [...arr, value];",
-                "    }"
+                "globals:",
+                "  functions:",
+                "    - >",
+                "      function arrayPush(arr, value) {",
+                "        return [...arr, value];",
+                "      }"
 
         )));
         RunConfig config = builder.buildConfig(parser);

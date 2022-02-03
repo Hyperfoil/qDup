@@ -187,7 +187,7 @@ public class RunConfigBuilder {
             settings.set(k, v);
          }
       });
-      functions.addAll(yamlFile.getFunctions());
+      functions.addAll(yamlFile.getGlobal().getJsFunctionsList());
 
       return errors.isEmpty();
    }
