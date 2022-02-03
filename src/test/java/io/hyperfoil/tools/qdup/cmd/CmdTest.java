@@ -1,5 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd;
 
+import io.hyperfoil.tools.qdup.Coordinator;
+import io.hyperfoil.tools.qdup.Global;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.State;
@@ -149,7 +151,7 @@ public class CmdTest extends SshTestBase {
       state.set("FOO", "10");
       state.set("BAR", "'1m'");
 
-      String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state, null, null);
+      String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state, new Coordinator(new Global()), null);
       assertEquals("expected value with seconds()", "140", response);
    }
 
@@ -211,7 +213,7 @@ public class CmdTest extends SshTestBase {
    public void populateStateVariables_arithmetic_time_concat() {
       State state = new State("");
       state.set("FOO", "1");
-      String response = Cmd.populateStateVariables("${{=milliseconds(${{FOO}}+'m') :5m}}", null, state, null, null);
+      String response = Cmd.populateStateVariables("${{=milliseconds(${{FOO}}+'m') :5m}}", null, state, new Coordinator(new Global()), null);
       assertEquals("expected string concat after maths", "60000", response);
    }
 
