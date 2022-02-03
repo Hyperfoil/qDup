@@ -1,10 +1,6 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
-import io.hyperfoil.tools.qdup.Coordinator;
-import io.hyperfoil.tools.qdup.Global;
-import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.Stage;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
@@ -32,7 +28,7 @@ public class UndefinedStateVariables implements RunRule {
     private Parser parser;
     private Set<String> ignore;
 
-    private List<String> jsFunctions;
+    private List<JsFunction> jsFunctions;
 
     public UndefinedStateVariables(Parser parser){
         this(parser,new HashSet<>());
@@ -42,11 +38,11 @@ public class UndefinedStateVariables implements RunRule {
         this(parser, ignore, new ArrayList<>());
     }
 
-    public UndefinedStateVariables(Parser parser, List<String> jsFunctions) {
+    public UndefinedStateVariables(Parser parser, List<JsFunction> jsFunctions) {
         this(parser, new HashSet<>(), jsFunctions);
     }
 
-    public UndefinedStateVariables(Parser parser, Collection<String> ignore, List<String> jsFunctions) {
+    public UndefinedStateVariables(Parser parser, Collection<String> ignore, List<JsFunction> jsFunctions) {
 
         this.parser = parser;
         usedVariables = new HashedLists<>();

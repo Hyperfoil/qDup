@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
+import io.hyperfoil.tools.qdup.Global;
 import io.hyperfoil.tools.qdup.JsFunction;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
@@ -215,17 +216,36 @@ public class YamlFileConstruct extends DeferableConstruct {
                             throw new YAMLException("roles requires a mapping");
                         }
                         break;
-                    case "functions":
-                        if (valueNode instanceof SequenceNode){
-                            ((SequenceNode)valueNode).getValue().forEach(functionNode->{
-                                Object loaded = deferAs(functionNode,new Tag(JsFunction.class));
-                                if(loaded!=null && loaded instanceof JsFunction){
-                                    JsFunction function = (JsFunction)loaded;
-                                    yamlFile.addFunction(function.getFunction());
+                    case "globals":
+
+                        Object newGlobal = deferAs(valueNode,new Tag("global"));
+                        if(newGlobal instanceof Global){
+                            yamlFile.setGlobal(newGlobal);
+                        }else{
+                            throw new YAMLException("global created a "+newState.getClass().getSimpleName()+" from "+valueNode.getStartMark());
+                        }
+                        break;
+
+                        if(valueNode instanceof MappingNode){
+                            ((MappingNode)valueNode).getValue().forEach(globalTuple->{
+                                if(globalTuple.getKeyNode() instanceof ScalarNode){
+                                    switch (((ScalarNode) globalTuple.getKeyNode()).getValue()){
+                                        case "functions":
+
+                                            String roleName = ((ScalarNode)globalTuple.getKeyNode()).getValue();
+                                            Role role = new Role(roleName);
+                                            roleConstruct.populate(role,globalTuple.getValueNode());
+                                            yamlFile.addRole(roleName,role);
+                                            break;
+                                        default:
+                                            throw new YAMLException("unknown yaml tag"+((ScalarNode)nodeTuple.getKeyNode()).getStartMark());
+                                    }
+                                }else{
+                                    throw new YAMLException("role names must be scalar"+globalTuple.getKeyNode().getStartMark());
                                 }
                             });
                         } else {
-                            throw new YAMLException("functions requires a sequence");
+                            throw new YAMLException("globals requires a mapping");
                         }
                         break;
                     default:
