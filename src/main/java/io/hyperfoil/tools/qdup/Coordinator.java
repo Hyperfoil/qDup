@@ -67,12 +67,15 @@ public class Coordinator {
 
     private Map<String,AtomicInteger> counters;
 
-    public Coordinator(){
+    private final Global global;
+
+    public Coordinator(Global global){
         signalLatches = new HashMap<>();
         latchTimes = new LinkedHashMap<>();
         counters = new HashMap<>();
         observers = new LinkedList<>();
         waitFors = new ConcurrentHashMap<>();
+        this.global = global;
     }
 
     public List<Waiter> ensureWaitFor(String name){
@@ -234,5 +237,8 @@ public class Coordinator {
         waitFor(name,waiter);
     }
 
+    public List<String> getJsFunctions(){
+        return global.getJsFunctionsList();
+    }
 
 }

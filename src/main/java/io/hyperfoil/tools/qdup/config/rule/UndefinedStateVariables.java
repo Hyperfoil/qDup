@@ -1,5 +1,7 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
+import io.hyperfoil.tools.qdup.Coordinator;
+import io.hyperfoil.tools.qdup.Global;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
@@ -13,6 +15,7 @@ import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.HashedLists;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -28,15 +31,29 @@ public class UndefinedStateVariables implements RunRule {
     private HashedLists<String, RSSCRef> neededVariables;
     private Parser parser;
     private Set<String> ignore;
+
+    private List<String> jsFunctions;
+
     public UndefinedStateVariables(Parser parser){
         this(parser,new HashSet<>());
     }
+
     public UndefinedStateVariables(Parser parser, Collection<String> ignore) {
+        this(parser, ignore, new ArrayList<>());
+    }
+
+    public UndefinedStateVariables(Parser parser, List<String> jsFunctions) {
+        this(parser, new HashSet<>(), jsFunctions);
+    }
+
+    public UndefinedStateVariables(Parser parser, Collection<String> ignore, List<String> jsFunctions) {
+
         this.parser = parser;
         usedVariables = new HashedLists<>();
         setVariables = new HashedLists<>();
         neededVariables = new HashedLists<>();
         this.ignore = new HashSet<>(ignore);
+        this.jsFunctions = jsFunctions;
     }
 
     public void addIgnore(String name){
@@ -154,7 +171,8 @@ public class UndefinedStateVariables implements RunRule {
             Cmd.getStateVariables(commandStr,command, config.getState(),null,null,ref).forEach(v->addUsedVariable(v,rssc));
             command.loadAllWithDefs(config.getState(),null);
             ref.loadAllWithDefs(config.getState(),null);
-            String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), null, null, ref);
+            Coordinator dummyCoordinator = new Coordinator(new Global(this.jsFunctions));
+            String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), dummyCoordinator, null, ref);
             if (Cmd.hasStateReference(populated, command)) {
 
                 List<String> neededVariables = Cmd.getStateVariables(populated, command, config.getState(), null, null,ref);

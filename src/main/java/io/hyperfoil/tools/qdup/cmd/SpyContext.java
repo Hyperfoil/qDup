@@ -1,15 +1,13 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.Coordinator;
+import io.hyperfoil.tools.qdup.Global;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
-
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
-import org.slf4j.Logger;
-import org.slf4j.profiler.Profiler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +26,7 @@ public class SpyContext implements Context {
     private Context context;
 
     public SpyContext(){
-        this(null,new State(""),new Coordinator());
+        this(null,new State(""),new Coordinator(new Global()));
     }
 
     public SpyContext(Context context,State state, Coordinator coordinator){

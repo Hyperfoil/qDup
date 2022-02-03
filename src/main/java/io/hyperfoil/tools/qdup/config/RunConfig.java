@@ -67,6 +67,8 @@ public class RunConfig {
 
     private Map<String,Role> roles;
 
+    private List<String> functions;
+
     private Counters<String> signalCounts;
 
     private Boolean colorTerminal = false;
@@ -112,7 +114,7 @@ public class RunConfig {
         this.settings = new Json(false);
         this.settings.merge(settings);
 
-        Cmd.addFunctions(functions);
+        this.functions = functions;
     }
 
     public boolean hasSkipStages(){return !skipStages.isEmpty();}
@@ -126,6 +128,7 @@ public class RunConfig {
         return hasSetting(key) ? settings.get(key) : defaultValue;
     }
     public Json getSettings(){return settings;}
+    public List<String> getJsFunctions() { return  this.functions;}
 
     public Set<String> getTracePatterns(){return tracePatterns;}
 
