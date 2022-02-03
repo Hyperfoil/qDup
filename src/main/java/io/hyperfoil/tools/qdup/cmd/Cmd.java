@@ -251,16 +251,6 @@ public abstract class Cmd {
 
    public static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
 
-   private static final List<String> functions = new LinkedList<>(Arrays.asList(
-           "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
-           "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}",
-           "function range(start,stop,step=1){ return Array(Math.ceil(Math.abs(stop - start) / step)).fill(start).map((x, y) => x + Math.ceil(Math.abs(stop - start) / (stop - start)) * y * step);}"
-   ));
-
-   public static void addFunctions(List<String> functionList){
-      functions.addAll(functionList);
-   }
-
    public static Cmd js(String code) {
       return new JsCmd(code);
    }
@@ -561,10 +551,11 @@ public abstract class Cmd {
       }
       PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,timestamps,ref);
       try {
+         Collection<String> jsFunctions = (coordinator != null && coordinator.getJsFunctions() != null) ? coordinator.getJsFunctions() : new ArrayList<>();
          if(cmd!=null){
-            return StringUtil.populatePattern(command,map,functions,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
+            return StringUtil.populatePattern(command,map,jsFunctions,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
          }else {
-            return StringUtil.populatePattern(command, map, functions, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+            return StringUtil.populatePattern(command, map,jsFunctions, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          }
       } catch (PopulatePatternException pe){
          if(pe.isJsFailure()){

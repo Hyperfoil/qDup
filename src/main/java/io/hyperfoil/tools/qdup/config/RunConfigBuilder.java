@@ -625,7 +625,7 @@ public class RunConfigBuilder {
       RunSummary summary = new RunSummary();
       SignalCounts signalCounts = new SignalCounts();
       summary.addRule("signals",signalCounts);
-      summary.addRule("variables",new UndefinedStateVariables(yamlParser));
+      summary.addRule("variables",new UndefinedStateVariables(yamlParser, this.functions));
       summary.addRule("observers",new NonObservingCommands());
       summary.scan(roles.values(),this);
 
