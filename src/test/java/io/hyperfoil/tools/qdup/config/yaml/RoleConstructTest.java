@@ -95,6 +95,16 @@ public class RoleConstructTest {
         assertEquals("run[0].FOO=bar","bar",scriptCmd.getWith().get("FOO"));
     }
     @Test
+    public void empty_scripts(){
+        try {
+            Role loaded = yaml.loadAs(
+                    "roleName:\n" +
+                            "  cleanup-scripts:", Role.class);
+        }catch(YAMLException e){
+            fail(e.getMessage());
+        }
+    }
+    @Test
     public void cleanup_only(){
         Role loaded = yaml.loadAs(
                 "roleName:\n"+

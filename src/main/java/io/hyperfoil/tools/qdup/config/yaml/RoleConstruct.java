@@ -36,16 +36,18 @@ public class RoleConstruct extends DeferableConstruct {
     ScriptCmdConstruct scriptCmdConstruct = new ScriptCmdConstruct();
     BiFunction<String,Node, List<ScriptCmd>> parseScript = (section, tupleValue)->{
         List<ScriptCmd> scriptCmds = new ArrayList<>();
-        if (tupleValue instanceof SequenceNode){
-            ((SequenceNode)tupleValue).getValue().forEach(scriptNode->{
+        if (tupleValue instanceof SequenceNode) {
+            ((SequenceNode) tupleValue).getValue().forEach(scriptNode -> {
                 Object loaded = scriptCmdConstruct.construct(scriptNode);
-                if(loaded!=null && loaded instanceof ScriptCmd){
-                    scriptCmds.add((ScriptCmd)loaded);
-                }else{
+                if (loaded != null && loaded instanceof ScriptCmd) {
+                    scriptCmds.add((ScriptCmd) loaded);
+                } else {
                     //this should only happen after a YAMLException from scriptCmdConstruct
-                    throw new YAMLException("failed to parse "+section+" script reference"+scriptNode.getStartMark());
+                    throw new YAMLException("failed to parse " + section + " script reference" + scriptNode.getStartMark());
                 }
             });
+        }else if (tupleValue instanceof ScalarNode && ((ScalarNode)tupleValue).getValue().trim().isBlank()){
+            //this is ok, an empty scalar can be treated as an empty list
         }else{
             throw new YAMLException(section+" must be a sequence"+tupleValue.getStartMark());
         }
