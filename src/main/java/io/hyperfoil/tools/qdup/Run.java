@@ -381,7 +381,7 @@ public class Run implements Runnable, DispatchObserver {
     public void abort(Boolean skipCleanUp){
         if(aborted.compareAndSet(false,true)){
             coordinator.clearWaiters();
-            if (!skipCleanUp) {
+            if (!skipCleanUp && stage.isBefore(Stage.Cleanup)) {
                 stageUpdated.set(this, Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.postStop will set it to Cleanup
             } else {
                 logger.warn("Skipping cleanup - Abort has been defined to not run any cleanup scripts");
