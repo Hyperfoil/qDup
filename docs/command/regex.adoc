@@ -26,7 +26,7 @@ if the pattern does not match.
   - abort: failed to start
 ----
 
-The named capture groups can use the state `RUN.` and `HOST.` prefixes target global run state
+The named capture groups can use the state `RUN.` and `HOST.` prefixes target globals run state
 or the host state instead of the default script state. This lets other scripts access the values but will
 likely require coordination to ensure the value is ready before other scripts try to access it.
 

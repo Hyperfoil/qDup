@@ -167,7 +167,7 @@ public class UndefinedStateVariables implements RunRule {
             Cmd.getStateVariables(commandStr,command, config.getState(),null,null,ref).forEach(v->addUsedVariable(v,rssc));
             command.loadAllWithDefs(config.getState(),null);
             ref.loadAllWithDefs(config.getState(),null);
-            Coordinator dummyCoordinator = new Coordinator(new Global(this.jsSnippets));
+            Coordinator dummyCoordinator = new Coordinator(new Globals(this.jsSnippets));
             String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), dummyCoordinator, null, ref);
             if (Cmd.hasStateReference(populated, command)) {
 

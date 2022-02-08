@@ -1,6 +1,6 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
-import io.hyperfoil.tools.qdup.Global;
+import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.Role;
@@ -18,10 +18,9 @@ public class YamlFile {
     private String name;
     private Map<String, Script> scripts;
     private Map<String, String> hosts;
-    private Json settings;
     private State state;
     private Map<String, Role> roles;
-    private Global global;
+    private Globals globals;
 
     public YamlFile(){
         name = "";
@@ -29,20 +28,9 @@ public class YamlFile {
         hosts = new LinkedHashMap<>();
         state = new State(State.RUN_PREFIX);
         roles = new LinkedHashMap<>();
-        settings = new Json(false);
-        global = new Global();
+        globals = new Globals();
     }
 
-    public void addSetting(String key,Object value){
-        settings.set(key,value);
-    }
-    public Json getSettings(){return settings;}
-    public boolean hasSetting(String key){
-        return settings.has(key);
-    }
-    public <T> T getSetting(String key, T defaultValue){
-        return settings.has(key) ? (T)settings.get(key) : defaultValue;
-    }
     public void addHost(String name,String host){
         hosts.put(name,host);
     }
@@ -80,8 +68,8 @@ public class YamlFile {
     public State getState(){
         return state;
     }
-    public Global getGlobal(){
-        return global;
+    public Globals getGlobals(){
+        return globals;
     }
 
 }

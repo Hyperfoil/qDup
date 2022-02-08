@@ -13,7 +13,7 @@ only a `key` then the value will be the input from the previous command.
     value: beth #changes the name to beth
 ----
 
-`set-state` can use the `RUN.` and `HOST.` prefixes to target the global run state or
+`set-state` can use the `RUN.` and `HOST.` prefixes to target the globals run state or
 current host state.  The `value` can be a simple scalar (.e.g string) or a YAML structure that
 will be converted into JSON.
 

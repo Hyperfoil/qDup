@@ -1,6 +1,6 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
-import io.hyperfoil.tools.qdup.Global;
+import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.qdup.State;
@@ -60,12 +60,12 @@ public class Parser {
                 (state) -> Json.toObjectMap(state.toJson())
         );
         rtrn.addValueType("states", "states");
-        rtrn.addMap(Global.class,
-                "global",
-                new GlobalConstruct(),
+        rtrn.addMap(Globals.class,
+                "globals",
+                new GlobalsConstruct(),
                 (global) -> Json.toObjectMap(global.toJson())
         );
-        rtrn.addValueType("global", "global");
+        rtrn.addValueType("globals", "globals");
 
         rtrn.addMap(JsSnippet.class,
                 "javascript",
