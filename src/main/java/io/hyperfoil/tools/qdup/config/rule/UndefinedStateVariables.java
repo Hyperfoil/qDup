@@ -1,6 +1,11 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
-import io.hyperfoil.tools.qdup.*;
+import io.hyperfoil.tools.qdup.Coordinator;
+import io.hyperfoil.tools.qdup.Globals;
+import io.hyperfoil.tools.qdup.JsSnippet;
+import io.hyperfoil.tools.qdup.SecretFilter;
+import io.hyperfoil.tools.qdup.Stage;
+import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
