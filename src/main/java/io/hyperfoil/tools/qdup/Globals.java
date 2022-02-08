@@ -16,8 +16,6 @@ public class Globals {
     private final List<JsSnippet> jsSnippets;
     private Json settings;
 
-
-
     public Globals(List<JsSnippet> jsSnippets) {
         this();
         this.addAllSnippets(jsSnippets);

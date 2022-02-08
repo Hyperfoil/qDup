@@ -12,7 +12,7 @@ import org.yaml.snakeyaml.nodes.Tag;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class JsSnippetConstructTest {
+public class GlobalsConstructTest {
 
     static Yaml yaml = null;
 
@@ -25,7 +25,7 @@ public class JsSnippetConstructTest {
     }
 
     @Test
-    public void key_value(){
+    public void multi_functions(){
         JsSnippet loaded = yaml.loadAs(
                 "function argsMapper(args) {\n" +
                         "  return args.split(' ').map(optionsFilter).filter(nullFilter);\n" +

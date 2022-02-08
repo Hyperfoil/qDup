@@ -66,7 +66,6 @@ public class Parser {
                 (global) -> Json.toObjectMap(global.toJson())
         );
         rtrn.addValueType("globals", "globals");
-
         rtrn.addMap(JsSnippet.class,
                 "javascript",
                 new JsSnippetConstruct(),
