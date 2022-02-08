@@ -1,10 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd;
 
-import io.hyperfoil.tools.qdup.Coordinator;
-import io.hyperfoil.tools.qdup.Global;
-import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshTestBase;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunRule;
@@ -13,6 +9,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -151,7 +148,7 @@ public class CmdTest extends SshTestBase {
       state.set("FOO", "10");
       state.set("BAR", "'1m'");
 
-      String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state, new Coordinator(new Global()), null);
+      String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state, new Coordinator(new Global(getJsSnippets())), null);
       assertEquals("expected value with seconds()", "140", response);
    }
 
@@ -213,7 +210,8 @@ public class CmdTest extends SshTestBase {
    public void populateStateVariables_arithmetic_time_concat() {
       State state = new State("");
       state.set("FOO", "1");
-      String response = Cmd.populateStateVariables("${{=milliseconds(${{FOO}}+'m') :5m}}", null, state, new Coordinator(new Global()), null);
+
+      String response = Cmd.populateStateVariables("${{=milliseconds(${{FOO}}+'m') :5m}}", null, state, new Coordinator(new Global(getJsSnippets())), null);
       assertEquals("expected string concat after maths", "60000", response);
    }
 
@@ -840,5 +838,13 @@ public class CmdTest extends SshTestBase {
       Assert.assertEquals("X should be tail of A", true, X.toString().contains("X"));
       Assert.assertEquals("X previous should be B", true, X.getPrevious().toString().contains("B"));
 
+   }
+
+   private List<JsSnippet> getJsSnippets(){
+      List<JsSnippet> jsSnippets = new ArrayList<>();
+      jsSnippets.add( new JsSnippet("function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}"));
+      jsSnippets.add( new JsSnippet("function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}"));
+      jsSnippets.add( new JsSnippet("function range(start,stop,step=1){ return Array(Math.ceil(Math.abs(stop - start) / step)).fill(start).map((x, y) => x + Math.ceil(Math.abs(stop - start) / (stop - start)) * y * step);}"));
+      return jsSnippets;
    }
 }

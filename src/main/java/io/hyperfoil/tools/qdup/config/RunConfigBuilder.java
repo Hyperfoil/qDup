@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
@@ -91,7 +92,7 @@ public class RunConfigBuilder {
    private Set<String> traceTargets;
    private Json settings;
 
-   private List<String> functions;
+   private List<JsSnippet> jsSnippets;
 
    private List<String> errors;
    private List<Stage> skipStages;
@@ -118,7 +119,7 @@ public class RunConfigBuilder {
       settings.set(RunConfig.MAKE_TEMP_KEY,MAKE_TEMP_CMD);
       settings.set(RunConfig.REMOVE_TEMP_KEY,REMOVE_TEMP_CMD);
       skipStages = new ArrayList<>();
-      functions = new ArrayList<>();
+      jsSnippets = new ArrayList<>();
    }
 
 
@@ -189,7 +190,7 @@ public class RunConfigBuilder {
             settings.set(k, v);
          }
       });
-      functions.addAll(yamlFile.getGlobal().getJsFunctionsList());
+      jsSnippets.addAll(yamlFile.getGlobal().getJsSnippets());
 
       return errors.isEmpty();
    }
@@ -617,7 +618,7 @@ public class RunConfigBuilder {
       RunSummary summary = new RunSummary();
       SignalCounts signalCounts = new SignalCounts();
       summary.addRule("signals",signalCounts);
-      summary.addRule("variables",new UndefinedStateVariables(yamlParser, this.functions));
+      summary.addRule("variables",new UndefinedStateVariables(yamlParser, this.jsSnippets));
       summary.addRule("observers",new NonObservingCommands());
       summary.scan(roles.values(),this);
 
@@ -640,7 +641,7 @@ public class RunConfigBuilder {
             getTracePatterns(),
             skipStages,
             settings,
-            functions
+            jsSnippets
          );
    }
 

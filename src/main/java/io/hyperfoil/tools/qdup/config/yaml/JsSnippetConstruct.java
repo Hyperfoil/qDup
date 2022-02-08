@@ -1,21 +1,21 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
-import io.hyperfoil.tools.qdup.JsFunction;
+import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 
-public class JsFunctionConstruct extends DeferableConstruct {
+public class JsSnippetConstruct extends DeferableConstruct {
     @Override
     public Object construct(Node node) {
-        JsFunction rtrn = null;
+        JsSnippet rtrn = null;
 
         if (node instanceof ScalarNode) {
-            rtrn = new JsFunction(((ScalarNode) node).getValue());
+            rtrn = new JsSnippet(((ScalarNode) node).getValue());
 
         } else {
-            throw new YAMLException("function must be loaded from a scalar " + node.getClass() + " " + node.getStartMark());
+            throw new YAMLException("Js snippet must be loaded from a scalar " + node.getClass() + " " + node.getStartMark());
         }
         return rtrn;
     }
