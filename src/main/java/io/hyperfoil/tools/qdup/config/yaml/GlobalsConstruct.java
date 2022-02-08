@@ -1,7 +1,6 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
 import io.hyperfoil.tools.qdup.Globals;
-import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
