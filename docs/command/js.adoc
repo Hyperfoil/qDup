@@ -15,6 +15,6 @@ skilled if the function does not return, returns `null`, `false`, or a string co
     }
 ----
 
-IMPORTANT: We are experimenting with a globals javascript object in master similar to jQuery or lodash
+IMPORTANT: We are experimenting with a global javascript object in master similar to jQuery or lodash
 that will give read-only access to more of the qDup internals (signals, counters, and state).
 It can be accessed with `$QD` but it is experimental and currently only in SHAPSHOT from master.
