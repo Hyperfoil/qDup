@@ -34,6 +34,11 @@ public class Global {
         if ( ! jsSnippets.add(snippet) ) {
             logger.warn("JS Snippet not added");
         }
+        snippet.getNames().forEach(name -> {
+            if (getJsSnippetsList().contains(name)) {
+                logger.warn("Mutiple JS Function names detected: " + name);
+            }
+        });
     }
 
     public List<String> getJsSnippetsList() {
