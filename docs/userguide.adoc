@@ -75,3 +75,4 @@ qDup scripts contain the following sections;
 * link:./hosts.adoc[hosts] - The configuration for connecting via SSH
 * link:./roles.adoc[roles] - Assign scripts to hosts to define the steps in the test
 * link:./states.adoc[states] - JSON-like data that describes the run-time state
+* link:./globals.adoc[globals] - Global settings and functions

@@ -1,0 +1,44 @@
+= qDup globals
+
+globals is a top level yaml construct that allows for the configuration of global settings and to define javascript that is evaluated every time javascript code is evaluated.
+
+== Gobals settings available;
+
+    - check-exit-code : (boolean) check the exit code from executed commands
+    - TRACE_NAME :
+    - MKTEMP : cmd to execute when creating temporary qDup runtime directory
+    - RMTEMP: rm command to execute when clearing temp directory
+
+```YAML
+globals :
+  settings:
+    RMTEMP: rm -Rf
+```
+
+== Globals javascript:
+The javascript engine uses ECMAScript 2020 with graaljs.  qDup allows users to define global methods to help with common tasks.
+
+Any valid javascript code can be defined as a string in the `javascript:` mapping.
+
+This allows users to define constants or functions that can be re-used when javasript expressions are evaluated at runtime
+
+```YAML
+globals :
+  javascript: |
+    const multFactor = 5;
+
+    function multiplyByFactor(val) {
+        return val * multFactor;
+    }
+```
+
+The javascript function `multiplyByFactor` is available to use globally within qDup yaml scripts, for example;
+
+```YAML
+scitps :
+  multiply-by-factor:
+    - set-state: MY_NUMBER 5
+    - log: ${{= multiplyByFactor(${{MY_NUMBER}}) }}
+```
+
+When the above script is executed, a value of `25` will be recorded in the run log
