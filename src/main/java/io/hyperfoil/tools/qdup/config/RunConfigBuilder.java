@@ -47,7 +47,7 @@ public class RunConfigBuilder {
    private static final String ROLES = "roles";
    private static final String HOSTS = "hosts";
    private static final String STATES = "states";
-   private static final String FUNCTIONS = "functions";
+   private static final String GLOBALS = "globals";
    private static final String SETUP_SCRIPTS = "setup-scripts";
    private static final String RUN_SCRIPTS = "run-scripts";
    private static final String CLEANUP_SCRIPTS = "cleanup-scripts";
