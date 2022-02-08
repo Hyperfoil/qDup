@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.JsFunction;
+import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
@@ -69,7 +69,7 @@ public class RunConfig {
 
     private Map<String,Role> roles;
 
-    private List<JsFunction> functions;
+    private List<JsSnippet> snippets;
 
     private Counters<String> signalCounts;
 
@@ -98,7 +98,7 @@ public class RunConfig {
             Set<String> tracePatterns,
             List<Stage> skipStages,
             Json settings,
-            List<String> functions){
+            List<JsSnippet> jsSnippets){
         this.name = name;
         this.errors = errors;
         this.scripts = scripts;
@@ -116,7 +116,7 @@ public class RunConfig {
         this.settings = new Json(false);
         this.settings.merge(settings);
 
-        this.functions = JsFunction.fromList(functions);
+        this.snippets = jsSnippets;
     }
 
     public boolean hasSkipStages(){return !skipStages.isEmpty();}
@@ -130,7 +130,7 @@ public class RunConfig {
         return hasSetting(key) ? settings.get(key) : defaultValue;
     }
     public Json getSettings(){return settings;}
-    public List<JsFunction> getJsFunctions() { return  this.functions;}
+    public List<JsSnippet> getJsFunctions() { return  this.snippets;}
 
     public Set<String> getTracePatterns(){return tracePatterns;}
     public Set<String> getRoleNames(){return roles.keySet();}

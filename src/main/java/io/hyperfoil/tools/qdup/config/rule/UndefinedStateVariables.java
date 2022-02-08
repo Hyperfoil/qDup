@@ -28,7 +28,7 @@ public class UndefinedStateVariables implements RunRule {
     private Parser parser;
     private Set<String> ignore;
 
-    private List<JsFunction> jsFunctions;
+    private List<JsSnippet> jsSnippets;
 
     public UndefinedStateVariables(Parser parser){
         this(parser,new HashSet<>());
@@ -38,18 +38,18 @@ public class UndefinedStateVariables implements RunRule {
         this(parser, ignore, new ArrayList<>());
     }
 
-    public UndefinedStateVariables(Parser parser, List<JsFunction> jsFunctions) {
-        this(parser, new HashSet<>(), jsFunctions);
+    public UndefinedStateVariables(Parser parser, List<JsSnippet> jsSnippets) {
+        this(parser, new HashSet<>(), jsSnippets);
     }
 
-    public UndefinedStateVariables(Parser parser, Collection<String> ignore, List<JsFunction> jsFunctions) {
+    public UndefinedStateVariables(Parser parser, Collection<String> ignore, List<JsSnippet> jsSnippets) {
 
         this.parser = parser;
         usedVariables = new HashedLists<>();
         setVariables = new HashedLists<>();
         neededVariables = new HashedLists<>();
         this.ignore = new HashSet<>(ignore);
-        this.jsFunctions = jsFunctions;
+        this.jsSnippets = jsSnippets;
     }
 
     public void addIgnore(String name){
@@ -167,7 +167,7 @@ public class UndefinedStateVariables implements RunRule {
             Cmd.getStateVariables(commandStr,command, config.getState(),null,null,ref).forEach(v->addUsedVariable(v,rssc));
             command.loadAllWithDefs(config.getState(),null);
             ref.loadAllWithDefs(config.getState(),null);
-            Coordinator dummyCoordinator = new Coordinator(new Global(this.jsFunctions));
+            Coordinator dummyCoordinator = new Coordinator(new Global(this.jsSnippets));
             String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), dummyCoordinator, null, ref);
             if (Cmd.hasStateReference(populated, command)) {
 

@@ -1,7 +1,8 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
+import io.hyperfoil.tools.qdup.Global;
 import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.JsFunction;
+import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
@@ -59,12 +60,19 @@ public class Parser {
                 (state) -> Json.toObjectMap(state.toJson())
         );
         rtrn.addValueType("states", "states");
-        rtrn.addMap(JsFunction.class,
-                "function",
-                new JsFunctionConstruct(),
+        rtrn.addMap(Global.class,
+                "global",
+                new GlobalConstruct(),
+                (global) -> Json.toObjectMap(global.toJson())
+        );
+        rtrn.addValueType("global", "global");
+
+        rtrn.addMap(JsSnippet.class,
+                "javascript",
+                new JsSnippetConstruct(),
                 (function) -> Json.toObjectMap(function.toJson())
         );
-        rtrn.addValueType("functions", "functions");
+        rtrn.addValueType("javascript", "javascript");
         rtrn.addEncoding(Host.class,
                 "host",
                 new HostConstruct(),

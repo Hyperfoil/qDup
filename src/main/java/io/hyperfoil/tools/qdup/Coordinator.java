@@ -237,8 +237,8 @@ public class Coordinator {
         waitFor(name,waiter);
     }
 
-    public List<String> getJsFunctions(){
-        return global.getJsFunctionsList();
+    public List<String> getJsSnippetContents(){
+        return global.getJsSnippetsContents();
     }
 
 }

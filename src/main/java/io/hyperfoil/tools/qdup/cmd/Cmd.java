@@ -551,11 +551,11 @@ public abstract class Cmd {
       }
       PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,timestamps,ref);
       try {
-         Collection<String> jsFunctions = (coordinator != null && coordinator.getJsFunctions() != null) ? coordinator.getJsFunctions() : new ArrayList<>();
+         Collection<String> jsSnippets = (coordinator != null && coordinator.getJsSnippetContents() != null) ? coordinator.getJsSnippetContents() : new ArrayList<>();
          if(cmd!=null){
-            return StringUtil.populatePattern(command,map,jsFunctions,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
+            return StringUtil.populatePattern(command,map,jsSnippets,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
          }else {
-            return StringUtil.populatePattern(command, map,jsFunctions, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+            return StringUtil.populatePattern(command, map,jsSnippets, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          }
       } catch (PopulatePatternException pe){
          if(pe.isJsFailure()){
