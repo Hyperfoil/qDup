@@ -7,6 +7,7 @@ import org.slf4j.ext.XLoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Globals {
@@ -31,14 +32,23 @@ public class Globals {
     }
 
     public void addSnippet(JsSnippet snippet) {
-        if ( ! jsSnippets.add(snippet) ) {
-            logger.warn("JS Snippet not added");
-        }
         snippet.getNames().forEach(name -> {
             if (getJsSnippetsList().contains(name)) {
                 logger.warn("Mutiple JS Function names detected: " + name);
             }
         });
+        Set<String> uniqNames = snippet.getNames().stream().collect(Collectors.toSet());
+        if(uniqNames.size() < snippet.getNames().size()){
+            uniqNames.forEach(name -> {
+                if( snippet.getNames().stream().filter(snippetName -> snippetName.equals(name)).collect(Collectors.toList()).size() > 1){
+                    logger.warn("Mutiple JS Function names detected: " + name);
+                }
+            });
+        }
+
+        if ( ! jsSnippets.add(snippet) ) {
+            logger.warn("JS Snippet not added");
+        }
     }
 
     public List<String> getJsSnippetsList() {
