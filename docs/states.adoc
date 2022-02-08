@@ -29,7 +29,7 @@ states:
     score: 22
 ----
 
-The YAML state is globally available but if scripts updated the global state by default then
+The YAML state is globally available but if scripts updated the globals state by default then
 `regex: (?<name>.*)` in one script and `set-state: name` in another script would collide.
 qDup avoids script state collision by using a tiered approach to state.
 
@@ -42,7 +42,7 @@ before the state name.
 ....
 set-state: RUN.name bill
 ....
-The `RUN.` prefix tells qDup to add the state entry to the global run state which is shared across all scripts
+The `RUN.` prefix tells qDup to add the state entry to the globals run state which is shared across all scripts
 ....
 set-state: HOST.name bill
 ....
@@ -98,11 +98,11 @@ ${{= "${{users[0].name}}".toLowerCase() : john }}
 ....
 
 === JavaScript globals
-The javascript engine uses ECMAScript 2020 with graaljs. qDup provides a global read-only
-JSON representation of the current state, signals, and counters under the `$QD` global name.
+The javascript engine uses ECMAScript 2020 with graaljs. qDup provides a globals read-only
+JSON representation of the current state, signals, and counters under the `$QD` globals name.
 This was added recently and is subject to change as we work on the api.
 
-qDup also provides some global methods to help with common tasks
+qDup also provides some globals methods to help with common tasks
 
 milliseconds(str):: convert the str duration (e.g. `1h 30s`) into millliseconds
 seconds(str):: convert the str duration (e.g. `1h 30s`) into seconds

@@ -183,14 +183,14 @@ public class RunConfigBuilder {
             addRoleCleanup(name, ((ScriptCmd) cmd).getName(), cmd.getWith());
          });
       });
-      yamlFile.getSettings().forEach((k, v) -> {
+      yamlFile.getGlobals().getSettings().forEach((k, v) -> {
          if (settings.has(k)) {
             //TODO alert settings are already set?
          } else {
             settings.set(k, v);
          }
       });
-      jsSnippets.addAll(yamlFile.getGlobal().getJsSnippets());
+      jsSnippets.addAll(yamlFile.getGlobals().getJsSnippets());
 
       return errors.isEmpty();
    }

@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.Coordinator;
-import io.hyperfoil.tools.qdup.Global;
+import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.SshSession;
@@ -26,7 +26,7 @@ public class SpyContext implements Context {
     private Context context;
 
     public SpyContext(){
-        this(null,new State(""),new Coordinator(new Global()));
+        this(null,new State(""),new Coordinator(new Globals()));
     }
 
     public SpyContext(Context context,State state, Coordinator coordinator){

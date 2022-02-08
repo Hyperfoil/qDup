@@ -148,7 +148,7 @@ public class CmdTest extends SshTestBase {
       state.set("FOO", "10");
       state.set("BAR", "'1m'");
 
-      String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state, new Coordinator(new Global(getJsSnippets())), null);
+      String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state, new Coordinator(new Globals(getJsSnippets())), null);
       assertEquals("expected value with seconds()", "140", response);
    }
 
@@ -211,7 +211,7 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("FOO", "1");
 
-      String response = Cmd.populateStateVariables("${{=milliseconds(${{FOO}}+'m') :5m}}", null, state, new Coordinator(new Global(getJsSnippets())), null);
+      String response = Cmd.populateStateVariables("${{=milliseconds(${{FOO}}+'m') :5m}}", null, state, new Coordinator(new Globals(getJsSnippets())), null);
       assertEquals("expected string concat after maths", "60000", response);
    }
 

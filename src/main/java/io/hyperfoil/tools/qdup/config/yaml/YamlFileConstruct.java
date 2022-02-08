@@ -1,6 +1,6 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
-import io.hyperfoil.tools.qdup.Global;
+import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
@@ -28,8 +28,8 @@ public class YamlFileConstruct extends DeferableConstruct {
 
     public static final Mapping<YamlFile>   MAPPING = (yaml)->{
         Map<Object,Object> map = new LinkedHashMap<>();
-        if(!yaml.getSettings().isEmpty()){
-            map.put("settings",Json.toObjectMap(yaml.getSettings()));
+        if(yaml.getGlobals() != null){
+            map.put("globals",Json.toObjectMap(yaml.getGlobals().toJson()));
         }
         if(yaml.getName()!=null && !yaml.getName().isEmpty()) {
             map.put("name", yaml.getName());
@@ -104,22 +104,12 @@ public class YamlFileConstruct extends DeferableConstruct {
                 String key = ((ScalarNode)nodeTuple.getKeyNode()).getValue();
                 Node valueNode = nodeTuple.getValueNode();
                 switch (key){
-                    case "settings":
-                        if(valueNode instanceof MappingNode){
-                            Json settings = OverloadConstructor.json(valueNode);
-                            settings.forEach((k,v)->{
-                                yamlFile.addSetting(k.toString(),v);
-                            });
+                    case "globals":
+                        Object newGlobals = deferAs(valueNode,new Tag("globals"));
+                        if(newGlobals instanceof Globals){
+                            yamlFile.getGlobals().merge((Globals) newGlobals);
                         }else{
-                            throw new YAMLException("settings must be a mapping"+valueNode.getStartMark());
-                        }
-                        break;
-                    case "global":
-                        Object newGlobal = deferAs(valueNode,new Tag("global"));
-                        if(newGlobal instanceof Global){
-                            yamlFile.getGlobal().merge((Global) newGlobal);
-                        }else{
-                            throw new YAMLException("global created a "+valueNode.getClass().getSimpleName()+" from "+valueNode.getStartMark());
+                            throw new YAMLException("globals created a "+valueNode.getClass().getSimpleName()+" from "+valueNode.getStartMark());
                         }
                         break;
                     case "name":

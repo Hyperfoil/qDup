@@ -10,9 +10,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class JsSnippetExpressionTest extends SshTestBase {
+public class GlocalExpressionTest extends SshTestBase {
     @Test
-    public void parse_with_functions() {
+    public void parse_with_javascript() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
         StringBuilder sb = new StringBuilder();
@@ -31,7 +31,7 @@ public class JsSnippetExpressionTest extends SshTestBase {
                 "  doit:",
                 "    hosts: [local]",
                 "    run-scripts: [parse-metrics]",
-                "global:",
+                "globals:",
                 "  javascript: |",
                 "    const someValue = 20;",
                 "    function returnConst() {",
@@ -74,7 +74,7 @@ public class JsSnippetExpressionTest extends SshTestBase {
     }
 
     @Test
-    public void empty_array_push_test() {
+    public void javascript_empty_array_push_test() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
         StringBuilder sb = new StringBuilder();
@@ -94,7 +94,7 @@ public class JsSnippetExpressionTest extends SshTestBase {
                 "  doit:",
                 "    hosts: [local]",
                 "    run-scripts: [array-push-test]",
-                "global:",
+                "globals:",
                 "  javascript: |",
                 "      function arrayPush(arr, value) {",
                 "        return [...arr, value];",
@@ -141,12 +141,12 @@ public class JsSnippetExpressionTest extends SshTestBase {
                 "  doit:",
                 "    hosts: [local]",
                 "    run-scripts: [array-push-test]",
-                "global:",
+                "globals:",
                 "  javascript: |",
                 "      function arrayPush(arr, value) {",
                 "        return [...arr, value];",
                 "      }",
-                "global:",
+                "globals:",
                 "  javascript: |",
                 "      function arrayPop(arr) {",
                 "        return arr.pop();",
@@ -164,6 +164,36 @@ public class JsSnippetExpressionTest extends SshTestBase {
         assertTrue("state config is not Long", poppedState instanceof Long);
         assertEquals("value is not 500", 500l, poppedState);
 
+    }
+
+
+    @Test
+    public void global_settings() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        StringBuilder sb = new StringBuilder();
+
+        builder.loadYaml(parser.loadFile("test", stream("" +
+                        "scripts:",
+                "  parse-metrics:",
+                "  - log: running with settings",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [parse-metrics]",
+                "globals:",
+                "  settings: ",
+                "    someValue: 20"
+
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+        State runState = config.getState();
     }
 
 }

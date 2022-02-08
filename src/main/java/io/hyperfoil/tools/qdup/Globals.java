@@ -9,26 +9,28 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Global {
+public class Globals {
 
-    private static final XLogger logger = XLoggerFactory.getXLogger(Global.class);
+    private static final XLogger logger = XLoggerFactory.getXLogger(Globals.class);
 
     private final List<JsSnippet> jsSnippets;
+    private Json settings;
 
 
-    public Global(List<JsSnippet> jsSnippets) {
+
+    public Globals(List<JsSnippet> jsSnippets) {
         this();
         this.addAllSnippets(jsSnippets);
     }
 
-    public Global() {
+    public Globals() {
         this.jsSnippets = new ArrayList<>();
+        this.settings = new Json(false);
     }
 
     public void addAllSnippets(List<JsSnippet> snippetList) {
         snippetList.forEach( jsSnippet -> addSnippet(jsSnippet));
     }
-
 
     public void addSnippet(JsSnippet snippet) {
         if ( ! jsSnippets.add(snippet) ) {
@@ -54,18 +56,31 @@ public class Global {
         return Collections.unmodifiableList(this.jsSnippets);
     }
 
+    public void addSetting(String key,Object value){
+        settings.set(key,value);
+    }
+    public Json getSettings(){return settings;}
+    public boolean hasSetting(String key){
+        return settings.has(key);
+    }
+    public <T> T getSetting(String key, T defaultValue){
+        return settings.has(key) ? (T)settings.get(key) : defaultValue;
+    }
 
-
-    public void merge(Global newGlobal){
-        this.addAllSnippets(newGlobal.getJsSnippets());
+    public void merge(Globals newGlobals){
+        this.addAllSnippets(newGlobals.getJsSnippets());
+        settings.merge(newGlobals.getSettings());
     }
 
     public Json toJson() {
         Json rtrn = new Json(false);
-
-        String javascripSnippet = this.jsSnippets.stream().map(jsSnippet -> jsSnippet.getFunction()).collect(Collectors.joining("\n"));
-
-        rtrn.add("javascript", javascripSnippet);
+        if(!this.jsSnippets.isEmpty()){
+            String javascripSnippet = this.jsSnippets.stream().map(jsSnippet -> jsSnippet.getFunction()).collect(Collectors.joining("\n"));
+            rtrn.add("javascript", javascripSnippet);
+        }
+        if(!settings.isEmpty()) {
+            rtrn.add("settings", Json.toObjectMap(settings));
+        }
         return rtrn;
     }
 }

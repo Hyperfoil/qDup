@@ -123,7 +123,7 @@ public class Run implements Runnable, DispatchObserver {
 
         this.timestamps = new LinkedHashMap<>();
         this.profiles = new Profiles();
-        this.coordinator = new Coordinator(new Global(config.getJsFunctions()));
+        this.coordinator = new Coordinator(new Globals(config.getJsFunctions()));
         this.local = new Local(config);
         this.skipStages = config.getSkipStages();
 

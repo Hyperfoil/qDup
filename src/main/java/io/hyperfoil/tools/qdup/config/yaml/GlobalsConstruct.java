@@ -1,25 +1,39 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
-import io.hyperfoil.tools.qdup.Global;
+import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.JsSnippet;
+import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
+import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 
-public class GlobalConstruct extends DeferableConstruct {
+public class GlobalsConstruct extends DeferableConstruct {
     @Override
     public Object construct(Node node) {
 
-        Global global = new Global();
+        Globals globals = new Globals();
         if(node instanceof MappingNode){
             ((MappingNode)node).getValue().forEach(globalTuple->{
                 if(globalTuple.getKeyNode() instanceof ScalarNode){
                     switch (((ScalarNode) globalTuple.getKeyNode()).getValue()){
                         case "javascript":
-                            global.addSnippet(new JsSnippet(((ScalarNode) globalTuple.getValueNode()).getValue()));
+                            globals.addSnippet(new JsSnippet(((ScalarNode) globalTuple.getValueNode()).getValue()));
                             break;
+                        case "settings":
+                            Node valueNode = globalTuple.getValueNode();
+                            if(valueNode instanceof MappingNode){
+                                Json settings = OverloadConstructor.json(valueNode);
+                                settings.forEach((k,v)->{
+                                    globals.addSetting(k.toString(),v);
+                                });
+                            }else{
+                                throw new YAMLException("settings must be a mapping"+valueNode.getStartMark());
+                            }
+                            break;
+
                         default:
                             throw new YAMLException("unknown yaml tag"+((ScalarNode)globalTuple.getKeyNode()).getStartMark());
                     }
@@ -31,6 +45,6 @@ public class GlobalConstruct extends DeferableConstruct {
             throw new YAMLException("globals requires a mapping");
         }
 
-        return global;
+        return globals;
     }
 }
