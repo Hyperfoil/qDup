@@ -102,15 +102,4 @@ The javascript engine uses ECMAScript 2020 with graaljs. qDup provides a global 
 JSON representation of the current state, signals, and counters under the `$QD` global name.
 This was added recently and is subject to change as we work on the api.
 
-qDup also provides some global methods to help with common tasks
-
-milliseconds(str):: convert the str duration (e.g. `1h 30s`) into millliseconds
-seconds(str):: convert the str duration (e.g. `1h 30s`) into seconds
-range(start,stop,step):: create an array `[start,stop)` with optional `step` increment. Range
-is often used with `for-each` or in `sh` when creating a file using javascript string templates.
-[source,yaml]
-----
-- for-each: IT ${{= range(1,10) }}
-  then:
-  - sh: ...
-----
+qDup also allows users to define global methods to help with common tasks, see link:./globals.adoc[globals]
