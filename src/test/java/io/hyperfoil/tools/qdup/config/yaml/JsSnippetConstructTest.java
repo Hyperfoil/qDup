@@ -1,5 +1,7 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
+import com.google.common.collect.Lists;
+import io.hyperfoil.tools.qdup.Global;
 import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 import org.junit.BeforeClass;
@@ -36,5 +38,19 @@ public class JsSnippetConstructTest {
         assertEquals("expecting 2 functions", 2, loaded.getNames().size());
     }
 
+    @Test
+    public void name_collision(){
+        JsSnippet loaded = yaml.loadAs(
+                "function argsMapper(args) {\n" +
+                        "  return args.split(' ').map(optionsFilter).filter(nullFilter);\n" +
+                        "}\n" +
+                        "function argsMapper() {\n" +
+                        "  return 3;\n" +
+                        "}\n"
+                , JsSnippet.class);
+        Global global = new Global(Lists.newArrayList(loaded));
+        assertNotNull("should load states",loaded);
+        assertEquals("expecting 2 functions", 2, loaded.getNames().size());
+    }
 
 }
