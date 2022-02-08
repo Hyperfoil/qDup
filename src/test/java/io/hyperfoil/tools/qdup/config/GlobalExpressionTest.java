@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class GlocalExpressionTest extends SshTestBase {
+public class GlobalExpressionTest extends SshTestBase {
     @Test
     public void parse_with_javascript() {
         Parser parser = Parser.getInstance();
