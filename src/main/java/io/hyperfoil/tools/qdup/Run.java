@@ -32,11 +32,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -859,5 +855,5 @@ public class Run implements Runnable, DispatchObserver {
     public Coordinator getCoordinator(){return coordinator;}
     public String getOutputPath(){ return outputPath;}
 
-    public Map<String,Long> getTimestamps(){return timestamps;}
+    public Map<String,Long> getTimestamps(){return Collections.unmodifiableMap(new LinkedHashMap<>(timestamps));}
 }
