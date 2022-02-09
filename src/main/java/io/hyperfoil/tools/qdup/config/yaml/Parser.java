@@ -70,7 +70,8 @@ public class Parser {
                 "abort",
                 (cmd) -> cmd.getMessage(),
                 (str,prefix,suffix) -> new Abort(str),
-                null
+                (json)->new Abort(json.getString("message"),json.getBoolean("skip-cleanup",false)),
+                "message","skip-cleanup"
         );
         rtrn.addCmd(
                 AddPrompt.class,

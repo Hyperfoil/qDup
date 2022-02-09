@@ -53,6 +53,9 @@ public class Role {
     public List<ScriptCmd> getSetup(){return Collections.unmodifiableList(setup);}
     public List<ScriptCmd> getRun(){return Collections.unmodifiableList(run);}
     public List<ScriptCmd> getCleanup(){return Collections.unmodifiableList(cleanup);}
+    public boolean hasScripts(){
+        return !(setup.isEmpty() && run.isEmpty() && cleanup.isEmpty());
+    }
 
     /**
      * @return Hosts that are listed in the role. Empty if the role uses an expression
