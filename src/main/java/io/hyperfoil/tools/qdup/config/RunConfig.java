@@ -5,6 +5,7 @@ import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
+import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.Counters;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.slf4j.ext.XLogger;
@@ -125,17 +126,6 @@ public class RunConfig {
     public Json getSettings(){return settings;}
 
     public Set<String> getTracePatterns(){return tracePatterns;}
-
-//    public StageSummary getSetupStage() {
-//        return setupStage;
-//    }
-//    public StageSummary getRunStage() {
-//        return runStage;
-//    }
-//    public StageSummary getCleanupStage() {
-//        return cleanupStage;
-//    }
-
     public Set<String> getRoleNames(){return roles.keySet();}
     public Map<String, Role> getRoles(){ return roles;}
     public Role getRole(String name){

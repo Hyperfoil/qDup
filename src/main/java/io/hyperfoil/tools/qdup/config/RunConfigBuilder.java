@@ -112,8 +112,6 @@ public class RunConfigBuilder {
       traceTargets = new HashSet<>();
       errors = new LinkedList<>();
       settings = new Json(false);
-      settings.set(RunConfig.MAKE_TEMP_KEY,MAKE_TEMP_CMD);
-      settings.set(RunConfig.REMOVE_TEMP_KEY,REMOVE_TEMP_CMD);
       skipStages = new ArrayList<>();
    }
 
@@ -206,6 +204,9 @@ public class RunConfigBuilder {
    public State getState() {
       return state;
    }
+   public Json getSettings(){
+      return settings;
+   }
 
    public String getName() {
       return name;
@@ -216,24 +217,31 @@ public class RunConfigBuilder {
    }
 
    public YamlFile toYamlFile() {
+
       YamlFile rtrn = new YamlFile();
       rtrn.setName(getName());
 
       getHosts().forEach(rtrn::addHost);
-      scripts.forEach(rtrn::addScript);
+      List<String> scriptNames = new ArrayList<>(scripts.keySet());
+      Collections.sort(scriptNames);
+      scriptNames.forEach(scriptName->rtrn.addScript(scriptName,getScript(scriptName)));
+      //scripts.forEach(rtrn::addScript);
       getRoleNames().forEach(roleName -> {
-         rtrn.addRole(roleName, new Role(roleName));
-         Role role = rtrn.getRoles().get(roleName);
-         if (roleHostExpression.containsKey(roleName)) {
-            role.setHostExpression(new HostExpression(roleHostExpression.get(roleName)));
+         boolean hasScript = !(getRoleSetup(roleName).isEmpty() && getRoleRun(roleName).isEmpty() && getRoleCleanup(roleName).isEmpty());
+         if(hasScript){
+            rtrn.addRole(roleName, new Role(roleName));
+            Role role = rtrn.getRoles().get(roleName);
+            if (roleHostExpression.containsKey(roleName)) {
+               role.setHostExpression(new HostExpression(roleHostExpression.get(roleName)));
+            }
+            getRoleHosts(roleName).forEach(role::addHostRef);
+            getRoleSetup(roleName).forEach(role::addSetup);
+            getRoleRun(roleName).forEach(role::addRun);
+            getRoleCleanup(roleName).forEach(role::addCleanup);
          }
-         getRoleHosts(roleName).forEach(role::addHostRef);
-         getRoleSetup(roleName).forEach(role::addSetup);
-         getRoleRun(roleName).forEach(role::addRun);
-         getRoleCleanup(roleName).forEach(role::addCleanup);
       });
       rtrn.getState().merge(getState());
-
+      rtrn.getSettings().merge(getSettings());
       return rtrn;
    }
 

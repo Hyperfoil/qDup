@@ -48,6 +48,7 @@ public class QDup {
     private int scheduledThreads;
     private int commandThreads;
     private boolean test;
+    private boolean yaml;
     private List<String> breakpoints;
     private boolean colorTerminal;
     private int jsonPort;
@@ -112,9 +113,9 @@ public class QDup {
         return trace != null && !trace.isBlank();
     }
 
-    public boolean isTest() {
-        return test;
-    }
+    public boolean isTest() { return test; }
+
+    public boolean isYaml() { return yaml; }
 
     public String getOutputPath() {
         return outputPath;
@@ -146,6 +147,12 @@ public class QDup {
         Options options = new Options();
 
         OptionGroup basePathGroup = new OptionGroup();
+        basePathGroup.addOption(Option.builder("Y")
+                .longOpt("yaml")
+                .required()
+                .desc("print the run yaml without running it")
+                .build()
+        );
         basePathGroup.addOption(Option.builder("T")
                 .longOpt("test")
                 .required()
@@ -382,6 +389,7 @@ public class QDup {
         stateProps = commandLine.getOptionProperties("S");
         removeStateProperties = commandLine.getOptionProperties("SX");
         test = commandLine.hasOption("test");
+        yaml = commandLine.hasOption("yaml");
         breakpoints = commandLine.hasOption("breakpoint") ? Arrays.asList(commandLine.getOptionValues("breakpoint")) : Collections.EMPTY_LIST;
         colorTerminal = commandLine.hasOption("colorTerminal");
         jsonPort = Integer.parseInt(commandLine.getOptionValue("jsonport", "" + JsonServer.DEFAULT_PORT));
@@ -518,6 +526,10 @@ public class QDup {
         if (isTest()) {
             //logger.info(config.debug());
             System.out.printf("%s", getRunDebug());
+            System.exit(0);
+        }else if (isYaml()){
+            YamlFile file = runConfigBuilder.toYamlFile();
+            System.out.printf("%s",yamlParser.dump(file));
             System.exit(0);
         }
 
