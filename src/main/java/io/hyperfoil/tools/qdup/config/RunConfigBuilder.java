@@ -248,7 +248,8 @@ public class RunConfigBuilder {
          }
       });
       rtrn.getState().merge(getState());
-      rtrn.getSettings().merge(getSettings());
+      rtrn.getGlobals().addAllSnippets(jsSnippets);
+      rtrn.getGlobals().getSettings().merge(getSettings());
       return rtrn;
    }
 

@@ -4,10 +4,9 @@ import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.config.RunRule;
-import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.time.SystemTimer;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Sh extends Cmd {
 
@@ -18,6 +17,8 @@ public class Sh extends Cmd {
     private String exitCode = "";
     private boolean ignoreExitCode = false;
     private String previousPrompt="";
+
+    private SystemTimer commandTimer = null;
 
     private void setPreviousPrompt(String prompt){
         this.previousPrompt = prompt;
@@ -63,7 +64,7 @@ public class Sh extends Cmd {
             );
             context.abort(false);
         }
-        context.getTimer().start("Sh-invoke:"+populatedCommand);
+        commandTimer = context.getContextTimer().start("Sh-invoke:"+populatedCommand,true);
         //TODO do we need to manually remove the lineObserver?
         if(prompt.isEmpty()) {
             context.getSession().sh(populatedCommand, (output,promptName)->{
@@ -87,7 +88,8 @@ public class Sh extends Cmd {
                     populated
             );
         }
-        context.getTimer().start("Sh-await-callback:"+populatedCommand);
+//        context.getTimer().start("Sh-await-callback:"+populatedCommand);
+        commandTimer.start("await-callback");
     }
 
     @Override
@@ -99,12 +101,9 @@ public class Sh extends Cmd {
         return rtrn;
     }
 
-    //TODO add a way to disable post-run for commands that change propt (e.g. psql or docker exec)
     @Override
     public void postRun(String output,Context context){
         String toLog = getLogOutput(output,context);
-        //not working in benchlab?
-
         if(context.getSession()!=null && context.getSession().isOpen() && SshSession.PROMPT.equals(getPreviousPrompt()) && context.getSession().getHost().isSh()){
             String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
             context.getSession().shSync("(exit $__qdup_ec);");

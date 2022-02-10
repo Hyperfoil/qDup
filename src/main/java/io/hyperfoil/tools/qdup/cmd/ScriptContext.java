@@ -78,6 +78,7 @@ public class ScriptContext implements Context, Runnable{
     private final State state;
     private final Run run;
     private final SystemTimer timer;
+    private SystemTimer cmdTimer = null;
     private ContextObserver observer = null;
     private Semaphore lineQueueSemaphore;
     private BlockingQueue<String> lineQueue;
@@ -154,7 +155,8 @@ public class ScriptContext implements Context, Runnable{
 
     private Logger getRunLogger(){return run.getRunLogger();}
 
-    public SystemTimer getTimer(){return timer;}
+    public SystemTimer getContextTimer(){return timer;}
+    public SystemTimer getCommandTimer(){return cmdTimer;}
     public String getRunOutputPath(){
         return run.getOutputPath();
     }
@@ -290,7 +292,7 @@ public class ScriptContext implements Context, Runnable{
 
     @Override
     public void next(String output) {
-        getTimer().start("next");
+        getContextTimer().start("next");
         Cmd cmd = getCurrentCmd();
         if(!signalCmds.isEmpty()){
             signalCmds.forEach((name,onsignal)->{
@@ -318,7 +320,7 @@ public class ScriptContext implements Context, Runnable{
 
     @Override
     public void skip(String output) {
-        getTimer().start("skip");
+        getContextTimer().start("skip");
         Cmd cmd = getCurrentCmd();
 
         if(!signalCmds.isEmpty()){
@@ -348,7 +350,7 @@ public class ScriptContext implements Context, Runnable{
     protected void startCurrentCmd(){
         Run run = getRun();
         if(run!=null) {
-            getTimer().start("waiting in run queue");
+            getContextTimer().start("waiting in run queue");
             run.getDispatcher().submit(this);
         }
     }
@@ -391,7 +393,7 @@ public class ScriptContext implements Context, Runnable{
                     this.getSession(),
                     this.getState(),
                     this.getRun(),
-                    this.getTimer(),
+                    this.getContextTimer(),
                     toRun,
                    this
                 ));
@@ -411,7 +413,7 @@ public class ScriptContext implements Context, Runnable{
             observerDone();//this context is finished
         } else {
             observerPreStart(cmd);
-            getTimer().start(cmd.toString());
+            SystemTimer cmdTimer = getContextTimer().start(cmd.toString());
             if (!lineQueue.isEmpty()) {//clear any unhandled output lines
                 //TODO log that we are clearing orphaned lines
                 //need to make sure we don't clear if another thread needs to pickup up the CLOSE_QUEUE
@@ -441,7 +443,7 @@ public class ScriptContext implements Context, Runnable{
                     }
                     List<Cmd> toCall = cmd.getSignal(name);
                     Cmd root = new ActiveCheckCmd(getCurrentCmd());
-                    SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getTimer(),root,this);
+                    SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getContextTimer(),root,this);
                     toCall.forEach(root::then);
                     signalCmds.put(name,root);
                     getCoordinator().waitFor(populatedName,root,syncContext,inputSupplier);
@@ -463,9 +465,9 @@ public class ScriptContext implements Context, Runnable{
             if (cmd.hasWatchers()) {
                 String line = "";
                 try {
-                    getTimer().start("watch.acquire:"+cmd.toString());
+                    getContextTimer().start("watch.acquire:"+cmd.toString());
                     lineQueueSemaphore.acquire();
-                    getTimer().start("watch.start:"+cmd.toString());
+                    getContextTimer().start("watch.start:"+cmd.toString());
                     assert lineQueueSemaphore.availablePermits() == 0;
 
                     cmd.doRun(input, this);
@@ -476,7 +478,7 @@ public class ScriptContext implements Context, Runnable{
                                this.getSession(),
                                this.getState(),
                                this.getRun(),
-                               this.getTimer(),
+                               this.getContextTimer(),
                                cmd,
                                this
                             );
@@ -493,7 +495,7 @@ public class ScriptContext implements Context, Runnable{
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {
-                    getTimer().start("watch.release:"+cmd.toString());
+                    getContextTimer().start("watch.release:"+cmd.toString());
                     lineQueueSemaphore.release();
                     assert lineQueueSemaphore.availablePermits() == 1;
                 }

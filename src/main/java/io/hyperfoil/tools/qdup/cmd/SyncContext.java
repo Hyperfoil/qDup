@@ -29,6 +29,7 @@ public class SyncContext implements Context, Runnable{
     private final State state;
     private final Run run;
     private final SystemTimer timer;
+    private SystemTimer cmdTimer = null;
 
     private volatile Cmd currentCmd;
 
@@ -65,9 +66,15 @@ public class SyncContext implements Context, Runnable{
     @Override
     public void next(String output) {
         Cmd cmd = getCurrentCmd();
+        if(cmdTimer!=null){
+            cmdTimer.stop();
+        }
         if(cmd!=null) {
             Cmd next = cmd.getNext();
             cmd.setOutput(output);
+            if (scriptContext != null && scriptContext.getObserver() != null) {
+                scriptContext.getObserver().preStop(this, cmd, output);
+            }
             cmd.postRun(output,this);
             if(next!=null) {
                 while(
@@ -81,12 +88,18 @@ public class SyncContext implements Context, Runnable{
                     next = next.getSkip();
                 }
                 if(next!=null) {
+                    if (scriptContext != null && scriptContext.getObserver() != null) {
+                        scriptContext.getObserver().preNext(this, cmd, output);
+
+                    }
                     setCurrentCmd(cmd, next);
                     logger.trace("synchronously running {}", next);
                     if (scriptContext != null && scriptContext.getObserver() != null) {
                         scriptContext.getObserver().preStart(this, next);
                     }
+                    cmdTimer = getContextTimer().start(next.toString(),true);
                     next.doRun(output, this);
+
                 }
             }
         }
@@ -102,13 +115,18 @@ public class SyncContext implements Context, Runnable{
         return run.getConfig().isColorTerminal();
     }
 
-
     @Override
     public void skip(String output) {
         Cmd cmd = getCurrentCmd();
+        if(cmdTimer!=null){
+            cmdTimer.stop();
+        }
         if(cmd!=null) {
             Cmd next = cmd.getSkip();
             cmd.setOutput(output);
+            if (scriptContext != null && scriptContext.getObserver() != null) {
+                scriptContext.getObserver().preStop(this, cmd, output);
+            }
             cmd.postRun(output,this);
             if(next!=null) {
                 while(next!=null && (next instanceof CtrlSignal) && scriptContext!=null && scriptActiveCmd != null && !scriptActiveCmd.equals(scriptContext.getCurrentCmd())){
@@ -116,11 +134,15 @@ public class SyncContext implements Context, Runnable{
                     next = next.getSkip();
                 }
                 if(next!=null) {
+                    if (scriptContext != null && scriptContext.getObserver() != null) {
+                        scriptContext.getObserver().preSkip(this, cmd, output);
+                    }
                     setCurrentCmd(cmd, next);
                     logger.trace("synchronously running {}", next);
                     if (scriptContext != null && scriptContext.getObserver() != null) {
                         scriptContext.getObserver().preStart(this, next);
                     }
+                    cmdTimer = getContextTimer().start(next.toString(),true);
                     next.doRun(output, this);
                 }
             }
@@ -147,7 +169,6 @@ public class SyncContext implements Context, Runnable{
         getRunLogger().error(filteredMessage);
     }
 
-
     private Logger getRunLogger() {
         return run.getRunLogger();
     }
@@ -157,8 +178,13 @@ public class SyncContext implements Context, Runnable{
     }
 
     @Override
-    public SystemTimer getTimer() {
+    public SystemTimer getContextTimer() {
         return timer;
+    }
+
+    @Override
+    public SystemTimer getCommandTimer() {
+        return null;
     }
 
     @Override

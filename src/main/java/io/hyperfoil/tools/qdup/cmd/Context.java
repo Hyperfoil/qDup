@@ -25,7 +25,8 @@ public interface Context {
     void terminal(String output);
 
     boolean isColorTerminal();
-    SystemTimer getTimer();
+    SystemTimer getContextTimer();
+    SystemTimer getCommandTimer();
 
     String getRunOutputPath();
 

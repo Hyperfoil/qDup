@@ -5,12 +5,9 @@ import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.config.RunRule;
-import io.hyperfoil.tools.yaup.AsciiArt;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 /*
 This class is used when referencing a script in a role phase and when referencing a script in another script
@@ -125,7 +122,7 @@ public class ScriptCmd extends Cmd {
                 //copy withs because it will not be inherited
                 copyCmd.loadWith(this);
 
-                ScriptContext scriptContext = new ScriptContext(ssh,state,run,context.getTimer().start(populatedName,true),copyCmd,context.checkExitCode());
+                ScriptContext scriptContext = new ScriptContext(ssh,state,run,context.getContextTimer().start(populatedName,true),copyCmd,context.checkExitCode());
                 if(run!=null){ //register context so phase does not end before script completes
                     //dispatcher will also start the context
                     run.getDispatcher().addScriptContext(scriptContext);

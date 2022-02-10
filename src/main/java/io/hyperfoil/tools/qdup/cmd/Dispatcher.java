@@ -122,7 +122,7 @@ public class Dispatcher {
             }
             if(context instanceof ScriptContext){
                 ScriptContext scriptContext = (ScriptContext)context;
-                scriptContext.getTimer().stop(); //fix bug where last timer has stop = 0
+                scriptContext.getContextTimer().stop(); //fix bug where last timer has stop = 0
 
                 scriptContexts.remove(scriptContext.getRootCmd());
                 scriptObservers.forEach(observer -> observer.onStop(scriptContext));
@@ -337,7 +337,7 @@ public class Dispatcher {
                logger.info("queueing\n  host={}\n  script={}",
                   contextResult.getSession().getHost().getHostName(),
                   context.getRootCmd());
-               context.getTimer().start("waiting in run queue");
+               context.getContextTimer().start("waiting in run queue");
                getExecutor().submit(context);
             }
         }
@@ -370,7 +370,7 @@ public class Dispatcher {
                     logger.trace("queueing\n  host={}\n  script={}",
                             contextResult.getSession().getHost().getHostName(),
                             script);
-                    contextResult.getTimer().start("waiting in run queue");
+                    contextResult.getContextTimer().start("waiting in run queue");
                     getExecutor().submit(contextResult);
                 }
             }else{

@@ -104,9 +104,17 @@ public class SpyContext implements Context {
     }
 
     @Override
-    public SystemTimer getTimer() {
+    public SystemTimer getContextTimer() {
         if(context!=null){
-            return context.getTimer();
+            return context.getContextTimer();
+        }
+        return null;
+    }
+
+    @Override
+    public SystemTimer getCommandTimer() {
+        if(context!=null){
+            return context.getCommandTimer();
         }
         return null;
     }

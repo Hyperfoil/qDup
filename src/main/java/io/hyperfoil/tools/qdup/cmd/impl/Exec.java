@@ -2,13 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
-import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.ScriptContext;
-import io.hyperfoil.tools.qdup.cmd.SyncContext;
-import io.hyperfoil.tools.yaup.AsciiArt;
-
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 //Uses a new Ssh Exec Channel to run a single command on the server and save the output
 public class Exec extends Cmd {
@@ -62,7 +56,7 @@ public class Exec extends Cmd {
             }
             //SyncContext syncContext = new SyncContext(scriptContext.getSession(),scriptContext.getState(),scriptContext.getRun(),scriptContext.getTimer(),copy,scriptContext);
             ScriptContext newContext = scriptContext.newChildContext(
-               scriptContext.getTimer().start(this.toString(),true),
+               scriptContext.getContextTimer().start(this.toString(),true),
                copy
             );
             scriptContext.getRun().getDispatcher().addScriptContext(newContext,false);
