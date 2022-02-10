@@ -120,6 +120,7 @@ public class ScriptContext implements Context, Runnable{
         this.state = state;
         this.run = run;
         this.timer = timer;
+        this.cmdTimer = timer;
         this.checkExitCode = checkExitCode;
 
         if(this.session!=null){

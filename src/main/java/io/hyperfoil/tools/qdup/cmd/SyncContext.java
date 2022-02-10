@@ -41,6 +41,7 @@ public class SyncContext implements Context, Runnable{
         this.state = state;
         this.run = run;
         this.timer = timer;
+        this.cmdTimer = timer;
         this.currentCmd = currentCmd;
         this.scriptContext = scriptContext;
         this.scriptActiveCmd = scriptContext.getCurrentCmd();
