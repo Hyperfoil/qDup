@@ -526,7 +526,11 @@ public class QDup {
         if (isTest()) {
             //logger.info(config.debug());
             System.out.printf("%s", getRunDebug());
-            System.exit(0);
+            if( this.config.hasErrors() ) {
+                System.exit(1);
+            } else {
+                System.exit(0);
+            }
         }else if (isYaml()){
             YamlFile file = runConfigBuilder.toYamlFile();
             System.out.printf("%s",yamlParser.dump(file));
