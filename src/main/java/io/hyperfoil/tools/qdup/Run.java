@@ -846,9 +846,8 @@ public class Run implements Runnable, DispatchObserver {
     }
     private void postRun(){
         logger.debug("{}.postRun",this);
-        String tree = config.getState().tree();
-        String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
-        stateLogger.debug("{} closing state:\n{}",config.getName(),filteredTree);
+        String tree = config.getState().tree();//tree filters itself
+        stateLogger.debug("{} closing state:\n{}",config.getName(),tree);
         runLatch.countDown();
     }
     public Dispatcher getDispatcher(){return dispatcher;}

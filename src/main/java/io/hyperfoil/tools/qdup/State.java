@@ -417,13 +417,24 @@ public class State {
     }
     public void tree(int indent,StringBuilder sb){
         int space = indent>0? indent:1;
+        Json toUse = filter(json.clone());
         for(String key : getKeys()){
-            sb.append(String.format("%"+space+"s%s = %s%n","",key, json.get(key)));
+            sb.append(String.format("%"+space+"s%s = %s%n","",key, toUse.get(key)));
         }
         for(String childName : getChildNames()){
             sb.append(String.format("%"+space+"s%s : %n","",childName));
             getChild(childName).tree(indent+2,sb);
         }
+    }
+    private Json filter(Json input){
+        input.forEach((k,v)->{
+            if(v instanceof Json){
+                filter((Json)v);
+            }else {
+                input.set(k,getSecretFilter().filter(v.toString()));
+            }
+        });
+        return input;
     }
 
     public State clone() {
@@ -438,6 +449,7 @@ public class State {
         this.childStates.forEach((k,v)->{
             rtrn.childStates.put(k,deep ? v.clone() : v);
         });
+        rtrn.getSecretFilter().loadSecrets(getSecretFilter());
         return rtrn;
     }
 
