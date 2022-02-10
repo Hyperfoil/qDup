@@ -97,7 +97,7 @@ public class SyncContext implements Context, Runnable{
                     if (scriptContext != null && scriptContext.getObserver() != null) {
                         scriptContext.getObserver().preStart(this, next);
                     }
-                    cmdTimer = getContextTimer().start(next.toString(),true);
+                    cmdTimer = getContextTimer().start(Cmd.populateStateVariables(next.toString(),next,this),true);
                     next.doRun(output, this);
 
                 }
@@ -142,7 +142,7 @@ public class SyncContext implements Context, Runnable{
                     if (scriptContext != null && scriptContext.getObserver() != null) {
                         scriptContext.getObserver().preStart(this, next);
                     }
-                    cmdTimer = getContextTimer().start(next.toString(),true);
+                    cmdTimer = getContextTimer().start(Cmd.populateStateVariables(next.toString(),next,this),true);
                     next.doRun(output, this);
                 }
             }

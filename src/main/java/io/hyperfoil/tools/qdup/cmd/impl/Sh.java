@@ -64,7 +64,7 @@ public class Sh extends Cmd {
             );
             context.abort(false);
         }
-        commandTimer = context.getContextTimer().start("Sh-invoke:"+populatedCommand,true);
+        context.getCommandTimer().start("invoke");
         //TODO do we need to manually remove the lineObserver?
         if(prompt.isEmpty()) {
             context.getSession().sh(populatedCommand, (output,promptName)->{
@@ -88,8 +88,7 @@ public class Sh extends Cmd {
                     populated
             );
         }
-//        context.getTimer().start("Sh-await-callback:"+populatedCommand);
-        commandTimer.start("await-callback");
+        context.getCommandTimer().start("await-callback");
     }
 
     @Override

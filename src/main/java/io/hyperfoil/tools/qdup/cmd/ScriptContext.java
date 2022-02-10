@@ -413,7 +413,7 @@ public class ScriptContext implements Context, Runnable{
             observerDone();//this context is finished
         } else {
             observerPreStart(cmd);
-            SystemTimer cmdTimer = getContextTimer().start(cmd.toString());
+            cmdTimer = getContextTimer().start(Cmd.populateStateVariables(cmd.toString(),cmd,this));
             if (!lineQueue.isEmpty()) {//clear any unhandled output lines
                 //TODO log that we are clearing orphaned lines
                 //need to make sure we don't clear if another thread needs to pickup up the CLOSE_QUEUE
