@@ -1626,4 +1626,41 @@ public class RunTest extends SshTestBase {
       assertTrue("run-env output should contain JAVA_OPTS", runEnv.contains("JAVA_OPTS"));
    }
 
+
+   @Test
+   public void dynamic_script_name_populated(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+                      "scripts:",
+              "  foo:",
+              "  - log: running foo",
+              "  bar:",
+              "  - log: running bar",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts:",
+              "      - ${{DYNAMIC_SCRIPT}}",
+              "states:",
+              "  DYNAMIC_SCRIPT: foo"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      String logContents = readFile(tmpDir.getPath().resolve("run.log"));
+      assertTrue("run log is empty", logContents.length() > 0);
+      Boolean containsUnsubstituted = logContents.contains("${{DYNAMIC_SCRIPT}}@localhost");
+      assertTrue("File contains ${{DYNAMIC_SCRIPT}}@localhost", !containsUnsubstituted);
+
+
+
+   }
 }
