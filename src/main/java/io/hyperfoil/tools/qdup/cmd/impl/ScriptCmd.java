@@ -68,7 +68,12 @@ public class ScriptCmd extends Cmd {
     }
 
     public boolean isAsync(){return async;}
-    public String getName(){return name;}
+    public String getName(){
+        if(populatedName != null){
+            return populatedName;
+        }
+        return name;
+    }
     @Override
     public String toString(){return "script-cmd: " + name;}
 
