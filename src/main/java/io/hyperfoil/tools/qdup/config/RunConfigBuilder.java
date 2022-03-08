@@ -228,11 +228,14 @@ public class RunConfigBuilder {
       YamlFile rtrn = new YamlFile();
       rtrn.setName(getName());
 
+      if(errorCount() > 0){
+         //TODO how do we report errors in a YamlFile
+      }
+
       getHosts().forEach(rtrn::addHost);
       List<String> scriptNames = new ArrayList<>(scripts.keySet());
       Collections.sort(scriptNames);
       scriptNames.forEach(scriptName->rtrn.addScript(scriptName,getScript(scriptName)));
-      //scripts.forEach(rtrn::addScript);
       getRoleNames().forEach(roleName -> {
          boolean hasScript = !(getRoleSetup(roleName).isEmpty() && getRoleRun(roleName).isEmpty() && getRoleCleanup(roleName).isEmpty());
          if(hasScript){

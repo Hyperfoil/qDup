@@ -135,6 +135,9 @@ public class ScriptContext implements Context, Runnable{
         this.lineQueue = new LinkedBlockingQueue<>();
         this.timeouts = new LinkedList<>();
     }
+    private void clearTimers(){
+        timeouts.forEach(timeout->timeout.cancel(true));
+    }
 
     public ScriptContext newChildContext(SystemTimer timer,Cmd root){
         sessionCounter.incrementAndGet();
@@ -294,6 +297,7 @@ public class ScriptContext implements Context, Runnable{
     @Override
     public void next(String output) {
         getContextTimer().start("next");
+        clearTimers();
         Cmd cmd = getCurrentCmd();
         if(!signalCmds.isEmpty()){
             signalCmds.forEach((name,onsignal)->{
@@ -322,6 +326,7 @@ public class ScriptContext implements Context, Runnable{
     @Override
     public void skip(String output) {
         getContextTimer().start("skip");
+        clearTimers();
         Cmd cmd = getCurrentCmd();
 
         if(!signalCmds.isEmpty()){
@@ -388,7 +393,7 @@ public class ScriptContext implements Context, Runnable{
     }
 
     private void addTimer(Cmd toWatch,Cmd toRun,long timeout){
-        run.getDispatcher().getScheduler().schedule(()->{
+        ScheduledFuture future = run.getDispatcher().getScheduler().schedule(()->{
             if(toWatch.equals(getCurrentCmd())){
                 toRun.doRun(""+timeout,new SyncContext(
                     this.getSession(),
@@ -400,6 +405,7 @@ public class ScriptContext implements Context, Runnable{
                 ));
             }
         },timeout,TimeUnit.MILLISECONDS);
+        timeouts.add(future);
     }
 
     @Override
