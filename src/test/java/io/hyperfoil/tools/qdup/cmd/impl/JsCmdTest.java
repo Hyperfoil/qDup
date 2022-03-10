@@ -111,7 +111,7 @@ public class JsCmdTest {
     }
 
     @Test
-    public void add_to_state_array(){
+    public void push_to_state_array_block(){
         SpyContext context = new SpyContext();
         context.getState().set("FOO", Json.fromString("[\"one\",\"two\"]"));
         JsCmd jsCmd = new JsCmd("(input,state)=>{state['FOO'].push(\'three\'); return 'three'}");
@@ -122,6 +122,32 @@ public class JsCmdTest {
         assertEquals("state.FOO should contain 3 entries",3,((Json)context.getState().get("FOO")).size());
 
 
+    }
+    @Test
+    public void push_to_state_array_dot(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO", Json.fromString("[\"one\",\"two\"]"));
+        JsCmd jsCmd = new JsCmd("(input,state)=>{state.FOO.push(\'three\'); return 'three'}");
+        jsCmd.run("input",context);
+        assertEquals("jscmd should pass 'three to next","three",context.getNext());
+        assertTrue("state.FOO should be json",context.getState().get("FOO") instanceof Json);
+        assertTrue("state.FOO should be an array",((Json)context.getState().get("FOO")).isArray());
+        assertEquals("state.FOO should contain 3 entries",3,((Json)context.getState().get("FOO")).size());
+    }
+    @Test
+    public void push_object_to_state_array_dot(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO", Json.fromString("[\"one\",\"two\"]"));
+        JsCmd jsCmd = new JsCmd("(input,state)=>{state.FOO.push({key:\'three\'}); return 'three'}");
+        jsCmd.run("input",context);
+        assertEquals("jscmd should pass 'three to next","three",context.getNext());
+        assertTrue("state.FOO should be json",context.getState().get("FOO") instanceof Json);
+        assertTrue("state.FOO should be an array",((Json)context.getState().get("FOO")).isArray());
+        assertEquals("state.FOO should contain 3 entries",3,((Json)context.getState().get("FOO")).size());
+        Object found = ((Json)context.getState().get("FOO")).get(2);
+        assertNotNull(found);
+        assertTrue("state.FOO[2] should be json",found instanceof Json);
+        Json foundJson = (Json)found;
     }
     @Test
     public void javascript_object_keys(){
