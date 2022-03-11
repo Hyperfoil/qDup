@@ -76,7 +76,7 @@ public class SetState extends Cmd {
                 e.printStackTrace();
             }
         }
-        context.next(input);
+        context.next(populatedValue);
     }
 
     @Override
