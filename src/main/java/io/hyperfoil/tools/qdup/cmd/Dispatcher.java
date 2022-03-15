@@ -413,13 +413,19 @@ public class Dispatcher {
                 }
                 //needs to occur before we notify observers because observers can queue next stage
                 scriptContexts.forEach((cmd,ctx)->{
+                    try{
                     Cmd activeCmd = ctx.getCurrentCmd();
                     if(activeCmd instanceof Sh){
                         String peekOutput = ctx.getSession().peekOutput();
+                        //ctx.getSession().ctrlC();//end any current action
+                        ctx.getSession().markAborting();//prevents shSync
                         activeCmd.postRun(peekOutput,ctx);
                     }
                     ctx.closeLineQueue();
                     ctx.getSession().close(wait);
+                    }catch(Throwable thrown){
+                        thrown.printStackTrace();
+                    }
 
                 });
                 scriptContexts.clear();

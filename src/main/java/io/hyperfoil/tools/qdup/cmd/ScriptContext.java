@@ -268,7 +268,7 @@ public class ScriptContext implements Context, Runnable{
             rootString = rootCmd.toString();
         }
         String filteredMessage = state.getSecretFilter().filter(message);
-        getRunLogger().info("{}@{}:{}",rootString,getHost().getShortHostName(),filteredMessage);
+        getRunLogger().info("{}:{}@{}:{}",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
     }
     public void error(String message){
         String rootString;
@@ -281,9 +281,9 @@ public class ScriptContext implements Context, Runnable{
         }
         String filteredMessage = state.getSecretFilter().filter(message);
         if(isColorTerminal()){
-            getRunLogger().error(AsciiArt.ANSI_RED+"{}@{}:{}"+AsciiArt.ANSI_RESET,rootString,getHost().getShortHostName(),filteredMessage);
+            getRunLogger().error(AsciiArt.ANSI_RED+"{}:{}@{}:{}"+AsciiArt.ANSI_RESET,rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
         }else{
-            getRunLogger().error("{}@{}:{}",rootString,getHost().getShortHostName(),filteredMessage);
+            getRunLogger().error("{}:{}@{}:{}",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
         }
 
     }
@@ -318,7 +318,7 @@ public class ScriptContext implements Context, Runnable{
                 startCurrentCmd();
             }else{
                 //TODO how to handle failing to change?
-                System.out.printf("%s%n",AsciiArt.ANSI_RED+"failed to change to "+toCall+AsciiArt.ANSI_RESET);
+                System.out.printf("%s%n",AsciiArt.ANSI_BLUE+"failed to change to "+toCall+AsciiArt.ANSI_RESET);
             }
         }
     }

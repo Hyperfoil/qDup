@@ -4,6 +4,7 @@ package io.hyperfoil.tools.qdup;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.stream.MultiStream;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -638,6 +639,7 @@ public class SshSession {
             } catch (InterruptedException e) {
                 logger.warn("{}@{} interrupted while waiting for initial PROMPT", host.getUserName(), host.getHostName());
                 Thread.interrupted();
+
             }
             if (sessionStreams != null) { //sessionStreams can be null if an exception was thrown trying to connect
                 //allow session to be fully setup before adding watcher support to lineEmittingStream
@@ -690,9 +692,11 @@ public class SshSession {
         }
 
     }
+    public void markAborting(){
+        statusUpdater.set(this,Status.Closing);
+    }
     public boolean isOpen() {
         boolean rtrn = channelShell != null && channelShell.isOpen() && clientSession != null && clientSession.isOpen();
-
         return rtrn;
     }
     public boolean usesDelay() {
@@ -776,6 +780,9 @@ public class SshSession {
     }
 
     public String shSync(String command, Map<String, String> prompt) {
+        if(Status.Closing.equals(status)){
+            return "";
+        }
         addShObserver(SH_BLOCK_CALLBACK, blockingConsumer);
         if (blockingSemaphore.availablePermits() != 0 ){
             logger.error("ERROR: blockingSemaphorePermits = {}\n  command = {}",blockingSemaphore.availablePermits(),command);
@@ -785,6 +792,7 @@ public class SshSession {
             blockingSemaphore.acquire();//released in the observer
         } catch (InterruptedException e) {
             logger.error("Interrupted waiting for shSync " + command, e);
+            Thread.interrupted();
         } finally {
             removeShObserver(SH_BLOCK_CALLBACK);
         }
@@ -1004,7 +1012,7 @@ public class SshSession {
         close(true);
     }
 
-    public void close(boolean wait) {
+    public boolean close(boolean wait) {
         if (this.isOpen()) {
             try {
                 if (wait) {
@@ -1029,7 +1037,11 @@ public class SshSession {
                 clientSession.close();
                 sshClient.stop();
             } catch (IOException e) {
+                e.printStackTrace();
+                return false;
             }
+        } else {
         }
+        return true;
     }
 }

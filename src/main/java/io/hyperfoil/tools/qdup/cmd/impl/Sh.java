@@ -103,6 +103,7 @@ public class Sh extends Cmd {
     @Override
     public void postRun(String output,Context context){
         String toLog = getLogOutput(output,context);
+
         if(context.getSession()!=null && context.getSession().isOpen() && SshSession.PROMPT.equals(getPreviousPrompt()) && context.getSession().getHost().isSh()){
             String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
             context.getSession().shSync("(exit $__qdup_ec);");

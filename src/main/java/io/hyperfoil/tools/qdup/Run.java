@@ -67,6 +67,7 @@ public class Run implements Runnable, DispatchObserver {
                     Thread.sleep(period);
                 } catch (InterruptedException e) {
                     logger.debug("Interrupted, terminating jitter watchdog");
+                    Thread.interrupted();
                     return;
                 }
                 long currentTimestamp = System.nanoTime();
@@ -705,7 +706,7 @@ public class Run implements Runnable, DispatchObserver {
                         }
                         String setupCommand = env.getDiff().getCommand();
                         connectSessions.add(() -> {
-                            String name = script.getName()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
+                            String name = script.getName()+":"+script.getUid()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                             timer.start("connect:" + host.toString());
                             SshSession session = new SshSession(
                                     name,
