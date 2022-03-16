@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.hyperfoil.tools</groupId>
     <artifactId>qDup</artifactId>
-    <version>0.6.12</version>
+    <version>0.6.13-SNAPSHOT</version>
     <name>Hyperfoil qDup</name>
     <description>Coordinate multiple terminal shell connections for queuing performance tests and collecting output files</description>
     <url>https://github.com/Hyperfoil/qDup</url>
@@ -22,7 +22,7 @@
         <connection>scm:git:git://github.com/Hyperfoil/qDup.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/Hyperfoil/qDup.git</developerConnection>
         <url>https://github.com/Hyperfoil/qDup</url>
-        <tag>qDup-0.6.12</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <licenses>
