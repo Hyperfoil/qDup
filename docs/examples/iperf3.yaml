@@ -19,8 +19,8 @@ scripts:
 
 hosts:
   localhost:
-    username: user
-    hostname: host
+    username: ${{USER}}
+    hostname: ${{HOST}}
     port: 22
 
 roles:
@@ -33,3 +33,6 @@ roles:
       - iperfClient
     cleanup-scripts:
       - iperfDone
+states:
+  USER: user
+  HOST: host
