@@ -7,7 +7,7 @@ hosts:
 roles:
   run-hello-qdup:
     hosts:
-      - local
+      - someOther
     run-scripts:
       - hello-qdup
 states:

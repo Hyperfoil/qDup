@@ -1,9 +1,9 @@
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.hyperfoil.tools:qDup:0.6.2
+//DEPS io.hyperfoil.tools:qDup:0.6.12
 //DEPS org.apache.commons:commons-lang3:3.12.0
 
 import org.apache.commons.lang3.ArrayUtils;
-import io.hyperfoil.tools.qdup.JarMain;
+import io.hyperfoil.tools.qdup.QDup;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Files;
@@ -59,20 +59,18 @@ class runQDup {
         } catch(SecurityException|NullPointerException|IllegalArgumentException exception){
         }
 
-
-
-        String[] qDupBaseArgs = {"-B"
-        , tempDirWithPrefix.toString()
-        , qDupFilePath != null ? qDupFilePath : projectPath + "/docs/examples/helloWorld.yaml"
-        , "-S"
-        , "USER=" + username
-        , "-S"
-        , "HOST=" + hostname
+        String[] qDupBaseArgs = {
+            qDupFilePath != null ? qDupFilePath : projectPath + "/docs/examples/helloWorld.yaml"
+            , "-S"
+            , "USER=" + username
+            , "-S"
+            , "HOST=" + hostname
         };
 
         String[] qDupArgs = ArrayUtils.addAll(qDupBaseArgs, args);
 
-        JarMain.main(qDupArgs);
+        QDup qDup = new QDup(qDupArgs);
+	    qDup.run();
     }
 
 }

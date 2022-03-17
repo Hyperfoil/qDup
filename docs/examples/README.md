@@ -22,7 +22,13 @@ A simple Hello World example that will echo "Hello qDup!" to the terminal
     ```shell script
     $ sudo systemctl start sshd
     ```
-3. Run qDup HelloWorld
+3. Ensure you can log into your local machine via ssh without a pswword
+    ```shell script
+    $ ssh localhost
+   Last login: Mon Jan 01 00:00:00 2022 from ::1
+    ```
+
+4. Run qDup HelloWorld
     ```shell script
     $ jbang ./docs/examples/runQDup.java
     ```
@@ -36,7 +42,7 @@ Hello qDup!
 ...
 ```
 
-Want to change the greeting?
+### Want to change the greeting?
 
 Pass a new GREETING value to Hello World;
 
@@ -49,7 +55,52 @@ qDup ROCKS!!
 ...
 ```
 
-Want to try any of the other examples?
+### Want to run the qDup linter against a script in development?
+
+Run the script with the `-T` option
+
+```shell script
+$ jbang ./docs/examples/runQDup.java -S GREETING='qDup ROCKS!!' -T
+...
+[jbang] Building jar...
+SCRIPTS
+hello-qdup
+  1:hello-qdup parent=null skip=null next=sh: echo ${{GREETING}}
+      with: ENV.SCRIPT_DIR=/projects/qDup/docs/examples
+    2:sh: echo ${{GREETING}} parent=hello-qdup skip=null next=null
+ROLES
+  ALL
+    HOSTS
+      johara@localhost.localdomain:22
+    SETUP
+    RUN
+    CLEANUP
+  run-hello-qdup
+    HOSTS
+      johara@localhost.localdomain:22
+    SETUP
+    RUN
+      script-cmd: hello-qdup
+    CLEANUP
+STATE
+ GREETING = qDup ROCKS!!
+ USER = user
+ HOST = localhost.localdomain
+```
+
+Any errors will be reported:
+
+```
+Error: Role run-hello-qdup Host someOther was added without a fully qualified host representation matching user@hostName:port
+ hosts:{local=${{USER}}@${{HOST}}}
+  role:  stage: pending script: 
+  command: 
+Error: missing host for someOther
+  role:  stage: pending script: 
+
+```
+
+## Want to try any of the other examples?
 ```shell script
 $ jbang -DqDupScript=./docs/examples/wildfly.yaml ./docs/examples/runQDup.java
 ```
