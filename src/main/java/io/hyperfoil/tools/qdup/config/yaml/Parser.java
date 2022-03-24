@@ -233,9 +233,39 @@ public class Parser {
         rtrn.addCmd(
                 JsCmd.class,
                 "js",
-                (cmd) -> cmd.getCode(),
-                (str,prefix,suffix) -> new JsCmd(str),
-                null
+                new CmdWithElseMapping(
+                        "js",
+                        new CmdEncoder() {
+                            @Override
+                            public Object encode(Cmd cmd) {
+                                if(cmd instanceof JsCmd){
+                                    JsCmd r = (JsCmd)cmd;
+                                    return r.getCode();
+//                                    if(r.isMiss()){
+//                                        Map<Object,Object> regexMap = new HashMap<>();
+//                                        regexMap.put("miss",r.isMiss());
+//                                        regexMap.put("pattern",r.getPattern());
+//                                        regexMap.put("autoConvert",r.isAutoConvert());
+//                                        return regexMap;
+//                                    }else if (!r.isAutoConvert()) {
+//                                        Map<Object,Object> regexMap = new HashMap<>();
+//                                        regexMap.put("pattern",r.getPattern());
+//                                        regexMap.put("autoConvert",r.isAutoConvert());
+//                                        return regexMap;
+//                                    }else{
+//                                        return r.getCode();
+//                                    }
+                                }else{
+                                    return "";
+                                }
+                            }
+                        }
+                ),
+                new CmdWithElseConstruct(
+                        "js",
+                        (str,prefix,suffix) -> new JsCmd(str),
+                        (json) -> { return new JsCmd(json.getString("code",""));}
+                )
         );
         rtrn.addCmd(
                 Log.class,
