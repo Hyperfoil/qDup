@@ -264,6 +264,11 @@ public class JsonServer implements RunObserver, ContextObserver {
                     state.getChild("clone").load(found.getState().toJson());
                     SpyContext spyContext = new SpyContext(null,state,null);
                     String currentOutput = found.getSession().peekOutput();
+                    if(currentOutput == null || currentOutput.isEmpty()){
+                        Cmd previous = found.getCurrentCmd() != null ? found.getCurrentCmd().getPrevious() : null;
+                        String input = previous != null ? previous.getOutput() : "";
+                        currentOutput = input;
+                    }
                     toRun.run(currentOutput,spyContext);
                     Json response = new Json();
                     if(!state.toOwnJson().isEmpty()){

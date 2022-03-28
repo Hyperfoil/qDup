@@ -165,7 +165,6 @@ public class Dispatcher {
             if(currentCmd instanceof Sh){
                 entry.set("input",currentCmd.getPrevious()!=null?currentCmd.getPrevious().getOutput():"");
                 entry.set("output",context.getSession().peekOutput());
-
             }
             entry.set("startTime",context.getStartTime());
             entry.set("runTime",(System.currentTimeMillis()-context.getStartTime()));
