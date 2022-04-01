@@ -806,4 +806,48 @@ public class SignalCountsTest extends SshTestBase {
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for FOO",4,signalCounts.getSignalCount("FOO"));
     }
+
+    @Test
+    public void signal_in_then_and_else(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+
+                "scripts:",
+                "  single:",
+                "    - log: single",
+                "    - signal: sig",
+                "  replicated:",
+                "    - log: replicated",
+                "    - signal: sig",
+                "  caller: ",
+                "    - log: caller",
+                "    - read-state: ${{TOPOLOGY}}",
+                "      then:",
+                "        - regex: single",
+                "          then:",
+                "            - script: single",
+                "          else:",
+                "            - script: replicated",
+                "  waiter:",
+                "    - log: waiting for signal",
+                "    - wait-for: sig",
+                "hosts:",
+                "  local: me@localhost",
+                "roles:",
+                "  role:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - caller",
+                "    - waiter",
+                "states:",
+                "  TOPOLOGY: single"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        RunSummary summary = new RunSummary();
+        SignalCounts signalCounts = new SignalCounts();
+        summary.addRule("signals",signalCounts);
+        summary.scan(config.getRolesValues(),builder);
+        assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        assertEquals("signal count for sig: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("sig"));
+    }
 }
