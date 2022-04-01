@@ -11,6 +11,7 @@ import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
+import io.vertx.ext.web.handler.sockjs.SockJSBridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.slf4j.ext.XLogger;
@@ -419,7 +420,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             String response = json.toString(2);
             rc.response().end(response);
         });
-        BridgeOptions options = new BridgeOptions()
+        SockJSBridgeOptions options = new SockJSBridgeOptions()
             .addInboundPermitted(new PermittedOptions().setAddress("NOTHING"))
             .addOutboundPermitted(new PermittedOptions().setAddress("observer"))
         ;
