@@ -441,11 +441,22 @@ public class Dispatcher {
         }
     }
 
+    /**
+     * returns true if all the active commands are wait-for and do not have timers
+     * @return
+     */
+    private boolean onlyWaiters(){
+        boolean rtrn = scriptContexts.values().stream().allMatch(c->{
+            return c.getCurrentCmd() instanceof WaitFor && !c.getCurrentCmd().hasTimers();});
+        return rtrn;
+    }
     private void checkActiveCount(){
-        if(scriptContexts.isEmpty() && isRunning.compareAndSet(true,false)){
+        if( (scriptContexts.isEmpty() && isRunning.compareAndSet(true,false))){
             executor.execute(() -> {
                 dispatchObservers.forEach(o->o.postStop());
             });
+        }else if ( onlyWaiters() ){
+            stop();
         }
     }
 }

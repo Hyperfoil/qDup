@@ -44,6 +44,42 @@ public class RunTest extends SshTestBase {
 //    public final TestServer testServer = new TestServer();
 
    @Test(timeout = 20_000)
+   public void waitfor_never_signaled(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("signal",stream(""+
+             "scripts:",
+              "  sig:",
+              "  - sh: pwd",
+              "    then:",
+              "    - regex: NOPE",
+              "      then:",
+              "      - signal: sig",
+              "  foo:",
+              "    - wait-for: sig",
+              "    - set-state: RUN.fizz fail",
+              "hosts:",
+              "  test: "+getHost(),
+              "roles:",
+              "  role:",
+              "    hosts: [test]",
+              "    run-scripts:",
+              "    - foo",
+              "    - sig"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State state = config.getState();
+      assertFalse(state.has("fizz"));
+
+   }
+
+   @Test(timeout = 20_000)
    public void signal_in_timer_on_waitfor(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
