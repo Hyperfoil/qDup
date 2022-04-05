@@ -8,6 +8,7 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -807,7 +808,7 @@ public class SignalCountsTest extends SshTestBase {
         assertEquals("signal count for FOO",4,signalCounts.getSignalCount("FOO"));
     }
 
-    @Test
+    @Test @Ignore /*TODO work in progress (WIP)*/
     public void signal_in_then_and_else(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
