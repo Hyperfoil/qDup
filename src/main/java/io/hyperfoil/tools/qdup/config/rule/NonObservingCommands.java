@@ -1,24 +1,24 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
-import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.RunSummary;
+import io.hyperfoil.tools.yaup.AsciiArt;
 
 /*
  Make sure sh is not called in a watch, on-signal, or timer
  */
 public class NonObservingCommands implements RunRule {
     @Override
-    public void scan(String role, Stage stage, String script, String host, Cmd command, Location location, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
-        if(location.isWatching()){
+    public void scan(CmdLocation location, Cmd command, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+        if(location.getPosition().isWatching()){
             if(command instanceof Sh){
                 summary.addError(
-                    role,
-                    stage,
-                    script,
+                    location.getRoleName(),
+                    location.getStage(),
+                    location.getScriptName(),
                     command.toString(),
                     "cannot use sh when observing another command"
                 );

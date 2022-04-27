@@ -4,7 +4,6 @@ import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
@@ -156,7 +155,7 @@ public class UndefinedStateVariables implements RunRule {
     }
 
     @Override
-    public void scan(String role, Stage stage, String script, String host, Cmd command, Location location, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+    public void scan(CmdLocation location, Cmd command, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
 
         if(!command.isStateScan()){
             return;
@@ -164,9 +163,9 @@ public class UndefinedStateVariables implements RunRule {
         String commandStr = parser != null ? parser.dump(parser.representCommand(command)) : command.toString();
         if (Cmd.hasStateReference(commandStr, command)) {
             RSSCRef rssc = new RSSCRef(
-                    role,
-                    stage,
-                    script,
+                    location.getRoleName(),
+                    location.getStage(),
+                    location.getScriptName(),
                     command
             );
             Cmd.getStateVariables(commandStr,command, config.getState(),null,null,ref).forEach(v->addUsedVariable(v,rssc));
@@ -189,9 +188,9 @@ public class UndefinedStateVariables implements RunRule {
                         addNeededVariable(
                             neededVariable,
                             new RSSCRef(
-                                role,
-                                stage,
-                                script,
+                                location.getRoleName(),
+                                location.getStage(),
+                                location.getScriptName(),
                                 command
                             )
                         );
@@ -200,9 +199,9 @@ public class UndefinedStateVariables implements RunRule {
         }
         if (command instanceof Regex) {
             RSSCRef rssc = new RSSCRef(
-                role,
-                stage,
-                script,
+                location.getRoleName(),
+                location.getStage(),
+                location.getScriptName(),
                 command
             );
             ((Regex) command).getCaptureNames().forEach(captureName->{
@@ -217,9 +216,9 @@ public class UndefinedStateVariables implements RunRule {
             });
         } else if (command instanceof SetState) {
             RSSCRef rssc = new RSSCRef(
-                role,
-                stage,
-                script,
+                location.getRoleName(),
+                location.getStage(),
+                location.getScriptName(),
                 command
             );
             String key = ((SetState) command).getKey();
@@ -230,9 +229,9 @@ public class UndefinedStateVariables implements RunRule {
             addSetVariable(key,rssc,summary);
         } else if (command instanceof ForEach){
             RSSCRef rssc = new RSSCRef(
-                    role,
-                    stage,
-                    script,
+                    location.getRoleName(),
+                    location.getStage(),
+                    location.getScriptName(),
                     command
             );
             String key = ((ForEach)command).getName();

@@ -5,6 +5,7 @@ import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 
+import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.Counters;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -22,7 +23,7 @@ import java.util.regex.Matcher;
  */
 public class CmdSummary {
 
-    private void processCommand(Cmd command, RunRule.Location location, RunConfigBuilder config, Cmd.Ref ref) {
+    private void processCommand(Cmd command, CmdLocation location, RunConfigBuilder config, Cmd.Ref ref) {
         String toString = command.toString();
 
         String commandStr = yamlParser!=null ? yamlParser.dump(yamlParser.representCommand(command)) : command.toString();
@@ -34,7 +35,7 @@ public class CmdSummary {
                 addWarning("Failed to populate pattern",command);
             }
         }
-        if (location.isWatching() && command instanceof Sh) {
+        if (location.getPosition().isWatching() && command instanceof Sh) {
             addWarning(command + " cannot be called while watching another command. Sh commands require a session that cannot be accesses while watching another command.",command);
         }
         if (command instanceof Signal) {
@@ -99,8 +100,8 @@ public class CmdSummary {
     private Parser yamlParser;
     private Set<String> globalSetVariables;
 
-    private void walk(Cmd command, RunRule.Location location, RunConfigBuilder config, Cmd.Ref ref){
-        command.walk(RunRule.Location.Normal,(cmd, watching)->{
+    private void walk(Cmd command, CmdLocation location, RunConfigBuilder config, Cmd.Ref ref){
+        command.walk(location,(cmd, watching)->{
             processCommand(cmd,location,config,ref);
             return true;
         });
@@ -115,7 +116,7 @@ public class CmdSummary {
         setVariables = new HashSet<>();
         this.yamlParser = yamlParser;
         Cmd.Ref ref = new Cmd.Ref(command);
-        walk(command, RunRule.Location.Normal,config,ref);
+        walk(command, CmdLocation.createTmp(),config,ref);
     }
 
     public String getName() {

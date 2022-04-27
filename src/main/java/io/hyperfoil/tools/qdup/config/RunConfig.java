@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.Counters;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -15,6 +16,7 @@ import org.slf4j.ext.XLoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -251,4 +253,43 @@ public class RunConfig {
         return scripts.get(populatedName);
     }
 
+    /**
+     * return a json representation of the current config
+     * @return
+     */
+    public Json toJson(){
+        Json rtrn = Json.fromString("{\"roles\":{}}");
+        Parser p = Parser.getInstance();
+        if(!getSettings().isEmpty()){
+            rtrn.set("globals",getSettings());
+        }
+        getRoleNames().forEach(roleName->{
+            Json roleJson = new Json();
+            rtrn.getJson("roles").add(roleName,roleJson);
+            Role role = getRole(roleName);
+            roleJson.add("host",new Json(true));
+            role.getHosts(this).forEach(host->{
+                roleJson.getJson("host").add(host.toString());
+            });
+            if(!role.getSetup().isEmpty()){
+                roleJson.add("setup-scripts",new Json(true));
+                role.getSetup().forEach(cmd->{
+                    roleJson.getJson("setup-scripts").add(p.representCommand(cmd));
+                });
+            }
+            if(!role.getRun().isEmpty()){
+                roleJson.add("run-scripts",new Json(true));
+                role.getRun().forEach(cmd->{
+                    roleJson.getJson("run-scripts").add(p.representCommand(cmd));
+                });
+            }
+            if(!role.getCleanup().isEmpty()){
+                roleJson.add("cleanup-scripts",new Json(true));
+                role.getCleanup().forEach(cmd->{
+                    roleJson.getJson("cleanup-scripts").add(p.representCommand(cmd));
+                });
+            }
+        });
+        return rtrn;
+    }
 }

@@ -5,15 +5,18 @@ import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.cmd.impl.JsCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ParseCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
+import io.hyperfoil.tools.yaup.json.vertx.JsonMessageCodec;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.sockjs.BridgeOptions;
-import io.vertx.ext.web.handler.sockjs.SockJSBridgeOptions;
-import io.vertx.ext.web.handler.sockjs.SockJSHandler;
+import io.vertx.ext.web.handler.StaticHandler;
+import io.vertx.ext.web.handler.sockjs.*;
 import io.hyperfoil.tools.yaup.json.Json;
+import org.apache.sshd.common.session.SessionContext;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -45,6 +48,9 @@ public class JsonServer implements RunObserver, ContextObserver {
     public JsonServer(Run run, int port){
         this.port = port;
         this.vertx = Vertx.vertx();
+
+        vertx.eventBus().registerDefaultCodec(Json.class,new JsonMessageCodec());
+        //vertx.eventBus().registerCodec(new JsonMessageCodec());
         setRun(run);
     }
     public void setRun(Run run){
@@ -59,8 +65,12 @@ public class JsonServer implements RunObserver, ContextObserver {
 
     private String filter(Object o){
        if(o!=null && run!=null){
-          String rtrn = run.getConfig().getState().getSecretFilter().filter(o.toString());
-          return rtrn;
+           if(o instanceof Json){
+               return run.getConfig().getState().getSecretFilter().filter((Json)o).toString();
+           } else {
+               String rtrn = run.getConfig().getState().getSecretFilter().filter(o.toString());
+               return rtrn;
+           }
        }
        return "";
     }
@@ -72,8 +82,8 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("type","cmd.start");
             event.set("cmdUid",command.getUid());
             event.set("cmd",filter(command.toString()));
-            event.set("contextUid",context.hashCode());
-            vertx.eventBus().publish("observer",event.toString());
+            event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
+            vertx.eventBus().publish("observer",new JsonObject(event.toString()));
         }
     }
     @Override
@@ -83,18 +93,34 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("type","cmd.stop");
             event.set("cmdUid",command.getUid());
             event.set("cmd",filter(command.toString()));
-            event.set("contextUid",context.hashCode());
+            event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
             event.set("output",filter(output));
-            vertx.eventBus().publish("observer",event.toString());
+            vertx.eventBus().publish("observer",new JsonObject(event.toString()));
         }
     }
+
+    @Override
+    public void onUpdate(Context context, Cmd command, String output) {
+        if(server!=null) {
+            Json event = new Json();
+            event.set("timestamp", System.currentTimeMillis());
+            event.set("type", "cmd.update");
+            event.set("cmd", command.toString());
+            event.set("cmdUid", command.getUid());
+            event.set("script", command.getHead().toString());
+            event.set("update", output);
+            event.set("contextId", context instanceof ScriptContext ? ((ScriptContext) context).getContextId() : false);
+            vertx.eventBus().publish("observer", new JsonObject(event.toString()));
+        }
+    }
+
     @Override
     public void preStage(Stage stage){
         if(server!=null){
             Json event = new Json();
             event.set("type","stage.start");
             event.set("stage",stage.toString());
-            vertx.eventBus().publish("observer",event.toString());
+            vertx.eventBus().publish("observer",new JsonObject(event.toString()));
         }
     }
     @Override
@@ -103,7 +129,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             Json event = new Json();
             event.set("type","stage.stop");
             event.set("stage",stage.toString());
-            vertx.eventBus().publish("observer",event.toString());
+            vertx.eventBus().publish("observer",new JsonObject(event.toString()));
         }
     }
 
@@ -124,13 +150,11 @@ public class JsonServer implements RunObserver, ContextObserver {
     }
 
     public void start(){
-
-        server = vertx.createHttpServer();
-
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
         router.route("/").produces("application/json").handler(rc->{
             Json rtrn = new Json();
+            rtrn.set("GET /config","the loaded run config");
             rtrn.set("GET /state","current qDup state");
             rtrn.set("GET /stage","the current run stage");
             rtrn.set("GET /active","list of active commands and context");
@@ -144,6 +168,9 @@ public class JsonServer implements RunObserver, ContextObserver {
             rtrn.set("GET /counter","get the current counter counts");
             rtrn.set("GET /pendingDownloads","get the list of pending downloads");
             rc.response().end(rtrn.toString(2));
+        });
+        router.route("/config").produces("application/json").handler(rc->{
+            rc.response().end(filter(run.getConfig().toJson().toString()));
         });
         router.route("/state").produces("application/json").handler(rc->{
            rc.response().end(filter(run.getConfig().getState().toJson().toString()));
@@ -420,16 +447,18 @@ public class JsonServer implements RunObserver, ContextObserver {
             String response = json.toString(2);
             rc.response().end(response);
         });
-        SockJSBridgeOptions options = new SockJSBridgeOptions()
-            .addInboundPermitted(new PermittedOptions().setAddress("NOTHING"))
-            .addOutboundPermitted(new PermittedOptions().setAddress("observer"))
-        ;
+        SockJSHandlerOptions sockJSHandlerOptions = new SockJSHandlerOptions()
+                .setHeartbeatInterval(1000*60);
+        SockJSHandler sockJSHandler = SockJSHandler.create(vertx,sockJSHandlerOptions);
 
-        SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
-        sockJSHandler.bridge(options,bridgeEvent->{
-            bridgeEvent.complete(true);
-        });
-        router.route("/observe").handler(sockJSHandler);
+        SockJSBridgeOptions options = new SockJSBridgeOptions()
+                .addInboundPermitted(new PermittedOptions().setAddressRegex(".*"))
+                .addOutboundPermitted(new PermittedOptions().setAddressRegex(".*"))
+                ;
+        Router sockJSRouter = sockJSHandler.bridge(options);
+
+        router.route("/observe/*").handler(sockJSHandler);
+        router.route("/ui/*").handler(StaticHandler.create().setWebRoot("webapp"));
 
         int foundPort = getPort(port);
         try {
@@ -439,6 +468,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             logger.info("listening at localhost:{}", foundPort);
         }
 
+        server = vertx.createHttpServer();
         server.requestHandler(router).listen(foundPort/*, InetAddress.getLocalHost().getHostName()*/);
     }
 

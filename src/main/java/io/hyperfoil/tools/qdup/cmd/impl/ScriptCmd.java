@@ -5,6 +5,8 @@ import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.config.RunRule;
+import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
+import io.hyperfoil.tools.yaup.AsciiArt;
 
 import java.util.List;
 import java.util.function.BiFunction;
@@ -89,9 +91,9 @@ public class ScriptCmd extends Cmd {
     }
 
     @Override
-    public<T> void walk(BiFunction<Cmd, RunRule.Location,T> converter, RunRule.Location location, List<T> rtrn){
+    public<T> void walk(BiFunction<Cmd, CmdLocation,T> converter, CmdLocation location, List<T> rtrn){
         if(isAsync()){
-            super.walk(converter, RunRule.Location.Normal,rtrn);
+            super.walk(converter, location.newPosition(CmdLocation.Position.Child),rtrn);
         }else{
             super.walk(converter,location,rtrn);
         }

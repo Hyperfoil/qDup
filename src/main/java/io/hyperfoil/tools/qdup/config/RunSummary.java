@@ -5,6 +5,7 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.InvokeCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
+import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
 
 import java.util.*;
 
@@ -33,9 +34,9 @@ public class RunSummary implements RunRule{
     public void scan(Collection<Role> roles,RunConfigBuilder configBuilder){
         roles.forEach(role -> {
             role.getDeclaredHosts().forEach(host -> {
-                role.getSetup().forEach(c -> this.walk(role.getName(), Stage.Setup,c.getName(),host.toString(),c,Location.Normal,configBuilder,new Cmd.Ref(c)));
-                role.getRun().forEach(c -> this.walk(role.getName(), Stage.Run,c.getName(),host.toString(),c,Location.Normal,configBuilder,new Cmd.Ref(c)));
-                role.getCleanup().forEach(c -> this.walk(role.getName(), Stage.Cleanup,c.getName(),host.toString(),c,Location.Normal,configBuilder,new Cmd.Ref(c)));
+                role.getSetup().forEach(scriptCmd -> this.private_walk(new CmdLocation(role.getName(),Stage.Setup,scriptCmd.getName(),host.toString(), CmdLocation.Position.Child),scriptCmd,configBuilder,new Cmd.Ref(scriptCmd)));
+                role.getRun().forEach(scriptCmd -> this.private_walk(new CmdLocation(role.getName(),Stage.Run,scriptCmd.getName(),host.toString(), CmdLocation.Position.Child),scriptCmd,configBuilder,new Cmd.Ref(scriptCmd)));
+                role.getCleanup().forEach(scriptCmd -> this.private_walk(new CmdLocation(role.getName(),Stage.Cleanup,scriptCmd.getName(),host.toString(), CmdLocation.Position.Child),scriptCmd,configBuilder,new Cmd.Ref(scriptCmd)));
             });
         });
         close(configBuilder,this);
@@ -53,16 +54,16 @@ public class RunSummary implements RunRule{
     public List<RunError> getWarnings(){return warnings;}
     public boolean hasErrors(){return !errors.isEmpty();}
     public List<RunError> getErrors(){return errors;}
-    private void walk(String role, Stage stage, String script, String host, Cmd command, Location location, RunConfigBuilder config, Cmd.Ref ref){
-        command.walk(location,(cmd, watching)->{
-            scan(role,stage,script,host,cmd,watching,ref,config,this);
+    private void private_walk(CmdLocation location, Cmd command, RunConfigBuilder config, Cmd.Ref ref){
+        command.walk(location,(cmd, cmdLocation)->{
+            scan(cmdLocation, cmd, ref,config,this);
             return true;
         });
     }
     @Override
-    public void scan(String role, Stage stage, String script, String host, Cmd command, Location location, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+    public void scan(CmdLocation location, Cmd command, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
         rules.values().forEach(rule->{
-            rule.scan(role,stage,script,host,command, location,ref,config,this);
+            rule.scan(location, command, ref,config,this);
         });
         if (command instanceof ScriptCmd) {
             ScriptCmd scriptCmd = (ScriptCmd)command;
@@ -75,23 +76,22 @@ public class RunSummary implements RunRule{
                 if (namedScript == null) {
                     //assume is it an error if a script isn't found?
                     addError(
-                            role,
-                            stage,
-                            script,
+                            location.getRoleName(),
+                            location.getStage(),
+                            location.getScriptName(),
                             command.toString(),
                             "missing script: " + scriptName);
                 } else {
                     Cmd target = namedScript.deepCopy();
                     target.setStateParent(command); //to maintain reference to with's from
-                    Location walkLocaiton = scriptCmd.isAsync() ? Location.Normal : location;
-                    walk(role, stage, script, host, target, walkLocaiton, config, ref.add(command));
+                    CmdLocation scriptLocation = scriptCmd.isAsync() ? location.newPosition(CmdLocation.Position.Child) : location;
+                    private_walk(scriptLocation, target, config, ref.add(command));
                 }
             }
         } else if (command instanceof InvokeCmd) {
             Cmd invokedCmd = ((InvokeCmd) command).getCommand().deepCopy();
             invokedCmd.setStateParent(command);
-
-            walk(role,stage,script,host,invokedCmd, location,config,ref.add(command));
+            private_walk(location,invokedCmd,config,ref.add(command));
         }
     }
 

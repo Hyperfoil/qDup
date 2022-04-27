@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
-import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.impl.SetSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.Signal;
@@ -30,13 +29,13 @@ public class SignalCounts implements RunRule {
     public Counters<String> getCounts(){return signals;}
     public Set<String> getWaiters(){return waits.keys();}
     @Override
-    public void scan(String role, Stage stage, String script, String host, Cmd command, Location location, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
+    public void scan(CmdLocation location, Cmd command, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
         if(command instanceof WaitFor){
             String populated = Cmd.populateStateVariables(((WaitFor) command).getName(), command, config.getState(), null, null, ref);
             if(Cmd.hasStateReference(populated,command)){
                 //TODO do we warn about wait-for something that cannot resolve at compile time
             }
-            waits.put(populated,new RSSCRef(role,stage,script,command));
+            waits.put(populated,new RSSCRef(location.getRoleName(),location.getStage(),location.getScriptName(),command));
         }else if (command instanceof Signal){
             String populated = Cmd.populateStateVariables(((Signal) command).getName(), command, config.getState(), null, null, ref);
             if(Cmd.hasStateReference(populated,command)){
@@ -46,7 +45,7 @@ public class SignalCounts implements RunRule {
             if(!signals.contains(populated) && waits.containsKey(populated)){
 
                 boolean found = false;
-                if(Location.OnTimer.equals(location)){
+                if(CmdLocation.Position.OnTimer.equals(location)){
                     Cmd target = command;
                     while (!found && target != null && target.hasStateParent() ){
                         target = target.getStateParent();
@@ -61,7 +60,7 @@ public class SignalCounts implements RunRule {
                 }
 
                 if(!found) {
-                    RSSCRef signalRef = new RSSCRef(role, stage, script, command);
+                    RSSCRef signalRef = new RSSCRef(location.getRoleName(),location.getStage(),location.getScriptName(), command);
                     waits.get(populated).stream().filter(rssc -> {
                         return signalRef.isSameScript(rssc) ||
                                 rssc.isBeforeOrSequentiallyWith(signalRef);

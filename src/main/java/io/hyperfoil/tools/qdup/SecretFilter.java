@@ -1,9 +1,8 @@
 package io.hyperfoil.tools.qdup;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import io.hyperfoil.tools.yaup.json.Json;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SecretFilter {
@@ -31,6 +30,22 @@ public class SecretFilter {
       String rtrn = input;
       for(String secret : secrets){
          rtrn = rtrn.replace(secret,REPLACEMENT);
+      }
+      return rtrn;
+   }
+   public Json filter(Json json){
+      Json rtrn = json.clone();
+      Queue<Json> todo = new LinkedList<>();
+      todo.add(rtrn);
+      while(!todo.isEmpty()){
+         Json target = todo.remove();
+         target.forEach((key,value)->{
+            if(value instanceof String){
+               target.set(key,filter((String)value));
+            }else if (value instanceof Json){
+               todo.add((Json)value);
+            }
+         });
       }
       return rtrn;
    }
