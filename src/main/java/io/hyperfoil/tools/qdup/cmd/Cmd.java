@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -1049,6 +1050,21 @@ public abstract class Cmd {
          }
       }
       return clone;
+   }
+
+   public Json toJson(){
+      Parser p = Parser.getInstance();
+      Json rtrn = new Json();
+      rtrn.set("uid",getUid());
+      rtrn.set("str",toString());
+      rtrn.set("cmd",p.representCommand(this));
+      if(hasThens()){
+         rtrn.set("then",new Json(true));
+         getThens().forEach(then->{
+            rtrn.getJson("then").add(then.toJson());
+         });
+      }
+      return rtrn;
    }
 
    public Cmd getLastWatcher() {

@@ -26,7 +26,11 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Phaser;
 import java.util.stream.Collectors;
 
 public class JsonServer implements RunObserver, ContextObserver {
@@ -41,6 +45,9 @@ public class JsonServer implements RunObserver, ContextObserver {
     private HttpServer server;
     private Dispatcher dispatcher;
     private Coordinator coordinator;
+    private Set<String> breakpoints;
+
+    private final Phaser resumePhaser = new Phaser(1);
 
     public JsonServer(Run run){
         this(run,DEFAULT_PORT);
@@ -48,7 +55,7 @@ public class JsonServer implements RunObserver, ContextObserver {
     public JsonServer(Run run, int port){
         this.port = port;
         this.vertx = Vertx.vertx();
-
+        this.breakpoints = new HashSet<>();
         vertx.eventBus().registerDefaultCodec(Json.class,new JsonMessageCodec());
         //vertx.eventBus().registerCodec(new JsonMessageCodec());
         setRun(run);
@@ -84,8 +91,22 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("cmd",filter(command.toString()));
             event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
             vertx.eventBus().publish("observer",new JsonObject(event.toString()));
+
+            checkBreakpoint(command);
         }
     }
+
+    private void checkBreakpoint(Cmd command){
+        String commandString = command.toString();
+        boolean matches =  breakpoints.stream().anyMatch(breakpoint-> commandString.contains(breakpoint) || commandString.matches(breakpoint));
+        logger.info("Breakpoint hit cmd: " + commandString);
+        if(matches){
+            resumePhaser.register();
+            resumePhaser.arriveAndAwaitAdvance();
+            resumePhaser.arriveAndDeregister();
+        }
+    }
+
     @Override
     public void preStop(Context context,Cmd command,String output){
         if(server!=null && command!=null){
@@ -96,6 +117,8 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
             event.set("output",filter(output));
             vertx.eventBus().publish("observer",new JsonObject(event.toString()));
+
+            checkBreakpoint(command);
         }
     }
 
@@ -170,7 +193,31 @@ public class JsonServer implements RunObserver, ContextObserver {
             rc.response().end(rtrn.toString(2));
         });
         router.route("/config").produces("application/json").handler(rc->{
-            rc.response().end(filter(run.getConfig().toJson().toString()));
+            rc.response().end(filter(run.getConfig().toJson()));
+        });
+        router.get("/breakpoint").handler(rc->{
+            Json response = new Json();
+            breakpoints.forEach((pattern)->{
+                response.add(pattern);
+            });
+            rc.response().setStatusCode(200).end(response.toString());
+        });
+        router.post("/breakpoint").handler(rc->{
+            String pattern = rc.request().getParam("pattern");
+            breakpoints.add(pattern);
+            rc.response().setStatusCode(200).end(pattern);
+        });
+        router.post("/breakpoint/resume").handler(rc->{
+            
+        });
+        router.delete("/breakpoint").handler(rc->{
+            String pattern = rc.request().getParam("pattern");
+            if(pattern!=null && !pattern.isBlank()){
+                breakpoints.remove(pattern);
+                rc.response().setStatusCode(200).end(pattern);
+            }else{
+                rc.response().setStatusCode(404).end(pattern);
+            }
         });
         router.route("/state").produces("application/json").handler(rc->{
            rc.response().end(filter(run.getConfig().getState().toJson().toString()));

@@ -274,19 +274,19 @@ public class RunConfig {
             if(!role.getSetup().isEmpty()){
                 roleJson.add("setup-scripts",new Json(true));
                 role.getSetup().forEach(cmd->{
-                    roleJson.getJson("setup-scripts").add(p.representCommand(cmd));
+                    roleJson.getJson("setup-scripts").add(cmd.toJson());
                 });
             }
             if(!role.getRun().isEmpty()){
                 roleJson.add("run-scripts",new Json(true));
                 role.getRun().forEach(cmd->{
-                    roleJson.getJson("run-scripts").add(p.representCommand(cmd));
+                    roleJson.getJson("run-scripts").add(cmd.toJson());
                 });
             }
             if(!role.getCleanup().isEmpty()){
                 roleJson.add("cleanup-scripts",new Json(true));
                 role.getCleanup().forEach(cmd->{
-                    roleJson.getJson("cleanup-scripts").add(p.representCommand(cmd));
+                    roleJson.getJson("cleanup-scripts").add(cmd.toJson());
                 });
             }
         });
