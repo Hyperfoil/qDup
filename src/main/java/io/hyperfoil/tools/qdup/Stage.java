@@ -8,9 +8,10 @@ public enum Stage {
     PreSetup("pre-setup",1,true),
     Setup("setup",2,true),
     Run("run",3,false),
-    Cleanup("cleanup",4,true),
-    PostCleanup("post-cleanup",5,true),
-    Done("done",6,true);
+    PreCleanup("pre-cleanup",4,false),
+    Cleanup("cleanup",5,true),
+    PostCleanup("post-cleanup",6,true),
+    Done("done",7,true);
     private String name;
     private int order;
     private boolean isSequential;

@@ -227,27 +227,39 @@ public class Run implements Runnable, DispatchObserver {
                 }
                 break;
             case Run:
-                if(stageUpdated.compareAndSet(this,Stage.Run,Stage.Cleanup)){
+                if(stageUpdated.compareAndSet(this,Stage.Run,Stage.PreCleanup)){
                     if(skipStages.contains(stage)){
                         return nextStage();
                     } else {
                         runPendingDownloads();
+                    }
+                }
+                break;
+            case PreCleanup:
+                if(stageUpdated.compareAndSet(this,Stage.PreCleanup,Stage.Cleanup)){
+                    if(skipStages.contains(stage)){
+                        return nextStage();
+                    } else {
                         startDispatcher = queueCleanupScripts();
                     }
                 }
                 break;
             case Cleanup:
-                if(stageUpdated.compareAndSet(this,Stage.Cleanup,Stage.Done)) {
+                if(stageUpdated.compareAndSet(this,Stage.Cleanup,Stage.PostCleanup)) {
+                    runPendingDownloads();//download anything queued during cleanup
+                    runPendingDeletes();
+                    return nextStage();
+                }
+                break;
+            case PostCleanup:
+                if(stageUpdated.compareAndSet(this,Stage.PostCleanup,Stage.Done)) {
                     if(skipStages.contains(stage)){
                         return nextStage();
                     } else {
-                        runPendingDownloads();//download anything queued during cleanup
-                        runPendingDeletes();
                         postRun();//release any latches blocking a call to run()
                     }
                 }
                 break;
-            case PostCleanup:
             default:
                 //happens for abort
                 postRun();

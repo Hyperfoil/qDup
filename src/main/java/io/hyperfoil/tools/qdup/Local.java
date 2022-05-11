@@ -131,7 +131,7 @@ public class Local {
       if (path == null || path.isEmpty() || destination == null || destination.isEmpty()) {
          return false;
       } else {
-         logger.info("Local.download({}:{},{})", host, path, destination);
+         logger.info("Local.download({}:{},{})", host.getSafeString(), path, destination);
          return rsyncFetch(host, path, destination);
       }
    }
@@ -140,7 +140,7 @@ public class Local {
       if (path == null || path.isEmpty() ) {
          return -1;
       } else {
-         logger.info("Local.remoteFileSize({}:{})", host, path);
+         logger.info("Local.remoteFileSize({}:{})", host.getSafeString(), path);
          return rsyncFileSize(host, path);
       }
 
