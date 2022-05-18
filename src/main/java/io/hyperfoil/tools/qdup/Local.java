@@ -185,8 +185,9 @@ public class Local {
       cmd.add("--verbose");
       cmd.add("--compress");
       //TODO only add --rsh sshOpt if needed?
-      cmd.add("--rsh");
-      cmd.add(sshOpt);
+      //use = and quote opts with full syntax
+      cmd.add("--rsh="+StringUtil.quote(sshOpt));
+      //cmd.add(sshOpt);
 
       return cmd;
    }
