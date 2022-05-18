@@ -674,16 +674,23 @@ public class QDup {
             }
         }, "shutdown-abort"));
 
-        JsonServer jsonServer = new JsonServer(run, getJsonPort());
+        Boolean startJsonServer = !Boolean.parseBoolean(System.getProperty("disableRestApi", "false"));
 
-        jsonServer.start();
+        JsonServer jsonServer = null;
+        if (startJsonServer) {
+            jsonServer = new JsonServer(run, getJsonPort());
+
+            jsonServer.start();
+        }
 
         long start = System.currentTimeMillis();
         run.getRunLogger().info("Running qDup version {} @ {}", getVersion(), getHash());
         run.run();
         long stop = System.currentTimeMillis();
         System.out.printf("Finished in %s at %s%n", StringUtil.durationToString(stop - start), run.getOutputPath());
-        jsonServer.stop();
+        if (startJsonServer) {
+            jsonServer.stop();
+        }
         dispatcher.shutdown();
         executor.shutdownNow();
         scheduled.shutdownNow();
