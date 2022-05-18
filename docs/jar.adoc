@@ -42,6 +42,9 @@ java -jar qDup-uber.jar -B /tmp/ qdup.yaml util.yaml
 == monitoring
 
 qDup starts a JSON server for run monitoring and debug. The default port is `31337` but can be changed with `--jsonport`.
+
+The JSON server can be disabled by setting the System Property `-DdisableRestApi=true`
+
 The endpoints are the follwing:
 
 GET /state :: current qDup state
