@@ -45,7 +45,7 @@ public class SignalCounts implements RunRule {
             if(!signals.contains(populated) && waits.containsKey(populated)){
 
                 boolean found = false;
-                if(CmdLocation.Position.OnTimer.equals(location)){
+                if(CmdLocation.Position.OnTimer.equals(location.getPosition())){
                     Cmd target = command;
                     while (!found && target != null && target.hasStateParent() ){
                         target = target.getStateParent();
