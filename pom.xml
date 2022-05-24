@@ -16,8 +16,8 @@
         <version.maven.gpg>1.6</version.maven.gpg>
         <version.maven.source>3.2.0</version.maven.source>
         <version.maven.javadoc>3.2.0</version.maven.javadoc>
-        <version.log4j>2.14.1</version.log4j>
-        <version.slf4j>1.7.32</version.slf4j>
+        <version.log4j>2.17.2</version.log4j>
+        <version.slf4j>1.7.36</version.slf4j>
     </properties>
 
     <scm>
