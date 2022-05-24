@@ -148,7 +148,7 @@ public class Local {
 
    private String prepSshString(int port) {
       String rtrn = this.ssh;
-      rtrn+=" -o StrictHostKeyChecking=no";
+      //rtrn+=" -o StrictHostKeyChecking=no";
 
       if(hasKnownHosts()){
          rtrn+=" -o UserKnownHostsFile="+(getKnownHosts().contains(" ") ? StringUtil.quote(getKnownHosts(),"'") : getKnownHosts());
@@ -186,9 +186,10 @@ public class Local {
       cmd.add("--compress");
       //TODO only add --rsh sshOpt if needed?
       //use = and quote opts with full syntax
-      cmd.add("--rsh="+StringUtil.quote(sshOpt));
-      //cmd.add(sshOpt);
-
+//      cmd.add("--rsh="+StringUtil.quote(sshOpt));
+      cmd.add("-e");
+      //cmd.add(StringUtil.quote(sshOpt));
+      cmd.add(sshOpt);
       return cmd;
    }
 

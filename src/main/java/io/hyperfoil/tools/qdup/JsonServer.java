@@ -5,9 +5,13 @@ import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.cmd.impl.JsCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ParseCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
+import io.hyperfoil.tools.qdup.stream.MultiStream;
+import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.vertx.JsonMessageCodec;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.bridge.PermittedOptions;
@@ -91,7 +95,6 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("cmd",filter(command.toString()));
             event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
             vertx.eventBus().publish("observer",new JsonObject(event.toString()));
-
             checkBreakpoint(command);
         }
     }
@@ -99,8 +102,8 @@ public class JsonServer implements RunObserver, ContextObserver {
     private void checkBreakpoint(Cmd command){
         String commandString = command.toString();
         boolean matches =  breakpoints.stream().anyMatch(breakpoint-> commandString.contains(breakpoint) || commandString.matches(breakpoint));
-        logger.info("Breakpoint hit cmd: " + commandString);
         if(matches){
+            logger.info("Breakpoint hit cmd: " + commandString);
             resumePhaser.register();
             resumePhaser.arriveAndAwaitAdvance();
             resumePhaser.arriveAndDeregister();
@@ -115,9 +118,8 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("cmdUid",command.getUid());
             event.set("cmd",filter(command.toString()));
             event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
-            event.set("output",filter(output));
-            vertx.eventBus().publish("observer",new JsonObject(event.toString()));
-
+            event.set("output", StringUtil.escapeBash( filter(output)) );
+            vertx.eventBus().publish("observer", new JsonObject(event.toString()));
             checkBreakpoint(command);
         }
     }
@@ -131,7 +133,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("cmd", command.toString());
             event.set("cmdUid", command.getUid());
             event.set("script", command.getHead().toString());
-            event.set("update", output);
+            event.set("update",  StringUtil.escapeBash( filter(output)) );
             event.set("contextId", context instanceof ScriptContext ? ((ScriptContext) context).getContextId() : false);
             vertx.eventBus().publish("observer", new JsonObject(event.toString()));
         }

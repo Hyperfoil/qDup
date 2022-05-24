@@ -228,12 +228,8 @@ public class Run implements Runnable, DispatchObserver {
                 break;
             case Run:
                 if(stageUpdated.compareAndSet(this,Stage.Run,Stage.PreCleanup)){
-                    if(skipStages.contains(stage)){
-                        return nextStage();
-                    } else {
-                        runPendingDownloads();
-                        return nextStage();
-                    }
+                    runPendingDownloads();
+                    return nextStage();
                 }
                 break;
             case PreCleanup:
@@ -331,6 +327,7 @@ public class Run implements Runnable, DispatchObserver {
             }
             timestamps.put("downloadStop",System.currentTimeMillis());
             pendingDownloads.clear();
+        }else{
         }
     }
     public void done(){

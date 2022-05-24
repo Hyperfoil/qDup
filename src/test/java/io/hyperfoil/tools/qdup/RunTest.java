@@ -43,7 +43,7 @@ public class RunTest extends SshTestBase {
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
-   @Test(timeout = 20_000)
+   @Test(timeout = 40_000)
    public void waitfor_never_signaled(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
@@ -1291,8 +1291,7 @@ public class RunTest extends SshTestBase {
 
 
    //Can fail when adding empty string before or after end of input
-   //@Test(timeout = 45_000)
-   @Test
+   @Test(timeout = 45_000)
    public void ctrlCTail() {
       for(int i=0; i<1; i++) {
          List<String> lines = new ArrayList<>();
