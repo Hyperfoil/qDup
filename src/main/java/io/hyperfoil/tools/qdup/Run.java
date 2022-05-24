@@ -232,6 +232,7 @@ public class Run implements Runnable, DispatchObserver {
                         return nextStage();
                     } else {
                         runPendingDownloads();
+                        return nextStage();
                     }
                 }
                 break;
