@@ -245,8 +245,8 @@ public class SshTestBase {
         return sshSession;
     }
 
-    public Host getHost(){return host;}
-    public Host getPasswordHost(){
+    public static Host getHost(){return host;}
+    public static Host getPasswordHost(){
         return new Host(host.getUserName(),host.getHostName(),"password",host.getPort());
     }
 

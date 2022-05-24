@@ -20,13 +20,18 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.config.Property;
+import org.apache.logging.slf4j.Log4jLogger;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
+import org.slf4j.ext.XLogger;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.net.URL;
 import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
@@ -35,11 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 
 public class RunTest extends SshTestBase {
@@ -61,6 +62,19 @@ public class RunTest extends SshTestBase {
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
+
+   private static final InputStream testScript = stream(""+
+                   "scripts:",
+           "  hello-world:",
+           "    - sh: echo hello world!",
+           "hosts:",
+           "  test: "+getHost(),
+           "roles:",
+           "  role:",
+           "    hosts: [test]",
+           "    run-scripts:",
+           "    - hello-world"
+   );
 
    @Test(timeout = 40_000)
    public void waitfor_never_signaled(){
@@ -1766,4 +1780,71 @@ public class RunTest extends SshTestBase {
 
 
    }
+
+   @Test
+   public void test_multiple_logger_creation(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("signal",testScript));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      TmpDir tmpDir = TmpDir.instance();
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      Path path1 = tmpDir.getPath().resolve("run.log");
+      assertTrue("run log does not exist: " + path1.toAbsolutePath(), path1.toFile().exists());
+      String logContents = readFile(path1);
+      assertTrue("run log is empty\n"+logContents+"\n"+logContents.length(), logContents.length() > 0);
+
+
+      tmpDir = TmpDir.instance();
+
+      doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      Path path2 = tmpDir.getPath().resolve("run.log");
+      assertTrue("run log does not exist: " + path2.toAbsolutePath().toString(), path2.toFile().exists());
+
+      assertNotEquals("Logs paths should not be equal", path1.toAbsolutePath().toString(), path2.toAbsolutePath().toString());
+
+   }
+
+   @Test
+   public void test_full_path_logger_creation(){
+
+      String runDir = "/tmp/qdup/test/absolute";
+      runHelloWorld("-B", runDir);
+
+      File logFile = Path.of(runDir, "/run.log").toFile();
+      assertTrue("run log does not exist: " + logFile.getAbsolutePath(), logFile.exists());
+   }
+
+   @Test
+   public void test_base_path_logger_creation(){
+
+      String runDir = "/tmp/qdup/test/base";
+      QDup qDup = runHelloWorld("-b", runDir);
+
+      File logFile = Path.of(runDir, "/run.log").toFile();
+      assertTrue("run log exists at: " + logFile.getAbsolutePath(), !logFile.exists());
+
+      logFile = Path.of(qDup.getOutputPath(), "/run.log").toFile();
+      assertTrue("run log does not exists at: " + logFile.getAbsolutePath(), logFile.exists());
+   }
+
+   private QDup runHelloWorld(String... args){
+      URL yamlUrl = RunTest.class.getClassLoader().getResource("testYaml/hello-world.yaml");
+      String[] baseArgs = {yamlUrl.getPath(), "-i", getIdentity(), "-S", "HOST=" + getHost()};
+      String[] aDupArgs = Arrays.copyOf(baseArgs, baseArgs.length + args.length);
+      System.arraycopy(args, 0, aDupArgs, baseArgs.length, args.length);
+      QDup qDup = new QDup(aDupArgs);
+      boolean success = qDup.run();
+      assertTrue("qDup script did not complete successfully", success);
+      return  qDup;
+   }
+
 }
