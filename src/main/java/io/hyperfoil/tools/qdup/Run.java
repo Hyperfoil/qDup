@@ -177,8 +177,12 @@ public class Run implements Runnable, DispatchObserver {
         return loggerName;
     }
 
+    private String getStateLoggerName(){
+        return getLoggerName().concat(".state");
+    }
+
     boolean ensureLogger(){
-        if(logAppender == null || !((FileAppender)logAppender).getFileName().contains(getOutputPath())){
+        if(logAppender == null || !logAppender.getFileName().contains(getOutputPath())){
             synchronized (this){
                 final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
                 final Configuration config = ctx.getConfiguration();
@@ -190,7 +194,7 @@ public class Run implements Runnable, DispatchObserver {
                 LoggerConfig stateLoggerConfig = LoggerConfig.createLogger(true, Level.ALL, runLogger.getName()+".state","false",new AppenderRef[0],null,config,null);
                 stateLoggerConfig.setAdditive(true);
                 config.addLogger(stateLoggerConfig.getName(),stateLoggerConfig);
-                stateLogger = XLoggerFactory.getXLogger(runLogger.getName()+".state");
+                stateLogger = XLoggerFactory.getXLogger(getStateLoggerName());
                 if (logAppender == null) {
                     Path outputPath = Paths.get(getOutputPath());
                     if(!Files.exists(outputPath)){
@@ -517,7 +521,6 @@ public class Run implements Runnable, DispatchObserver {
             String tree = config.getState().tree();
 
             String filteredTree = getConfig().getState().getSecretFilter().filter(tree);
-            logger.error("hi mom");
             stateLogger.debug("{} starting state:\n{}",config.getName(),filteredTree);
             boolean ok = nextStage();
             if(ok) {
