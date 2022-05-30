@@ -431,7 +431,7 @@ public class State {
             if(v instanceof Json){
                 filter((Json)v);
             }else {
-                input.set(k,getSecretFilter().filter(v.toString()));
+                input.set(k, v != null ? getSecretFilter().filter(v.toString()) : null );
             }
         });
         return input;
