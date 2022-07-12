@@ -639,22 +639,25 @@ public class RunConfigBuilder {
             summary.addError("", Stage.Pending,"","",error);
          });
       }
-         return new RunConfig(
-            getName(),
-            summary.getErrors(),
-            scripts,
-            state,
-            signalCounts.getCounts(),
-            roles,
-            getKnownHosts(),
-            getIdentity(),
-            getPassphrase(),
-            timeout,
-            getTracePatterns(),
-            skipStages,
-            settings,
-            jsSnippets
-         );
+      RunConfig rtrn = new RunConfig(
+         getName(),
+         summary.getErrors(),
+         scripts,
+         state,
+         signalCounts.getCounts(),
+         roles,
+         getKnownHosts(),
+         getIdentity(),
+         getPassphrase(),
+         timeout,
+         getTracePatterns(),
+         skipStages,
+         settings,
+         jsSnippets
+      );
+      if(yamlParser.isAbortOnExitCode()){
+         rtrn.getSettings().set("check-exit-code",true);
+      }
+      return rtrn;
    }
-
 }

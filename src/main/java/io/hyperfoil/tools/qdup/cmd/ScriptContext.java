@@ -93,6 +93,8 @@ public class ScriptContext implements Context, Runnable{
     long startTime = -1;
     long updateTime = -1;
 
+    public boolean checkExitCode(){return checkExitCode;}
+
     public String getContextId(){
         //TODO use a StringBuilder to correctly handle missing session or root
         Cmd root = getRootCmd();
@@ -365,7 +367,8 @@ public class ScriptContext implements Context, Runnable{
     @Override
     public void update(String output) {
         long timestamp = System.currentTimeMillis();
-        updateTime = timestamp;
+        setUpdateTime(timestamp);
+        //updateTime = timestamp;
         Cmd cmd = getCurrentCmd();
         if(cmd!=null){
             observerUpdate(cmd,output);

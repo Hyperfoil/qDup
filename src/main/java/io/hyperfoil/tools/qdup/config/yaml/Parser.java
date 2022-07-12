@@ -550,7 +550,11 @@ public class Parser {
                     if (str == null || str.isEmpty()) {
                         throw new YAMLException("sh command cannot be empty");
                     }
-                    return new Sh(str);
+                    Sh newCommand = new Sh(str);
+                    if(rtrn.isAbortOnExitCode()){
+                        newCommand.setIgnoreExitCode(false);
+                    }
+                    return newCommand;
                 },
                 (json) -> {
                     if (!json.has("command") || json.getString("command", "").isEmpty()) {

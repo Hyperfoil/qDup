@@ -429,11 +429,46 @@ public class RunTest extends SshTestBase {
       assertTrue("foo should be an array:"+foo,foo.isArray());
       assertEquals("foo should have 2 entries",2,foo.size());
    }
+   @Test
+   public void test_exitcode_abort(){
+      Parser parser = Parser.getInstance();
+      parser.setAbortOnExitCode(true);
+      RunConfigBuilder builder = getBuilder();
+
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+                      "scripts:",
+              "  foo:",
+              "    - sh: ls /tmp; (exit 42);",
+              "    - sh: echo $?",
+              "    - sh: doesnotexist",
+              "    - set-state: RUN.doesnotexist true",
+              "    - sh: echo $?",
+              "    - sh: pwd",
+              "    - sh: history",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State state = doit.getConfig().getState();
+
+      assertFalse("run should not reach set-state",state.has("doesnotexist"));
+   }
+
 
    @Test
    public void test_check_exit_code(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
+
       builder.loadYaml(parser.loadFile("pwd", stream("" +
              "scripts:",
               "  foo:",
