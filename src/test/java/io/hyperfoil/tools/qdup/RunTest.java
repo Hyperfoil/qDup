@@ -40,6 +40,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static io.hyperfoil.tools.qdup.cmd.PatternValuesMap.QDUP_GLOBAL;
+import static io.hyperfoil.tools.qdup.cmd.PatternValuesMap.QDUP_GLOBAL_ABORTED;
 import static org.junit.Assert.*;
 
 
@@ -436,7 +438,7 @@ public class RunTest extends SshTestBase {
       RunConfigBuilder builder = getBuilder();
 
       builder.loadYaml(parser.loadFile("pwd", stream("" +
-                      "scripts:",
+              "scripts:",
               "  foo:",
               "    - sh: ls /tmp; (exit 42);",
               "    - sh: echo $?",
@@ -463,6 +465,48 @@ public class RunTest extends SshTestBase {
       assertFalse("run should not reach set-state",state.has("doesnotexist"));
    }
 
+   @Test
+   public void test_exitcode_abort_state(){
+      Parser parser = Parser.getInstance();
+      parser.setAbortOnExitCode(true);
+      RunConfigBuilder builder = getBuilder();
+
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+              "scripts:",
+              "  foo:",
+              "    - sh: ls /tmp; (exit 42);",
+              "    - sh: echo $?",
+              "    - sh: doesnotexist",
+              "    - set-state: RUN.doesnotexist true",
+              "    - sh: echo $?",
+              "    - sh: pwd",
+              "    - sh: history",
+              "  bar:",
+              "    - read-state: ${{"+QDUP_GLOBAL+"."+QDUP_GLOBAL_ABORTED+"}}",
+              "      then:",
+              "      - set-state: RUN.found true",
+              "      else:",
+              "      - set-state: RUN.found false",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]",
+              "    cleanup-scripts: [bar]"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State state = doit.getConfig().getState();
+
+      assertTrue("RUN.found should exist",state.has("RUN.found"));
+      assertEquals("found should be true","true",state.get("RUN.found"));
+      assertTrue("RUN should have "+QDUP_GLOBAL+"."+QDUP_GLOBAL_ABORTED,state.has(QDUP_GLOBAL+"."+QDUP_GLOBAL_ABORTED));
+   }
 
    @Test
    public void test_check_exit_code(){

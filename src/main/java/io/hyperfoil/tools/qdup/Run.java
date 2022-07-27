@@ -49,6 +49,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static io.hyperfoil.tools.qdup.cmd.PatternValuesMap.QDUP_GLOBAL;
+import static io.hyperfoil.tools.qdup.cmd.PatternValuesMap.QDUP_GLOBAL_ABORTED;
+
 /**
  * Created by wreicher
  *
@@ -470,6 +473,7 @@ public class Run implements Runnable, DispatchObserver {
         if(aborted.compareAndSet(false,true)){
             coordinator.clearWaiters();
             if (!skipCleanUp && stage.isBefore(Stage.Cleanup)) {
+                getConfig().getState().set(QDUP_GLOBAL+"."+QDUP_GLOBAL_ABORTED,true);//add ABORTED state for any cleanup scripts
                 stageUpdated.set(this, Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.postStop will set it to Cleanup
             } else {
                 logger.warn("Skipping cleanup - Abort has been defined to not run any cleanup scripts");

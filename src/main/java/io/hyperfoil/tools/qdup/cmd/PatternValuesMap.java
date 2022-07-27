@@ -33,7 +33,9 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
    public static final String QDUP_GLOBAL_SIGNALS = "signals";
    public static final String QDUP_GLOBAL_COUNTERS = "counters";
    public static final String QDUP_GLOBAL_TIMESTAMPS = "timestamps";
-   public static final Set<String> QDUP_GLOBAL_KEYS = Sets.of(QDUP_GLOBAL_STATE,QDUP_GLOBAL_SIGNALS,QDUP_GLOBAL_COUNTERS,QDUP_GLOBAL_TIMESTAMPS);
+
+   public static final String QDUP_GLOBAL_ABORTED = "ABORTED";
+   public static final Set<String> QDUP_GLOBAL_KEYS = Sets.of(QDUP_GLOBAL_STATE,QDUP_GLOBAL_SIGNALS,QDUP_GLOBAL_COUNTERS,QDUP_GLOBAL_TIMESTAMPS,QDUP_GLOBAL_ABORTED);
 
    private Cmd cmd;
    private State state;
