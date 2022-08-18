@@ -471,9 +471,9 @@ public class Run implements Runnable, DispatchObserver {
     }
     public void abort(Boolean skipCleanUp){
         if(aborted.compareAndSet(false,true)){
+            getConfig().getState().set(QDUP_GLOBAL+"."+QDUP_GLOBAL_ABORTED,true);//add ABORTED state for any cleanup scripts
             coordinator.clearWaiters();
             if (!skipCleanUp && stage.isBefore(Stage.Cleanup)) {
-                getConfig().getState().set(QDUP_GLOBAL+"."+QDUP_GLOBAL_ABORTED,true);//add ABORTED state for any cleanup scripts
                 stageUpdated.set(this, Stage.Run);//set the stage as run so dispatcher.stop call to DispatchObserver.postStop will set it to Cleanup
             } else {
                 logger.warn("Skipping cleanup - Abort has been defined to not run any cleanup scripts");
@@ -484,6 +484,8 @@ public class Run implements Runnable, DispatchObserver {
             //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
             //abort doesn't end the run, cleanup ends the run
             //runLatch.countDown();
+        }else{
+            logger.info("abort called when already aborted");
         }
     }
 
@@ -625,7 +627,7 @@ public class Run implements Runnable, DispatchObserver {
                         this,
                         profiles.get(name),
                         setup,
-                        config.getSettings().has("check-exit-code")
+                            (Boolean)config.getSetting("check-exit-code",false)
                     );
                     getDispatcher().addScriptContext(scriptContext);
                     return session.isOpen();
@@ -677,7 +679,7 @@ public class Run implements Runnable, DispatchObserver {
                         this,
                         profiles.get(name),
                         setup,
-                        config.getSettings().has("check-exit-code")
+                            (Boolean)config.getSetting("check-exit-code",false)
                     );
                     getDispatcher().addScriptContext(scriptContext);
                     return session.isOpen();
@@ -749,7 +751,7 @@ public class Run implements Runnable, DispatchObserver {
                                    this,
                                    profiles.get(name),
                                    setup,
-                                   config.getSettings().has("check-exit-code")
+                                   (Boolean)config.getSetting("check-exit-code",false)
                            );
                            getDispatcher().addScriptContext(scriptContext);
                            return session.isOpen();
@@ -821,7 +823,7 @@ public class Run implements Runnable, DispatchObserver {
                                         this,
                                         timer,
                                         script,
-                                        config.getSettings().has("check-exit-code")
+                                        (Boolean)config.getSetting("check-exit-code",false)
                                 );
 
                                 getDispatcher().addScriptContext(scriptContext);
@@ -910,7 +912,7 @@ public class Run implements Runnable, DispatchObserver {
                                     this,
                                     profiles.get(roleName + "-cleanup@" + host.getShortHostName()),
                                     cleanup,
-                                    config.getSettings().has("check-exit-code")
+                                    (Boolean)config.getSetting("check-exit-code",false)
                             );
                             getDispatcher().addScriptContext(scriptContext);
                             return session.isOpen();
