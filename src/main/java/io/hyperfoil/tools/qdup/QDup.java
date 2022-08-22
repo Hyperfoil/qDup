@@ -15,9 +15,14 @@ import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -455,8 +460,31 @@ public class QDup {
         for (String yamlPath : getYamlPaths()) {
             File yamlFile = new File(yamlPath);
             if (!yamlFile.exists()) {
-                logger.error("Error: cannot find " + yamlPath);
-                ok = false;
+                if(yamlPath.startsWith("http")){
+                    File tmp = null;
+                    try {
+                        tmp = File.createTempFile("qdup-","yaml");
+                    } catch (IOException e) {
+                        logger.error("Error: cannot create tmp file to try and download " + yamlPath);
+                        ok = false;
+                    }
+                    try ( ReadableByteChannel readableByteChannel = Channels.newChannel((new URL(yamlPath)).openStream());
+                          FileOutputStream fileOutputStream = new FileOutputStream(tmp.getPath());
+                          FileChannel fileChannel = fileOutputStream.getChannel();
+                    ) {
+                        tmp.deleteOnExit();
+
+                        fileOutputStream.getChannel()
+                                .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+                        fileChannel.close();
+                    } catch (IOException e) {
+                        logger.error("Error: failed to download " + yamlPath);
+                        ok = false;
+                    }
+                } else {
+                    logger.error("Error: cannot find " + yamlPath);
+                    ok = false;
+                }
             } else {
                 if (yamlFile.isDirectory()) {
                     logger.trace("loading directory: " + yamlPath);
