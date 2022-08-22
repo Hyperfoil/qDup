@@ -49,6 +49,20 @@ public class Download extends Cmd {
     @Override
     public String toString(){return "download: "+path+" "+destination;}
 
+    @Override
+    public boolean equals(Object o){
+        if(o == null || !(o instanceof Download)){
+            return false;
+        }else {
+            return toString().equals(o.toString());
+        }
+    }
+
+    @Override
+    public int hashCode(){
+        return toString().hashCode();
+    }
+
     public void execute(Context context, Supplier<Local> localProvider, Supplier<Host> hostSupplier){
         Local local = localProvider.get();
         Host host = hostSupplier.get();

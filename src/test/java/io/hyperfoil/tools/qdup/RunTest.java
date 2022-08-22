@@ -465,6 +465,39 @@ public class RunTest extends SshTestBase {
       assertFalse("run should not reach set-state",state.has("doesnotexist"));
    }
 
+   @Test(timeout = 50_000)
+   public void abort_in_cleanup(){
+      Parser parser = Parser.getInstance();
+      parser.setAbortOnExitCode(true);
+      RunConfigBuilder builder = getBuilder();
+
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+              "scripts:",
+              "  foo:",
+              "   - sh: history",
+              "  bar:",
+              "   - set-state: RUN.foo bar",
+              "   - abort: give up",
+              "   - set-state: RUN.foo biz",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]",
+              "    cleanup-scripts: [bar]"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State state = doit.getConfig().getState();
+      assertTrue("run should about",state.has(QDUP_GLOBAL+"."+QDUP_GLOBAL_ABORTED));
+   }
+
+
    @Test
    public void test_exitcode_abort_state(){
       Parser parser = Parser.getInstance();
