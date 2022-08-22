@@ -99,7 +99,16 @@ ${{= "${{users[0].name}}".toLowerCase() : john }}
 
 === JavaScript globals
 The javascript engine uses ECMAScript 2020 with graaljs. qDup provides a global read-only
-JSON representation of the current state, signals, and counters under the `$QD` global name.
+JSON representation of the current state, signals, and counters under the `QD` global name.
 This was added recently and is subject to change as we work on the api.
 
 qDup also allows users to define global methods to help with common tasks, see link:./globals.adoc[globals]
+
+=== Reserved names
+
+qDup reserves the `ENV` state prefix to add information about the qDup execution.
+
+- `ENV.SCRIPT_DIR` the path to the script that loaded the script.
+This helps reference files store along side scripts e.g. `cp ${{ENV.SCRIPT_DIR}}/secrets.properties /tmp/`
+- `ENV.ABORTED` set to `"true"` when a run aborts, otherwise it is not defined.
+Cleanup scripts can `read-state: ${{ENV.ABORTED}}` to control cleanup steps
