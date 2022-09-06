@@ -838,6 +838,9 @@ public abstract class Cmd {
       return rtrn;
    }
 
+   public boolean isObserving(){
+      return !hasParent() && hasStateParent();
+   }
    public boolean hasParent(){return parent!=null;}
    public Cmd getParent(){return parent;}
    public boolean hasStateParent(){return stateParent!=null;}
