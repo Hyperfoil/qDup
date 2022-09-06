@@ -60,20 +60,27 @@ public class QueueDownload extends Cmd {
 
 
         if(hasBashEnv(resolvedPath)){//if the source path has $name or ${name}
+            //This won't work when observing
             resolvedPath = context.getSession().shSync("echo "+resolvedPath);
+            logger.debug("resolved local env to "+resolvedPath);
         }
         if(resolvedPath.startsWith("~/")){
+            //This won't work when observing
             String homeDir = context.getSession().shSync("echo ~/");
+            logger.debug("resolved homeDir="+resolvedPath);
             resolvedPath = homeDir+resolvedPath.substring("~/".length());
+            logger.debug("resolved local env to "+resolvedPath);
         }else if(!resolvedPath.startsWith("/")){//relative path
             //TODO can download paths be relative? probably best if no
-            String pwd = context.getSession().shSync("pwd");
+            String pwd = context.getCwd();//use cwd instead of pwd because queue-download can be in a watch:
+            logger.debug("resolved local env to "+resolvedPath);
             if(resolvedPath.startsWith("./")){
                 resolvedPath = resolvedPath.substring("./".length());
             }
             resolvedPath = Paths.get(pwd,resolvedPath).toString();
         }
         if(hasBashEnv(resolvedDestination)){//if the destination path has $name or ${name}
+            //This won't work when observing
             resolvedDestination = context.getSession().shSync("echo "+resolvedDestination);
         }
         populatedPath = resolvedPath;
@@ -96,7 +103,7 @@ public class QueueDownload extends Cmd {
     public String getLogOutput(String output,Context context){
         StringBuilder logBuild = new StringBuilder("queue-download: ");
         if(populatedPath!=null){
-            logBuild.append(populatedPath).append(" ").append(populatedDestination);
+            logBuild.append(path).append("=").append(populatedPath).append(" ").append(populatedDestination);
         }else{
             logBuild.append(path).append(" ").append(destination);
         }

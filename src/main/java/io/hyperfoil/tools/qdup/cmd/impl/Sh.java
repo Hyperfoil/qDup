@@ -107,6 +107,10 @@ public class Sh extends Cmd {
 
         if(context.getSession()!=null && context.getSession().isOpen() && SshSession.PROMPT.equals(getPreviousPrompt()) && context.getSession().getHost().isSh()){
             String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
+            String pwd = context.getSession().shSync("pwd");
+            context.setCwd(pwd);
+            context.getCommandTimer().getJson().set("response",response);
+            context.getCommandTimer().getJson().set("cwd",pwd);
             context.getSession().shSync("(exit $__qdup_ec);");
             context.getSession().flushAndResetBuffer();
 

@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.Run;
+import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Script;
@@ -9,19 +10,96 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.converter.FileSizeConverter;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.file.FileUtility;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static io.hyperfoil.tools.qdup.cmd.PatternValuesMap.QDUP_GLOBAL;
+import static io.hyperfoil.tools.qdup.cmd.PatternValuesMap.QDUP_GLOBAL_ABORTED;
 import static org.junit.Assert.*;
 
 public class QueueDownloadTest extends SshTestBase {
+
+    @Test(timeout = 50_000)
+    public void path_star_slash_star(){
+        Parser parser = Parser.getInstance();
+        parser.setAbortOnExitCode(true);
+        RunConfigBuilder builder = getBuilder();
+
+        builder.loadYaml(parser.loadFile("pwd", stream("" +
+                "scripts:",
+                "  foo:",
+                "   - sh: mkdir -p /tmp/foo/folder-one",
+                "   - sh: mkdir -p /tmp/foo/folder-two",
+                "   - sh: echo 'uno' >> /tmp/foo/folder-one/uno.txt",
+                "   - sh: echo 'dos' >> /tmp/foo/folder-two/dos.txt",
+                "   - queue-download: /tmp/foo/folder-*/*.txt",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+
+        State state = doit.getConfig().getState();
+
+        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/uno.txt");
+        File dos = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/dos.txt");
+
+        assertTrue("uno should exist @ "+uno.getPath(),uno.exists());
+        assertTrue("dos should exist @ "+dos.getPath(),dos.exists());
+    }
+
+    @Test(timeout = 50_000)
+    public void path_slash_star(){
+        Parser parser = Parser.getInstance();
+        parser.setAbortOnExitCode(true);
+        RunConfigBuilder builder = getBuilder();
+
+        builder.loadYaml(parser.loadFile("pwd", stream("" +
+                "scripts:",
+                "  foo:",
+                "   - sh: mkdir -p /tmp/foo/one",
+                "   - sh: mkdir -p /tmp/foo/two",
+                "   - sh: echo 'uno' >> /tmp/foo/one/uno.txt",
+                "   - sh: echo 'dos' >> /tmp/foo/two/dos.txt",
+                "   - queue-download: /tmp/foo/*",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+
+        State state = doit.getConfig().getState();
+
+        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/one/uno.txt");
+        File dos = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/two/dos.txt");
+
+        assertTrue("uno should exist @ "+uno.getPath(),uno.exists());
+        assertTrue("dos should exist @ "+dos.getPath(),dos.exists());
+    }
+
 
     @Test
     public void stateToLocalEnv(){
