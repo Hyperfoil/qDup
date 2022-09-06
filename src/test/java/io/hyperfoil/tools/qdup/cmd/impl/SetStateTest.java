@@ -149,7 +149,7 @@ public class SetStateTest extends SshTestBase {
 
    @Test(timeout = 10_000)
    @Ignore
-   //not running right now becuase it's invalid state references
+   //not running right now because it has invalid state references
    public void javascript_spread_missing_arg(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
