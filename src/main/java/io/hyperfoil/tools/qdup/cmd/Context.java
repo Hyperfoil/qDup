@@ -45,4 +45,8 @@ public interface Context {
     Json getTimestamps();
     void close();
 
+    void setCwd(String dir);
+
+    String getCwd();
+
 }

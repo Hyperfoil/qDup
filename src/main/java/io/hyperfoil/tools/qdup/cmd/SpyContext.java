@@ -25,6 +25,8 @@ public class SpyContext implements Context {
 
     private Context context;
 
+    private String cwd="";
+
     public SpyContext(){
         this(null,new State(""),new Coordinator(new Globals()));
     }
@@ -217,6 +219,16 @@ public class SpyContext implements Context {
         if(context!=null){
             context.close();
         }
+    }
+
+    @Override
+    public void setCwd(String dir) {
+        this.cwd = cwd;
+    }
+
+    @Override
+    public String getCwd() {
+        return cwd;
     }
 
     public boolean isAborted(){return aborted;}

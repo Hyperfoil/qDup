@@ -28,6 +28,23 @@ import static org.junit.Assert.*;
 public class CmdTest extends SshTestBase {
 
    @Test
+   public void observe_watch(){
+      AtomicInteger counter = new AtomicInteger(0);
+      Cmd cmd = Cmd.sh("doSomething.sh");
+      Cmd watcher = Cmd.code((input,state)->{
+         counter.incrementAndGet();
+         return Result.next("ok");
+      });
+      cmd.watch(watcher);
+
+      assertNull("observing commands should not have a parent",watcher.getParent());
+      assertFalse("observing commands should not have a parent",watcher.hasParent());
+      assertNotNull("observing commands should have a state parent",watcher.getStateParent());
+      assertTrue("observing commands should have a state parent",watcher.hasStateParent());
+      assertTrue("watcher should see that it is observing",watcher.isObserving());
+   }
+
+   @Test
    public void walk_single_then(){
       AtomicInteger counter = new AtomicInteger(0);
       BiFunction<Cmd, CmdLocation,Void> consumer = (cmd, watching)->{counter.incrementAndGet();return null;};

@@ -36,6 +36,8 @@ public class SyncContext implements Context, Runnable{
     private final ScriptContext scriptContext;
     private final Cmd scriptActiveCmd;
 
+    private String cwd="";
+
     public SyncContext(SshSession session, State state, Run run, SystemTimer timer, Cmd currentCmd, ScriptContext scriptContext){
         this.session = session;
         this.state = state;
@@ -46,6 +48,12 @@ public class SyncContext implements Context, Runnable{
         this.scriptContext = scriptContext;
         this.scriptActiveCmd = scriptContext.getCurrentCmd();
     }
+
+    public void setCwd(String cwd){
+        this.cwd = cwd;
+    }
+
+    public String getCwd(){return cwd;}
 
     public Run getRun(){ return run;}
 

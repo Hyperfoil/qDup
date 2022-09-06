@@ -93,6 +93,13 @@ public class ScriptContext implements Context, Runnable{
     long startTime = -1;
     long updateTime = -1;
 
+    private String cwd="";
+
+    public String getCwd(){return cwd;}
+    public void setCwd(String cwd){
+        this.cwd = cwd;
+    }
+
     public boolean checkExitCode(){return checkExitCode;}
 
     public String getContextId(){
