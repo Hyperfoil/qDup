@@ -215,6 +215,100 @@ public class QueueDownloadTest extends SshTestBase {
         downloadFile.getParentFile().delete();
         new File("/tmp/date.txt").delete();
     }
+
+    @Test
+    public void populate_relativepath(){
+        Parser parser = Parser.getInstance();
+        parser.setAbortOnExitCode(true);
+        RunConfigBuilder builder = getBuilder();
+
+        builder.loadYaml(parser.loadFile("pwd", stream("" +
+                        "scripts:",
+                "  foo:",
+                "   - sh: mkdir -p /tmp/foo/one",
+                "   - sh: mkdir -p /tmp/foo/two",
+                "   - sh: echo 'uno' >> /tmp/foo/one/uno.txt",
+                "   - sh: echo 'dos' >> /tmp/foo/two/dos.txt",
+                "   - sh: cd /tmp/foo",
+                "   - queue-download: ./one/uno.txt",
+                "   - sh: cd /tmp/foo/two",
+                "   - queue-download: ./dos.txt",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+
+        State state = doit.getConfig().getState();
+
+        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/uno.txt");
+        File dos = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/dos.txt");
+
+
+
+        assertTrue("uno should exist @ "+uno.getPath(),uno.exists());
+        assertTrue("dos should exist @ "+dos.getPath(),dos.exists());
+    }
+
+    @Test
+    public void populate_relativepath_watcher(){
+        Parser parser = Parser.getInstance();
+        parser.setAbortOnExitCode(true);
+        RunConfigBuilder builder = getBuilder();
+
+        builder.loadYaml(parser.loadFile("pwd", stream("" +
+                "scripts:",
+                "  bar:",
+                "   - sleep: 2s",
+                "   - sh: cd /tmp/foo",
+                "   - sh: tail -f list.txt",
+                "     watch:",
+                "     - regex: done",
+                "       then:",
+                "       - ctrlC",
+                "     - regex: (?<path>.*txt)",
+                "       then:",
+                "       - queue-download: ${{path}}",
+                "  foo:",
+                "   - sh: mkdir -p /tmp/foo/one",
+                "   - sh: mkdir -p /tmp/foo/two",
+                "   - sh: echo '' > /tmp/foo/list.txt",
+                "   - sh: echo 'uno' >> /tmp/foo/one/uno.txt",
+                "   - sh: echo 'dos' >> /tmp/foo/two/dos.txt",
+                "   - sleep: 2s",
+                "   - sh: echo 'one/uno.txt' >> /tmp/foo/list.txt",
+                "   - sh: echo './two/dos.txt' >> /tmp/foo/list.txt",
+                "   - sh: echo 'done' >> /tmp/foo/list.txt",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo, bar]"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+
+        State state = doit.getConfig().getState();
+
+        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/uno.txt");
+        File dos = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/dos.txt");
+
+
+
+        assertTrue("uno should exist @ "+uno.getPath(),uno.exists());
+        assertTrue("dos should exist @ "+dos.getPath(),dos.exists());
+    }
     @Test
     public void populate_local_env_dollar_parenthesis(){
         RunConfigBuilder builder = getBuilder();

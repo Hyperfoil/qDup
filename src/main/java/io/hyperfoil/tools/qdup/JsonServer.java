@@ -34,7 +34,9 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class JsonServer implements RunObserver, ContextObserver {
 
@@ -51,6 +53,8 @@ public class JsonServer implements RunObserver, ContextObserver {
     private Set<String> breakpoints;
 
     private final Phaser resumePhaser = new Phaser(1);
+    private final Map<Integer, AtomicReference<Context>> contextAtomicReference = new ConcurrentHashMap<>();
+
 
     public JsonServer(Run run){
         this(run,DEFAULT_PORT);
@@ -94,17 +98,19 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("cmd",filter(command.toString()));
             event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
             vertx.eventBus().publish("observer",new JsonObject(event.toString()));
-            checkBreakpoint(command);
+            checkBreakpoint(context,command);
         }
     }
 
-    private void checkBreakpoint(Cmd command){
+    private void checkBreakpoint(Context context,Cmd command){
         String commandString = command.toString();
         boolean matches =  breakpoints.stream().anyMatch(breakpoint-> commandString.contains(breakpoint) || commandString.matches(breakpoint));
         if(matches){
             logger.info("Breakpoint hit cmd: " + commandString);
             resumePhaser.register();
+            contextAtomicReference.put(command.getUid(), new AtomicReference<>(context));
             resumePhaser.arriveAndAwaitAdvance();
+            contextAtomicReference.remove(command.getUid());
             resumePhaser.arriveAndDeregister();
         }
     }
@@ -119,7 +125,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
             event.set("output", StringUtil.escapeBash( filter(output)) );
             vertx.eventBus().publish("observer", new JsonObject(event.toString()));
-            checkBreakpoint(command);
+            checkBreakpoint(context,command);
         }
     }
 
@@ -193,6 +199,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             rtrn.set("GET /pendingDownloads","get the list of pending downloads");
             rc.response().end(rtrn.toString(2));
         });
+
         router.route("/config").produces("application/json").handler(rc->{
             rc.response().end(filter(run.getConfig().toJson()));
         });
@@ -209,7 +216,8 @@ public class JsonServer implements RunObserver, ContextObserver {
             rc.response().setStatusCode(200).end(pattern);
         });
         router.post("/breakpoint/resume").handler(rc->{
-            
+            resumePhaser.arriveAndAwaitAdvance();
+            rc.response().end("{\"result\":\"ok\"}");
         });
         router.delete("/breakpoint").handler(rc->{
             String pattern = rc.request().getParam("pattern");

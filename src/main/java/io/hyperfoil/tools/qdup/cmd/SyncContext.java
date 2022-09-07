@@ -53,7 +53,13 @@ public class SyncContext implements Context, Runnable{
         this.cwd = cwd;
     }
 
-    public String getCwd(){return cwd;}
+    public String getCwd(){
+        if(scriptContext!=null){
+            return scriptContext.getCwd();
+        } else {
+            return cwd;
+        }
+    }
 
     public Run getRun(){ return run;}
 

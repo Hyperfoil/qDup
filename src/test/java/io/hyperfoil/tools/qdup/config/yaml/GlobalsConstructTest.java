@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
-import com.google.common.collect.Lists;
 import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
@@ -8,6 +7,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.nodes.Tag;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -48,7 +49,7 @@ public class GlobalsConstructTest {
                         "  return 3;\n" +
                         "}\n"
                 , JsSnippet.class);
-        Globals globals = new Globals(Lists.newArrayList(loaded));
+        Globals globals = new Globals(Arrays.asList(loaded));
         assertNotNull("should load states",loaded);
         assertEquals("expecting 2 functions", 2, loaded.getNames().size());
     }

@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.yaup.AsciiArt;
 
 import java.io.File;
 import java.nio.file.Paths;
