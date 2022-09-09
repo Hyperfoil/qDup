@@ -9,6 +9,7 @@ import io.hyperfoil.tools.qdup.cmd.SpyContext;
 import io.hyperfoil.tools.qdup.cmd.impl.JsCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ParseCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.vertx.JsonMessageCodec;
@@ -22,6 +23,7 @@ import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSBridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
+import org.json.JSONObject;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -39,11 +41,8 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class JsonServer implements RunObserver, ContextObserver {
-
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
-
     public static int DEFAULT_PORT = 31337;
-
     private final int port;
     private Run run;
     private final Vertx vertx;
@@ -51,11 +50,8 @@ public class JsonServer implements RunObserver, ContextObserver {
     private Dispatcher dispatcher;
     private Coordinator coordinator;
     private Set<String> breakpoints;
-
     private final Phaser resumePhaser = new Phaser(1);
     private final Map<Integer, AtomicReference<Context>> contextAtomicReference = new ConcurrentHashMap<>();
-
-
     public JsonServer(Run run){
         this(run,DEFAULT_PORT);
     }
@@ -76,7 +72,6 @@ public class JsonServer implements RunObserver, ContextObserver {
             this.dispatcher.addContextObserver(this);
         }
     }
-
     private String filter(Object o){
        if(o!=null && run!=null){
            if(o instanceof Json){
@@ -138,7 +133,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("cmd", command.toString());
             event.set("cmdUid", command.getUid());
             event.set("script", command.getHead().toString());
-            event.set("update",  StringUtil.escapeBash( filter(output)) );
+            event.set("update",  JSONObject.quote( StringUtil.escapeBash( filter(output)) ) );
             event.set("contextId", context instanceof ScriptContext ? ((ScriptContext) context).getContextId() : false);
             vertx.eventBus().publish("observer", new JsonObject(event.toString()));
         }
@@ -212,8 +207,13 @@ public class JsonServer implements RunObserver, ContextObserver {
         });
         router.post("/breakpoint").handler(rc->{
             String pattern = rc.request().getParam("pattern");
-            breakpoints.add(pattern);
-            rc.response().setStatusCode(200).end(pattern);
+            pattern = rc.getBodyAsString();
+            if(pattern!=null) {
+                breakpoints.add(pattern);
+                rc.response().setStatusCode(200).end(pattern);
+            }else{
+                rc.response().setStatusCode(401).end("missing pattern");
+            }
         });
         router.post("/breakpoint/resume").handler(rc->{
             resumePhaser.arriveAndAwaitAdvance();
