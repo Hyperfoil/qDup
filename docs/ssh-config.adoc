@@ -147,3 +147,27 @@ java -jar qDup-uber.jar -S _password="$(cat /tmp/secret.txt)" qdup.yaml
 ....
 `-S \_password` sets the state variable `password` and the `_` prefix tells qDup to treat the
 value as a secret and replace it with `\****` in the logs.
+
+
+= Resolving Common Issues
+
+== Problems with QDup and SSH
+
+Occasionally qDup fails to connect to a remote machine via ssh, even though using the ssh cli works as expected. In these instances, qDup will display the error below;
+
+[source, shell]
+----
+14:54:48.588 [qdup-command-1] ERROR io.hyperfoil.tools.qdup.Run - failed to connect user@localhost:22
+14:54:48.592 failed to connect all ssh sessions for run
+----
+
+
+=== userauth_pubkey: key type ssh-rsa not in PubkeyAcceptedAlgorithms
+
+This is expected behaviour when an old key is not FIPS-140-2 compliant (https://access.redhat.com/solutions/4906221).
+
+ - Generate a new key which is compliant with FIPS-140-2, for example ECDSA with curve nistp256.
+----
+$ ssh-keygen -t ecdsa
+----
+ - Add the public key to authorized_keys file on the destination system
