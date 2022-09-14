@@ -11,7 +11,7 @@ scripts:
   iperfClient:
   - sh: rm /tmp/iperfclient.log
   - sh:
-      command: iperf3 -c localhost --logfile /tmp/iperfclient.log -p 7777
+      command: iperf3 -c localhost -p 7777 2>&1 | tee /tmp/iperfclient.log
       ignore-exit-code: true
   - queue-download: /tmp/iperfclient.log 
   iperfDone:
@@ -19,8 +19,8 @@ scripts:
 
 hosts:
   localhost:
-    username: user
-    hostname: host
+    username: ${{USER}}
+    hostname: ${{HOST}}
     port: 22
 
 roles:
@@ -33,3 +33,7 @@ roles:
       - iperfClient
     cleanup-scripts:
       - iperfDone
+
+states:
+  USER: 
+  HOST: 
