@@ -691,8 +691,8 @@ public class QDup {
                 config.getSettings().set("check-exit-code", checkExitCode());
 
                 final Run run = new Run(getOutputPath(), config, dispatcher);
-
-                logger.info("Starting with output path = " + run.getOutputPath());
+                run.getRunLogger().info("Running qDup version {} @ {}", getVersion(), getHash());
+                logger.info("output path = " + run.getOutputPath());
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     if (!run.isAborted()) {
@@ -711,7 +711,7 @@ public class QDup {
                 }
 
                 long start = System.currentTimeMillis();
-                run.getRunLogger().info("Running qDup version {} @ {}", getVersion(), getHash());
+
                 run.run();
                 long stop = System.currentTimeMillis();
                 System.out.printf("Finished in %s at %s%n", StringUtil.durationToString(stop - start), run.getOutputPath());

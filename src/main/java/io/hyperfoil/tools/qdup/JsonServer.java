@@ -133,7 +133,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("cmd", command.toString());
             event.set("cmdUid", command.getUid());
             event.set("script", command.getHead().toString());
-            event.set("update",  JSONObject.quote( StringUtil.escapeBash( filter(output)) ) );
+            event.set("update",   StringUtil.escapeBash( filter(output)) );
             event.set("contextId", context instanceof ScriptContext ? ((ScriptContext) context).getContextId() : false);
             vertx.eventBus().publish("observer", new JsonObject(event.toString()));
         }
@@ -517,12 +517,14 @@ public class JsonServer implements RunObserver, ContextObserver {
         router.route("/ui/*").handler(StaticHandler.create().setWebRoot("webapp"));
 
         int foundPort = getPort(port);
+        String hostname = "localhost";
+
         try {
-            logger.info("listening at {}:{}", InetAddress.getLocalHost().getHostName()
-                    ,foundPort);
+            hostname = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
-            logger.info("listening at localhost:{}", foundPort);
+
         }
+        logger.info("json server listening at {}:{}", hostname, foundPort);
 
         server = vertx.createHttpServer();
         server.requestHandler(router).listen(foundPort/*, InetAddress.getLocalHost().getHostName()*/);

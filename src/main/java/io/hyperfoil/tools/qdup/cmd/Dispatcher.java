@@ -356,10 +356,10 @@ public class Dispatcher {
         if(isRunning.compareAndSet(false,true)){
             isStopping.set(false);
             dispatchObservers.forEach(c->c.preStart());
-            logger.info("starting {} scripts", scriptContexts.size());
             if(!scriptContexts.isEmpty()){
+                logger.info("starting {} scripts", scriptContexts.size());
                 if(nannyFuture == null) {
-                    logger.info("starting nanny");
+                    logger.debug("starting nanny");
                     nannyFuture = scheduler.scheduleAtFixedRate(() -> {
                         long timestamp = System.currentTimeMillis();
                         nannyTask.accept(timestamp);
