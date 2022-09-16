@@ -394,8 +394,8 @@ public class Run implements Runnable, DispatchObserver {
     }
     public void runPendingDownloads(){
         //TODO synchronize so only one thread tries the downloads (run ending while being aborted?)
-        logger.info("{} runPendingDownloads",config.getName());
         if(!pendingDownloads.isEmpty()){
+            logger.info("{} downloading queued downloads",config.getName());
             timestamps.put("downloadStart",System.currentTimeMillis());
             for(Host host : pendingDownloads.keys()){
                 Set<Download> downloadList = pendingDownloads.get(host);
@@ -555,6 +555,7 @@ public class Run implements Runnable, DispatchObserver {
         boolean ok = false;
         try {
             ok = getDispatcher().invokeAll(toCall/*,timeout, TimeUnit.SECONDS*/).stream().map((f) -> {
+
                 boolean rtrn = false;
                 try {
                     if(f != null) { //can be null when failed to authenticate
@@ -779,7 +780,6 @@ public class Run implements Runnable, DispatchObserver {
         }
         return ok;
     }
-
     private boolean queueRunScripts(){
         logger.debug("{}.queueRunScripts",this);
 
@@ -831,7 +831,12 @@ public class Run implements Runnable, DispatchObserver {
                                 timer.start("waiting for start");
                                 return rtrn;
                             } else {
-                                logger.error("failed to connect "+host.getSafeString());
+                                logger.error("failed to connect "+host.getSafeString()
+                                        +(host.hasPassword() ?
+                                            ", verify ssh works with the provided username and password" :
+                                            ", verify password-less ssh works with the selected keys"
+                                        )
+                                );
                                 session.close();
                                 return false;
                             }
