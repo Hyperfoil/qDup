@@ -1,0 +1,54 @@
+= qDup Hello World
+
+== Prerequisites
+qDup has 3 requirements:
+
+1. linux operating system
+2. java 11 where you run qdup
+3. ssh  running on the target computer
+
+you can verify the prequisites with two commands:
+```
+#> java -version
+openjdk version "11.0.10" 2021-01-19
+OpenJDK Runtime Environment AdoptOpenJDK (build 11.0.10+9)
+OpenJDK 64-Bit Server VM AdoptOpenJDK (build 11.0.10+9, mixed mode)
+#> ssh testuser@localhost
+Last login: Thu Sep 15 10:01:00 2022 from 192.168.0.1
+```
+The `testuser` example user name should be replaced with the output of `whoami`.
+
+If you get a `command not found` or the prompted for a `Password:` when running `ssh` then please refer to the [prerequisites](/.prerequisites.adoc)
+
+== qDup jar
+qDup is distributed as an executable jar (Java's version of a zip). Download the latest `uber` jar from [github](https://github.com/Hyperfoil/qDup/releases/latest)
+
+== YAML script
+qDup scripts follow use yaml syntax. We can explore the yaml structure in later tutorials.
+Use the following bash command to create a test yaml file.
+```
+#> cat > helloworld.yaml << 'EOF'
+scripts:
+    tryme:
+    - sh: whoami
+    - sh: date
+    - sh: echo ${{message}}
+hosts:
+    server: testuser@localhost
+roles:
+    test:
+        hosts:
+        - server
+        run-scripts:
+        - tryme
+states:
+    message: Hello, qDup!
+EOF
+```
+
+== Run qDup
+```
+#> java -jar qDup-0.6.15-uber.jar helloworld.yaml
+
+```
+

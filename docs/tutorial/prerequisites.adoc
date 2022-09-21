@@ -1,0 +1,85 @@
+= qDup Prerequisites
+
+== Linux
+qDup is designed to work with linux.
+
+We do not have Windows or Mac computers available for testing so the tool is not expected to run from those operating systems.
+
+== SSH
+
+qDup uses ssh to connect with other computers.
+If you do not have ssh running on another computer you can start ssh on your computer.
+
+```
+#> sudo systemctl start sshd
+```
+If your user does not have sudo permissions you will need change to the root user then start sshd
+```
+#> su
+Password:
+#> systemctl start sshd
+```
+Test that ssh is running by trying to ssh to `localhost`
+```
+#> ssh localhost
+Password:
+Last login: Thu Sep 15 10:00:00 2022 from 192.168.0.1
+```
+The `ssh` command works with just a computer name but qDup needs a username along with the name of the computer.
+```
+#> whoami
+testuser
+```
+qDup can work username and password but it more secure to use key based authentication. First, check if you already have keys
+```
+#> ls -al ~/.ssh
+-rw-------.  1 testuser testuser  1675 Sep 15  2022 id_rsa
+-rw-r--r--.  1 testuser testuser   398 Sep 15  2020 id_rsa.pub
+...
+```
+If you want to use your existing keys then you need to remember the file name. We are going to create temporary keys.
+First, if `ls -al` gave an error `No such file or directory` then you need to create the .ssh directory
+```
+#> mkdir ~/.ssh
+```
+Then create a new key
+```
+#> ssh-keygen -f ~/.ssh/qdup -t ecdsa
+Generating public/private ecdsa key pair.
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /home/testuser/.ssh/qdup
+Your public key has been saved in /home/testuser/.ssh/qdup.pub
+The key fingerprint is:
+SHA256:... testuser@localhost
+...
+```
+The new key needs to be added to `~/.ssh/authorized_keys` but that file may not exist.
+If the previous `ls -al ~/.ssh` did not include a file named `authorized_keys` then create one and give it the correct file permissions
+```
+#> touch ~/.ssh/authorized_keys
+#> chmod g-w ~/.ssh/authorized_keys
+```
+Add the new `qdup` key to the list of keys.
+Remember to substitute your user's name from `whoami` for the `testuser` below.
+```
+#> cat qdup.pub | ssh testuser@localhost 'cat >> ~/.ssh/authorized_keys'
+```
+The `ssh` command should work with your user's name (from `whoami`) and the `localhost` computer name without being asked for a password
+```
+#> ssh testuser@localhost
+Last login: Thu Sep 15 10:01:00 2022 from 192.168.0.1
+```
+
+== Java
+qDup is distributed as a java executable jar (java's version of a zip file).
+You need to have java 11 or higher  installed to run qDup. We can check for java
+```
+#> java -version
+openjdk version "11.0.10" 2021-01-19
+OpenJDK Runtime Environment AdoptOpenJDK (build 11.0.10+9)
+OpenJDK 64-Bit Server VM AdoptOpenJDK (build 11.0.10+9, mixed mode)
+```
+if you see `bash: java: command not found...` then install [Java 11](https://adoptopenjdk.net/) or higher.
+
+
