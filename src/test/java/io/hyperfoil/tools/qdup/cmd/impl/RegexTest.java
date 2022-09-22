@@ -128,6 +128,48 @@ public class RegexTest extends SshTestBase {
 
     }
 
+    @Test
+    public void docs_howto_secrets_regex_capture() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("", stream("" +
+                "scripts:",
+                "  foo:",
+                "  - sh: echo password",
+                "  - regex: \"(?<_my-secret>.*)\"",
+                "    then:",
+                "    - set-state: RUN.regex ${{my-secret}}",
+                "    else:",
+                "    - set-state: RUN.regex MISS",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]",
+                "states:",
+                "  data: \"True\""
+        )));
+
+        RunConfig config = builder.buildConfig(parser);
+
+        Dispatcher dispatcher = new Dispatcher();
+
+        List<String> signals = new ArrayList<>();
+
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+
+        System.out.println(state.tree());
+
+        assertTrue("state should have regex", state.has("regex"));
+
+
+    }
+
 
     @Test
     public void timer_resolve_with_reference() {

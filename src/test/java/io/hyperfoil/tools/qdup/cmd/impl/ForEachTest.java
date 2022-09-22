@@ -581,6 +581,14 @@ public class ForEachTest extends SshTestBase {
         assertTrue("split[1] should be json\n" + split.stream().map(o -> o.getClass() + " " + o.toString()).collect(Collectors.joining()), split.get(1) instanceof Json);
         assertTrue("split[2] should be json\n" + split.stream().map(o -> o.getClass() + " " + o.toString()).collect(Collectors.joining()), split.get(2) instanceof Json);
     }
+    @Test
+    public void split_json_array_objects_spaced() {
+        List<Object> split = ForEach.split("[{'name': 'one', 'value': 'one'}, {'name': 'two', 'value':'two'}, {'name': 'three','value':'three'}]");
+        assertEquals("split should have 3 entires\n" + split.stream().map(o -> o.getClass() + " " + o.toString()).collect(Collectors.joining()), 3, split.size());
+        assertTrue("split[0] should be json\n" + split.stream().map(o -> o.getClass() + " " + o.toString()).collect(Collectors.joining()), split.get(0) instanceof Json);
+        assertTrue("split[1] should be json\n" + split.stream().map(o -> o.getClass() + " " + o.toString()).collect(Collectors.joining()), split.get(1) instanceof Json);
+        assertTrue("split[2] should be json\n" + split.stream().map(o -> o.getClass() + " " + o.toString()).collect(Collectors.joining()), split.get(2) instanceof Json);
+    }
 
     @Test
     public void split_json_object() {
