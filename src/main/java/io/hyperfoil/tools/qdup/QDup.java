@@ -285,18 +285,6 @@ public class QDup {
                         .type(Integer.class)
                         .build()
         );
-
-        //logging
-//        options.addOption(
-//                Option.builder("l")
-//                        .longOpt("logback")
-//                        .argName("path")
-//                        .hasArg()
-//                        .desc("logback configuration path")
-//                        .type(String.class)
-//                        .build()
-//        );
-
         options.addOption(
                 Option.builder("R")
                         .longOpt("trace")
@@ -468,18 +456,20 @@ public class QDup {
                         logger.error("Error: cannot create tmp file to try and download " + yamlPath);
                         ok = false;
                     }
-                    try ( ReadableByteChannel readableByteChannel = Channels.newChannel((new URL(yamlPath)).openStream());
-                          FileOutputStream fileOutputStream = new FileOutputStream(tmp.getPath());
-                          FileChannel fileChannel = fileOutputStream.getChannel();
-                    ) {
-                        tmp.deleteOnExit();
+                    if(ok) {
+                        try (ReadableByteChannel readableByteChannel = Channels.newChannel((new URL(yamlPath)).openStream());
+                             FileOutputStream fileOutputStream = new FileOutputStream(tmp.getPath());
+                             FileChannel fileChannel = fileOutputStream.getChannel();
+                        ) {
+                            tmp.deleteOnExit();
 
-                        fileOutputStream.getChannel()
-                                .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-                        fileChannel.close();
-                    } catch (IOException e) {
-                        logger.error("Error: failed to download " + yamlPath);
-                        ok = false;
+                            fileOutputStream.getChannel()
+                                    .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+                            fileChannel.close();
+                        } catch (IOException e) {
+                            logger.error("Error: failed to download " + yamlPath);
+                            ok = false;
+                        }
                     }
                 } else {
                     logger.error("Error: cannot find " + yamlPath);
@@ -693,6 +683,9 @@ public class QDup {
                 final Run run = new Run(getOutputPath(), config, dispatcher);
                 run.getRunLogger().info("Running qDup version {} @ {}", getVersion(), getHash());
                 logger.info("output path = " + run.getOutputPath());
+                if(checkExitCode()){
+                    logger.info("checking sh exit codes");
+                }
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     if (!run.isAborted()) {

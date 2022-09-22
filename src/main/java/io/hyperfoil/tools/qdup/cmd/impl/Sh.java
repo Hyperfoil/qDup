@@ -122,7 +122,10 @@ public class Sh extends Cmd {
                     context.error(toLog);
                     if (context.checkExitCode() && !isIgnoreExitCode()) {
                         boolean couldBeCtrlC = walk(CmdLocation.createTmp(), (cmd) -> cmd instanceof CtrlC).stream().anyMatch(Boolean::booleanValue);
-                        context.abort(false);
+                        if( !couldBeCtrlC) {
+                            context.error("aborting run due to exit code "+response);
+                            context.abort(false);
+                        }
                     }
                 }
             }
