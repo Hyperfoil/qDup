@@ -1,0 +1,24 @@
+= How to upload files in a qDup script
+
+It is common to store files along with qDup scripts. qDup has an `upload` command to send files from the computer running the qDup process to the remote computer where all the `sh` commands execute.
+
+The `upload` command sends any file (or file pattern) from the local computer to the remote computer.
+
+```yaml
+- upload: /tmp/*.json /tmp/
+```
+
+This works well if the files are always at a known path (e.g. `/tmp/`) but often the files are stored next to the qDup scripts and Jenkins loads qDup scripts from a different working directory for each test.
+
+qDup has an internal state variable `ENV.SCRIPT_DIR` that refers to the parent directory of the executing script.
+If the files are stored in the same folder as the scripts then the `upload` example becomes
+
+```yaml
+- upload: ${{ENV.SCRIPT_DIR}}/*.json /tmp/
+```
+
+Most of our script repositories have a separate folder called `assets` for files we sent to the remote computers. For those scripts, `uploads` are slightly different:
+
+```yaml
+- upload: ${{ENV.SCRIPT_DIR}}/../assets/*.json /tmp/
+```

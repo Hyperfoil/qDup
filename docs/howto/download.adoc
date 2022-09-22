@@ -1,0 +1,20 @@
+= How to download files from remote computers
+
+qDup has two ways to copy files from remote computers.
+
+== download
+The `download` command will copy immediately copy the file.
+```yaml
+- download: /tmp/result.json
+```
+This command is appropriate if the file will change while the qDup script is running.
+
+
+== queue-download
+The most common method for copying files from remote computers is to queue the download.
+qDup stores a list of all files to download and will download them after the `run` phase.
+qDup will also download any queued files from `cleanup-scripts` after the cleanup phase.
+```
+- queue-download: /tmp/result.json
+```
+`queue-download`
