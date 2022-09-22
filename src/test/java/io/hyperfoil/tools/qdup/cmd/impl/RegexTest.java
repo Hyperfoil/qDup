@@ -162,9 +162,6 @@ public class RegexTest extends SshTestBase {
         dispatcher.shutdown();
 
         State state = config.getState();
-
-        System.out.println(state.tree());
-
         assertTrue("state should have regex", state.has("regex"));
 
 

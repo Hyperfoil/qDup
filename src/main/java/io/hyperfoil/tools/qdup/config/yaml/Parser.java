@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
+import io.hyperfoil.tools.parse.ParseCommand;
 import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.JsSnippet;
@@ -9,7 +10,9 @@ import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.converter.FileSizeConverter;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.JsonValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
@@ -30,6 +33,7 @@ import io.hyperfoil.tools.yaup.yaml.Mapping;
 import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
@@ -42,6 +46,8 @@ public class Parser {
     final static XLogger logger = XLoggerFactory.getXLogger(Parser.class.getName());
 //    final static Logger logger = LoggerFactory.getLogger(Parser.class.getName());
 
+
+    private JsonValidator validator;
     public static Parser getInstance() {
         Parser rtrn = new Parser();
         RoleConstruct roleConstruct = new RoleConstruct();
@@ -110,7 +116,7 @@ public class Parser {
                         throw new YAMLException("cannot create countdown from " + str);
                     }
                 },
-                (json) -> new Countdown(json.getString("path"), (int) json.getLong("initial")),
+                (json) -> new Countdown(json.getString("name"), (int) json.getLong("initial")),
                 "path","initial"
 
         );
@@ -699,6 +705,17 @@ public class Parser {
             }
         });
         abortOnExitCode = false;
+
+        try (InputStreamReader fileStream = new InputStreamReader(ParseCommand.class.getClassLoader().getResourceAsStream("cmd.json"));
+             BufferedReader reader = new BufferedReader(fileStream))
+        {
+            String content = reader.lines().collect(Collectors.joining("\n"));
+            validator = new JsonValidator(Json.fromString(content));
+        } catch (IOException e) {
+            logger.error("failed to create json validator",e);
+            validator = new JsonValidator(new Json(false));
+        }
+
     }
 
     public boolean isAbortOnExitCode(){return abortOnExitCode;}
@@ -806,6 +823,10 @@ public class Parser {
 
     public YamlFile loadFile(String path, String content) {
         YamlFile loaded = null;
+
+//        Json loadedJson = Json.fromYaml(content);
+//        Json errors = validator.validate(loadedJson);
+//        if(!errors.isEmpty()){}
         try {
             loaded = yaml.loadAs(content, YamlFile.class);
         } catch (YAMLException e) {
