@@ -13,7 +13,9 @@ import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +28,9 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 
 public class CmdTest extends SshTestBase {
+
+   @Rule
+   public Timeout globalTimeout = Timeout.seconds(120);
 
    @Test
    public void observe_watch(){
