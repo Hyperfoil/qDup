@@ -1,0 +1,72 @@
+= How to watch a command line by line
+
+qDup `sh` commands have a `watch` list of commands that are invoked with each new line of output from the `sh` command.
+`watch` usually contains `regex` commands to match patterns in the output.
+```yaml
+- sh: ./doSomething.sh
+  watch:
+  - regex: ERROR
+    then:
+    - ...
+```
+
+== limitations
+
+Matched `regex` invoke their `then` commands but there are limits on what can be included under a `watch`.
+The `doSomething.sh` script is still running in the ssh connection while the `watch` commands are executing so we cannot have another `sh` under `watch`.
+We also cannot have a `script` command unless it is also set to `async: true` so that it creates a new ssh connection.
+
+==== ok
+```yaml
+- sh: ./doSomething.sh
+  watch:
+  - regex: ERROR
+    then:
+    - script:
+        name: in-case-of-error
+        async: true
+```
+==== not ok
+```yaml
+- sh: ./doSomething.sh
+  watch:
+  - regex: ERROR
+    then:
+    - script: in-case-of-error
+```
+== when to use them
+The `watch` section is best used for actions that cannot wait for the `sh` command to finish.
+This includes:
+
+* interrupting commands that will not end using `ctrlC`
+```yaml
+- sh: tail -f /var/log/messages
+  watch:
+  - regex: FOO
+    then:
+    - ctrlC
+```
+* signaling or other scripts when conditions are ready
+```yaml
+- sh: doSomething.sh
+  watch:
+  - regex: ready
+    then:
+    - signal: something_ready
+```
+* starting or other scripts when conditions are ready
+```yaml
+- sh: doSomething.sh
+  watch:
+  - regex: ERROR
+    then:
+    - script:
+        name: collect-error-data
+        async: true
+```
+
+
+
+
+
+
