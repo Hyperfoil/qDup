@@ -45,6 +45,9 @@ This includes:
   - regex: FOO
     then:
     - ctrlC
+  timer:
+    10m: #max wait time
+    - ctlrC-
 ```
 * signaling or other scripts when conditions are ready
 ```yaml
@@ -53,9 +56,6 @@ This includes:
   - regex: ready
     then:
     - signal: something_ready
-  timer:
-    10m: #max wait time
-    - ctlrC
 ```
 
 * starting or other scripts when conditions are ready
