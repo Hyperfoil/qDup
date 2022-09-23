@@ -1,0 +1,37 @@
+= How to iterate over input
+
+The `for-each` command repeats its sub-commands (commands in `then`) for each entry its input.
+The `input` can either be declared in yaml or it can be the output of the parent command.
+
+== input from previous command
+`for-each` tries to correctly identify common command input. It checks in the following order:
+
+1. json arrays or objects
+2. newlines
+3. comma separated (with quotes)
+4. space separated (with quotes)
+
+```yaml
+- sh: ls -c1
+  then:
+  - for-each: file
+    then:
+    - sh: rm ${{file}}
+```
+
+== declared input
+The other option is to declare input in yaml. This works well when the list is stored in state or when the options are static
+```yaml
+- for-each:
+    name: entry
+    input: ${{scriptName:[]}}
+  then:
+  - sh: ./${{scriptName}}.sh
+```
+```yaml
+- for-each:
+    name: test
+    input: "one two three four"
+  then:
+  - ...
+```
