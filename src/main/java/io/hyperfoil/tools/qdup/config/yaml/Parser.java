@@ -706,7 +706,7 @@ public class Parser {
         });
         abortOnExitCode = false;
 
-        try (InputStreamReader fileStream = new InputStreamReader(ParseCommand.class.getClassLoader().getResourceAsStream("cmd.json"));
+        try (InputStreamReader fileStream = new InputStreamReader(ParseCommand.class.getClassLoader().getResourceAsStream("schema.json"));
              BufferedReader reader = new BufferedReader(fileStream))
         {
             String content = reader.lines().collect(Collectors.joining("\n"));
