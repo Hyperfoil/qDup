@@ -2,10 +2,10 @@ package io.hyperfoil.tools.qdup;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -16,7 +16,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,7 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertTrue;
 
@@ -46,17 +45,6 @@ public class SshTestBase {
         //tmpDir.removeDir();
         tmpDir = null;
     }
-
-//    static {
-//        try {
-//            DockerClientFactory.instance().client();
-//        } catch (DockerException e) {
-//            if (!e.getMessage().contains("BITBUCKET_CLONE_DIR")) {
-//                throw new IllegalStateException(e);
-//            }
-//            // Ignore exception related to reach outside of BITBUCKET_CLONE_DIR in ResourceReaper
-//        }
-//    }
     private static GenericContainer container;
 
     private static final ScheduledThreadPoolExecutor SCHEDULED_THREAD_POOL_EXECUTOR = new ScheduledThreadPoolExecutor(2);
@@ -123,11 +111,13 @@ public class SshTestBase {
     public static void restartContainer(){
         if(container!=null) {
             int randomPort = container.getMappedPort(22);
-            Consumer<CreateContainerCmd> cmd = e -> e.withPortBindings(new PortBinding(Ports.Binding.bindPort(randomPort), new ExposedPort(22)));
+            //Consumer<CreateContainerCmd> cmd = e -> e.withPortBindings(new PortBinding(Ports.Binding.bindPort(randomPort), new ExposedPort(22)));
+            Consumer<CreateContainerCmd> cmd = e -> e.withHostConfig(new HostConfig().withPortBindings(new PortBinding(Ports.Binding.bindPort(randomPort), new ExposedPort(22))));
+
             container.stop();
             container.withCreateContainerCmdModifier(cmd);
             container.start();
-            String hostname = container.getContainerIpAddress();
+            String hostname = container.getHost();
             host = new Host("root",hostname,null,container.getMappedPort(22));
         }
     }
@@ -171,17 +161,7 @@ public class SshTestBase {
                  .build()))
            .withExposedPorts(22);
         container.start();
-
-        String hostname="localhost";
-        try {
-            hostname = java.net.InetAddress.getLocalHost().getHostName();
-
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-        hostname = container.getContainerIpAddress();
-        //host = new Host(System.getProperty("user.name"),hostname);
-        //host = new Host("root",hostname,"password",container.getMappedPort(22));
+        String hostname=container.getHost();
         host = new Host("root",hostname,null,container.getMappedPort(22),null);
     }
     private static Host host;
@@ -189,15 +169,13 @@ public class SshTestBase {
     public SshTestBase(){}
 
     public String readFile(String path){
-
-        String response = exec("/bin/sh","-c","cat "+path);
-        return response;
+        return exec("/bin/sh","-c","cat "+path);
     }
 
     public String readFile(Path path) {
         StringBuilder contents = new StringBuilder();
-        try {
-            Files.lines(path).forEach(line -> contents.append(line+System.lineSeparator()));
+        try (Stream<String> lines = Files.lines(path)){
+            lines.forEach(line -> {contents.append(line); contents.append(System.lineSeparator());});
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -206,15 +184,12 @@ public class SshTestBase {
     }
         public boolean exists(String path){
         String response = exec("/bin/sh","-c","test -f "+path+" && echo \"exists\"").trim();
-        return response != null && response.contains("exists");
+        return response.contains("exists");
     }
     public String exec(String...commands){
         try {
             return container.execInContainer(commands).getStdout();
-        } catch (IOException e) {
-            //e.printStackTrace();
-            return e.getMessage();
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             //e.printStackTrace();
             return e.getMessage();
         }
@@ -254,8 +229,7 @@ public class SshTestBase {
 
     public static InputStream stream(String...input){
         return new ByteArrayInputStream(
-                Arrays.asList(input).stream()
-                        .collect(Collectors.joining("\n")).getBytes()
+                String.join("\n", Arrays.asList(input)).getBytes()
         );
     }
 
@@ -279,11 +253,11 @@ public class SshTestBase {
         }
 
         public void removeDir(){
-            try {
-                Files.walk(tempDirWithPrefix)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
+            try (Stream<Path> stream = Files.walk(tempDirWithPrefix)){
+                stream
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
             } catch (IOException e) {
                 e.printStackTrace();
             }
