@@ -1,0 +1,38 @@
+= How to abort a run early
+
+The most common way to end a run early is with the `abort` command.
+```yaml
+- sh: doSomething.sh
+  watch:
+  - regex: FATAL
+    then:
+    - abort: fatal error in doSomething.sh
+```
+`abort` stops the `setup-scripts` and `run-scripts`.
+qDup will still download anything that was queued with `queue-download` and by default it will still run the `cleanup-scripts`.
+We can prevent the `cleanup-scripts` by using the full command syntax.
+```yaml
+- sh: doSomething.sh
+  watch:
+  - regex: FATAL
+    then:
+    - abort:
+        message: fatal error in doSomething.sh
+        skip-cleanup: true
+```
+
+== exit codes
+The other way to abort a run early is to check exit codes for `sh` commands.
+qDup checks the exit code after every `sh` that uses the default prompt (not commands that end with prompts from `add-prompt`).
+We can enable exit code checking on specific 'sh' commands by setting `ignore-exit-code: false`.
+```yaml
+- sh:
+    command: doSomething.sh
+    ignore-exit-code: false
+```
+We can also tell qDup to check all `sh` exit codes with the `-x`, `--exit-code` command line argument or by adding `check-exit-code: true` to the global settings
+```yaml
+global:
+  settings:
+    check-exit-code: true
+```
