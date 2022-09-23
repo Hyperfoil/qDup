@@ -1,0 +1,34 @@
+= How to repeat until a condition is met
+
+The `repeat-until` command will re-run the commands in `then` until the named `signal` is reached.
+```yaml
+- repeat-until: signalName
+  then:
+  - sleep: 1m #add a delay or the command run very quickly
+  - ...
+```
+The `signal` can come from a different script or from a child of the `repeat-until`
+```yaml
+- repeat-until: ready
+  then:
+  - sleep: 1m
+  - sh: oc get po
+    then:
+    - regex: my-pod-name
+      then:
+      - signal: ready
+```
+The above example checks for a pod every minute.
+This is a bad example for `repeat-until` because `oc get po --watch` is another option that would simplify the script and improve log readability.
+```yaml
+- sh: oc get po --watch
+  watch:
+  - regex: my-pod-name
+    then:
+    - ctlrC
+  timer:
+    10m:
+    - ctrlC
+    - abort: failed to start my-pod-name before timeout
+```
+
