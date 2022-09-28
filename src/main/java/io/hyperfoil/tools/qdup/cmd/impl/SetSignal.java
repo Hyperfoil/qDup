@@ -12,7 +12,7 @@ public class SetSignal extends Cmd {
    private boolean reset;
 
    public SetSignal(String name,String initial){
-      this(name,initial,true);
+      this(name,initial,false);
    }
    public SetSignal(String name,String initial, boolean reset){
       super(true);
