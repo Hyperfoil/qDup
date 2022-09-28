@@ -1,7 +1,10 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
+import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Result;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunConfig;
@@ -442,7 +445,7 @@ public class SignalCountsTest extends SshTestBase {
         summary.addRule("signals",signalCounts);
         summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
-        assertEquals("signal count for FOO",1,signalCounts.getSignalCount("FOO"));
+        assertEquals("signal count for FOO",0,signalCounts.getSignalCount("FOO"));
     }
 
     @Test
@@ -499,7 +502,7 @@ public class SignalCountsTest extends SshTestBase {
         summary.addRule("signals",signalCounts);
         summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
-        assertEquals("signal count for FOO",1,signalCounts.getSignalCount("FOO"));
+        assertEquals("signal count for FOO",0,signalCounts.getSignalCount("FOO"));
     }
 
     @Test
@@ -851,4 +854,56 @@ public class SignalCountsTest extends SshTestBase {
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
         assertEquals("signal count for sig: "+signalCounts.getCounts(),1,signalCounts.getSignalCount("sig"));
     }
+
+
+    @Test
+    public void setSignalCountTest(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("", stream("" +
+                        "scripts:",
+                "  repeat-until:",
+                "  - repeat-until: TEST_DONE",
+                "    then:",
+                "    - wait-for: READY",
+                "    - set-state: RUN.counter ${{= ${{RUN.counter}} + 1}}",
+                "    - set-signal:",
+                "        name: READY",
+                "        count: 1",
+                "        reset: true",
+                "  run-test:",
+                "  - for-each:",
+                "      name: it",
+                "      input: ${{tests}}",
+                "    then:",
+                "    - log: running test ${{it}}",
+                "    - signal: READY",
+                "    - sleep: 500",
+                "  - signal: TEST_DONE",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "      - repeat-until",
+                "      - run-test",
+                "states:",
+                "  counter: 0",
+                "  tests: ['test1', 'test2', 'test3']"
+        )));
+
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+        doit.run();
+        dispatcher.shutdown();
+        State state = config.getState();
+        assertTrue("state should have key",state.has("counter"));
+        assertEquals(3l,state.get("counter"));
+    }
+
 }
