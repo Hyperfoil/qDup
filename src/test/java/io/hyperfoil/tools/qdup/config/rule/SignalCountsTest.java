@@ -423,7 +423,10 @@ public class SignalCountsTest extends SshTestBase {
         builder.loadYaml(parser.loadFile("signal",stream(""+
                 "scripts:",
                 "  test:",
-                "    - set-signal: ${{BAR}} 1",
+                "    - set-signal:",
+                "        name: ${{BAR}}",
+                "        count: 1",
+                "        reset: false",
                 "    - wait-for: FOO",
                 "hosts:",
                 "  local: me@localhost",
@@ -482,7 +485,10 @@ public class SignalCountsTest extends SshTestBase {
         builder.loadYaml(parser.loadFile("signal",stream(""+
                 "scripts:",
                 "  test:",
-                "    - set-signal: FOO 1",
+                "    - set-signal:",
+                "        name: FOO",
+                "        count: 1",
+                "        reset: false",
                 "    - wait-for: FOO",
                 "hosts:",
                 "  local: me@localhost",

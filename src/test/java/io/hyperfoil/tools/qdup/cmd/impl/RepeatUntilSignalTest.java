@@ -72,7 +72,7 @@ public class RepeatUntilSignalTest extends SshTestBase  {
                 "    then:",
                 "    - log: running test ${{it}}",
                 "    - signal: READY",
-                "    - sleep: 1s",
+                "    - sleep: 500",
                 "  - signal: TEST_DONE",
                 "hosts:",
                 "  local: " + getHost(),
@@ -97,7 +97,7 @@ public class RepeatUntilSignalTest extends SshTestBase  {
         dispatcher.shutdown();
         State state = config.getState();
         assertTrue("state should have key",state.has("counter"));
-        assertEquals(3,state.get("counter"));
+        assertEquals(3l,state.get("counter"));
     }
 
 }

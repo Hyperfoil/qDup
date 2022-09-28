@@ -81,7 +81,9 @@ public class SignalCounts implements RunRule {
             if(Cmd.hasStateReference(populated,command)){
                 //TODO do we warn about signal something that cannot resolve at compile time
             }
-            signals.add(populated);
+            if( !((SetSignal) command).isReset()) {
+                signals.add(populated);
+            }
         }
     }
 
