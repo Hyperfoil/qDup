@@ -1,0 +1,69 @@
+= How to use json in state
+
+The details of qDup state are explored in the link:../reference/states.adoc[state reference]. Here we are going to look at using json in state. One reason to store json in state is when repeating a task.
+
+Let's take the fictitious example of adding users to a linux system. First, lets start with just adding the user.
+```yaml
+scripts:
+  add-users:
+  - for-each:
+      name: user
+      input: ${{users}}
+    then:
+    - sh: sudo useradd ${{user}}
+states:
+  users:
+  - alex
+  - billy
+```
+This script would create two new users but what if we also want to set a password? We can change the `users` entries to have a `name` and `password` field and use jsonpath notation to access them.
+```yaml
+scripts:
+  add-users:
+  - for-each:
+      name: user
+      input: ${{users}}
+    then:
+    - sh: sudo useradd ${{user.name}}
+    - sh:
+        command: "sudo passwd ${{user.name}}"
+        prompt:
+          "password: ": "${{user.password}}"
+states:
+  users:
+  - name: alex
+    password: 12345
+  - name: billy
+    password: passw0rd
+```
+NOTE: this is just an example, please do not save passwords in yaml
+
+The jsonpath implementation also supports searching and filtering. For example, we could add an `group` field for any users that need to be added to a group
+```yaml
+scripts:
+  add-users:
+  - for-each:
+      name: user
+      input: ${{users}}
+    then:
+    - sh: sudo useradd ${{user.name}}
+    - sh:
+        command: "sudo passwd ${{user.name}}"
+        prompt:
+          "password: ": "${{user.password}}"
+  - for-each:
+      name: hasGroup
+      input: ${{users[?(@.group)]}}
+    then:
+    - sh: usermod -a -G ${{hasGroup.group}} ${{hasGroup.name}}
+
+states:
+  users:
+  - name: alex
+    password: 12345
+    group: "wheel"
+  - name: billy
+    password: passw0rd
+```
+
+Read more about link:https://goessner.net/articles/JsonPath/[json-path]
