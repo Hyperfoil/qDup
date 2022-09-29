@@ -1,6 +1,6 @@
 = How to upload files in a qDup script
 
-It is common to store files along with qDup scripts. qDup has an `upload` command to send files from the computer running the qDup process to the remote computer where all the `sh` commands execute.
+qDup has an `upload` command to send files from the computer running the qDup process to the remote computer where all the `sh` commands execute.
 
 The `upload` command sends any file (or file pattern) from the local computer to the remote computer.
 
@@ -17,7 +17,7 @@ If the files are stored in the same folder as the scripts then the `upload` exam
 - upload: ${{ENV.SCRIPT_DIR}}/*.json /tmp/
 ```
 
-Most of our script repositories have a separate folder called `assets` for files we sent to the remote computers. For those scripts, `uploads` are slightly different:
+Most of our script repositories have a separate folder called `assets` for files we sent to the remote computers. For those scripts, `upload` is slightly different:
 
 ```yaml
 - upload: ${{ENV.SCRIPT_DIR}}/../assets/*.json /tmp/
