@@ -7,24 +7,26 @@ qDup has 3 requirements:
 2. java 11 where you run qdup
 3. ssh  running on the target computer
 
-you can verify the prequisites with two commands:
+you can verify the prerequisites with two commands:
 ```
 #> java -version
 openjdk version "11.0.10" 2021-01-19
 OpenJDK Runtime Environment AdoptOpenJDK (build 11.0.10+9)
 OpenJDK 64-Bit Server VM AdoptOpenJDK (build 11.0.10+9, mixed mode)
+```
+```
 #> ssh testuser@localhost
 Last login: Thu Sep 15 10:01:00 2022 from 192.168.0.1
 ```
-The `testuser` example user name should be replaced with the output of `whoami`.
+The `testuser` example username should be replaced with the output of `whoami`.
 
-If you get a `command not found` or the prompted for a `Password:` when running `ssh` then please refer to the [prerequisites](/.prerequisites.adoc)
+If you get a `command not found` or the prompted for a `Password:` when running `ssh` then please refer to the link:./prerequisites.adoc[prerequisites]
 
 == qDup jar
-qDup is distributed as an executable jar (Java's version of a zip). Download the latest `uber` jar from [github](https://github.com/Hyperfoil/qDup/releases/latest)
+qDup is distributed as an executable jar (Java's version of a zip). Download the latest `uber` jar from link:https://github.com/Hyperfoil/qDup/releases/latest:[github]
 
 == YAML script
-qDup scripts follow use yaml syntax. We can explore the yaml structure in later tutorials.
+qDup scripts use are saved as yaml. We can explore the yaml structure in later tutorials.
 Use the following bash command to create a test yaml file.
 ```
 #> cat > helloworld.yaml << 'EOF'
@@ -49,6 +51,23 @@ EOF
 == Run qDup
 ```
 #> java -jar qDup-0.6.15-uber.jar helloworld.yaml
-
 ```
 
+If you followed the previous link:./prerequisites.adoc[prerequisites] tutorial and create a new identify file name `id_qdup` then we need to tell qDup to use that instead of the default identify file.
+```
+#> java -jar qDup-0.6.15-uber.jar -i ~/.ssh/id_qdup helloworld.yaml
+```
+
+== Changing the greeting
+
+The `- sh: echo ${{message}}` command uses pattern substitution. qDup uses the `states` value for `message` but we can change that when running qDup by passing in a different value for `message` through the command line.
+```
+#> java -jar qDup-0.6.15-uber.jar -S message="howdy, qDup" helloworld.yaml
+```
+The `-S` argument overrides the value in yaml. We can store a default in yaml then use the command line to customize the script execution.
+
+NOTE: We use the `-S` command line argument to pass jenkins parameters into qDup executions.
+
+
+== Next
+At this point you can run a qDup script but our script is very simple. Try the link:./quarkusgetstarted.adoc[next tutorial] to see how we can script deploying and test a Quarkus application.

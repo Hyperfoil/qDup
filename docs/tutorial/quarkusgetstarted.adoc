@@ -1,0 +1,250 @@
+= Scripting Quarkus getting started
+
+Echoing `hello, qDup` or `howdy, qDup` introduces us to qDup, but now we want to use qDup to automate work. We are going to write a qDup script that builds our application and tests to make sure it is working.
+
+== Introduction
+
+This tutorial will walk through downloading and building one of the quarkus getting started applications. This introduces to:
+
+1. how qDup handles interactive commands
+2. how to observe running commands
+3. how to handle common issues with re-running scripts
+4. how to coordinate between scripts
+
+== Prerequisites
+
+qDup connects to computers through ssh. You need to have a computer that will accept ssh connections. You can setup ssh on your own computer by following the steps in the link:./prerequisites.adoc[prerequisites]
+
+Remember the username and hostname for your setup and use them in the `hosts` section of the qDup yaml
+
+== Getting started with Getting started
+
+We are going to use the link:https://quarkus.io/guides/getting-started[Quarkus getting started] project to substitute for our application. We follow the steps in their guide the same way we would follow the README for other applications.
+
+```
+git clone https://github.com/quarkusio/quarkus-quickstarts.git
+```
+The first step in the quarkus guide is to clone the example repository. We create a qDup script with the same step, but first we want our script to use the `tmp` directory.
+```yaml
+scripts:
+  getting-started:
+  - sh: cd /tmp/
+  - sh: git clone https://github.com/quarkusio/quarkus-quickstarts.git
+  - sh: cd quarkus-quickstarts
+-
+hosts:
+  test: me@localhost #replace this with your ssh username@hostname
+roles:
+  example:
+    hosts:
+    - test
+    run-scripts:
+    - getting-started
+```
+
+Create a `qdup.yaml` script file with the above yaml and run it using qDup
+```
+java -jar qdup-uber.jar qdup.yaml
+```
+
+The quarkus guide next talks about creating our own project using the `quarkus` cli. We are going to skip ahead and use the `getting-started` project.
+
+```yaml
+scripts:
+  getting-started:
+  - sh: cd /tmp/
+  - sh: git clone https://github.com/quarkusio/quarkus-quickstarts.git
+  - sh: cd quarkus-quickstarts
+  - sh: cd getting-started
+```
+
+If you add the `sh: cd getting-started` to `qdup.yaml` and run it again you will likely see an error message from `git clone` complaining that the directory already exists. We normally remove the existing folder, if it exists, with some bash conditionals
+```yaml:
+- sh: "[[-d quarkus-quickstarts ]] && rm -rf quarkus-quickstarts"
+```
+We do not want to download the full git repo after each change to our script. We will instead only run git clone if the directory does not exist
+```yaml
+scripts:
+  getting-started:
+  - sh: cd /tmp/
+  - sh: "[[ ! -d quarkus-quickstarts ]] && git clone https://github.com/quarkusio/quarkus-quickstarts.git"
+  - sh: cd quarkus-quickstarts
+  - sh: cd getting-started
+```
+
+The next command in the getting stated guide is to run `quarkus dev`. Try running it in a terminal; it will likely result in `command not found`. We need to ensure we have the quarkus cli installed. It is good practice to split this into a separate script (e.g. `ensure-quarkus-cli`) and follow the steps for installing the cli. Run each step in a terminal then add them to the script after you have an expectation for the output.
+
+Once `quarkus dev` runs you will have a script that looks like the yaml below but if you run it the script will hang.
+
+```yaml
+scripts:
+  ensure-quarkus-cli:
+  - sh: quarkus version #to see if the command exists
+    then:
+    - regex: command not found
+      then: #https://quarkus.io/get-started/
+      - sh: "curl -Ls https://sh.jbang.dev | bash -s - trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/"
+      - sh: "curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio"
+  getting-started:
+  - sh: cd /tmp/
+  - sh: "[[ ! -d quarkus-quickstarts ]] && git clone https://github.com/quarkusio/quarkus-quickstarts.git"
+  - sh: cd quarkus-quickstarts
+  - sh: cd getting-started
+  - script: ensure-quarkus-cli
+  - sh: quarkus dev
+```
+
+Run `quarkus dev` in a terminal from the `/tmp/quarkus-quickstarts/getting-started` folder. We normally run commands in terminal before adding them to a qDup script to see how the commands behave. In this case, `quarkus dev` is interactive and expects user input.
+
+```
+Tests paused
+Press [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>
+```
+The execution pauses waiting for an `r` to run the unit tests. It also does not wait for input on a new line. This means we should use `sh` `prompt` to respond to the message. The `prompt` looks for a set of characters from the ssh connection and sends the associated response if it finds those characters. Using `prompt` means we have to use the yaml mapping syntax for `sh`. Most qdup commands support a simplified string format (e.g. `sh: "./runScript.sh"`) but also a more complex mapping that includes options that are not always needed:
+```yaml
+- sh:
+    command: quarkus dev
+    prompt:
+      "Press [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>": "r"
+```
+
+The above `sh` command responds to the quarkus prompt and runs the test but `quarkus dev` does not exit, and we want to test the endpoints while the process is running. We can start another script in `run-scripts` that will test an endpoint with a `curl` but we have to add coordination to ensure the script does not start testing before the process is ready.
+
+Let's call our new script `test-endpoint` and use a signal named `ready` to coordinate the two scripts. First, we create our `test-endpoint` script that will `curl` the endpoint after quarkus is ready.
+
+```yaml
+sripts:
+  test-endpoint:
+  - wait-for: ready
+    then:
+    - sh: curl localhost:8080/hello #replace localhost if you used a different ssh computer name
+```
+The `test-endpoint` script is ready; now we need to `signal` when `quarkus dev` is ready to receive requests. The `Tests paused` message from before the prompt occurs is an excellent option. We can `watch` the output and `regex: Test paused` to `signal` when quarkus is ready. The new `getting-started` scripts will now look like the following:
+```yaml
+scripts:
+  getting-started:
+  - sh: cd /tmp/
+  - sh: "[[ ! -d quarkus-quickstarts ]] && git clone https://github.com/quarkusio/quarkus-quickstarts.git"
+  - sh: cd quarkus-quickstarts
+  - sh: cd getting-started
+  - script: ensure-quarkus-cli
+  - sh:
+      command: quarkus dev
+      prompt:
+        "Press [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>": "r"
+    watch:
+    - regex: "Test paused"
+      then:
+      - signal: ready
+```
+
+Our full qDup script now looks like the following:
+```yaml
+scripts:
+  test-endpoint:
+  - wait-for: ready
+    then:
+    - sh: curl localhost:8080/hello #replace localhost if you used a differnet ssh computer name
+
+  ensure-quarkus-cli:
+  - sh: which quarkus
+    then:
+    - regex: no quarkus
+      then: #https://quarkus.io/get-started/
+      - sh: "curl -Ls https://sh.jbang.dev | bash -s - trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/"
+      - sh: "curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio"
+
+  getting-started:
+  - sh: cd /tmp/
+  - sh: "[[ ! -d quarkus-quickstarts ]] && git clone https://github.com/quarkusio/quarkus-quickstarts.git"
+  - sh: cd quarkus-quickstarts
+  - sh: cd getting-started
+  - script: ensure-quarkus-cli
+  - sh:
+      command: quarkus dev
+      prompt:
+        "Press [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>": "r"
+    watch:
+    - regex: "Tests paused"
+      then:
+      - signal: ready
+
+hosts:
+  test: me@localhost #replace this with your ssh username@hostname
+roles:
+  example:
+    hosts:
+    - test
+    run-scripts:
+    - test-endpoint
+    - getting-started
+```
+
+If you run this you will see the curl output in the qDup console but qDup will not exit because the `quarkus dev` is still running. We need the `test-endoint` script to tell the `getting-started` script when it finished "testing" ( running `curl`) so that the script can end the `quarkus dev` command. We accomplish this with a signal from `test-endoint` that indicates the testing is `done` and we add an `on-signal` to the `sh: quarkus dev`. The new complete script should look like the following:
+
+```yaml
+scripts:
+  test-endpoint:
+  - wait-for: ready
+    then:
+    - sh: curl localhost:8080/hello #replace localhost if you used a different ssh computer name
+    - signal: done #tells qDup that the "testing" is done
+
+  ensure-quarkus-cli:
+  - sh: which quarkus
+    then:
+    - regex: no quarkus
+      then: #https://quarkus.io/get-started/
+      - sh: "curl -Ls https://sh.jbang.dev | bash -s - trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/"
+      - sh: "curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio"
+
+  getting-started:
+  - sh: cd /tmp/
+  - sh: "[[ ! -d quarkus-quickstarts ]] && git clone https://github.com/quarkusio/quarkus-quickstarts.git"
+  - sh: cd quarkus-quickstarts
+  - sh: cd getting-started
+  - script: ensure-quarkus-cli
+  - sh:
+      command: quarkus dev
+      prompt:
+        "Press [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>": "r"
+    watch:
+    - regex: "Tests paused"
+      then:
+      - signal: ready
+    on-signal:
+      done:
+      - ctrlC #exits the process
+
+hosts:
+  test: me@localhost #replace this with your ssh username@hostname
+roles:
+  example:
+    hosts:
+    - test
+    run-scripts:
+    - test-endpoint
+    - getting-started
+```
+
+Some of you may find the qDup process is still stuck and you are not seeing `curl` in the logs. This usually happens when `quarkus dev` does not log `Tests paused` because it had an issue starting. qDup has an internal web server that exposes diagnostics data. We can get the active commands with:
+```
+curl localhost:31337/active
+```
+If you see `quarkus dev` as an active command then check the `output` for an error message. Most of the time we get errors due to port conflicts (something else is using port 8080).
+We don't want our qDup scripts getting stuck in our automated environment. We add `timer`s to any `sh` commands that do not automatically exit. This forces a limit on execution time and alerts us to errors.
+
+```yaml
+- sh:
+    command: "quarkus dev"
+  timer:
+    2m: #a short timeout
+    - abort: quarkus dev did not exit before the timer expired
+```
+
+
+
+
+
+
+
