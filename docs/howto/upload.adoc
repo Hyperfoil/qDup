@@ -5,7 +5,7 @@ qDup has an `upload` command to send files from the computer running the qDup pr
 The `upload` command sends any file (or file pattern) from the local computer to the remote computer.
 
 ```yaml
-- upload: /tmp/*.json /tmp/
+- upload: "/tmp/*.json" /tmp/
 ```
 
 This works well if the files are always at a known path (e.g. `/tmp/`) but often the files are stored next to the qDup scripts and Jenkins loads qDup scripts from a different working directory for each test.
@@ -14,11 +14,21 @@ qDup has an internal state variable `ENV.SCRIPT_DIR` that refers to the parent d
 If the files are stored in the same folder as the scripts then the `upload` example becomes
 
 ```yaml
-- upload: ${{ENV.SCRIPT_DIR}}/*.json /tmp/
+- upload: "${{ENV.SCRIPT_DIR}}/*.json" /tmp/
 ```
 
 Most of our script repositories have a separate folder called `assets` for files we send to the remote computers. For those scripts, `upload` is slightly different:
 
 ```yaml
-- upload: ${{ENV.SCRIPT_DIR}}/../assets/*.json /tmp/
+- upload: "${{ENV.SCRIPT_DIR}}/../assets/*.json" /tmp/
 ```
+
+We can also explicitly set the local file path and the upload destination in yaml
+
+```yaml
+- upload:
+    path: "${{ENV.SCRIPT_DIR}}/../assets/*.json"
+    destination: /tmp/
+```
+
+This format might be easier to read or help if the `path` or `destionation` have spaces
