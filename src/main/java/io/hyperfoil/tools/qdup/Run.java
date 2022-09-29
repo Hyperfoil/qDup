@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.qdup;
 
-import com.oracle.truffle.api.object.Layout;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.DispatchObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
@@ -67,7 +66,7 @@ public class Run implements Runnable, DispatchObserver {
 
     //TODO does a static logger name retain file appenders from previous Runs?
 
-    class JitterCheck implements Runnable{
+    static class JitterCheck implements Runnable{
 
         @Override
         public void run() {
@@ -79,7 +78,7 @@ public class Run implements Runnable, DispatchObserver {
                     Thread.sleep(period);
                 } catch (InterruptedException e) {
                     logger.debug("Interrupted, terminating jitter watchdog");
-                    Thread.interrupted();
+                    boolean interrupted = Thread.interrupted();
                     return;
                 }
                 long currentTimestamp = System.nanoTime();
@@ -92,7 +91,7 @@ public class Run implements Runnable, DispatchObserver {
         }
     }
 
-    private volatile Stage stage = Stage.Pending;
+    private volatile Stage stage;
 
     private final List<RunObserver> runObservers;
 

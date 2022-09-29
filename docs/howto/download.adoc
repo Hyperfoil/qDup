@@ -1,20 +1,22 @@
 = How to download files from remote computers
 
-qDup has two ways to copy files from remote computers.
+qDup was created to run performance tests and performance tests create files we want to save (e.g. performance results). qDup can save those files into the run output folder.
+
+NOTE: default folder is `/tmp/qdup<number>`. Set the folder with `-B` or `-b` command line option. See
+
+There are two ways to save files from remote computers.
 
 == download
-The `download` command will copy immediately copy the file.
+The `download` command will immediately copy the file to the qDup output folder.
 ```yaml
 - download: /tmp/result.json
 ```
-This command is appropriate if the file will change while the qDup script is running.
-
+This command is appropriate if the file will change or be deleted while the qDup script is running. Honestly, we rarely use `download` but
 
 == queue-download
 The most common method for copying files from remote computers is to queue the download.
-qDup stores a list of all files to download and will download them after the `run` phase.
-qDup will also download any queued files from `cleanup-scripts` after the cleanup phase.
+qDup stores a list of all files to download and will download them after the `run-scripts` and after the `cleanup-scripts` if any files were queued during cleanup.
 ```
 - queue-download: /tmp/result.json
 ```
-`queue-download`
+We recommend using `queue-download` if you are using qDup to coordinate a performance test because some tests are impacted by the work to download a file.
