@@ -1,0 +1,37 @@
+= How to change pattern keys
+
+The qDup pattern population uses `${{` and `}}` to mark the start and end of a pattern. It also uses `:` to separate the pattern from the default value and `=` to use javascript to evaluate the expression.
+```yaml
+- sh: cd ${{directory:}}
+set-state: total ${{= ${{setupMs:0}} + ${{runMs:0}} }}
+```
+
+The double `{{` and `}}` are referred to as *double mustache.* They avoid collision with environment references that might exist in `sh` commands:
+
+```yaml
+- sh: su ${username}
+```
+
+The *double mustache* and colon can cause problems if we are trying to create a javascript object with the pattern.
+```yaml
+- set-state: json ${{{"name":"able","count":${{count:0}}}}}
+```
+The expectation is for json to be set to `{"name":"able","count":0}` but the pattern parser will see the first colon after `name` and treat the rest of the input as the default value if there isn't a `name` in `state`.
+
+Instead, we use the top level command options to change the pattern `prefix`, `suffix`, and `separator`:
+```yaml
+set-state: json $[[{"name":"able","count":$[[count_0]]}]]
+  prefix: $[[
+suffix: ]]
+  separator: _
+```
+
+There is also a `js-prefix` that tells qDup when to evaluate the pattern as javascript code. The default value is `=`.
+```yaml
+set-state: json ${{_${{foo:0}} + ${{bar:0}} }}
+js-prefix: '_'
+separator: _
+```
+
+I cannot think of a situation where we need to change the `js-prefix` but the option exists.
+
