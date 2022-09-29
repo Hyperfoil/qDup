@@ -1,0 +1,49 @@
+= How to react to other scripts while a command is running
+
+Coordinating scripts with `signal` and `wait-for` works when one script needs to wait for another script. It does not work if a script needs to react to a `signal` while another command is running.
+
+For example, `perf record` will record events until the command ends. We may want to end it when `mvn install` completes. We can do this with a `signal` after `mvn install` and using `on-signal` to handle that signal while `perf record` is running.
+
+```yaml
+scripts:
+  perf-script:
+  - sh: perf record
+    on-signal:
+      done:
+      - ctrlC
+  mvn:
+  - sh: mvn install
+  - signal: done
+
+roles:
+  test:
+    hosts: local
+    run-scripts:
+    - perf-script
+    - mvn
+```
+If we are using `on-signal` on an `sh` command that will not end we run the risk of something preventing the `signal` and the `sh` command hanging the run. We normally recommend using a `timer` with a good default time to act as a failsafe to ensure the script exits.
+
+```yaml
+scripts:
+  perf-script:
+  - sh: perf record
+    on-signal:
+      done:
+      - ctrlC
+    timer:
+      10m: #10 minutes is more than enough time
+      - abort: failed to reach done
+           #ctrlC wouldn't show we failed to signal done
+  mvn:
+  - sh: mvn install
+  - signal: done
+
+roles:
+  test:
+    hosts: local
+    run-scripts:
+    - perf-script
+    - mvn
+```
+
