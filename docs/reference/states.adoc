@@ -1,11 +1,8 @@
 = qDup states
 
-The state is where qDup stores values during a run and how scripts can introduce
-variability into a run. The YAML is converted to JSON and can be used in any state
-value pattern `${{...}}`.
+The state is where qDup stores values during a run and how scripts can introduce variability into a run. The YAML is converted to JSON and can be used in any state value pattern `${{...}}`.
 
-Commands can reference state variables by name with `${{name}}` and `regex` can define
-new entries with standard java regex capture groups `(?<name>.*)`
+Commands can reference state variables by name with `${{name}}` and `regex` can define new entries with standard java regex capture groups `(?<name>.*)`
 ```YAML
 - sh: tail -f /tmp/server.log
   watch:
