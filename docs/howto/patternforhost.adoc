@@ -1,0 +1,40 @@
+= How to target host from command line
+
+The link:../tutorial/helloworld.adoc[hello world tutorial] showed us how to use qDup pattern replacement and pass in an override value from the command line (using `-S`). We run qDup in our Jenkins instance and use `-S` to pass in multiple parameters to customize performance tests. qDup pattern replacement is not limited to commands.
+
+== Replacing host references
+
+qDup roles are mapped to hosts with a host reference
+```yaml
+hosts:
+  hostRef: username@hostname
+roles:
+  example:
+    hosts:
+    - hostRef
+  ...
+```
+We can replace `hostRef` in the example's hosts with a pattern:
+```yaml
+hosts:
+  hostRef: username@server
+  local: me@localhost
+roles:
+  example:
+    hosts:
+    - ${{targetHost:hostRef}}
+  ...
+```
+The `example` role will default to running on the server. We can pass in `-S targetHost=local` and test the script on our local computer before connecting to the server. We can also pass in a valid ssh reference `-S targetHost=username@different_server` and qDup will run the example role on the new host.
+
+So far we have only run `example` on one host, but if we want to run it on multiple computers we can replace the entire `hosts` value with a pattern
+```yaml
+hosts:
+  hostRef: username@server
+  local: me@localhost
+roles:
+  example:
+    hosts: ${{targetHosts:["hostRef"]}}
+  ...
+```
+We changed the variable name to `targetHosts` to show we expect a list of host references. We also changed the default value to an array with an entry for`hostRef`. now we override the default with -S targetHosts="['username@different_server','local']" and we are running any scripts in the example role on both our local computer and different_server
