@@ -17,7 +17,7 @@ If the files are stored in the same folder as the scripts then the `upload` exam
 - upload: ${{ENV.SCRIPT_DIR}}/*.json /tmp/
 ```
 
-Most of our script repositories have a separate folder called `assets` for files we sent to the remote computers. For those scripts, `upload` is slightly different:
+Most of our script repositories have a separate folder called `assets` for files we send to the remote computers. For those scripts, `upload` is slightly different:
 
 ```yaml
 - upload: ${{ENV.SCRIPT_DIR}}/../assets/*.json /tmp/
