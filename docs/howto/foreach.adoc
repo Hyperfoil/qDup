@@ -1,6 +1,6 @@
 = How to iterate over input
 
-The `for-each` command repeats its sub-commands (commands in `then`) for each entry its input.
+The `for-each` command repeats its sub-commands (commands in `then`) for each entry in its input.
 The `input` can either be declared in yaml or it can be the output of the parent command.
 
 == input from previous command
@@ -22,11 +22,17 @@ The `input` can either be declared in yaml or it can be the output of the parent
 == declared input
 The other option is to declare input in yaml. This works well when the list is stored in state or when the options are static
 ```yaml
-- for-each:
-    name: entry
-    input: ${{scriptName:[]}}
-  then:
-  - sh: ./${{scriptName}}.sh
+scripts:
+  run-scripts:
+  - for-each:
+      name: entry
+      input: ${{scriptNames:[]}}
+    then:
+    - sh: ./${{scriptNames}}.sh
+states:
+  scriptNames:
+  - one
+  - two
 ```
 ```yaml
 - for-each:
