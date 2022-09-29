@@ -8,9 +8,9 @@ The most common way to end a run early is with the `abort` command.
     then:
     - abort: fatal error in doSomething.sh
 ```
-`abort` stops the `setup-scripts` and `run-scripts`.
+By default, `abort` stops the `setup-scripts` and `run-scripts` but
 qDup will still download anything that was queued with `queue-download` and by default it will still run the `cleanup-scripts`.
-We can prevent the `cleanup-scripts` by using the full command syntax.
+We can prevent the `cleanup-scripts` with the `skip-cleanup` option in the full command syntax.
 ```yaml
 - sh: doSomething.sh
   watch:
@@ -35,4 +35,15 @@ We can also tell qDup to check all `sh` exit codes with the `-x`, `--exit-code` 
 global:
   settings:
     check-exit-code: true
+```
+
+Several commands have non-zero exit codes for common scenarios. `which java` will have a non-zero exit code if java is missing. We can globally enable `check-exit-code` then disable it for specific `sh` commands where we expect a non-zero exit code
+```yaml
+- sh:
+    command: which java
+    ignore-exit-code: true
+  then:
+  - regex: no java
+    then:
+    - sh: "installJava.sh"
 ```
