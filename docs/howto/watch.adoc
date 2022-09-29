@@ -12,9 +12,12 @@ qDup `sh` commands have a `watch` list of commands that are invoked with each ne
 
 == limitations
 
-Matched `regex` invoke their `then` commands but there are limits on what can be included under a `watch`.
-The `doSomething.sh` script is still running in the ssh connection while the `watch` commands are executing so we cannot have another `sh` under `watch`.
-We also cannot have a `script` command unless it is also set to `async: true` so that it creates a new ssh connection.
+The `doSomething.sh` script is still running in the ssh connection while the `watch` commands are executing, therefore we cannot run commands that would need control of the ssh connection. The following commands cannot be used in `watch`:
+
+* `sh` - cannot write to the ssh connection while another `sh` is running
+* `wait-for` - cannot pause the script if an `sh` command is running
+* `repeat-until`- cannot block other `watch` commands
+* `script` - script can only be used if `async: true` is used to spawn a new ssh connection.
 
 ==== ok
 ```yaml
@@ -34,7 +37,25 @@ We also cannot have a `script` command unless it is also set to `async: true` so
     then:
     - script: in-case-of-error
 ```
-== when to use them
+
+If you want to run some of the above commands in parallel to `doSomething.sh` then we recommend creating a second script and starting that script before `doSomething.sh` and sending a `signal` when `doSomething.sh` finishes.
+
+```yaml
+scripts:
+  alsoDoThis:
+  - sh: ./this.sh
+  - repeat-until: doSomething-done
+    then:
+    - sh: ...
+  doSomething:
+  - script:
+      name: alsoDoThis
+      async: true
+  - sh: doSomething.sh
+  - signal: doSomething-done
+```
+
+== when to use watch
 The `watch` section is best used for actions that cannot wait for the `sh` command to finish.
 This includes:
 
@@ -49,7 +70,7 @@ This includes:
     10m: #max wait time
     - ctlrC-
 ```
-* signaling or other scripts when conditions are ready
+* signaling other scripts when conditions are ready
 ```yaml
 - sh: doSomething.sh
   watch:
@@ -58,7 +79,7 @@ This includes:
     - signal: something_ready
 ```
 
-* starting or other scripts when conditions are ready
+* starting other scripts when conditions are ready
 ```yaml
 - sh: doSomething.sh
   watch:
@@ -69,8 +90,33 @@ This includes:
         async: true
 ```
 
+**Note:** some performance tests are sensitive to the overhead of establishing a new ssh connection. Use the signaling method to have the script start with a `wait-for` and only continue if signaled.
 
+== watching for interaction
 
+Some `sh` commands require interaction. For example using `subscription-manager` asks for a password. There are two ways interact with a command.
 
+=== watch, regex, send-text
+The first option is using the `watch` context with a `regex` and the `send-text` command.
+```
+- sh: subscription-manager register --username=me@domain.com
+  watch:
+  - regex: "Password: "
+    then:
+    - send-text: "paSSw0rd"
+```
+The 'watch' method works if the command output (e.g. `subscription-manager`) is a complete line but `subscription-manager` prompts for the password and does not send a newline after `Password:` so the `watch` will not run. If the command does not send a newline after the patter then we have to use the `prompt` option.
 
+=== prompt and response
+The `prompt` option matches output without waiting for a newline so it can respond to prompts from interactive commands.
+```
+- sh:
+    command: subscription-manager register --username=me@domain.com
+    prompt:
+      "Password: " : "paSSw0rd"
+```
+
+== When to prompt versus watch
+
+use the `prompt` option if the command's output will be on the same line as the cursor and you can match the end of the output. Use `watch` if you want to match regex to part of the output and it will appear in a complete line of text.
 
