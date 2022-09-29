@@ -535,6 +535,44 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
+   public void yaml_state_scan(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("", stream("" +
+              "scripts:",
+              "  foo:",
+              "  - sh: |",
+              "      foo bar",
+              "      biz buz",
+              "      fizz fuzz",
+              "    state-scan: false",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts:",
+              "    - foo:",
+              "        with:",
+              "          value: ${{value}}",
+              "states:",
+              "  value: worked"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+
+      Cmd foo = config.getScript("foo");
+      Cmd next = foo.getNext();
+
+      System.out.println("next "+next.getClass());
+      System.out.println("next "+next.isStateScan());
+
+      assertFalse("sh should not be state-stan",next.isStateScan());
+   }
+
+   @Test
    public void run_with_json_from_state() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
