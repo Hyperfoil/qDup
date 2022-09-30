@@ -1,0 +1,36 @@
+= How to call a script from another script
+
+qDup `scripts` are re-usable sequences of commands to perform a task. The tasks are ideally re-usable thus it makes sense we will want to use them. Add it to a `role` in the `setup-scripts`, `run-scripts`, or `cleanup-scripts` or you can call a script from another script with the `script` command.
+
+The `script` command takes the name of another script to call or a pattern that will evaluate to a script later.
+```yaml
+scripts:
+  ensure-java-installed:
+  - sh: ...
+  start-java-app:
+  - script: ensure-java-installed
+  - sh: ...
+```
+
+Using `script` this way will run all the commands from `ensure-java-installed` before continuing with the commands in `start-java-app`. This is what we do when the re-used script ensures some prerequisites are available. If we want to run a script in parallel or when observing a command we use the mapping syntax and add `async: true`.
+
+```yaml
+scripts:
+  ensure-java-installed:
+  - sh: ...
+-
+  profile-java:
+  - sh: ...
+
+  start-java-app:
+  - script: ensure-java-installed
+  - sh: java -jar app.jar
+    watch:
+    - regex: DEBUG_ME
+      then:
+      - script:
+          name: profile-java
+          async: true
+```
+
+NOTE: observing a command means any commands under `watch` `on-signal` or `timer`
