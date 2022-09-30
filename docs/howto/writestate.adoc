@@ -1,0 +1,56 @@
+= How to write state to separate files
+
+Complicated workloads, like running a suite of benchmarks or performance tests, create complicated output. That output can be parsed with `regex` into state values and included in the `run.json` that qDup creates or we write parts of the state to file as part of the qDup script to help separate the difference tests in the suite.
+In our example we will use curl as our _performance test_ and our _benchmark suite_ will be a list of websites we want to measure. We will add `time` so we can measure the response time. The `sh` command is rather straight forward
+```yaml
+- for-each: target ${{targets:[]}} #default to empty to avoid errors
+  then:
+  - sh: time curl -v "${{target}}"
+```
+We will expect `targets` to be an array from the command line using `-S`. We collect our _performnace metrics_ with `regex`
+```yaml
+- for-each: target ${{targets:[]}} #default to empty to avoid errors
+  then:
+  - sh: time curl -v "${{target}}"
+    then:
+    - regex: "real\\s+(?<real>\\S+)"
+    - regex: "user\\s+(?<user>\\S+)"
+    - regex: "sys\\s+(?<sys>\\S+)"
+    - regex: "HTTP/\\d\\.\\d (?<code>\\d{3})"
+```
+Now we need to decide what we do with the values. We could store them in an array in `states` but for this example we will write them to file.
+```yaml
+- for-each: target ${{targets:[]}} #default to empty to avoid errors
+  then:
+  - sh: time curl -v "${{target}}"
+    then:
+    - regex: "real\\s+(?<real>\\S+)"
+    - regex: "user\\s+(?<user>\\S+)"
+    - regex: "sys\\s+(?<sys>\\S+)"
+    - regex: "HTTP/\\d\\.\\d (?<code>\\d{3})"
+    - sh: echo '{"real":"${{real}}","user":"${{user}}","sys":"${{sys}}","code":"${{code}}"} > "${{target}}.json"
+    - queue-download: "${{target}}.json"
+```
+The above example constructs the json in the call to echo but we could also separate that into a `set-state` or `js` command.
+```yaml
+- set-state: toWrite {"real":"${{real}}","user":"${{user}}","sys":"${{sys}}","code":"${{code}}"}
+  then:
+  - sh : echo '${{toWrite}}' > "${{target}}.json"
+```
+The `js` options lets us do much more than pattern replacement
+```yaml
+- js: |
+    (input,state)=>{
+      const {real,user,sys,code,...rest}=state
+      const obj = {real,user,sys,code};
+      if(code != 200 ){
+         obj.foo = true
+      }
+      state.toWrite = obj
+    }
+  then:
+  - sh : echo '${{toWrite}}' > "${{target}}.json"
+```
+
+
+NOTE: we could use qDup pattern replacement to evaluate javascript and set `foo: false` with `${{=( ${{code}} > 200 ? ",foo:true":"" ) }}` but that would require a custom `separator` and `suffix` and could be harder to read
