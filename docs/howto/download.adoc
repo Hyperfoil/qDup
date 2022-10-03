@@ -11,7 +11,7 @@ The `download` command will immediately copy the file to the qDup output folder.
 ```yaml
 - download: /tmp/result.json
 ```
-This command is appropriate if the file will change or be deleted while the qDup script is running. Honestly, we rarely use `download` but
+This command is appropriate if the file will change or be deleted while the qDup script is running. 
 
 == queue-download
 The most common method for copying files from remote computers is to queue the download.
