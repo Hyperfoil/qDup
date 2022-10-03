@@ -134,6 +134,14 @@ public class CmdTest extends SshTestBase {
    }
 
    @Test
+   public void populateStateVariable_jsonpath_haskey(){
+      State state = new State("");
+      state.set("FOO", Json.fromString("[{\"key\":\"foo-bar\",\"value\":\"one\"},{\"value\":\"one\"}]"));
+      String response = Cmd.populateStateVariables("${{FOO[?(@.key)]}}",null,state,null,null);
+      assertTrue("response should be json-like",Json.isJsonLike(response));
+      assertFalse("response should not contain FOO",response.contains("FOO"));
+   }
+   @Test
    public void populateStateVariable_jsonpath_found(){
       State state = new State("");
       state.set("FOO", Json.fromString("[{\"key\":\"foo-bar\",\"value\":\"one\"},{\"key\":\"foo-biz\",\"value\":\"one\"}]"));

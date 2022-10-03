@@ -18,7 +18,7 @@ public class StateConstruct extends DeferableConstruct {
             //empty state is fine
         }else if(node instanceof MappingNode){
             Json json = json(node);
-            rtrn.load(json);
+            rtrn.load(json,false);
             return rtrn;
         }else {
             throw new YAMLException("state must be loaded from a map " + node.getClass()+" "+node.getStartMark());
