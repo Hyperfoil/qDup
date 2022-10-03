@@ -29,6 +29,21 @@ public class JsCmdTest {
         assertTrue("return false should call skip",context.hasSkip());
     }
 
+    @Test //added for docs/howto/writestate
+    public void object_expansion_lambda(){
+        JsCmd jsCmd = new JsCmd("(input,state)=>{ const {foo,bar,...rest} = state; return {foo,bar}}");
+        SpyContext context = new SpyContext();
+        context.getState().set("foo","one");
+        context.getState().set("bar","two");
+        jsCmd.run("bbq",context);
+        String next = context.getNext();
+        assertNotNull("js should call next",next);
+        assertTrue("next should look like json",Json.isJsonLike(next));
+        Json json = Json.fromString(next);
+        assertNotNull("json should not be null",json);
+        assertTrue("json.foo should exist",json.has("foo"));
+        assertTrue("json.bar should exist",json.has("bar"));
+    }
     @Test
     public void return_regex_capture(){
         JsCmd jsCmd = new JsCmd("function(a,b){ let rtrn = a.match(/<(.*)>/); return rtrn[1];}");
@@ -71,8 +86,6 @@ public class JsCmdTest {
     @Test
     public void return_string(){
         JsCmd jsCmd = new JsCmd("function(a,b){ return 'passed';}");
-        State state = new State(State.RUN_PREFIX);
-
         SpyContext context = new SpyContext();
 
         jsCmd.run("",context);
