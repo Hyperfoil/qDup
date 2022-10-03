@@ -1,9 +1,6 @@
 = js
 
-The 'js' command is an opportunity to execute arbitrary javascript code on the
-`input` from the previous command and a read-only view of the current `state`.
-The 'then' commands will run if the function returns a "truthy" object or will be
-skilled if the function does not return, returns `null`, `false`, or a string containing `"false"`
+The 'js' command is an opportunity to execute arbitrary javascript code on the `input` from the previous command and the current `state`. The 'then' commands will run if the function returns a "truthy" object or will be skilled if the function does not return, returns `null`, `false`, or a string containing `"false"`
 
 [source,yaml]
 ----
@@ -15,6 +12,4 @@ skilled if the function does not return, returns `null`, `false`, or a string co
     }
 ----
 
-IMPORTANT: We are experimenting with a global javascript object in master similar to jQuery or lodash
-that will give read-only access to more of the qDup internals (signals, counters, and state).
-It can be accessed with `$QD` but it is experimental and currently only in SHAPSHOT from master.
+//IMPORTANT: We are experimenting with a global javascript object in master similar to jQuery or lodash that will give read-only access to more of the qDup internals (signals, counters, and state). It can be accessed with `$QD` but it is experimental and currently only in SHAPSHOT from master.

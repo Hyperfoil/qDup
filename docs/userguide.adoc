@@ -5,20 +5,41 @@
 
 == Introduction
 
-qDup is an agent-less, automation and coordination tool; used to coordinate tasks across multiple machines without any agents running on the target machines.
+=== What is qDup?
 
-qDup allows for the co-ordination of many activities across multiple machines, allowing complex co-ordination of benchmarking steps to be managed and repeatable.
+qDup is an agent-less, automation and coordination tool. We use it to coordinate tasks across multiple linux computers through standard ssh connections.
+
+=== What does qDup do?
+
+qDup allows for the co-ordination of many activities across multiple servers, making complex benchmarks manageable and repeatable.
+
+=== How to get started with qDup
+
+The Tutorials are the best place to get started. They walk us from new to qDup to writing coordinated scripts that handle common scripting requirements in 3 tutorials:
+
+1. link:../docs/tutorial/prerequisites.adoc[prerequisites]
+2. link:../docs/tutorial/helloworld.adoc[hello world]
+3. link:../docs/tutorial/quarkusgetstarted.adoc[quarksu getting started app]
+
+After the tutorials, check out the `How To` for more specific scenarios
+
+* link:howto/watch.adoc[How to watch a command line by line]
+* link:howto/abort.adoc[How to abort a run early]
+* link:howto/download.adoc[How to download files from remote computers]
+* link:howto/
+
+=== How does qDup work?
 
 qDup uses SSH, no special agents or languages required. We recommend using SSH keys to connect without passwords but user passwords can be included in the YAML files.
 
 The main workflow is broken into 3 stages: setup, run, cleanup
 
-Setup scripts are executed **sequentially** with a shared SSH session to help capture all the changes and ensure a consistent state for the run stage.
+**Setup** scripts are executed **sequentially** with a shared SSH session to help capture all the changes and ensure a consistent state for the run stage.
 Any environment changes to the setup SSH session will be copied to all the run stage sessions.
 
-Run scripts are executed in parallel and will start with the environment changes from the setup stage.
+**Run** scripts are executed in **parallel** and will start with the environment changes from the setup stage.
 
-Cleanup scripts are executed **sequentially** with a shared SSH session to ensure a consistent ending state.
+**Cleanup** scripts are executed **sequentially** with a shared SSH session to ensure a consistent ending state.
 They occur after any pending `queue-download` from the run stage so it is safe to cleanup anything left on the hosts
 
 == Quickstart
