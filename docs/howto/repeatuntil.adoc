@@ -7,7 +7,7 @@ The `repeat-until` command will re-run the commands in `then` until the named `s
   - sleep: 1m #add a delay or the command run very quickly
   - ...
 ```
-The `signal` can come from a different script or from a child of the `repeat-until`. If the `signal` comes from within the script then we normally `set-signal: ready 1` beforehand to ensure the signal is initialized before looping
+The `signal` can come from a different script or from a child of the `repeat-until`. If the `signal` comes from within the script then we normally `set-signal: ready 1` beforehand to ensure `ready` is initialized to expect 1 call to `signal` before looping
 ```yaml
 - set-signal: ready 1
 - repeat-until: ready
