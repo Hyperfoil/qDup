@@ -150,6 +150,7 @@ public class RunConfigBuilder {
 
    public boolean loadYaml(YamlFile yamlFile) {
       if (yamlFile == null) {
+         addError("tried to load an invalid yaml file");
          return false;
       }
       getState().merge(yamlFile.getState());

@@ -9,7 +9,7 @@ import static org.junit.Assert.assertEquals;
 
 public class RunConfigTest extends SshTestBase {
 
-   @Test @Ignore /* static scan does not exalute content of set-signal*/
+   @Test @Ignore /* static scan does not evaluate content of set-signal*/
    public void signal_variable_in_script_with(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
