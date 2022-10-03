@@ -139,23 +139,20 @@ public class State {
     }
 
     public void load(Json json){
+        load(json,true); //default is to auto-convert
+    }
+    public void load(Json json,boolean autoConvert){
         json.forEach((key,value)->{
             if(value instanceof Json){
                 if (((Json)value).has("value") && ((Json)value).has("autoConvert") && ((Json)value).size() == 2) {
                     String stateValue = ((Json)value).getString("value");
-                    boolean autoConvert = ((Json)value).getBoolean("autoConvert");
-                    set(key.toString(), stateValue, autoConvert);
+                    boolean autoConvertThis = ((Json)value).getBoolean("autoConvert");
+                    set(key.toString(), stateValue, autoConvertThis);
                 } else {
-                    set(key.toString(),value.toString(), true);
+                    set(key.toString(),value.toString(), autoConvert);
                 }
-//                String childPrefix = null;
-//                if(RUN_PREFIX.equals(this.prefix)){
-//                    childPrefix = HOST_PREFIX;
-//                }
-//                State childState = getChild(key.toString(),childPrefix);
-//                childState.load((Json)value);
             }else{
-                set(key.toString(),value.toString(), true);
+                set(key.toString(),value.toString(), autoConvert);
             }
         });
     }
@@ -185,7 +182,6 @@ public class State {
                 });
             }
         }
-
     }
 
     public Map<Object,Object> getOwnState(){
@@ -225,8 +221,12 @@ public class State {
     public void set(String key, Object value, boolean autoConvert){
         if (autoConvert) {
             value = convertType(value);
+        }else if (Json.isJsonLike(value.toString())){
+            Json test = Json.fromString(value.toString());
+            if ( test!=null ) {
+                value = test;
+            }
         }
-
         State target = this;
         //leave this here to detect _RUN. or _HOST.
         boolean isSecret = key.startsWith(SecretFilter.SECRET_NAME_PREFIX);

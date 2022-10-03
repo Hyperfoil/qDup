@@ -302,6 +302,60 @@ public class RunConfigBuilderTest extends SshTestBase {
     }
 
     @Test
+    public void error_invalid_top_level_entry() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("error_invalid_top_level_entry", stream("" +
+                "scripts:",
+                "  foo:",
+                "    - sh: echo HI",
+                "      then:",
+                "      - sh: |",
+                "          echo ${{BAR}}",
+                "state-scan: false",
+                "hosts:",
+                "  local: "+getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    setup-scripts: [foo]",
+                "states:",
+                "  BAR: ${{BIZ:}}",
+                "  BIZx: "
+        )));
+        System.out.println(builder.errorCount());
+        RunConfig config = builder.buildConfig(parser);
+        assertTrue("expected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+    }
+    @Test
+    public void error_invalid_statescan_indentation() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("error_invalid_statescan_indentation", stream("" +
+                "scripts:",
+                "  foo:",
+                "    - sh: echo HI",
+                "      then:",
+                "      - sh: |",
+                "          echo ${{BAR}}",
+                "       state-scan: false",
+                "hosts:",
+                "  local: "+getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    setup-scripts: [foo]",
+                "states:",
+                "  BAR: ${{BIZ:}}",
+                "  BIZx: "
+        )));
+        System.out.println(builder.errorCount());
+        RunConfig config = builder.buildConfig(parser);
+        assertTrue("expected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+    }
+
+
+    @Test
     public void testScriptWithCtrlC(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();

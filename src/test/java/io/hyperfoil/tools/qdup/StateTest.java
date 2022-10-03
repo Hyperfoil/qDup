@@ -76,6 +76,20 @@ public class StateTest extends SshTestBase{
     }
 
     @Test
+    public void states_declared_string(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",stream(""+
+                "states:",
+                "  foo: \"0.200\""
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        State state = config.getState();
+        assertEquals("state should remain a string","0.200",state.get("foo"));
+    }
+
+
+    @Test
     public void array_state(){
         State state = new State("");
         Json json = new Json();
