@@ -17,7 +17,7 @@ See [User Guide](./docs/userguide.adoc) for the qDup user guide.
 
 See [Examples](./docs/examples/) for various qDup examples.
 
-See [Commands](./docs/commands.adoc) for available commands.
+See [Commands](./docs/reference/commands.adoc) for available commands.
 
 See [FAQ](./docs/FAQ.md) for frequently asked questions.
 
