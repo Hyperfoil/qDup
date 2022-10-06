@@ -1,0 +1,210 @@
+= How to troubleshoot scripts
+
+We are going to intentionally creates broken scripts so that we may explore how we detect script issues.
+
+== Introduction
+This tutorial will introduce us to:
+
+1. static script analysis
+2. qDup embedded debug server
+3. response injection
+4. script breakpoints
+
+== Prerequisites
+We assume you have already followed the link:./prerequisites.adoc[prerequisites] or already run qDup from the terminal. You will also need two terminal windows for this tutorial. We will call them `A` and `B`. `A` is where we are going to run qDup and `B` is where we are going to use `curl` and `jq`.
+
+== Getting started
+create a `qdup.yaml` file with the following:
+```yaml
+scripts:
+  broken:
+  - sh: mkdir -p /tmp/biz
+  - sh: echo "foo" > /tmp/biz/foo.txt
+    - sh: rm -i /tmp/biz/foo.txt
+
+hosts:
+  local: me@localhost #replace with your username
+
+roles:
+  example:
+    hosts: [ local ]
+    run-scripts:
+    - broken
+```
+
+Try and run with the `qdup.yaml`.
+
+```
+#> java -jar qDup-uber.jar qdup.yaml
+ loading entry qdup.yaml
+15:34:27.470 Failed to load qdup.yaml as yaml
+while parsing a block mapping
+ in 'string', line 4, column 5:
+      - sh: echo "foo" > /tmp/biz/foo.txt
+        ^
+expected <block end>, but found '-'
+ in 'string', line 5, column 5:
+        - sh: rm -i /tmp/biz/foo.txt
+        ^
+15:34:27.471 Aborting run due to error reading qdup.yaml
+```
+
+The error message is a bit technical because it comes from the yaml parser but the key part is `Failed to load qdup.yaml as yaml`. This means the file was not valid yaml.
+
+== Static script analysis
+We need to look at line 4, column 5 and line 5, column 5. We could make changes and try to run the script again, or we can make our changes and tell qDup to just run the static analysis. Telling qDup to just run the static analysis is faster. We will use the `-T` command line argument to tell qDup to 'test' the yaml, but first we should look at line 4 and 5.
+
+If you are familiar with yaml the error is probably clear. We have too many spaces before the `- sh: rm -i ...` command which means the yaml parser is trying to treat it as a list entry but the previous line is a key and value so it cannot have a sub-list. The solution is to remove the extra spaces and `test` the script.
+
+```
+#> java -jar qDup-uber.jar -T qdup.yaml
+```
+You should no longer see the `Failed to load qdup.yaml as yaml` message nor the details about line 4 and 5. This means our script is valid syntax. Let's try to run it again. It should run but not exit. Eventually it will start logging `Nanny found idle` messages.
+
+```
+#> java -jar qDup-uber.jar qdup.yaml
+ loading entry qdup.yaml
+15:44:15.333 Running qDup version 0.6.16-SNAPSHOT @ dcbe2a0
+15:44:15.334 output path = /tmp/20221004_154415
+15:44:15.495 json server listening at localhost:31337
+15:44:16.325 starting 1 scripts
+15:44:16.333 broken:14@localhost:script-cmd: broken
+15:44:16.336 broken:14@localhost:broken
+15:44:16.762 broken:14@localhost:mkdir -p /tmp/biz
+15:44:17.194 broken:14@localhost:echo "foo" > /tmp/biz/foo.txt
+16:27:42.165 Nanny found idle
+  command=sh: rm -i /tmp/biz/foo.txt
+  host=localhost
+  contextId=broken:14@me@localhost:22 script=script-cmd: broken:broken
+  idle=2604.97
+  lastLine=rm: remove regular file '/tmp/biz/foo.txt'?
+```
+
+== qDup embedded debug server
+
+The `Nanny found idle` message means a command did not log anything for 30 seconds (default idle timer). The nanny is meant to warn that a command may be stuck or may have prompted for user input that is missing. We can check the `lastLine` and see that `rm -i /tmp/biz/foo.txt` is asking us to confirm removing the file.
+
+qDup also has an embedded debug server that can provide information about all the currently running commands. qDup logs where to find the debug server when it starts.
+```
+15:44:15.495 json server listening at localhost:31337
+```
+We can `curl` the `/active` endpoint to get more details about the active command:
+```
+#> curl localhost:31337/active
+[{
+  "output": "rm: remove regular file '/tmp/biz/foo.txt'? ",
+  "uid": 19,
+  "input": "",
+  "lastUpdate": 1664973914534,
+  "name": "sh: rm -i /tmp/biz/foo.txt",
+  "host": "me@localhost:22",
+  "contextId": "broken:14@me@localhost:22",
+  "startTime": 1664973914534,
+  "runTime": 24458,
+  "idleTime": 24458,
+  "script": "14:script-cmd: broken"
+}]
+```
+This shows us the command `name` and the full `output`. In this case, the output is just one line confirming we want to remove the file. We can use a `prompt` like we did in link:quarkusgetstarted.adoc[Scripting Quarkus getting started] but before that we have to decide what to do with the stuck qDup.
+
+== response injection
+
+qDup gives us the ability to interact with the ssh connection for running scripts. This means we can confirm the `rm` to finish the script normally. We send a 'y' to confirm the `rm` with a POST using the `contextId` from the `/active` output.
+```
+#> curl -X POST -d 'y' "localhost:31337/session/broken:14@me@localhost:22"
+ok
+```
+The `ok` response means qDup successfully sent `y` to the ssh connection to confirm the prompt. You should see the qDup process completes.
+
+Run the broken qDup script again and get the `contextId` from `/active`. This time we are going to send `ctrlC` to the ssh connection to force the command to end instead of confirming the prompt.
+```
+#> curl -X POST -d 'ctrlC' "localhost:31337/session/broken:14@me@localhost:22"
+ok
+```
+Now we should update the `sh` command in our script.
+```yaml
+#...
+- sh:
+    command: rm -i /tmp/biz/foo.txt
+    prompt:
+      "'/tmp/biz/foo.txt'? ": "y" #confirm rm foo.txt
+#...
+```
+Run qDup with the updated `qdup.yaml` and notice that the prompt response is in the output from `rm`
+```
+#> java -jar qDup-uber.jar qdup.yaml
+ loading entry qdup.yaml
+09:53:32.314 Running qDup version 0.6.16-SNAPSHOT @ dcbe2a0
+09:53:32.315 output path = /tmp/20221005_095332
+09:53:32.480 json server listening at localhost:31337
+09:53:33.252 starting 1 scripts
+09:53:33.256 broken:14@localhost:script-cmd: broken
+09:53:33.258 broken:14@localhost:broken
+09:53:33.686 broken:14@localhost:mkdir -p /tmp/biz
+09:53:34.117 broken:14@localhost:echo "foo" > /tmp/biz/foo.txt
+09:53:35.559 broken:14@localhost:rm -i /tmp/biz/foo.txt
+rm: remove regular file '/tmp/biz/foo.txt'? y
+09:53:35.607 run-1664978012249 -> /tmp/20221005_095332.queueCleanupScripts
+Finished in 03.093 at /tmp/20221005_095332
+```
+
+== script breakpoints
+
+qDup offers an ability to pause script execution with `-K` by matching a pattern to the command. For example, we could pause the `rm` command by matching `rm -i` with `-K="rm -i". Let's add `-K="rm -i" to our qDup arguments and run our script.
+
+```
+#> java -jar qDup-uber.jar -K="rm -i" qdup.yaml
+ loading entry qdup.yaml
+21:43:20.500 Running qDup version 0.6.16-SNAPSHOT @ dcbe2a0
+21:43:20.501 output path = /tmp/20221005_214320
+21:43:20.708 json server listening at localhost:31337
+21:43:21.532 starting 1 scripts
+21:43:21.545 broken:14@localhost:script-cmd: broken
+21:43:21.551 broken:14@localhost:broken
+21:43:21.985 broken:14@localhost:mkdir -p /tmp/biz
+21:43:22.414 broken:14@localhost:echo "foo" > /tmp/biz/foo.txt
+BREAKPOINT starting command
+  breakpoint: rm -i
+  command: sh: rm -i /tmp/biz/foo.txt
+  script: script-cmd: broken
+  host: me@localhost:22
+  context: broken:14@me@localhost:22
+Press enter to continue:
+```
+
+qDup pauses the command before and after execution. qDup marks the command as active but it does not send the `sh` command to the ssh connection so we will likely see `Nanny found idle` messages while we inspect qDup. We already used the `/active` but there are several more. `curl localhost:31337/` for a list of endpoints. We are going to use the `/session/:contextId/regex` endpoint to test `regex` on the output from our `rm -i` command.
+
+First, press enter to advance the script to the end of the `sh: rm -i` command. You should see another breakpoint and now calls to `/active` should list the output.
+
+```
+#> curl localhost:31337/active
+[{
+  "output": "rm: remove regular file '/tmp/biz/foo.txt'? y\r\n",
+  "uid": 19,
+  "input": "",
+  "lastUpdate": 1665020988548,
+  "name": "sh: rm -i /tmp/biz/foo.txt",
+  "host": "me@localhost:22",
+  "contextId": "broken:14@me@localhost:22",
+  "startTime": 1665020987535,
+  "runTime": 36367,
+  "idleTime": 35354,
+  "script": "14:script-cmd: broken"
+}]
+```
+
+Now we can test `regex` patterns on the output. The regex patterns can include capture groups and the response will tell us what values were added to qDup state by the capture groups. Let's try our first regex
+```
+#> curl -X POST -d "file (?<match>[^']+)'" "localhost:31337/session/broken:14@me@localhost:22/regex"
+{"skip":"rm: remove regular file '/tmp/biz/foo.txt'? y\r\n"}
+```
+The response includes a `skip` which means the regex did not match. looking at the pattern, it looks like we forgot the `'` before the capture group. Add the `'` and try again
+
+```
+#> curl -X POST -d "file '(?<match>[^']+)'" "localhost:31337/session/broken:14@me@localhost:22/regex"
+{"state":{"match":"/tmp/biz/foo.txt"},"next":"rm: remove regular file '/tmp/biz/foo.txt'? y\r\n"}
+```
+The response includes a `next` which means the pattern matches. We also see the `state` values include our `match` capture group.
+
+
+

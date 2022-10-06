@@ -19,12 +19,12 @@ Remember the username and hostname for your setup and use them in the `hosts` se
 
 == Getting started with Getting started
 
-We are going to use the link:https://quarkus.io/guides/getting-started[Quarkus getting started] project to substitute for our application. We follow the steps in their guide the same way we would follow the README for other applications.
+We are going to use the link:https://quarkus.io/guides/getting-started[Quarkus getting started] project to substitute for our application. We follow the steps in their guide the same way we would follow the README for other applications. The best practice is to open a terminal and test each command to get familiar with the output. Start with the first command in the README.
 
 ```
 git clone https://github.com/quarkusio/quarkus-quickstarts.git
 ```
-The first step in the quarkus guide is to clone the example repository. We create a qDup script with the same step, but first we want our script to use the `tmp` directory.
+The first README step clones the example repository. We create a qDup script with the same step, but our script will first cd to the `tmp` directory.
 ```yaml
 scripts:
   getting-started:
@@ -47,7 +47,7 @@ Create a `qdup.yaml` script file with the above yaml and run it using qDup
 java -jar qdup-uber.jar qdup.yaml
 ```
 
-The quarkus guide next talks about creating our own project using the `quarkus` cli. We are going to skip ahead and use the `getting-started` project.
+The quarkus guide next talks about creating our own project using the `quarkus` cli. We are going to skip ahead and use the `getting-started` project. Remember to run the `cd getting-started` in the terminal too. Walking through each step in a terminal while writing the script prevents most errors related to unexpected output.
 
 ```yaml
 scripts:
@@ -72,7 +72,7 @@ scripts:
   - sh: cd getting-started
 ```
 
-The next command in the getting stated guide is to run `quarkus dev`. Try running it in a terminal; it will likely result in `command not found`. We need to ensure we have the quarkus cli installed. It is good practice to split this into a separate script (e.g. `ensure-quarkus-cli`) and follow the steps for installing the cli. Run each step in a terminal then add them to the script after you have an expectation for the output.
+The next command in the getting started guide is to run `quarkus dev`. Try running it in a terminal; it will likely result in `command not found`. We need to ensure we have the quarkus cli installed. It is good practice to split this into a separate script (e.g. `ensure-quarkus-cli`) and follow the steps for installing the cli. Run each step in a terminal then add them to the script after you have an expectation for the output.
 
 Once `quarkus dev` runs you will have a script that looks like the yaml below but if you run it the script will hang.
 
@@ -100,7 +100,7 @@ Run `quarkus dev` in a terminal from the `/tmp/quarkus-quickstarts/getting-start
 Tests paused
 Press [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>
 ```
-The execution pauses waiting for an `r` to run the unit tests. It also does not wait for input on a new line. This means we should use `sh` `prompt` to respond to the message. The `prompt` looks for a set of characters from the ssh connection and sends the associated response if it finds those characters. Using `prompt` means we have to use the yaml mapping syntax for `sh`. Most qdup commands support a simplified string format (e.g. `sh: "./runScript.sh"`) but also a more complex mapping that includes options that are not always needed:
+The execution pauses waiting for an `r` to run the unit tests. It also does not wait for input on a new line. This means we should use `sh` with `prompt` to respond to the message. The `prompt` looks for a set of characters from the ssh connection and sends the associated response if it finds those characters. Using `prompt` means we have to use the yaml mapping syntax for `sh`. Most qdup commands support a simplified string format (e.g. `sh: "./runScript.sh"`) but also a more complex mapping that includes options that are not always needed:
 ```yaml
 - sh:
     command: quarkus dev
@@ -232,7 +232,7 @@ Some of you may find the qDup process is still stuck and you are not seeing `cur
 curl localhost:31337/active
 ```
 If you see `quarkus dev` as an active command then check the `output` for an error message. Most of the time we get errors due to port conflicts (something else is using port 8080).
-We don't want our qDup scripts getting stuck in our automated environment. We add `timer`s to any `sh` commands that do not automatically exit. This forces a limit on execution time and alerts us to errors.
+We don't want our qDup scripts getting stuck in our automated environment. We add a `timer` to any `sh` commands that do not automatically exit. This forces a limit on execution time and alerts us to errors.
 
 ```yaml
 - sh:
@@ -242,7 +242,9 @@ We don't want our qDup scripts getting stuck in our automated environment. We ad
     - abort: quarkus dev did not exit before the timer expired
 ```
 
+== Next
 
+At this point you know how to write a script and how to work with `sh` commands that prompt and do not automatically exit. Next we will explore using `setup-scripts` and `cleaup-scripts` and how to work with commands that package their own cli by using hyperfoil to load test the getting-started application
 
 
 

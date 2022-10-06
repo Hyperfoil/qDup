@@ -51,6 +51,20 @@ EOF
 == Run qDup
 ```
 #> java -jar qDup-0.6.15-uber.jar helloworld.yaml
+22:02:13.744 Running qDup version 0.6.15
+22:02:13.745 output path = /tmp/20221005_220213
+22:02:13.912 json server listening at wreicher.users.ipa.redhat.com:31337
+22:02:14.640 starting 1 scripts
+22:02:14.648 tryme:14@localhost:script-cmd: tryme
+22:02:14.650 tryme:14@localhost:tryme
+22:02:15.079 tryme:14@localhost:whoami
+testuser
+22:02:15.514 tryme:14@localhost:date
+Wed 05 Oct 2022 10:02:15 PM EDT
+22:02:15.971 tryme:14@localhost:echo Hello, qDup!
+Hello, qDup!
+22:02:15.994 run-1665021733656 -> /tmp/20221005_220213.queueCleanupScripts
+Finished in 02.046 at /tmp/20221005_220213
 ```
 
 If you followed the previous link:./prerequisites.adoc[prerequisites] tutorial and create a new identify file name `id_qdup` then we need to tell qDup to use that instead of the default identify file.
@@ -63,11 +77,40 @@ If you followed the previous link:./prerequisites.adoc[prerequisites] tutorial a
 The `- sh: echo ${{message}}` command uses pattern substitution. qDup uses the `states` value for `message` but we can change that when running qDup by passing in a different value for `message` through the command line.
 ```
 #> java -jar qDup-0.6.15-uber.jar -S message="howdy, qDup" helloworld.yaml
+22:03:16.321 Running qDup version 0.6.15
+22:03:16.322 output path = /tmp/20221005_220316
+22:03:16.483 json server listening at wreicher.users.ipa.redhat.com:31337
+22:03:17.233 starting 1 scripts
+22:03:17.248 tryme:14@localhost:script-cmd: tryme
+22:03:17.253 tryme:14@localhost:tryme
+22:03:17.684 tryme:14@localhost:whoami
+testuser
+22:03:18.102 tryme:14@localhost:date
+Wed 05 Oct 2022 10:03:17 PM EDT
+22:03:18.527 tryme:14@localhost:echo howdy, qDup
+howdy, qDup
+22:03:18.569 run-1665021796246 -> /tmp/20221005_220316.queueCleanupScripts
+Finished in 02.050 at /tmp/20221005_220316
+
 ```
 The `-S` argument overrides the value in yaml. We can store a default in yaml then use the command line to customize the script execution.
 
 NOTE: We use the `-S` command line argument to pass jenkins parameters into qDup executions.
 
+Each run ended with a message about `Finished in 02.0xx at /tmp/...` where the `...` is the output folder.  Let's explore the content.
+
+```
+#> tree /tmp/20221005_220316
+/tmp/20221005_220316
+├── run.json
+└── run.log
+
+0 directories, 2 files
+```
+The output folder will eventually contain any files we download as part of our scripts. Right now it has 2 files:
+
+* *run.log* contains everything that was logged by qDup during the run. This is a copy of what qDup logs to the terminal and servers as review of all the command qDup ran.
+* *run.json* contains a structured summary of the run. It includes timestamps for when qDup started and when each command in the script executed as well as internal qDup state.
 
 == Next
 At this point you can run a qDup script but our script is very simple. Try the link:./quarkusgetstarted.adoc[next tutorial] to see how we can script deploying and test a Quarkus application.
