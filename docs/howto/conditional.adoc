@@ -1,0 +1,65 @@
+= How to perform actions based on previous command results
+
+qDup commands under a `then` will run if the parent command ran successfully and will run on the output of the parent command. For example:
+```yaml
+#...
+- sh: date
+  then:
+  - regex: Fri
+    then:
+    - log: "Pizza Friday!"
+#...
+```
+The `regex` command runs with input from the parent `sh` command and then `log` command runs if the `regex` successfully matched. If we ran with `check-exit-code` then the `regex` would only run if the `date` exit code was zero.
+
+== if statement
+qDup does not have an `if` command but we can create a similar behaviour with link:../reference/command/readstate.adoc:[`read-state`] or link:../reference/command/js.adoc[`js`].
+
+The `read-state` command will pass the value of the state expression as input to its `then` commands as long as the value is not empty or undefined.
+```yaml
+#...
+scripts:
+  example:
+  - read-state: ${{setup_script}}
+    then:
+    - sh: ./${{setup_script}}.sh
+state:
+  setup_script: "bootstrap-v1"
+```
+The above example runs `./bootstrap-v1.sh` because the variable is set. If we want to perform a logical comparison then we should use `js` because it will run its `then` commands if the result is truthy (not false or null)
+```yaml
+#...
+scripts:
+  example:
+  - js: ${{count}} >= 10
+    then:
+    - abort: ${{count}} must be less than 10
+states:
+  count: 0
+```
+
+== what about else?
+
+the `if` and `then` would not be complete without an `else`. Not all commands support an `else` list of sub-commands. At the moment, five commands support `else`:
+
+* `js`
+* `json`
+* `read-signal`
+* `read-state`
+* `regex`
+
+They will each run their `else` commands if they are not going to run the `then` commands. For `read-state` that means the state value does not exist or the pattern results in an empty string. For `js` that means the response is `false` or null
+
+```yaml
+#...
+scripts:
+  example:
+  - js: ${{count}} >= 10
+    then:
+    - abort: ${{count}} must be less than 10
+    else:
+    - sh: ./setup.sh ${{count}}
+states:
+  count: 0
+```
+
