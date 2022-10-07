@@ -15,6 +15,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -442,6 +443,9 @@ public class Dispatcher {
             logger.warn("ignoring stop call when already stopped");
         }
     }
+
+    public boolean isRunning(){return isRunning.get();}
+    public boolean isStopping(){return isStopping.get();}
 
     /**
      * returns true if all the active commands are wait-for and do not have timers

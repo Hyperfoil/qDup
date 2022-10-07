@@ -27,6 +27,7 @@ import org.json.JSONObject;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.DatagramSocket;
@@ -35,6 +36,7 @@ import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Phaser;
@@ -43,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class JsonServer implements RunObserver, ContextObserver {
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
     public static int DEFAULT_PORT = 31337;
-    private final int port;
+    private int port;
     private Run run;
     private final Vertx vertx;
     private HttpServer server;
@@ -52,6 +54,8 @@ public class JsonServer implements RunObserver, ContextObserver {
     private Set<String> breakpoints;
     private final Phaser resumePhaser = new Phaser(1);
     private final Map<Integer, AtomicReference<Context>> contextAtomicReference = new ConcurrentHashMap<>();
+    private String hostname = "localhost";
+
     public JsonServer(Run run){
         this(run,DEFAULT_PORT);
     }
@@ -63,6 +67,11 @@ public class JsonServer implements RunObserver, ContextObserver {
         //vertx.eventBus().registerCodec(new JsonMessageCodec());
         setRun(run);
     }
+
+    public boolean addBreakpoint(String breakpoint){
+        return breakpoints.add(breakpoint);
+    }
+    public Set<String> getBreakpoints(){return breakpoints;}
     public void setRun(Run run){
         if(run!=null) {
             this.run = run;
@@ -93,15 +102,23 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("cmd",filter(command.toString()));
             event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
             vertx.eventBus().publish("observer",new JsonObject(event.toString()));
-            checkBreakpoint(context,command);
+            checkBreakpoint(context,command,"pre");
         }
     }
 
-    private void checkBreakpoint(Context context,Cmd command){
+    private void checkBreakpoint(Context context,Cmd command,String when){
         String commandString = command.toString();
         boolean matches =  breakpoints.stream().anyMatch(breakpoint-> commandString.contains(breakpoint) || commandString.matches(breakpoint));
         if(matches){
-            logger.info("Breakpoint hit cmd: " + commandString);
+            logger.info("Breakpoint {} run\n command: {}\n script: {}\n host: {}\n context: {}\n{}{}",
+                    when,
+                    commandString,
+                    command.getHead().toString(),
+                    context.getHost().getSafeString(),
+                    context instanceof ScriptContext ? ((ScriptContext)context).getContextId() : "",
+                    System.console()==null ? "" : "press Enter or",
+                    " post to "+hostname+":"+port+"/breakpoint/resume"
+            );
             resumePhaser.register();
             contextAtomicReference.put(command.getUid(), new AtomicReference<>(context));
             resumePhaser.arriveAndAwaitAdvance();
@@ -120,7 +137,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             event.set("contextId",context instanceof ScriptContext ?  ((ScriptContext)context).getContextId():false);
             event.set("output", StringUtil.escapeBash( filter(output)) );
             vertx.eventBus().publish("observer", new JsonObject(event.toString()));
-            checkBreakpoint(context,command);
+            checkBreakpoint(context,command,"post");
         }
     }
 
@@ -175,6 +192,19 @@ public class JsonServer implements RunObserver, ContextObserver {
     }
 
     public void start(){
+        Thread scannerThread = new Thread(()->{
+            if(System.console()!=null){
+                Scanner scanner = new Scanner(System.in);
+                while(true) {
+                    if (scanner.hasNextLine()) {
+                        String line = scanner.nextLine();
+                        resumePhaser.arriveAndAwaitAdvance();
+                    }
+                }
+            }
+        });
+        scannerThread.setDaemon(true);//so it does not prevent the jvm from exiting
+        scannerThread.start();
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
         router.route("/").produces("application/json").handler(rc->{
@@ -192,6 +222,9 @@ public class JsonServer implements RunObserver, ContextObserver {
             rtrn.set("GET /waiter","get the current waiters");
             rtrn.set("GET /counter","get the current counter counts");
             rtrn.set("GET /pendingDownloads","get the list of pending downloads");
+            rtrn.set("GET /breakpoint","list breakpoint patterns");
+            rtrn.set("POST /breakpoint","add a breakpoint pattern");
+            rtrn.set("POST /breakpoint/resume","resume execution after a breakpoint");
             rc.response().end(rtrn.toString(2));
         });
 
@@ -217,6 +250,9 @@ public class JsonServer implements RunObserver, ContextObserver {
         });
         router.post("/breakpoint/resume").handler(rc->{
             resumePhaser.arriveAndAwaitAdvance();
+            if(System.console()!=null){
+
+            }
             rc.response().end("{\"result\":\"ok\"}");
         });
         router.delete("/breakpoint").handler(rc->{
@@ -516,18 +552,17 @@ public class JsonServer implements RunObserver, ContextObserver {
         router.route("/observe/*").handler(sockJSHandler);
         router.route("/ui/*").handler(StaticHandler.create().setWebRoot("webapp"));
 
-        int foundPort = getPort(port);
-        String hostname = "localhost";
+        port = getPort(port);
 
         try {
             hostname = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
 
         }
-        logger.info("json server listening at {}:{}", hostname, foundPort);
+        logger.info("json server listening at {}:{}", hostname, port);
 
         server = vertx.createHttpServer();
-        server.requestHandler(router).listen(foundPort/*, InetAddress.getLocalHost().getHostName()*/);
+        server.requestHandler(router).listen(port/*, InetAddress.getLocalHost().getHostName()*/);
     }
 
     public void stop(){

@@ -14,10 +14,7 @@ import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.channels.Channels;
@@ -597,85 +594,9 @@ public class QDup {
 
                 Dispatcher dispatcher = new Dispatcher(executor, scheduled);
 
-                if (!getBreakpoints().isEmpty()) {
-                    Scanner scanner = new Scanner(System.in);
-                    getBreakpoints().forEach(breakpoint -> {
-                        dispatcher.addContextObserver(new ContextObserver() {
-                            @Override
-                            public void preStart(Context context, Cmd command) {
-                                String commandString = command.toString();
-                                boolean matches = commandString.contains(breakpoint) || commandString.matches(breakpoint);
-                                if (matches) {
-                                    System.out.printf(
-                                            "%sBREAKPOINT starting command%s%n" +
-                                                    "  breakpoint: %s%n" +
-                                                    "  command: %s%n" +
-                                                    "  script: %s%n" +
-                                                    "  host: %s%n" +
-                                                    "  context: %s%n" +
-                                                    "Press enter to continue:",
-                                            config.isColorTerminal() ? AsciiArt.ANSI_RED : "",
-                                            config.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
-                                            breakpoint,
-                                            command.toString(),
-                                            command.getHead().toString(),
-                                            context.getHost().toString(),
-                                            context instanceof ScriptContext ? ((ScriptContext)context).getContextId() : ""
-                                    );
-                                    String line = scanner.nextLine();
-                                }
-                            }
-                            @Override
-                            public void preNext(Context context, Cmd command, String output){
-                                String commandString = command.toString();
-                                boolean matches = commandString.contains(breakpoint) || commandString.matches(breakpoint);
-                                if (matches) {
-                                    System.out.printf(
-                                            "%sBREAKPOINT after command calls next%s%n" +
-                                                    "  breakpoint: %s%n" +
-                                                    "  command: %s%n" +
-                                                    "  script: %s%n" +
-                                                    "  host: %s%n" +
-                                                    "  context: %s%n" +
-                                                    "Press enter to continue:",
-                                            config.isColorTerminal() ? AsciiArt.ANSI_RED : "",
-                                            config.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
-                                            breakpoint,
-                                            command.toString(),
-                                            command.getHead().toString(),
-                                            context.getHost().toString(),
-                                            context instanceof ScriptContext ? ((ScriptContext)context).getContextId() : ""
-                                    );
-                                    String line = scanner.nextLine();
-                                }
-                            }
-                            @Override
-                            public void preSkip(Context context, Cmd command, String output){
-                                String commandString = command.toString();
-                                boolean matches = commandString.contains(breakpoint) || commandString.matches(breakpoint);
-                                if (matches) {
-                                    System.out.printf(
-                                            "%sBREAKPOINT after command calls skip%s%n" +
-                                                    "  breakpoint: %s%n" +
-                                                    "  command: %s%n" +
-                                                    "  script: %s%n" +
-                                                    "  host: %s%n" +
-                                                    "  context: %s%n" +
-                                                    "Press enter to continue:",
-                                            config.isColorTerminal() ? AsciiArt.ANSI_RED : "",
-                                            config.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
-                                            breakpoint,
-                                            command.toString(),
-                                            command.getHead().toString(),
-                                            context.getHost().toString(),
-                                            context instanceof ScriptContext ? ((ScriptContext)context).getContextId() : ""
-                                    );
-                                    String line = scanner.nextLine();
-                                }
-                            }
-                        });
 
-                    });
+                if (System.console()== null){
+                    logger.info("running with detached console");
                 }
 
                 config.getSettings().set("check-exit-code", checkExitCode());
@@ -688,7 +609,7 @@ public class QDup {
                 }
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    if (!run.isAborted()) {
+                    if (!run.isAborted() && dispatcher.isRunning() && !dispatcher.isStopping()) {
                         run.abort(false);
                         run.writeRunJson();
                     }
@@ -699,7 +620,7 @@ public class QDup {
                 JsonServer jsonServer = null;
                 if (startJsonServer) {
                     jsonServer = new JsonServer(run, getJsonPort());
-
+                    getBreakpoints().forEach(jsonServer::addBreakpoint);
                     jsonServer.start();
                 }
 
@@ -710,7 +631,8 @@ public class QDup {
                 System.out.printf("Finished in %s at %s%n", StringUtil.durationToString(stop - start), run.getOutputPath());
                 if (startJsonServer) {
                     jsonServer.stop();
-                }                dispatcher.shutdown();
+                }
+                dispatcher.shutdown();
                 executor.shutdownNow();
                 scheduled.shutdownNow();
                 if(run.isAborted()){
