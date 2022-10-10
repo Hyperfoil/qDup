@@ -10,6 +10,27 @@ import static org.junit.Assert.*;
 
 public class JsCmdTest {
 
+    @Test
+    public void just_null(){
+        JsCmd jsCmd = new JsCmd("null");
+        SpyContext context = new SpyContext();
+        jsCmd.run("input",context);
+
+        assertTrue("return true should call skip",context.hasSkip());
+    }
+
+    @Test
+    public void just_null_with_else(){
+        JsCmd jsCmd = new JsCmd("null");
+        jsCmd.onElse(Cmd.NO_OP());
+        SpyContext context = new SpyContext();
+        jsCmd.run("input",context);
+
+        assertFalse("return false should call next for else",context.hasSkip());
+        assertTrue("return false should call next for else",context.hasNext());
+        Cmd elseCmd = jsCmd.getNext();
+        assertNotNull("next should not be null",elseCmd);
+    }
 
     @Test
     public void boolean_expression_true(){
