@@ -1,6 +1,6 @@
 = read-state
 
-The `read-state` command accepts evaluates a state `name` and invokes the `then` commands
+The `read-state` command evaluates a state `name` and invokes the `then` commands
 if the result is not `null` and not an empty string, otherwise it invokes the `else` commands.
 
 [source,yaml]
@@ -12,3 +12,4 @@ if the result is not `null` and not an empty string, otherwise it invokes the `e
   - sh: curl http://server/index.html
 ----
 
+NOTE: `read-state` will run the `then` commands even if `${{use_https}}` is `"false"` because that is not empty and not null. Use link:./js.adoc['js'] if you want to perform boolean operations
