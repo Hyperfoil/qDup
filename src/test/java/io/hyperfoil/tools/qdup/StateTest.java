@@ -13,6 +13,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -321,5 +322,65 @@ public class StateTest extends SshTestBase{
         assertEquals("mid[foo] should now be middle", "middle", mid.get("foo"));
         bot.set("TOP.foo", "topper");
         assertEquals("top[foo] should now be topper", "topper", top.get("foo"));
+    }
+
+    @Test
+    public void test_escape_numeric_key() {
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",stream(""+
+                "scripts:",
+                "  generate-state:",
+                "  - for-each: APP ${{APPS}}",
+                "    then:",
+                "    - for-each: VARIANT ${{VARIANT}}",
+                "      then:",
+                "      - for-each: CPU ${{CPUS}}",
+                "        then:",
+                "          - set-state: SCOMBO ${{APP}}.${{VARIANT}}.${{CPU}}",
+                "          - set-state: RUN.${{SCOMBO}} 1",
+                "hosts:",
+                "  test: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [test]",
+                "    run-scripts: ",
+                "    - generate-state",
+                "states:",
+                "  APPS: ",
+                "    - 'config-quickstart'",
+                "    - 'getting-started'",
+                "  VARIANT: ",
+                "    - 'JVM'",
+                "    - 'native'",
+                "  CPUS: ",
+                "    - 1",
+                "    - 2"
+
+        )));
+
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        State state = config.getState();
+
+        Object found = config.getState().get("getting-started");
+
+        assertTrue("state should have getting-started", found != null);
+        assertTrue("state.get(getting-started) should be Json", found instanceof Json);
+
+        Json foundJson = (Json)found;
+
+        assertTrue("state.getting-started should have JVM",foundJson.has("JVM"));
+        foundJson = (Json)foundJson.get("JVM");
+
+        String toStringJson =  foundJson.toString();
+
+        assertEquals("{\"1\":1,\"2\":1}",toStringJson);
+
+
     }
 }
