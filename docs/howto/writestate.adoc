@@ -34,9 +34,20 @@ Now we need to decide what we do with the values. We could store them in an arra
 ```
 The above example constructs the json in the call to echo but we could also separate that into a `set-state` or `js` command.
 ```yaml
-- set-state: toWrite {"real":"${{real}}","user":"${{user}}","sys":"${{sys}}","code":"${{code}}"}
-  then:
-  - sh : echo '${{toWrite}}' > "${{target}}.json"
+#...
+    - regex: "real\\s+(?<real>\\S+)"
+      then:
+      - set-state: toWrite.real ${{real}}
+    - regex: "user\\s+(?<user>\\S+)"
+      then:
+      - set-state: toWrite.user ${{user}}
+    - regex: "sys\\s+(?<sys>\\S+)"
+      then:
+      - set-state: toWrite.sys ${sys}}
+    - regex: "HTTP/\\d\\.\\d (?<code>\\d{3})"
+      then:
+      - set-state: toWrite.code ${{code}}
+    - sh : echo '${{toWrite}}' > "${{target}}.json"
 ```
 The `js` options lets us do much more than pattern replacement
 ```yaml
