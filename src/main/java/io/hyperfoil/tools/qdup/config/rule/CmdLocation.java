@@ -2,6 +2,8 @@ package io.hyperfoil.tools.qdup.config.rule;
 
 import io.hyperfoil.tools.qdup.Stage;
 
+import java.util.Objects;
+
 /**
  * The context for where a command is found in a the run configuration.
  * This is used by RunRules for static analysis
@@ -81,4 +83,27 @@ public class CmdLocation {
         );
     }
 
+    @Override
+    public String toString(){
+        return this.getRoleName()+"."+this.getStage()+this.getHostName()+"."+this.getScriptName()+"."+this.getForkId()+"."+this.getPosition();
+    }
+
+    @Override
+    public boolean equals(Object obj){
+        if(obj instanceof CmdLocation){
+            CmdLocation other = (CmdLocation) obj;
+            return this.getRoleName().equals(other.getRoleName()) &&
+                    this.getStage().equals(other.getStage()) &&
+                    this.getHostName().equals(other.getHostName()) &&
+                    this.getScriptName().equals(other.getScriptName()) &&
+                    this.getForkId().equals(other.getForkId()) &&
+                    this.getPosition().equals(other.getPosition());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(roleName, stage, scriptName, hostName, position, forkId);
+    }
 }

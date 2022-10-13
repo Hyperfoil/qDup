@@ -31,6 +31,7 @@ public abstract class Cmd {
    final static long DEFAULT_IDLE_TIMER = 30_000; //30s
    final static long DISABLED_IDLE_TIMER = -1;
 
+   //TODO Thens list of lists was incorrect. yaml spec does not support repeated keys at the same yaml Snakeyaml is just tolerant
    class Thens {
       private LinkedList<LinkedList<Cmd>> listOfLists;
 

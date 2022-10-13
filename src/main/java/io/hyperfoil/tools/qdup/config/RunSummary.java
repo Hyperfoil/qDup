@@ -6,6 +6,8 @@ import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.InvokeCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
+import io.hyperfoil.tools.yaup.HashedLists;
+import io.hyperfoil.tools.yaup.HashedSets;
 
 import java.util.*;
 
@@ -13,6 +15,7 @@ public class RunSummary implements RunRule{
     private List<RunError> errors;
     private List<RunError> warnings;
     private Map<String,RunRule> rules;
+
     public RunSummary(){
         rules = new HashMap<>();
         errors = new LinkedList<>();
@@ -71,6 +74,7 @@ public class RunSummary implements RunRule{
             scriptName = Cmd.populateStateVariables(scriptName,command,config.getState(),null,null);
             if(Cmd.hasStateReference(scriptName,command)){
                 //TODO warn that we cannot
+                addWarning(location.getRoleName(),location.getStage(),location.getScriptName(),command.toString(),"could not fully populate script reference "+scriptName+". ");
             }else {
                 Script namedScript = config.getScript(scriptName, command);
                 if (namedScript == null) {
@@ -82,10 +86,23 @@ public class RunSummary implements RunRule{
                             command.toString(),
                             "missing script: " + scriptName);
                 } else {
-                    Cmd target = namedScript.deepCopy();
-                    target.setStateParent(command); //to maintain reference to with's from
-                    CmdLocation scriptLocation = scriptCmd.isAsync() ? location.newPosition(CmdLocation.Position.Child) : location;
-                    private_walk(scriptLocation, target, config, ref.add(command));
+
+                    //check if we've already scanned this namedScript.
+                    Cmd parentWalk = command;
+                    boolean isSelfReferencing = false;
+                    CmdLocation childLocation = location.newPosition(CmdLocation.Position.Child);
+                    do{
+                        isSelfReferencing = parentWalk instanceof Script && ((Script)parentWalk).getName().equals(scriptName);
+                    }while (!isSelfReferencing && (parentWalk = parentWalk.getStateParent())!= null);
+
+                    if(isSelfReferencing ){
+                        //TODO do we warn about self-referencing scripts?
+                    } else {
+                        Cmd target = namedScript.deepCopy();
+                        target.setStateParent(command); //to maintain reference to with's from
+                        CmdLocation scriptLocation = scriptCmd.isAsync() ? location.newPosition(CmdLocation.Position.Child) : location;
+                        private_walk(scriptLocation, target, config, ref.add(command));
+                    }
                 }
             }
         } else if (command instanceof InvokeCmd) {
