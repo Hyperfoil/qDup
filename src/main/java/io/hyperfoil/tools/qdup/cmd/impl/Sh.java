@@ -65,6 +65,9 @@ public class Sh extends Cmd {
             );
             context.abort(false);
         }
+        if(populatedCommand.contains(getPatternPrefix())){
+
+        }
         context.getCommandTimer().start("invoke");
         //TODO do we need to manually remove the lineObserver?
         if(prompt.isEmpty()) {

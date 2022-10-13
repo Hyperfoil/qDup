@@ -248,12 +248,14 @@ public class Dispatcher {
                     if(command instanceof Sh){
                         String output = context.getSession().peekOutput();
                         boolean hasPrompt = output.contains(SshSession.PROMPT);
+                        boolean moreInput = output.endsWith("> ");
                         String parentName = null;
                         if (command.getParent() instanceof Script)
                             parentName = ((Script) (command).getParent()).getName();
                         if(!command.isSilent()){
                             logger.warn("{}Nanny found idle{}\n  command={}\n  host={}\n  contextId={} script={}\n  idle={}\n  lastLine={}"
-                                    + (hasPrompt ? "\n  output includes qdup prompt, a background or child process may be running independent of the current command" : ""),
+                                    + (hasPrompt ? "\n  output includes qdup prompt, a background or child process may be running independent of the current command" : "")
+                                    + (moreInput ? "\n terminal is waiting for input, a quote may not be closed":""),
                                     context.isColorTerminal() ? AsciiArt.ANSI_RED : "",
                                     context.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
                                     command,
@@ -263,10 +265,8 @@ public class Dispatcher {
                                     String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000),
                                     context.getSession().peekOutputTail());
                         }
-                        //TODO do we check for common prompts in output?
-                        if(output.contains(SshSession.PROMPT)){
-                            //TODO do we assume the prompt means we missed the end of the command?
-                        }
+
+
                     }
                 }
             });

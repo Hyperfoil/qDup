@@ -24,6 +24,26 @@ import static org.junit.Assert.*;
 public class RegexTest extends SshTestBase {
 
     @Test
+    public void embedded_dot_all(){
+        Regex regex = new Regex("(?s)cat=(?<cat>.+)");
+        SpyContext spyContext = new SpyContext();
+        regex.run("cat=uno\ndos",spyContext);
+        Object found = spyContext.getState().get("cat");
+        assertNotNull("state should contain an entry for cat",found);
+        assertEquals("uno\ndos",found.toString());
+    }
+
+    @Test
+    public void multiple_appearances(){
+        Regex regex = new Regex("cat=(?<cat>.+)");
+        SpyContext spyContext = new SpyContext();
+        regex.run("cat=uno\ncat=dos",spyContext);
+        Object found = spyContext.getState().get("cat");
+        assertNotNull("state should contain an entry for cat",found);
+        assertEquals("uno",found.toString());
+    }
+
+    @Test
     public void regex_dot_star_with_newline(){
         Regex regex = new Regex(" link currently points to (?<java_home>/.*?)(?:/jre)?/bin/java");
 
