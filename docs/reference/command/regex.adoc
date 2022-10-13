@@ -40,4 +40,6 @@ scripts:
   - log: seconds = ${{seconds}} #will find the RUN.seconds from getTime
 ----
 
+We can also use the java embedded flag expressions to change how the patterns match the input. Notably we can use `(?s)` to use the `DOT_ALL` mode so that `.` will match newlines.
 
+The `regex` command finds the first match for the pattern. It does not find all the places where the pattern could match. Therefore a pattern with a capture group will only capture the first occurance. If you want to match each occurance you can use `regex` in a `watch` to observe the command line by line or use link:./parse[`parse`] to extract a json structure with the target pattern.
