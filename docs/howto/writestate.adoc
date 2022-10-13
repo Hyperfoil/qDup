@@ -1,6 +1,7 @@
 = How to write state to separate files
 
 Complicated workloads, like running a suite of benchmarks or performance tests, can create complicated output. That output can be parsed with `regex` into state variables and included in `run.json` that qDup creates with every run. Alternatively, we can write parts of the state to file(s) as part of the qDup script to help separate the different tests in the suite.
+
 In our example we will use curl as our _performance test_ and our _benchmark suite_ will be a list of websites we want to measure. We will add `time` so we can measure the response time. The `sh` command is rather straight forward
 ```yaml
 - for-each: target ${{targets:[]}} #default to empty to avoid errors
