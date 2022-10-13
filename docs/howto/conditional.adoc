@@ -10,10 +10,10 @@ qDup commands under a `then` will run if the parent command ran successfully and
     - log: "Pizza Friday!"
 #...
 ```
-The `regex` command runs with input from the parent `sh` command and then `log` command runs if the `regex` successfully matched. If we ran with `check-exit-code` then the `regex` would only run if the `date` exit code was zero.
+The `regex` command runs against the full output from the parent `sh` command and then the `log` command runs if the `regex` successfully matched. If we ran with `check-exit-code` then the `regex` would only run if the `date` exit code was zero.
 
 == if statement
-qDup does not have an `if` command but we can create a similar behaviour with link:../reference/command/readstate.adoc:[`read-state`] or link:../reference/command/js.adoc[`js`].
+qDup does not have an `if` command, but we can create a similar behaviour with link:../reference/command/readstate.adoc:[`read-state`] or link:../reference/command/js.adoc[`js`].
 
 The `read-state` command will pass the value of the state expression as input to its `then` commands as long as the value is not empty or undefined.
 ```yaml
