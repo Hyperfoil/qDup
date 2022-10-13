@@ -20,3 +20,15 @@ qDup stores a list of all files to download and will download them after the `ru
 - queue-download: /tmp/result.json
 ```
 We recommend using `queue-download` if you are using qDup to coordinate a performance test because some tests are impacted by the work to download a file.
+
+== multiple files
+
+The previous examples all downloaded a single file but both `queue-download` and `download` support wild cards to download multiple files at once.
+
+```yaml
+#...
+- queue-download: /tmp/*.json #downloads all json in /tmp
+- queue-download: /tmp/foo/*/*.json #all json in folders under /tmp/foo/
+```
+
+qDup uses `rsync` for downloading files therefore it supports the same wildcard syntax as `rsync` and `scp`
