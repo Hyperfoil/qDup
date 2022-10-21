@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
@@ -126,7 +127,17 @@ public class Sh extends Cmd {
                     if (context.checkExitCode() && !isIgnoreExitCode()) {
                         boolean couldBeCtrlC = walk(CmdLocation.createTmp(), (cmd) -> cmd instanceof CtrlC).stream().anyMatch(Boolean::booleanValue);
                         if( !couldBeCtrlC) {
-                            context.error("aborting run due to exit code "+response);
+                            Cmd cmd = this;
+                            StringBuilder stack = new StringBuilder();
+                            while(cmd!=null){
+                                if( !(cmd instanceof ScriptCmd) ){
+                                    stack.append(System.lineSeparator());
+                                    stack.append((cmd instanceof Script ? "script: ":"") + cmd.toString());
+                                }
+                                cmd = cmd.getParent();
+                            }
+
+                            context.error("aborting run due to exit code "+response+"\n  host: "+context.getSession().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
                             context.abort(false);
                         }
                     }
