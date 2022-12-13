@@ -448,7 +448,7 @@ public class QDup {
                 if(yamlPath.startsWith("http")){
                     File tmp = null;
                     try {
-                        tmp = File.createTempFile("qdup-","yaml");
+                        tmp = File.createTempFile("qdup-",".yaml");
                     } catch (IOException e) {
                         logger.error("Error: cannot create tmp file to try and download " + yamlPath);
                         ok = false;
@@ -463,6 +463,16 @@ public class QDup {
                             fileOutputStream.getChannel()
                                     .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
                             fileChannel.close();
+                            fileOutputStream.flush();
+                            fileOutputStream.close();
+
+                            logger.trace("loading: " + tmp);
+                            YamlFile file = yamlParser.loadFile(tmp.getAbsolutePath());
+                            if (file == null) {
+                                logger.error("Aborting run due to error reading {}", yamlPath);
+                                ok = false;
+                            }
+                            runConfigBuilder.loadYaml(file);
                         } catch (IOException e) {
                             logger.error("Error: failed to download " + yamlPath);
                             ok = false;
