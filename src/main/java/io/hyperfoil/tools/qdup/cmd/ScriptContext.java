@@ -199,6 +199,9 @@ public class ScriptContext implements Context, Runnable{
 
     private boolean canCreateNewFile(){
         File scratchDir = getScratchFile();
+        if ( ! scratchDir.mkdirs() ) {
+            return false;
+        }
         if( scratchDir.exists()  && scratchDir.canWrite()){
             return true;
         }
