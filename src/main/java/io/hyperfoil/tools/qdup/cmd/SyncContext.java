@@ -14,6 +14,7 @@ import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import org.slf4j.profiler.Profiler;
 
+import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -211,6 +212,21 @@ public class SyncContext implements Context, Runnable{
     @Override
     public String getRunOutputPath() {
         return run.getOutputPath();
+    }
+
+    @Override
+    public File getScratchFile(String fileName){
+        if(scriptContext!=null){
+            return scriptContext.getScratchFile(fileName);
+        }
+        return null;
+    }
+    @Override
+    public File getScratchDir(String dirName){
+        if(scriptContext!=null){
+            return scriptContext.getScratchDir(dirName);
+        }
+        return null;
     }
 
     @Override

@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
+import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.*;
@@ -175,6 +176,39 @@ public class ScriptContext implements Context, Runnable{
     public String getRunOutputPath(){
         return run.getOutputPath();
     }
+    public File getScratchFile(String fileName) {
+        if( canCreateNewFile() ){
+            File scratchFile = new File(getScratchFile().getAbsolutePath() + File.separator + fileName);
+            try {
+                if (scratchFile.createNewFile()){
+                    return scratchFile;
+                } else {} //can not create new file
+            } catch (Exception e) {} //error creating file
+        } else {} //dir does not exist
+        return null;
+    }
+
+    public File getScratchDir(String dirName){
+        if( canCreateNewFile() ) {
+            File scratchDir = new File(getScratchFile().getAbsolutePath() + File.separator + dirName + File.separator);
+            scratchDir.mkdirs();
+            return scratchDir;
+        }
+        return null;
+    }
+
+    private boolean canCreateNewFile(){
+        File scratchDir = getScratchFile();
+        if( scratchDir.exists()  && scratchDir.canWrite()){
+            return true;
+        }
+        return false;
+    }
+
+    private File getScratchFile(){
+        return new File(getRunOutputPath() + "-scratch");
+    }
+
     public Script getScript(String name,Cmd command){
         return run.getConfig().getScript(name,command,this.getState());
     }

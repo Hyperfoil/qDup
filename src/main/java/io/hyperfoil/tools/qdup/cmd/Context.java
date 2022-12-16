@@ -11,6 +11,8 @@ import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.Logger;
 import org.slf4j.profiler.Profiler;
 
+import java.io.File;
+
 public interface Context {
 
     default boolean checkExitCode(){return false;}
@@ -28,6 +30,8 @@ public interface Context {
     SystemTimer getCommandTimer();
 
     String getRunOutputPath();
+    File getScratchDir(String dirName);
+    File getScratchFile(String fileName);
 
     Cmd getCurrentCmd();
 

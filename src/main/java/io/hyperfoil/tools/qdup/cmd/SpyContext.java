@@ -9,6 +9,8 @@ import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -132,6 +134,22 @@ public class SpyContext implements Context {
     public String getRunOutputPath() {
         if(context!=null){
             return context.getRunOutputPath();
+        }
+        return null;
+    }
+
+    @Override
+    public File getScratchFile(String fileName){
+        if(context!=null){
+            return context.getScratchFile(fileName);
+        }
+        return null;
+    }
+
+    @Override
+    public File getScratchDir(String dirName){
+        if(context!=null){
+            return context.getScratchDir(dirName);
         }
         return null;
     }

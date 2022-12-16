@@ -3,20 +3,34 @@ package io.hyperfoil.tools.qdup.cmd;
 import io.hyperfoil.tools.qdup.Profiles;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.cmd.impl.Echo;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
+import org.yaml.snakeyaml.error.YAMLException;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ScriptContextTest extends SshTestBase {
 
@@ -183,5 +197,142 @@ public class ScriptContextTest extends SshTestBase {
         });
         context.run();
         assertEquals("expect "+count+" updates",count,updates.size());
+    }
+
+    @Test
+    public void validate_context_scratch_path(){
+        Cmd toRun = new Echo();
+        ScriptContext context = getContext(toRun);
+        context.run();
+        File scratchDir = context.getScratchDir("test");
+        assertNotNull("Scratch path should not be null", scratchDir);
+        assertTrue("Scratch path should exist",scratchDir.exists());
+    }
+
+    @Test
+    public void validate_script_scratch_file_manipulation(){
+        //create the scratchDir
+        File scratchDir = new File(tmpDir.getPath().toAbsolutePath().toString()+"-scratch");
+        scratchDir.mkdirs();
+
+        Parser parser = Parser.getInstance();
+        ScratchDirManipCmd.extendParser(parser);
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("signal", stream("" +
+                "scripts:",
+                "  scratch-file-test:",
+                "    - scratch-file-write:",
+                "        fileName: test.scratch.out",
+                "        contents: This is a test",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [scratch-file-test]"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+
+        File scratchFile = new File(scratchDir.getAbsolutePath() + File.separator + "test.scratch.out");
+        assertTrue("Scratch File should exist", scratchFile.exists());
+
+        try {
+            String fileContents = new String(Files.readAllBytes(scratchFile.toPath()), StandardCharsets.UTF_8);
+            assertEquals("This is a test", fileContents);
+
+        } catch (IOException e) {
+            fail("Error reading scratch file contents");
+        }
+
+    }
+
+    public static class ScratchDirManipCmd extends Cmd {
+
+        private String fileName;
+        private String contents;
+
+        public ScratchDirManipCmd(String fileName, String contents) {
+            this.fileName = fileName;
+            this.contents = contents;
+        }
+
+        @Override
+        public void run(String input, Context context) {
+            File scratchFile = context.getScratchFile(this.fileName);
+            if ( scratchFile != null ) {
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(scratchFile))) {
+                    writer.write(this.contents);
+                    context.next(input);
+                } catch (IOException e) {
+                    context.error("Could not create new scratch file: " + scratchFile.getAbsolutePath());
+                    context.abort(false);
+                }
+            } else {
+                context.error("Could not create new scratch file: " + scratchFile.getAbsolutePath());
+                context.abort(false);
+            }
+        }
+
+        @Override
+        public Cmd copy() {
+            return new ScratchDirManipCmd(this.fileName, this.contents);
+        }
+
+        @Override
+        public String toString() {
+            return "scratch-file-write";
+        }
+
+        @Override
+        public String getLogOutput(String output, Context context) {
+            return "scratch-file-write: " + this.fileName;
+        }
+
+        public String getFileName() {
+            return fileName;
+        }
+
+        public String getContents() {
+            return contents;
+        }
+
+        public static void extendParser(Parser parser){
+            parser.addCmd(ScratchDirManipCmd.class,
+                    "scratch-file-write",
+                    (cmd) -> {
+                        LinkedHashMap<Object, Object> map = new LinkedHashMap<>();
+                        LinkedHashMap<Object, Object> opts = new LinkedHashMap<>();
+                        map.put("scratch-file-write", opts);
+                        opts.put("fileName", cmd.getFileName());
+                        opts.put("contents", cmd.getContents());
+                        return map;
+                    },
+                    (str, prefix, suffix) -> {
+                        if (str == null || str.isEmpty()) {
+                            throw new YAMLException("scratch-file-write command cannot be empty");
+                        }
+                        String[] split = str.split(" ");
+                        if (split.length != 2) {
+                            throw new YAMLException("scratch-file-write command expecting 2 params");
+                        }
+                        return new ScratchDirManipCmd(split[0], split[1]);
+                    },
+                    (json) -> {
+                        validateNonEmptyValue(json, "fileName");
+                        validateNonEmptyValue(json, "contents");
+                return new ScratchDirManipCmd(json.getString("fileName"), json.getString("contents"));
+                },
+                    "fileName", "contents");
+        }
+    }
+
+    public static void validateNonEmptyValue(Json json, String key) throws YAMLException {
+        if (!json.has(key) || json.getString(key, "").isEmpty()) {
+            throw new YAMLException("git-bisect-init requires a non-empty " + key + " ");
+        }
     }
 }
