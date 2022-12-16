@@ -46,10 +46,19 @@ public class Parser {
     final static XLogger logger = XLoggerFactory.getXLogger(Parser.class.getName());
 //    final static Logger logger = LoggerFactory.getLogger(Parser.class.getName());
 
+    private static final Parser instance;
+    static {
+        instance = new Parser();
+        initialize();
+    }
 
     private JsonValidator validator;
     public static Parser getInstance() {
-        Parser rtrn = new Parser();
+        return instance;
+    }
+
+    public static void initialize() {
+        Parser rtrn = instance;
         RoleConstruct roleConstruct = new RoleConstruct();
 
         rtrn.addMap(YamlFile.class,
@@ -669,7 +678,6 @@ public class Parser {
             }
         };
         rtrn.mapRepresenter.addMapping(Script.class, scriptCmdMapping);
-        return rtrn;
     }
 
     private Yaml yaml;
