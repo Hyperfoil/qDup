@@ -58,6 +58,9 @@ public class QDup {
 
     private RunConfig config;
 
+    private Parser yamlParser;
+
+
     public boolean checkExitCode(){return exitCode;}
 
     public boolean isColorTerminal() {
@@ -141,6 +144,10 @@ public class QDup {
     }
 
     public String getRunDebug(){ return config == null ? null : config.debug(true); };
+
+    public Parser getYamlParser() {
+        return yamlParser;
+    }
 
     public QDup(String... args) {
         Options options = new Options();
@@ -421,6 +428,7 @@ public class QDup {
             logger.error("Missing required yaml file(s)");
             formatter.printHelp(cmdLineSyntax, options);
         }
+        yamlParser = Parser.getInstance();
     }
 
     public static void main(String[] args) {
@@ -437,7 +445,6 @@ public class QDup {
             return false;
         }
 
-        Parser yamlParser = Parser.getInstance();
         yamlParser.setAbortOnExitCode(checkExitCode());
         RunConfigBuilder runConfigBuilder = new RunConfigBuilder();
 
