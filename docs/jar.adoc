@@ -42,7 +42,7 @@ java -jar qDup-uber.jar -B /tmp/ qdup.yaml util.yaml
 == monitoring
 
 qDup starts a JSON server for run monitoring and debug. The default port is `31337` but can be changed with `--jsonport`.
-The endpoints are the follwing:
+The endpoints are the following:
 
 GET /state :: current qDup state
 GET /stage :: the current run stage
@@ -56,5 +56,36 @@ GET /waiter :: get the current waiters
 GET /counter :: get the current counter counts
 GET /pendingDownloads :: get the list of pending downloads
 
+== logging configuration
 
+Occasionally you will need to enable different logging levels than the default, for example for debugging the ssh handshake with a remote machine.  qDup uses log4j as its logging framework.
+
+Create a new logging configuration (e.g. log4j.properties);
+
+[source,text]
+----
+# Set to debug or trace if log4j initialization is failing
+status = warn
+
+# Name of the configuration
+name = QdupConsoleLogConfigDebug
+
+# Console appender configuration
+appender.console.type = Console
+appender.console.name = consoleDebugLogger
+appender.console.layout.type = PatternLayout
+appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
+
+# Root logger level
+rootLogger.level = trace
+
+# Root logger referring to console appender
+rootLogger.appenderRef.stdout.ref = consoleDebugLogger
+----
+
+and start qDup with the new logging configuration
+
+....
+java -Dlog4j.configurationFile=log4j.properties  -jar qDup-uber.jar -B /tmp/ qdup.yaml util.yaml
+....
 
