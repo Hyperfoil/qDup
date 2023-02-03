@@ -31,7 +31,6 @@ scripts:
   - sh: cd /tmp/
   - sh: git clone https://github.com/quarkusio/quarkus-quickstarts.git
   - sh: cd quarkus-quickstarts
--
 hosts:
   test: me@localhost #replace this with your ssh username@hostname
 roles:
