@@ -565,10 +565,6 @@ public class CmdTest extends SshTestBase {
 
       Cmd foo = config.getScript("foo");
       Cmd next = foo.getNext();
-
-      System.out.println("next "+next.getClass());
-      System.out.println("next "+next.isStateScan());
-
       assertFalse("sh should not be state-stan",next.isStateScan());
    }
 

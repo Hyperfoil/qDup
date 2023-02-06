@@ -527,10 +527,10 @@ public abstract class Cmd {
          rtrn = StringUtil.getPatternNames(
                  command,
                  map,
-                 StringUtil.PATTERN_PREFIX,
-                 StringUtil.PATTERN_DEFAULT_SEPARATOR,
-                 StringUtil.PATTERN_SUFFIX,
-                 StringUtil.PATTERN_JAVASCRIPT_PREFIX
+                 cmd == null ? StringUtil.PATTERN_PREFIX : cmd.getPatternPrefix(),
+                 cmd == null ? StringUtil.PATTERN_DEFAULT_SEPARATOR : cmd.getPatternSeparator(),
+                 cmd == null ? StringUtil.PATTERN_SUFFIX : cmd.getPatternSuffix(),
+                 cmd == null ? StringUtil.PATTERN_JAVASCRIPT_PREFIX : cmd.getPatternJavascriptPrefix()
          );
       } catch (PopulatePatternException e) {}
       return rtrn;
@@ -547,30 +547,32 @@ public abstract class Cmd {
       return populateStateVariables(command, cmd, state, coordinator, timestamps, new Ref(cmd));
    }
    public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator, Json timestamps, Ref ref) {
+      String rtrn = null;
       if(command == null){
-         return "";
-      }
-      if(!hasStateReference(command,cmd)){
-         return command;
-      }
-      PatternValuesMap map = new PatternValuesMap(cmd,state,coordinator,timestamps,ref);
-      try {
-         Collection<String> jsSnippets = (coordinator != null && coordinator.getJsSnippetContents() != null) ? coordinator.getJsSnippetContents() : new ArrayList<>();
-         if(cmd!=null){
-            return StringUtil.populatePattern(command,map,jsSnippets,cmd.getPatternPrefix(),cmd.getPatternSeparator(),cmd.getPatternSuffix(),cmd.getPatternJavascriptPrefix());
-         }else {
-            return StringUtil.populatePattern(command, map,jsSnippets, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+         rtrn = "";
+      }else if(!hasStateReference(command,cmd)){
+         rtrn = command;
+      }else {
+         PatternValuesMap map = new PatternValuesMap(cmd, state, coordinator, timestamps, ref);
+         try {
+            Collection<String> jsSnippets = (coordinator != null && coordinator.getJsSnippetContents() != null) ? coordinator.getJsSnippetContents() : new ArrayList<>();
+            if (cmd != null) {
+               rtrn = StringUtil.populatePattern(command, map, jsSnippets, cmd.getPatternPrefix(), cmd.getPatternSeparator(), cmd.getPatternSuffix(), cmd.getPatternJavascriptPrefix());
+            } else {
+               rtrn = StringUtil.populatePattern(command, map, jsSnippets, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+            }
+         } catch (PopulatePatternException pe) {
+            if (pe.isJsFailure()) {
+               logger.error(pe.getMessage());// warn when js evaluation fails
+            } else {
+               //pe.printStackTrace();
+               logger.debug(pe.getMessage());//changed to debug because runs now fail when patterns are missing
+            }
+            //return command;//must return input to show there are unpopulated patterns
+            rtrn = pe.getResult();//should still contain the missing entries
          }
-      } catch (PopulatePatternException pe){
-         if(pe.isJsFailure()){
-            logger.error(pe.getMessage());// warn when js evaluation fails
-         } else {
-            //pe.printStackTrace();
-            logger.debug(pe.getMessage());//changed to debug because runs now fail when patterns are missing
-         }
-         //return command;//must return input to show there are unpopulated patterns
-         return pe.getResult();//should still contain the missing entries
       }
+      return rtrn;
    }
    private static final AtomicInteger uidGenerator = new AtomicInteger(0);
 

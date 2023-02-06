@@ -218,7 +218,7 @@ public class SetStateTest extends SshTestBase {
       dispatcher.shutdown();
 
       Object FOO = config.getState().get("FOO");
-      assertTrue("FOO should be json",FOO instanceof Json);
+      assertTrue("FOO should be json but is "+FOO,FOO instanceof Json);
       assertEquals("FOO[0].test = worked","worked",((Json)FOO).getJson(0,new Json(false)).getString("test",""));
       //assertEquals("expect script:foo to finish before script:update starts","-SET-phase",config.getState().get("FOO"));
    }

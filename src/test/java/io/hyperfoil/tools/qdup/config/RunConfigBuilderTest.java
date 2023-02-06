@@ -323,7 +323,6 @@ public class RunConfigBuilderTest extends SshTestBase {
                 "  BAR: ${{BIZ:}}",
                 "  BIZx: "
         )));
-        System.out.println(builder.errorCount());
         RunConfig config = builder.buildConfig(parser);
         assertTrue("expected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
     }
@@ -349,7 +348,6 @@ public class RunConfigBuilderTest extends SshTestBase {
                 "  BAR: ${{BIZ:}}",
                 "  BIZx: "
         )));
-        System.out.println(builder.errorCount());
         RunConfig config = builder.buildConfig(parser);
         assertTrue("expected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
     }
