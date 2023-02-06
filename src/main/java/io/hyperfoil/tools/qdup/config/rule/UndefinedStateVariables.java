@@ -161,6 +161,54 @@ public class UndefinedStateVariables implements RunRule {
             return;
         }
         String commandStr = parser != null ? parser.dump(parser.representCommand(command)) : command.toString();
+        if (command instanceof Regex) {
+            RSSCRef rssc = new RSSCRef(
+                    location.getRoleName(),
+                    location.getStage(),
+                    location.getScriptName(),
+                    command
+            );
+            ((Regex) command).getCaptureNames().forEach(captureName->{
+                String toUse = captureName;
+                if(Cmd.hasStateReference(toUse,command)){
+                    toUse = Cmd.populateStateVariables(captureName,command, config.getState(), null, null, ref);
+                    if(Cmd.hasStateReference(toUse,command)){
+                        List<String> references = Cmd.getStateVariables(toUse,command, config.getState(), null, null, ref);
+                    }
+                }
+                addSetVariable(toUse,rssc,summary);
+            });
+        } else if (command instanceof SetState) {
+            RSSCRef rssc = new RSSCRef(
+                    location.getRoleName(),
+                    location.getStage(),
+                    location.getScriptName(),
+                    command
+            );
+            String key = ((SetState) command).getKey();
+            String value = ((SetState) command).getValue();
+            if(Cmd.hasStateReference(key,command)){
+                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, null, ref);
+            }
+            addSetVariable(key,rssc,summary);
+        } else if (command instanceof ForEach){
+            RSSCRef rssc = new RSSCRef(
+                    location.getRoleName(),
+                    location.getStage(),
+                    location.getScriptName(),
+                    command
+            );
+            String key = ((ForEach)command).getName();
+            String value = ((ForEach)command).getDeclaredInput();
+            if(Cmd.hasStateReference(key,command)){
+                Cmd.getStateVariables(key,command, config.getState(), null, null, ref).forEach(v->addUsedVariable(v,rssc));
+                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, null, ref);
+            }
+            if(Cmd.hasStateReference(value,command)){
+                Cmd.getStateVariables(value,command, config.getState(), null, null, ref).forEach(v->addUsedVariable(v,rssc));
+            }
+            addSetVariable(key,rssc,summary);
+        }
         if (Cmd.hasStateReference(commandStr, command)) {
             RSSCRef rssc = new RSSCRef(
                     location.getRoleName(),
@@ -197,54 +245,7 @@ public class UndefinedStateVariables implements RunRule {
                     });
             }
         }
-        if (command instanceof Regex) {
-            RSSCRef rssc = new RSSCRef(
-                location.getRoleName(),
-                location.getStage(),
-                location.getScriptName(),
-                command
-            );
-            ((Regex) command).getCaptureNames().forEach(captureName->{
-                String toUse = captureName;
-                if(Cmd.hasStateReference(toUse,command)){
-                    toUse = Cmd.populateStateVariables(captureName,command, config.getState(), null, null, ref);
-                    if(Cmd.hasStateReference(toUse,command)){
-                        List<String> references = Cmd.getStateVariables(toUse,command, config.getState(), null, null, ref);
-                    }
-                }
-                addSetVariable(toUse,rssc,summary);
-            });
-        } else if (command instanceof SetState) {
-            RSSCRef rssc = new RSSCRef(
-                location.getRoleName(),
-                location.getStage(),
-                location.getScriptName(),
-                command
-            );
-            String key = ((SetState) command).getKey();
-            String value = ((SetState) command).getValue();
-            if(Cmd.hasStateReference(key,command)){
-                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, null, ref);
-            }
-            addSetVariable(key,rssc,summary);
-        } else if (command instanceof ForEach){
-            RSSCRef rssc = new RSSCRef(
-                    location.getRoleName(),
-                    location.getStage(),
-                    location.getScriptName(),
-                    command
-            );
-            String key = ((ForEach)command).getName();
-            String value = ((ForEach)command).getDeclaredInput();
-            if(Cmd.hasStateReference(key,command)){
-                Cmd.getStateVariables(key,command, config.getState(), null, null, ref).forEach(v->addUsedVariable(v,rssc));
-                key = Cmd.populateStateVariables(((SetState) command).getKey(), command, config.getState(), null, null, ref);
-            }
-            if(Cmd.hasStateReference(value,command)){
-                Cmd.getStateVariables(value,command, config.getState(), null, null, ref).forEach(v->addUsedVariable(v,rssc));
-            }
-            addSetVariable(key,rssc,summary);
-        }
+
     }
 
     @Override
