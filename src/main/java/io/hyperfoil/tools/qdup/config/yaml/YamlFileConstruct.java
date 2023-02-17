@@ -7,7 +7,9 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.Role;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.Sets;
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
@@ -41,10 +43,10 @@ public class YamlFileConstruct extends DeferableConstruct {
             });
             map.put("scripts",scriptMap);
         }
-        if(!yaml.getHosts().isEmpty()){
+        if(!yaml.getHostDefinitions().isEmpty()){
             Map<Object,Object> hostMap = new LinkedHashMap<>();
-            yaml.getHosts().forEach((alias,host)->{
-                hostMap.put(alias,host.toString());
+            yaml.getHostDefinitions().forEach((alias,definition)->{
+                hostMap.put(alias,definition.toYaml());
             });
             map.put("hosts",hostMap);
         }
@@ -96,7 +98,6 @@ public class YamlFileConstruct extends DeferableConstruct {
         if(node instanceof MappingNode) {
             MappingNode mappingNode = (MappingNode)node;
             YamlFile yamlFile = new YamlFile();
-
             mappingNode.getValue().forEach(nodeTuple -> {
                 if(!( nodeTuple.getKeyNode() instanceof ScalarNode) ){
                     throw new YAMLException("YamlFile keys must be scalar "+nodeTuple.getKeyNode().getStartMark());
@@ -125,27 +126,14 @@ public class YamlFileConstruct extends DeferableConstruct {
                                 String hostAlias = ((ScalarNode)valueTuple.getKeyNode()).getValue();
                                 Node hostNode = valueTuple.getValueNode();
 
-                                if(hostNode instanceof ScalarNode){
-                                    yamlFile.addHost(hostAlias,((ScalarNode)hostNode).getValue());
-                                }else if (hostNode instanceof MappingNode){
-                                    MappingNode hostMapping = (MappingNode)hostNode;
-                                    Json json = OverloadConstructor.json(hostMapping);
-                                    Set<Object> extra = Sets.unique(json.keys(),Sets.of("hostname","username","password","port"));
-                                    if(!json.keySet().containsAll(Arrays.asList("hostname","username"))){
-                                        throw new YAMLException("host mapping requires username and hostname "+hostNode.getStartMark());
-                                    }
-                                    if(!extra.isEmpty()){
-                                        throw new YAMLException("unknown host key(s): "+extra+hostNode.getStartMark());
-                                    }
-                                    yamlFile.addHost(hostAlias, new Host(
-                                       json.getString("username"),
-                                       json.getString("hostname"),
-                                       json.getString("password",null),
-                                       (int)json.getLong("port",Host.DEFAULT_PORT),
-                                        json.getString("prompt",null)
-                                    ).toString());
+                                if(hostNode instanceof SequenceNode) {
+                                    throw new YAMLException("cannot create host from " + hostNode.getStartMark());
                                 }else{
-                                    throw new YAMLException("cannot create host from "+hostNode.getStartMark());
+                                    HostDefinition hostDefinition = (HostDefinition) deferAs(hostNode,new Tag("host"));
+                                    if(hostDefinition == null){
+                                        throw new YAMLException("unable to create host: "+hostNode.getStartMark());
+                                    }
+                                    yamlFile.addHostDefinition(hostAlias,hostDefinition);
                                 }
                             });
                         }else if( !(valueNode instanceof ScalarNode) || !((ScalarNode)valueNode).getValue().isEmpty() ){

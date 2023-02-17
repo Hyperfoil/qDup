@@ -45,13 +45,12 @@ public class SessionStreams extends MultiStream {
    private LineEmittingStream lineEmittingStream = null;
    private FilteredStream filteredStream = null;
    private ByteArrayOutputStream shStream = null;
-
    /* Stream hierarchy
     * escapeFilteredStream - removes bash escape sequences
     *    suffixStream - looks for substrings at the end of the write buffer (bash prompt)
     *       filteredStream - removes sequences from anywhere in the write buffer (the bash command)
     *          lineEmittingStream - sends each line (\n or \r\n) of the write buffer to listeners (watching commands)
-    *          shStream - stores all of the write buffer for a command
+    *          shStream - stores the write buffer for a command
     *       promptStream - watches for suffixes and sends a prompt response (Y/n, Ok?, ...)
     */
    public SessionStreams(String name, ScheduledThreadPoolExecutor executor){
@@ -106,6 +105,19 @@ public class SessionStreams extends MultiStream {
       super.write(b,off,len);
       //escapeFilteredStream.write(b,off,len);
    }
+
+   public String printBuffers(){
+      StringBuilder sb = new StringBuilder();
+      sb.append(getName()+"\n");
+      sb.append("escapeFiltered "+escapeFilteredStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
+      sb.append("└ suffixStream "+suffixStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
+      sb.append("  ├ filteredStream "+filteredStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
+      sb.append("  │ ├ lineEmitting "+lineEmittingStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
+      sb.append("  │ └ shStream "+shStream.toString().replaceAll("[\r\n]","\\\\n")+"\n");
+      sb.append("  └ promptStream "+promptStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
+      return sb.toString();
+   }
+
    @Override
    public void flush() throws IOException{
       escapeFilteredStream.flush();
@@ -121,6 +133,8 @@ public class SessionStreams extends MultiStream {
       escapeFilteredStream.close();
       suffixStream.close();
    }
+
+
 
    public void addLineConsumer(Consumer<String> consumer){
       lineEmittingStream.addConsumer(consumer);
@@ -143,14 +157,18 @@ public class SessionStreams extends MultiStream {
    }
    public void setTrace(String traceName) throws IOException{
       if(!hasTrace()){
-         String tDir = System.getProperty("java.io.tmpdir");
-         logger.info("streamtracing "+traceName+" to "+tDir);
-         String rawTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName+".raw.log")).toAbsolutePath().toString();
-         FileOutputStream rawTraceStream = new FileOutputStream(rawTracePath);
-         String efsTracePath = Files.createFile(Paths.get(tDir,"qdup."+traceName+".efs.log")).toAbsolutePath().toString();
-         FileOutputStream efsTraceStream = new FileOutputStream(efsTracePath);
-         escapeFilteredStream.addStream("trace",efsTraceStream);
-         addStream("trace",rawTraceStream);
+         try {
+            String tDir = System.getProperty("java.io.tmpdir");
+            logger.info("streamtracing " + traceName + " to " + tDir);
+            String rawTracePath = Files.createFile(Paths.get(tDir, "qdup." + traceName + ".raw.log")).toAbsolutePath().toString();
+            FileOutputStream rawTraceStream = new FileOutputStream(rawTracePath);
+            String efsTracePath = Files.createFile(Paths.get(tDir, "qdup." + traceName + ".efs.log")).toAbsolutePath().toString();
+            FileOutputStream efsTraceStream = new FileOutputStream(efsTracePath);
+            escapeFilteredStream.addStream("trace", efsTraceStream);
+            addStream("trace", rawTraceStream);
+         }catch(Exception e){
+            logger.error("Error trying to create trace for stream "+getName(),e);
+         }
       }
    }
    public OutputStream getTrace(){

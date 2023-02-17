@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.AsciiArt;
 
 import java.util.List;
@@ -119,7 +120,7 @@ public class ScriptCmd extends Cmd {
             Cmd copyCmd = toCall.deepCopy();
             if(isAsync()){
                 //TODO how to invoke the script?
-                SshSession ssh = context.getSession() != null ? context.getSession().openCopy() : null;
+                AbstractShell ssh = context.getSession() != null ? context.getSession().openCopy() : null;
                 State state = context.getState().clone();
                 Run run = context instanceof ScriptContext ? ((ScriptContext)context).getRun() : null;
                 if(run == null && context instanceof SyncContext){

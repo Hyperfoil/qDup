@@ -316,6 +316,7 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
 
    @Override
    public boolean hasMember(String key) {
+
       if (Set.of("containsKey").contains(key)) {
          return true;
       } else {

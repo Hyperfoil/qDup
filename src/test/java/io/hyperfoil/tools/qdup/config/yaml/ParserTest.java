@@ -301,7 +301,7 @@ public class ParserTest extends SshTestBase {
 
         assertNotNull("loaded should not be null",loaded);
         assertEquals("loaded scripts",1,loaded.getScripts().size());
-        assertEquals("loaded hosts",0,loaded.getHosts().size());
+        assertEquals("loaded hosts",0,loaded.getHostDefinitions().size());
         assertEquals("loaded roles",0,loaded.getRoles().size());
         assertEquals("loaded state",0,loaded.getState().allKeys().size());
     }
@@ -319,7 +319,7 @@ public class ParserTest extends SshTestBase {
         ));
         assertNotNull("loaded should not be null",loaded);
         assertEquals("loaded scripts",1,loaded.getScripts().size());
-        assertEquals("loaded hosts",0,loaded.getHosts().size());
+        assertEquals("loaded hosts",0,loaded.getHostDefinitions().size());
         assertEquals("loaded roles",0,loaded.getRoles().size());
         assertEquals("loaded state",0,loaded.getState().allKeys().size());
     }

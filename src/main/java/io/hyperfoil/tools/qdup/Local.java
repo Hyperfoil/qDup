@@ -1,8 +1,11 @@
 package io.hyperfoil.tools.qdup;
 
+import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.Json;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +18,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -91,11 +96,26 @@ public class Local {
    }
 
    public boolean upload(String path, String destination, Host host) {
-      if (path == null || path.isEmpty() || destination == null || destination.isEmpty()) {
+      if (path == null || path.isEmpty() || destination == null || destination.isEmpty() || !host.hasUpload()) {
          return false;
       } else {
-         logger.info("Local.upload({},{}@{}:{})", path, host.getUserName(), host.getHostName(), destination);
-         return rsyncSend(host, path, destination);
+         logger.info("Local.upload({}:{},{})", host.getSafeString(), path, destination);
+         Json json = new Json();
+         json.set("host",host.toJson());
+         json.set("source",path);
+         json.set("destination",destination);
+         json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
+         json.set("identity",hasIdentity()?getIdentity():false);
+
+         List<String> populated = Cmd.populateList(json,host.getUpload()).stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+         if(Cmd.hasPatternReference(populated,StringUtil.PATTERN_PREFIX)){
+            return false;
+         }else{
+
+         }
+         return runSyncProcess(populated,"upload",(line)->{
+            logger.debug(line);
+         });
       }
    }
 
@@ -174,20 +194,59 @@ public class Local {
    }
 
    public boolean download(String path, String destination, Host host) {
-      if (path == null || path.isEmpty() || destination == null || destination.isEmpty()) {
+      if (path == null || path.isEmpty() || destination == null || destination.isEmpty() || !host.hasDownload()) {
          return false;
       } else {
          logger.info("Local.download({}:{},{})", host.getSafeString(), path, destination);
-         return rsyncFetch(host, path, destination);
+         Json json = new Json();
+         json.set("host",host.toJson());
+         json.set("source",path);
+         json.set("destination",destination);
+         json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
+         json.set("identity",hasIdentity()?getIdentity():false);
+         if(host.hasContainerId()){
+            json.set("container",host.getContainerId());
+         }
+
+         List<String> populated = Cmd.populateList(json,host.getDownload()).stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+         if(Cmd.hasPatternReference(populated,StringUtil.PATTERN_PREFIX)){
+            return false;
+         }else{
+
+         }
+         return runSyncProcess(populated,"download",(line)->{
+            logger.debug(line);
+         });
       }
    }
 
    public long remoteFileSize(String path, Host host){
-      if (path == null || path.isEmpty() ) {
+      if (path == null || path.isEmpty() || !host.hasFileSize()) {
          return -1;
       } else {
-         logger.info("Local.remoteFileSize({}:{})", host.getSafeString(), path);
-         return rsyncFileSize(host, path);
+         logger.info("Local.fileSize({}:{},{})", host.getSafeString(), path );
+         //TODO do we create a "getJson for host commands"
+         Json json = new Json();
+         json.set("host",host.toJson());
+         json.set("source",path);
+         json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
+         json.set("identity",hasIdentity()?getIdentity():false);
+         List<String> populated = Cmd.populateList(json,host.getGetFileSize()).stream().filter(v->{
+            return v!=null && !v.isEmpty();
+         }).collect(Collectors.toUnmodifiableList());
+         StringBuilder sb = new StringBuilder();
+         boolean ok = runSyncProcess(populated,"file-size",(line)->{
+            if(sb.length()>0){
+               sb.append(System.lineSeparator());
+            }
+            sb.append(line);
+         });
+         String response = sb.toString();
+         if(response.matches("\\d+(?:[,.]\\d{3})*")){
+            return Long.parseLong(response.replaceAll(",",""));
+         }else{
+            return -1;
+         }
       }
    }
 
@@ -249,7 +308,7 @@ public class Local {
       cmd.add(path);
       cmd.add(host.getUserName() + "@" + host.getHostName() + ":" + dest);
 
-      return runRsyncCmd(cmd, "rsyncSend", line -> logger.trace("  I: {}", line));
+      return runSyncProcess(cmd, "rsyncSend", line -> logger.trace("  I: {}", line));
 
    }
 
@@ -265,7 +324,7 @@ public class Local {
       cmd.add("--stats");
       cmd.add("--dry-run");
 
-      runRsyncCmd(cmd, "rsyncFetch", line -> {
+      runSyncProcess(cmd, "rsyncFetch", line -> {
                  Matcher m = p.matcher(line);
                  while (m.find()) {
                     String matchedFileSize = m.group("fileSize");
@@ -302,20 +361,110 @@ public class Local {
       cmd.add(host.getUserName() + "@" + host.getHostName() + ":" + path);
       cmd.add(dest);
 
-      return runRsyncCmd(cmd, "rsyncFetch", line -> logger.trace("  I: {}", line));
+      return runSyncProcess(cmd, "rsyncFetch", line -> logger.trace("  I: {}", line));
 
    }
 
-   private boolean runRsyncCmd(List<String> cmd, String action, Consumer<String> inputStreamConsumer){
-      boolean rtrn = true;//worked
-      ProcessBuilder builder = new ProcessBuilder();
-      builder.command(cmd);
-      logger.debug("Running rsync command : " + cmd.stream().collect(Collectors.joining(" ")));
-      try {
-         Process p = builder.start();
+   public static void pipelineSplit(String input,List<List<String>> list){
+      if(list.isEmpty()){
+         list.add(new ArrayList<>());
+      }
+      Pattern p = Pattern.compile("^(?<split>(?:\\s*\\|\\s*)|\\s+).*");
+      Matcher m = p.matcher(input);
+      //cannot use split because we lose the substring that matched the split (spaces or characters)
+      boolean inQuote = false;
+      int quoteStart = -1;
+      int flushed = 0;
+      char quoteChar = ' ';
+      for(int i=0; i<input.length(); i++){
+         char targetChar = input.charAt(i);
+         if(inQuote){
+            if(targetChar == quoteChar && input.charAt(i-1) != '\\'){
+               inQuote=false;
+            }
+         }else{
+            if(targetChar == '\'' || targetChar == '"'){
+               inQuote=true;
+               quoteStart=i;
+               quoteChar=input.charAt(i);
+            }else if (targetChar == ' ' || targetChar == '|' ){
+               String targetStr = input.substring(i);
+               m.reset(targetStr);
+               if(m.matches()){
+                  String splitChars = m.group("split");
+                  if(flushed<i){
+                     list.get(list.size()-1).add(StringUtil.removeQuotes( input.substring(flushed,i) ));
+                     flushed = i + splitChars.length();
+                  }
+                  i+=splitChars.length()-1;
+                  if(splitChars.contains("|")) {
+                     //new pipeline
+                     list.add(new ArrayList<>());
+                  }
+               }
+            }
+         }
+      }
+      //flush the remainder
+      if(flushed < input.length()){
+         list.get(list.size()-1).add(StringUtil.removeQuotes( input.substring(flushed,input.length() )));
+      }
+   }
 
+   public static boolean isPipeline(List<String> args){
+      return args.stream().anyMatch(v->"|".equals(v) || (v!=null && v.contains("|")));
+   }
+   public static List<List<String>> splitPipelines(List<String> args){
+      List<List<String>> rtrn = new ArrayList<>();
+      List<String> current = new ArrayList<>();
+      rtrn.add(current);
+      for(String arg : args){
+         if("|".equals(arg)) {
+            current = new ArrayList<>();
+            rtrn.add(current);
+         }else if (arg.contains("|")){
+            pipelineSplit(arg,rtrn);
+         }else{
+            current.add(arg);
+         }
+      }
+      if(current.isEmpty()){
+         rtrn.remove(rtrn.size()-1);
+      }
+      return rtrn;
+   }
+   private static boolean
+   runSyncProcess(List<String> cmd, String action, Consumer<String> inputStreamConsumer){
+      boolean rtrn = true;//worked
+      //ProcessBuilder builder = new ProcessBuilder();
+      List<ProcessBuilder> processes = new ArrayList<>();
+      List<List<String>> splitCommand = splitPipelines(cmd);
+      for(int i=0; i<splitCommand.size(); i++){
+         List<String> args = splitCommand.get(i);
+         ProcessBuilder pipe = new ProcessBuilder();
+         pipe.command(args);
+         //was mentioned in https://stackoverflow.com/questions/3776195/using-java-processbuilder-to-execute-a-piped-command but appears wrong
+//         if(splitCommand.size()>1){
+//            pipe.redirectInput(ProcessBuilder.Redirect.INHERIT);
+//         }
+//         if(i<splitCommand.size()-1){
+//            pipe.inheritIO().redirectOutput(ProcessBuilder.Redirect.PIPE);
+//         }else if (splitCommand.size()>1){
+//            pipe.redirectError(ProcessBuilder.Redirect.INHERIT);
+//         }
+         processes.add(pipe);
+      }
+      logger.debug("Running local command : " + cmd);
+      try {
+         Process p;
+         if(processes.size()==1){
+            p = processes.get(0).start();
+         }else{
+            List<Process> started = ProcessBuilder.startPipeline(processes);
+            p = started.get(started.size()-1);
+         }
          final InputStream inputStream = p.getInputStream();
-         final OutputStream outputStream = p.getOutputStream();
+         //final OutputStream outputStream = p.getOutputStream();
          final InputStream errorStream = p.getErrorStream();
 
          int result = p.waitFor();

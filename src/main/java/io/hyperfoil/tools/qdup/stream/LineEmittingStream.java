@@ -32,6 +32,10 @@ public class LineEmittingStream extends OutputStream {
         this.name = name;
     }
 
+    public String getBuffered(){
+        return new String(buffered,0,writeIndex);
+    }
+
     public boolean addConsumer(Consumer<String> consumer){
         return consumers.add(consumer);
     }

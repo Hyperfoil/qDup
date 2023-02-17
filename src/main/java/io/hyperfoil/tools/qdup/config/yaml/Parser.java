@@ -10,11 +10,8 @@ import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.converter.FileSizeConverter;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.JsonValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
@@ -23,6 +20,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Construct;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.Node;
+import org.yaml.snakeyaml.nodes.NodeId;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.Tag;
 import io.hyperfoil.tools.yaup.file.FileUtility;
@@ -31,12 +29,12 @@ import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 import io.hyperfoil.tools.yaup.yaml.MapRepresenter;
 import io.hyperfoil.tools.yaup.yaml.Mapping;
 import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
+import org.yaml.snakeyaml.resolver.Resolver;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -83,7 +81,7 @@ public class Parser {
         rtrn.addValueType("javascript", "javascript");
         rtrn.addEncoding(Host.class,
                 "host",
-                new HostConstruct(),
+                new HostDefinitionConstruct(),
                 (host) -> host.toString()
         );
         rtrn.addValuePattern("host", Host.HOST_PATTERN);
@@ -680,7 +678,13 @@ public class Parser {
     private boolean abortOnExitCode;
 
     private Parser() {
-        constructor = new OverloadConstructor();
+        constructor = new OverloadConstructor(){
+
+            @Override
+            public Object constructObject(Node node){
+                return super.constructObject(node);
+            }
+        };
         constructor.setExactMatchOnly(false);
         mapRepresenter = new MapRepresenter();
         cmdMappings = new HashMap<>();
@@ -689,7 +693,25 @@ public class Parser {
         dumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         dumperOptions.setWidth(1024);
         dumperOptions.setIndent(2);
-        yaml = new Yaml(constructor, mapRepresenter, dumperOptions);
+        Resolver resolver = new Resolver(){
+
+            @Override
+            public Tag resolve(NodeId kind, String value, boolean implicit) {
+                return super.resolve(kind,value,implicit);
+            }
+        };
+        yaml = new Yaml(constructor, mapRepresenter, dumperOptions,resolver);
+//        constructor.addTypeDescription(new TypeDescription(
+//                Host.class,
+//                new Tag("local")
+//        ));
+        constructor.addConstruct(new Tag("local"),new HostDefinitionConstruct(){
+            @Override
+            public Object construct(Node node){
+                return new Host("","",null,22,null,true,"podman",null);
+            }
+        });
+
         constructor.addConstruct(new Tag("cmd"), new DeferableConstruct() {
             @Override
             public Object construct(Node node) {

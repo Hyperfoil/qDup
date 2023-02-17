@@ -1,14 +1,15 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
 import io.hyperfoil.tools.qdup.Globals;
+import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -17,7 +18,7 @@ public class YamlFile {
     private String path;
     private String name;
     private Map<String, Script> scripts;
-    private Map<String, String> hosts;
+    private Map<String, HostDefinition> hosts;
     private State state;
     private Map<String, Role> roles;
     private Globals globals;
@@ -30,9 +31,12 @@ public class YamlFile {
         roles = new LinkedHashMap<>();
         globals = new Globals();
     }
-
-    public void addHost(String name,String host){
-        hosts.put(name,host);
+    public void addHostDefinition(String name, HostDefinition host){
+        if(hosts.containsKey(name)){
+            //TODO how do we handle duplicate host aliases?
+        }else {
+            hosts.put(name, host);
+        }
     }
     public void addScript(String name,Script script){
         scripts.put(name,script);
@@ -56,7 +60,7 @@ public class YamlFile {
 
     public String getName(){return name;}
     public String getPath(){return path;}
-    public Map<String,String> getHosts(){
+    public Map<String,HostDefinition> getHostDefinitions(){
         return Collections.unmodifiableMap(hosts);
     }
     public Map<String,Script> getScripts(){

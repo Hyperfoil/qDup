@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ public class SshSessionTest extends SshTestBase{
     public void parallel_exec(){
 
         List<String> outputs = new ArrayList<>();
-        SshSession sshSession = getSession(false);
+        AbstractShell sshSession = getSession(false);
         executor.submit(()->{
             sshSession.exec("echo 'first'",(out)->{
                 outputs.add(out);
@@ -167,7 +168,7 @@ public class SshSessionTest extends SshTestBase{
 
     @Test
     public void ctrlC_release_permit(){
-        SshSession session = getSession();
+        AbstractShell session = getSession();
         executor.schedule(() -> {
             session.ctrlC();
         }, 1_000, TimeUnit.MILLISECONDS);

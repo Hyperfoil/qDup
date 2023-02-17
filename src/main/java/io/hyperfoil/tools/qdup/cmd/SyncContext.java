@@ -7,6 +7,7 @@ import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.Logger;
@@ -25,7 +26,7 @@ public class SyncContext implements Context, Runnable{
     private final static AtomicReferenceFieldUpdater<SyncContext,Cmd> currentCmdUpdater =
             AtomicReferenceFieldUpdater.newUpdater(SyncContext.class,Cmd.class,"currentCmd");
 
-    private final SshSession session;
+    private final AbstractShell session;
     private final State state;
     private final Run run;
     private final SystemTimer timer;
@@ -37,13 +38,14 @@ public class SyncContext implements Context, Runnable{
     private final Cmd scriptActiveCmd;
 
     private String cwd="";
+    private String homeDir="";
 
-    public SyncContext(SshSession session, State state, Run run, SystemTimer timer, Cmd currentCmd, ScriptContext scriptContext){
+    public SyncContext(AbstractShell session, State state, Run run, SystemTimer timer, Cmd currentCmd, ScriptContext scriptContext){
         this.session = session;
         this.state = state;
         this.run = run;
         this.timer = timer;
-        this.cmdTimer = timer;
+        this.cmdTimer = timer!=null ? timer.start(currentCmd.toString()) : timer;
         this.currentCmd = currentCmd;
         this.scriptContext = scriptContext;
         this.scriptActiveCmd = scriptContext.getCurrentCmd();
@@ -59,6 +61,16 @@ public class SyncContext implements Context, Runnable{
         } else {
             return cwd;
         }
+    }
+
+    @Override
+    public void setHomeDir(String dir) {
+        this.homeDir = dir;
+    }
+
+    @Override
+    public String getHomeDir() {
+        return homeDir;
     }
 
     public Run getRun(){ return run;}
@@ -133,6 +145,7 @@ public class SyncContext implements Context, Runnable{
     @Override
     public void skip(String output) {
         Cmd cmd = getCurrentCmd();
+
         if(cmdTimer!=null){
             cmdTimer.stop();
         }
@@ -219,7 +232,7 @@ public class SyncContext implements Context, Runnable{
     }
 
     @Override
-    public SshSession getSession() {
+    public AbstractShell getSession() {
         return session;
     }
 

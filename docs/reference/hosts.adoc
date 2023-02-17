@@ -1,4 +1,4 @@
-= qDup hosts
+# qDup hosts
 
 The `hosts` section in qDup is a YAML mapping that assigns an alias for a username + host combination.
 
@@ -6,19 +6,32 @@ The `hosts` section in qDup is a YAML mapping that assigns an alias for a userna
 ----
 hosts:
   alias: me@myserver.com #logs in with ssh key using default port
+  container: quay.io/example/container #starts a container using podman
+  local: LOCAL #reserved name for a local connection
 ----
 The link:./roles.adoc[roles] then refer to host connections by the alias.
 [source,yaml]
 ----
 roles:
-  example:
-    hosts: [alias]
+  one:
+    hosts:
+    - alias
+  two:
+    hosts:
+    - container
   ...
 ----
 
 Hosts can be a string or mapping but in either case it must contain the information
-necessary to connect to the remote host. The previous `alias` used ssh keys with the default
-ssh port but a password and port number can be added to the configuration.
+necessary to connect to the target host. There are 3 classes of target hosts:
+
+1. shh connections to any host accepting an ssh connection
+2. local connection using a local terminal process
+3. connection to a container using a supported container platform (default is podman)
+
+
+## SSH Connection
+The previous `alias` used ssh keys with the default ssh port but a password and port number can be added to the configuration.
 [source,yaml]
 ----
 hosts:
@@ -50,3 +63,16 @@ java -jar qdup-uber.jar -b /tmp/ -S _password="$(cat /tmp/secret.txt)" qdup.yaml
 ....
 `-S \_password` sets the state variable `password` and the `_` prefix tells qDup to treat the
 value as a secret and replace it with `\****` in the logs.
+
+## Local Connection
+qDup can also connect to the local computer. Local connections use the `LOCAL` reserved hostname or set `local: true` when defining the host as a mapping.
+```yaml
+hosts:
+  example1: LOCAL
+  example2:
+    local: true
+```
+A local connection is helpful when testing scripts or deploying qdup inside a container.
+
+## Container Connection
+qDup can start a container on a local or remote container platform. Containerized hosts help isolate changes and control the

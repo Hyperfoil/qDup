@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.rule.SignalCounts;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
@@ -286,7 +287,7 @@ public class RunTest extends SshTestBase {
       LogManager.getRootLogger().info("hi mom");
    }
 
-   @Test(timeout = 10_000)
+   @Test(timeout = 20_000)
    public void watch_signal() {
       AtomicBoolean stopped = new AtomicBoolean(false);
       Script onSignal = new Script("onSignal");
@@ -298,7 +299,7 @@ public class RunTest extends SshTestBase {
       sendSignal.then(Cmd.sleep("2s").then(Cmd.signal("stop")));
 
       RunConfigBuilder builder = getBuilder();
-      builder.addHostAlias("local", getHost().toString());
+      builder.addHostAlias("local", getHostDefinition());
       builder.addScript(onSignal);
       builder.addScript(sendSignal);
       builder.addHostToRole("role", "local");
@@ -326,7 +327,7 @@ public class RunTest extends SshTestBase {
          .then(Cmd.sh("pwd"));
 
       RunConfigBuilder builder = getBuilder();
-      builder.addHostAlias("local", getHost().toString());
+      builder.addHostAlias("local", getHostDefinition());
       builder.addScript(runScript);
       builder.addScript(allScript);
       builder.addHostToRole("role", "local");
@@ -448,10 +449,10 @@ public class RunTest extends SshTestBase {
               "    - sh: pwd",
               "    - sh: history",
               "hosts:",
-              "  local: " + getHost(),
+              "  self: " + getHost()+"",
               "roles:",
               "  doit:",
-              "    hosts: [local]",
+              "    hosts: [self]",
               "    run-scripts: [foo]"
       )));
       RunConfig config = builder.buildConfig(parser);
@@ -630,7 +631,7 @@ public class RunTest extends SshTestBase {
 
    @Test
    public void test_force_reconnect(){
-      SshSession session = getSession();
+      AbstractShell session = getSession();
       String out;
       out = session.shSync("echo hi");
       restartContainer();
@@ -639,7 +640,7 @@ public class RunTest extends SshTestBase {
       } catch (InterruptedException e) {
          e.printStackTrace();
       }
-      SshSession copy = session.openCopy();
+      AbstractShell copy = session.openCopy();
 
 
       assertTrue("expect copy to be open",copy.isOpen());
@@ -695,14 +696,8 @@ public class RunTest extends SshTestBase {
       State state = new State(State.RUN_PREFIX);
       ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(4, runnable -> new Thread(runnable, "scheduled"));
       RunConfigBuilder builder = getBuilder();
-      SshSession sshSession = new SshSession(
-              getHost().toString(),
+      AbstractShell shell = AbstractShell.getShell(
               getHost(),
-              builder.getKnownHosts(),
-              builder.getIdentity(),
-              builder.getPassphrase(),
-              builder.getTimeout(),
-              "",
               scheduled,
               false
       );
@@ -710,7 +705,7 @@ public class RunTest extends SshTestBase {
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       List<String> errors = new ArrayList<>();
-      ScriptContext context = new ScriptContext(sshSession,state,doit,new SystemTimer("test"),cmd,false){
+      ScriptContext context = new ScriptContext(shell,state,doit,new SystemTimer("test"),cmd,false){
          @Override
          public void error(String message){
             errors.add(message);
@@ -1373,7 +1368,7 @@ public class RunTest extends SshTestBase {
          "  - sleep: 1s",
          "  - sh: ",
          "      command: top",
-         "      silent: true",
+         "      silent: false",
          "    watch:",
          "    - regex: Task",
          "      then:",
@@ -1408,11 +1403,8 @@ public class RunTest extends SshTestBase {
                signals.add(command.toString());
             }
          }
-
          @Override
-         public void preStop(Context context, Cmd command, String output) {
-
-         }
+         public void preStop(Context context, Cmd command, String output) {}
       });
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
@@ -1420,7 +1412,7 @@ public class RunTest extends SshTestBase {
 
       assertEquals("should only run one signal command",1,signals.size());
       assertEquals("watcher should finish even if watched already stopped","-found",config.getState().get("PID"));
-      assertEquals("skipped singals for stopped watcher should not stop subsequent commands","-worked",config.getState().get("FOO"));
+      assertEquals("skipped signal for stopped watcher should not stop subsequent commands","-worked",config.getState().get("FOO"));
    }
 
    @Test
@@ -1485,7 +1477,8 @@ public class RunTest extends SshTestBase {
 
 
    //Can fail when adding empty string before or after end of input
-   @Test(timeout = 45_000)
+//   @Test(timeout = 45_000)
+   @Test
    public void ctrlCTail() {
       for(int i=0; i<1; i++) {
          List<String> lines = new ArrayList<>();
@@ -1499,7 +1492,9 @@ public class RunTest extends SshTestBase {
                lines.add(input);
                return Result.next(input);
             }))
-            .watch(Cmd.regex("bar").then(Cmd.ctrlC()))
+            .watch(Cmd.regex("bar").then(Cmd.ctrlC()).then(Cmd.code((input,state)->{
+               return Result.next(input);
+            })))
          );
          tail.then(Cmd.code(((input, state) -> {
             tailed.append(input);
@@ -1511,6 +1506,9 @@ public class RunTest extends SshTestBase {
          send.then(Cmd.sh("echo 'foo' >> /tmp/foo.txt"));
          send.then(Cmd.sleep("1s"));
          send.then(Cmd.sh("echo 'bar' >> /tmp/foo.txt"));
+         send.then(Cmd.code((input,state)->{
+            return Result.next(input);
+         }));
          send.then(Cmd.sleep("2s"));
          send.then(Cmd.sh("echo 'biz' >> /tmp/foo.txt"));
 

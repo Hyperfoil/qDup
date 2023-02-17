@@ -10,12 +10,10 @@ import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.rule.NonObservingCommands;
 import io.hyperfoil.tools.qdup.config.rule.SignalCounts;
 import io.hyperfoil.tools.qdup.config.rule.UndefinedStateVariables;
+import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
-import io.hyperfoil.tools.yaup.HashedLists;
-import io.hyperfoil.tools.yaup.HashedSets;
-import io.hyperfoil.tools.yaup.PopulatePatternException;
-import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.*;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -36,9 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RunConfigBuilder {
-
    private static final List<Stage> SKIPABLE_STAGES = Arrays.asList(Stage.Setup,Stage.Run,Stage.Cleanup);
-
    private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
    private static final Json EMPTY_ARRAY = new Json();
 
@@ -51,7 +47,6 @@ public class RunConfigBuilder {
    private static final String SETUP_SCRIPTS = "setup-scripts";
    private static final String RUN_SCRIPTS = "run-scripts";
    private static final String CLEANUP_SCRIPTS = "cleanup-scripts";
-
    public static final String ALL_ROLE = "ALL";
    private static final String RUN_STATE = "run";
    public static final String SCRIPT_DIR = "ENV.SCRIPT_DIR";
@@ -64,15 +59,12 @@ public class RunConfigBuilder {
    public static final String DEFAULT_IDENTITY = System.getProperty("user.home") + "/.ssh/id_rsa";
    public static final String DEFAULT_PASSPHRASE = null;
    public static final int DEFAULT_SSH_TIMEOUT = 5;
-
    private static final String HOST_EXPRESSION_PREFIX = "=";
    private static final String HOST_EXPRESSING_INCLUDE = "+";
    private static final String HOST_EXPRESSION_EXCLUDE = "-";
-
    private String identity = DEFAULT_IDENTITY;
    private String knownHosts = DEFAULT_KNOWN_HOSTS;
    private String passphrase = DEFAULT_PASSPHRASE;
-
    private String name = null;
    private State state;
 
@@ -84,16 +76,11 @@ public class RunConfigBuilder {
    private HashedLists<String, ScriptCmd> roleSetup;
    private HashedLists<String, ScriptCmd> roleRun;
    private HashedLists<String, ScriptCmd> roleCleanup;
-
    private HashMap<String, String> roleHostExpression;
-
-   private HashMap<String, String> hostAlias;
-
+   private HashMap<String, HostDefinition> hostDefinitions;
    private Set<String> traceTargets;
    private Json settings;
-
    private List<JsSnippet> jsSnippets;
-
    private List<String> errors;
    private List<Stage> skipStages;
 
@@ -112,7 +99,7 @@ public class RunConfigBuilder {
       roleRun = new HashedLists<>();
       roleCleanup = new HashedLists<>();
       roleHostExpression = new HashMap<>();
-      hostAlias = new HashMap<>();
+      hostDefinitions = new HashMap<>();
       traceTargets = new HashSet<>();
       errors = new LinkedList<>();
       settings = new Json(false);
@@ -148,6 +135,9 @@ public class RunConfigBuilder {
       return errors.size();
    }
 
+   private boolean haveAlias(String alias){
+      return hostDefinitions.containsKey(alias);
+   }
    public boolean loadYaml(YamlFile yamlFile) {
       if (yamlFile == null) {
          addError("tried to load an invalid yaml file");
@@ -158,11 +148,11 @@ public class RunConfigBuilder {
       yamlFile.getScripts().forEach((name, script) -> {
          addScript(script);
       });
-      yamlFile.getHosts().forEach((name, host) -> {
-         if (hostAlias.containsKey(name) && !hostAlias.get(name).equals(host)) {
-            addError(String.format("%s tried to load host $s:$s but already defined as $s", yamlFile.getPath(), name, host, hostAlias.get(name)));
+      yamlFile.getHostDefinitions().forEach((name, definition) -> {
+         if (hostDefinitions.containsKey(name) && !hostDefinitions.get(name).equals(definition)) {
+            addError(String.format("%s tried to load host %s:%s but already defined as %s", yamlFile.getPath(), name, definition, hostDefinitions.get(name)));
          } else {
-            hostAlias.put(name, host);
+            hostDefinitions.put(name, definition);
          }
       });
       yamlFile.getRoles().forEach((name, role) -> {
@@ -233,7 +223,7 @@ public class RunConfigBuilder {
          //TODO how do we report errors in a YamlFile
       }
 
-      getHosts().forEach(rtrn::addHost);
+      getHostDefinitions().forEach(rtrn::addHostDefinition);
       List<String> scriptNames = new ArrayList<>(scripts.keySet());
       Collections.sort(scriptNames);
       scriptNames.forEach(scriptName->rtrn.addScript(scriptName,getScript(scriptName)));
@@ -280,8 +270,8 @@ public class RunConfigBuilder {
       return roleCleanup.containsKey(name) ? roleCleanup.get(name) : Collections.emptyList();
    }
 
-   private Map<String, String> getHosts() {
-      return Collections.unmodifiableMap(hostAlias);
+   private Map<String, HostDefinition> getHostDefinitions() {
+      return Collections.unmodifiableMap(hostDefinitions);
    }
 
    private Set<String> getRoleHosts(String name) {
@@ -304,6 +294,9 @@ public class RunConfigBuilder {
    public String getIdentity() {
       return identity;
    }
+   public boolean hasIdentity(){
+      return RunConfigBuilder.DEFAULT_IDENTITY != identity && identity!=null && !identity.isBlank();
+   }
 
    public void setIdentity(String identity) {
       this.identity = identity;
@@ -311,6 +304,9 @@ public class RunConfigBuilder {
 
    public String getPassphrase() {
       return passphrase;
+   }
+   public boolean hasPassphrase(){
+      return passphrase!=null && RunConfigBuilder.DEFAULT_PASSPHRASE!=passphrase && !passphrase.isBlank();
    }
 
 
@@ -321,39 +317,33 @@ public class RunConfigBuilder {
    private void setRoleHostExpession(String roleName, String expression) {
       roleHostExpression.put(roleName, expression);
    }
-
    public void addHostToRole(String name, String hostReference) {
       roleHosts.put(name, hostReference);
    }
-
-   public void addHostAlias(String alias, String host) {
-      hostAlias.putIfAbsent(alias, host);
+   public void addHostAlias(String alias, HostDefinition definition) {
+      hostDefinitions.putIfAbsent(alias, definition);
    }
-
+   public void addHostAlias(String alias, String expression){
+      addHostAlias(alias,new HostDefinition(expression));
+   }
    public void addRoleSetup(String role, String script, Map<String, String> with) {
       addRoleScript(role, script, with, roleSetup);
    }
-
    public void addRoleRun(String role, String script, Map<String, String> with) {
       addRoleScript(role, script, with, roleRun);
    }
-
    public void addRoleCleanup(String role, String script, Map<String, String> with) {
       addRoleScript(role, script, with, roleCleanup);
    }
-
    private void addRoleSetup(String role, String script, Json with) {
       addRoleScript(role, script, with, roleSetup);
    }
-
    private void addRoleRun(String role, String script, Json with) {
       addRoleScript(role, script, with, roleRun);
    }
-
    private void addRoleCleanup(String role, String script, Json with) {
       addRoleScript(role, script, with, roleCleanup);
    }
-
    private void addRoleScript(String role, String script, Json with, HashedLists<String, ScriptCmd> target) {
       ScriptCmd cmd = Cmd.script(script);
       if (with != null && !with.isEmpty()) {
@@ -361,7 +351,6 @@ public class RunConfigBuilder {
       }
       target.put(role, cmd);
    }
-
    private void addRoleScript(String role, String script, Map<String, String> with, HashedLists<String, ScriptCmd> target) {
       ScriptCmd cmd = Cmd.script(script);
       if (with != null && !with.isEmpty()) {
@@ -369,7 +358,6 @@ public class RunConfigBuilder {
       }
       target.put(role, cmd);
    }
-
    public void forceRunState(String key, Object value) {
       state.set(key, value);
    }
@@ -439,25 +427,28 @@ public class RunConfigBuilder {
       Map<Object, Object> map = getState().toMap();
       Map<String, Host> hostAliases = new HashMap<>();
 
-      for (String alias : hostAlias.keySet()) {
-         String value = hostAlias.get(alias);
-         String populatedValue = null;
-         try {
-            populatedValue = StringUtil.populatePattern(value, map);
-         } catch (PopulatePatternException e) {
-            logger.warn(e.getMessage());
-            populatedValue = "";
+      for(String alias : hostDefinitions.keySet()){
+         HostDefinition definition = hostDefinitions.get(alias);
+         Host host = definition.toHost(getState());
+         if(host == null){
+            addError("failed to create host from "+definition);
+         }else {
+            if(hasIdentity()){
+               host.setIdentity(getIdentity());
+            }
+            if(hasPassphrase()){
+               host.setPassphrase(getPassphrase());
+            }
+            host.populate(getState());//what about file_size that is populated when run?
+            List<String> errors = new ArrayList<>();
+            boolean isValid = host.isValid(errors);
+            if (!isValid) {
+               errors.forEach(this::addError);
+            }else{
+               hostAliases.put(alias,host);
+            }
          }
-         if (Cmd.hasStateReference(populatedValue,null)) {
-            addError("cannot create host from " + value + " -> " + populatedValue);
-         }
-         Host host = Host.parse(populatedValue);
-         if (host == null) {
-            addError("cannot create host from " + value + " -> " + populatedValue);
-         }
-         hostAliases.put(alias, host);
       }
-
       //build map of all known hosts
       roleHosts.forEach((roleName, hostSet) -> {
          for (String hostShortname : hostSet) {
@@ -467,7 +458,7 @@ public class RunConfigBuilder {
                seenHosts.put(resolvedHost.toString(), resolvedHost);//could duplicate fullyQualified but guarantees to include port
             } else {
                if(!Cmd.hasStateReference(hostShortname,null)){
-                  addError("Role " + roleName + " Host " + hostShortname + " was added without a fully qualified host representation matching user@hostName:port\n hosts:" + hostAlias);
+                  addError("Role " + roleName + " Host " + hostShortname + " was added without a fully qualified host representation matching user@hostName:port\n hosts:" + hostDefinitions);
                }else{
 
                }

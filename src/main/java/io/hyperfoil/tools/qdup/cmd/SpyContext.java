@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 
@@ -26,7 +27,7 @@ public class SpyContext implements Context {
     private Context context;
 
     private String cwd="";
-
+    private String homeDir="";
     public SpyContext(){
         this(null,new State(""),new Coordinator(new Globals()));
     }
@@ -153,7 +154,7 @@ public class SpyContext implements Context {
     }
 
     @Override
-    public SshSession getSession() {
+    public AbstractShell getSession() {
         if(context!=null){
             return context.getSession();
         }
@@ -231,6 +232,15 @@ public class SpyContext implements Context {
         return cwd;
     }
 
+    @Override
+    public void setHomeDir(String dir) {
+        this.homeDir = dir;
+    }
+
+    @Override
+    public String getHomeDir() {
+        return homeDir;
+    }
     public boolean isAborted(){return aborted;}
     public String getNext(){return next;}
     public boolean hasNext(){return next!=null;}

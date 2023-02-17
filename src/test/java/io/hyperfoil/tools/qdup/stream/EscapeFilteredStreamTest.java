@@ -157,6 +157,12 @@ public class EscapeFilteredStreamTest {
         assertEquals("should only buffer tail","foo",filter(input));
     }
     @Test
+    public void filter_preexec(){
+        String input="\u001b]777;preexec\u001b\\foo";
+        assertEquals("should only buffer tail","foo",filter(input));
+    }
+
+    @Test
     public void filter_K_noDigit(){
         String input="foo\u001b[K";
         assertEquals("should only be foo","foo",filter(input));
