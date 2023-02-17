@@ -1,11 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd;
 
-import io.hyperfoil.tools.qdup.Coordinator;
-import io.hyperfoil.tools.qdup.Globals;
-import io.hyperfoil.tools.qdup.JsSnippet;
-import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshTestBase;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunRule;
@@ -803,7 +798,7 @@ public class CmdTest extends SshTestBase {
       builder.addScript(runSignal);
       builder.addScript(runSleep);
 
-      builder.addHostAlias("local", getHost().toString());
+      builder.addHostAlias("local", getHostDefinition());
       builder.addHostToRole("role", "local");
       builder.addRoleRun("role", "run-signal", new HashMap<>());
       builder.addRoleRun("role", "run-sleep", new HashMap<>());
@@ -841,7 +836,7 @@ public class CmdTest extends SshTestBase {
       builder.addScript(runSignal);
       builder.addScript(runSleep);
 
-      builder.addHostAlias("local", getHost().toString());
+      builder.addHostAlias("local", getHostDefinition());
       builder.addHostToRole("role", "local");
       builder.addRoleRun("role", "run-signal", new HashMap<>());
       builder.addRoleRun("role", "run-sleep", new HashMap<>());
@@ -879,7 +874,7 @@ public class CmdTest extends SshTestBase {
 
       builder.addScript(runScript);
 
-      builder.addHostAlias("local", getHost().toString());
+      builder.addHostAlias("local", getHostDefinition());
       builder.addHostToRole("role", "local");
       builder.addRoleRun("role", "run-with", new HashMap<>());
 

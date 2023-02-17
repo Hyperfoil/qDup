@@ -120,11 +120,10 @@ public class MultiStream extends OutputStream{
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-
         for (OutputStream s : streams.values()) {
             try {
                 s.write(b, off, len);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.error("MultiStream.write():"+e.getMessage()+" b="+(b!=null ? b.length : "null")+" off="+off+" len="+len,e);
             }
         }

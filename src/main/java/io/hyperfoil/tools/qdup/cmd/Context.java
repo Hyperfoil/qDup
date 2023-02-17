@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.Logger;
@@ -32,7 +33,7 @@ public interface Context {
     Cmd getCurrentCmd();
 
     Script getScript(String name,Cmd command);
-    SshSession getSession();
+    AbstractShell getSession();
     Host getHost();
     State getState();
     void addPendingDownload(String path,String destination, Long maxSize);
@@ -46,7 +47,11 @@ public interface Context {
     void close();
 
     void setCwd(String dir);
-
     String getCwd();
+
+    void setHomeDir(String dir);
+    String getHomeDir();
+
+
 
 }

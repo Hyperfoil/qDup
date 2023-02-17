@@ -68,6 +68,7 @@ public class QueueDownload extends Cmd {
         if(resolvedPath.startsWith("~/")){
             //This won't work when observing
             String homeDir = context.getSession().shSync("echo ~/");
+
             logger.debug("resolved homeDir="+resolvedPath);
             resolvedPath = homeDir+resolvedPath.substring("~/".length());
             logger.debug("resolved local env to "+resolvedPath);

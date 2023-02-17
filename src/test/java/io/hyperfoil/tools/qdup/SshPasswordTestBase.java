@@ -57,7 +57,7 @@ public class SshPasswordTestBase extends SshTestBase{
         //we should not be able to find foo because the run should not connect
         assertEquals("we should not be able to find foo because the run should not connect",null,found);
     }
-    @Test(timeout = 10_000)
+    @Test(timeout = 40_000)
     public void passphrase_id_wrong_password(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();

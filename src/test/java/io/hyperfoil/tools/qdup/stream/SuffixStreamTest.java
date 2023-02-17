@@ -16,6 +16,15 @@ import static org.junit.Assert.assertNotEquals;
 public class SuffixStreamTest {
 
     @Test
+
+    public void suffixLength_end_before_match(){
+        SuffixStream stream = new SuffixStream();
+        byte expected[] = "FOO".getBytes();
+        String input;
+        input = "notFOO";
+        assertEquals("FOO should not match any of \"\"",0,stream.suffixLength(input.getBytes(),expected,2));
+    }
+    @Test
     public void suffixLength_noMatch(){
         SuffixStream stream = new SuffixStream();
         byte expected[] = "FOO".getBytes();

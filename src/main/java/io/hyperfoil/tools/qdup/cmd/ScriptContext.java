@@ -7,6 +7,8 @@ import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
+import io.hyperfoil.tools.qdup.cmd.impl.Sh;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -22,6 +24,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -72,7 +75,7 @@ public class ScriptContext implements Context, Runnable{
             AtomicReferenceFieldUpdater.newUpdater(ScriptContext.class,Cmd.class,"currentCmd");
     private static final String CLOSE_QUEUE = "CLOSE_LINE_QUEUE_"+System.currentTimeMillis();
 
-    private final SshSession session;
+    private final AbstractShell session;
     private final Cmd rootCmd;
     private boolean checkExitCode;
     private final State state;
@@ -94,11 +97,20 @@ public class ScriptContext implements Context, Runnable{
     long updateTime = -1;
 
     private String cwd="";
-
+    private String homeDir="";
+    @Override
     public String getCwd(){return cwd;}
+    @Override
     public void setCwd(String cwd){
         this.cwd = cwd;
     }
+
+    @Override
+    public void setHomeDir(String dir){
+        this.homeDir = dir;
+    }
+    @Override
+    public String getHomeDir(){return homeDir;}
 
     public boolean checkExitCode(){return checkExitCode;}
 
@@ -118,11 +130,11 @@ public class ScriptContext implements Context, Runnable{
         return (cmdName.isEmpty() ? "" : cmdName+":"+getRootCmd().getUid()+"@") + (getSession()!=null ? getSession().getHost().toString() : "");
     }
 
-    public ScriptContext(SshSession session, State state, Run run, SystemTimer timer, Cmd rootCmd, boolean checkExitCode){
+    public ScriptContext(AbstractShell session, State state, Run run, SystemTimer timer, Cmd rootCmd, boolean checkExitCode){
         this(session,state,run,timer,rootCmd.deepCopy(),null,checkExitCode);
     }
-    private ScriptContext(SshSession session, State state, Run run, SystemTimer timer, Cmd rootCmd,Cmd setCurrentCmd, boolean checkExitCode){
-        this.session = session;
+    private ScriptContext(AbstractShell shell, State state, Run run, SystemTimer timer, Cmd rootCmd,Cmd setCurrentCmd, boolean checkExitCode){
+        this.session = shell;
         this.rootCmd = rootCmd;
         this.currentCmd = null;
         setCurrentCmd(null,setCurrentCmd==null?rootCmd:setCurrentCmd);
@@ -178,7 +190,7 @@ public class ScriptContext implements Context, Runnable{
     public Script getScript(String name,Cmd command){
         return run.getConfig().getScript(name,command,this.getState());
     }
-    public SshSession getSession(){
+    public AbstractShell getSession(){
         return session;
     }
 
@@ -480,6 +492,7 @@ public class ScriptContext implements Context, Runnable{
                     );
                 }
             }
+
             if (cmd.hasWatchers()) {
                 String line = "";
                 try {
@@ -496,8 +509,8 @@ public class ScriptContext implements Context, Runnable{
                                this.getSession(),
                                this.getState(),
                                this.getRun(),
-                               this.getContextTimer(),
-                               cmd,
+                               this.getCommandTimer(),
+                               watcher,
                                this
                             );
                             try {

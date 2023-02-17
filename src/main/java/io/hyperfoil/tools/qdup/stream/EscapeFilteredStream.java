@@ -63,6 +63,10 @@ public class EscapeFilteredStream extends MultiStream {
         }
     }
 
+    public String getBuffered(){
+        return new String(buffered,0,writeIndex);
+    }
+
     @Override
     public void flush()throws IOException {
         //flushBuffer();
@@ -71,6 +75,7 @@ public class EscapeFilteredStream extends MultiStream {
     @Override
     public void close()throws IOException {
         flushBuffer();
+        //why do we not call super.close()
     }
 
     public void reset(){
@@ -86,6 +91,7 @@ public class EscapeFilteredStream extends MultiStream {
         try {
             int flushIndex = 0;
             int trailingEscapeIndex = Integer.MAX_VALUE;
+            //expand the buffer if needed
             if (writeIndex + len > buffered.length) {
                 int needed = writeIndex + len - buffered.length;
                 byte[] newBuffer = new byte[buffered.length + needed];
@@ -143,16 +149,33 @@ public class EscapeFilteredStream extends MultiStream {
     }
     //basically just makes sure we have \u001b[...m
     public boolean isEscaped(byte b[],int off,int len){
-        return
+        boolean rtrn =
             len ==1 && b[off] == CR ||
             (
                 b[off]==ESC
-                && (
+                && ((
                     ( len>=3 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]))
                     || (len == 2 && b[off+1]=='=')
                     || (len == 2 && b[off+1]=='>')
-                )
+                ) || (
+                    ( len>=15
+                            && b[off+ 1]==']'
+                            && b[off+ 2]=='7'
+                            && b[off+ 3]=='7'
+                            && b[off+ 4]=='7'
+                            && b[off+ 5]==';'
+                            && b[off+ 6]=='p'
+                            && b[off+ 7]=='r'
+                            && b[off+ 8]=='e'
+                            && b[off+ 9]=='e'
+                            && b[off+10]=='x'
+                            && b[off+11]=='e'
+                            && b[off+12]=='c'
+                            && b[off+13]==ESC
+                            && b[off+14]=='\\')
+                ))
             );
+        return rtrn;
     }
     //return length of match up to len or 0 if match failed
     public int escapeLength(byte b[], int off, int len){
@@ -178,13 +201,28 @@ public class EscapeFilteredStream extends MultiStream {
                                 rtrn++;//we matched this character too
                                 matching = false;//end of match
                             } else {//false alarm, not a valid escape character
-                                rtrn = 0;
+                                rtrn = 0;//why do we reset to 0? I don't remember...
                                 matching = false;
                             }
                         } else {
                             matching = false;//stop the match at end of len
                         }
                     }
+                } else if (b[off + 1] == ']') {//VTE preexec
+                    rtrn = 2;
+                    int i=0;
+                    byte tofind[] = new byte[]{'7','7','7',';','p','r','e','e','x','e','c',ESC,'\\'};
+                    while(rtrn+i < len && i < tofind.length && matching ) {
+                        matching = tofind[i]==b[off+rtrn+i];
+                        if(matching) {
+                            i++;
+                        }else{
+                            i=0;
+                            rtrn=0;
+                        }
+                    }
+                    rtrn += i;
+
                 } else if (b[off + 1] == '=') {
                     rtrn = 2; //^[= is from DEC VT100s application mode
                 } else if (b[off + 1] == '>') {

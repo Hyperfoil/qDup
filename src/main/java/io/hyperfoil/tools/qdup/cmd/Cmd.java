@@ -11,6 +11,7 @@ import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.JsonMap;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -535,6 +536,25 @@ public abstract class Cmd {
       } catch (PopulatePatternException e) {}
       return rtrn;
    }
+
+   public static List<String> populateList(Json json,List<String> list){
+      JsonMap map = new JsonMap(json);
+      return list.stream().map(v->{
+         String rtrn = v;
+         try {
+            rtrn = StringUtil.populatePattern(v,map);//,StringUtil.PATTERN_PREFIX,"__",StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+            if(v!=null & v.contains(StringUtil.PATTERN_PREFIX) && (rtrn == null || rtrn.isBlank())){
+               rtrn = null;
+            }
+         } catch (PopulatePatternException e){
+               rtrn = e.getResult();
+         }
+         return rtrn;
+      }).filter(v->v!=null).collect(Collectors.toUnmodifiableList());
+   }
+   public static boolean hasPatternReference(List<String> list,String prefix){
+      return list.stream().anyMatch(v->v.contains(prefix));
+   }
    public static String populateStateVariables(String command, Cmd cmd, Context context) {
       return populateStateVariables(command, cmd,
               context == null ? null : context.getState(),
@@ -547,6 +567,9 @@ public abstract class Cmd {
       return populateStateVariables(command, cmd, state, coordinator, timestamps, new Ref(cmd));
    }
    public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator, Json timestamps, Ref ref) {
+      return populateStateVariables(command,cmd,state,coordinator,timestamps,ref,false);
+   }
+   public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator, Json timestamps, Ref ref,boolean partial) {
       String rtrn = null;
       if(command == null){
          rtrn = "";
@@ -562,8 +585,9 @@ public abstract class Cmd {
                rtrn = StringUtil.populatePattern(command, map, jsSnippets, StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR, StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
             }
          } catch (PopulatePatternException pe) {
-            if (pe.isJsFailure()) {
-               logger.error(pe.getMessage());// warn when js evaluation fails
+            if (pe.isJsFailure() && !partial) {//partial means we expect there could be missing expressions
+               logger.error(pe.getMessage()+"\n"+pe.getResult());// warn when js evaluation fails
+               pe.printStackTrace();
             } else {
                //pe.printStackTrace();
                logger.debug(pe.getMessage());//changed to debug because runs now fail when patterns are missing

@@ -651,9 +651,11 @@ public class SshSession {
             sessionStreams.flush(); //to remove any motd that may be in the stream
             sessionStreams.reset(); //to remove any motd that may be in the stream
 
-        } catch (GeneralSecurityException | IOException e) {
+        } catch (GeneralSecurityException e){
+            logger.error("Security exception while connecting to {}@{} using {}\n{}",host.getUserName(),host.getHostName(),identity,e.getMessage(), e);
+        } catch (IOException e) {
             //e.printStackTrace();
-            logger.debug("Exception while connecting to {}@{} using {}\n{}", host.getUserName(), host.getHostName(), identity, e.getMessage(), e);
+            logger.error("Exception while connecting to {}@{} using {}\n{}", host.getUserName(), host.getHostName(), identity, e.getMessage(), e);
         } finally {
             logger.trace("{} session.isOpen={} shell.isOpen={}",
                     this.getName(),

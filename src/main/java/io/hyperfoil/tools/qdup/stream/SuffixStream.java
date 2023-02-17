@@ -71,6 +71,9 @@ public class SuffixStream extends MultiStream {
         foundRunnable = new FoundRunnable("",-1);
     }
 
+    public String getBuffered(){
+        return new String(buffered,0,writeIndex);
+    }
     public String getName() {
         return name;
     }
@@ -195,7 +198,6 @@ public class SuffixStream extends MultiStream {
                     }
                 }
                 if (found) {
-
                     if(executor!=null && executorDelay>=0){
                         if(future!=null){
                             future.cancel(true);
@@ -204,6 +206,7 @@ public class SuffixStream extends MultiStream {
                         future = executor.schedule(foundRunnable, executorDelay,TimeUnit.MILLISECONDS);
                     } else {
                         foundSuffix(foundName,writeIndex);
+
                         callConsumers(foundName);
                     }
 

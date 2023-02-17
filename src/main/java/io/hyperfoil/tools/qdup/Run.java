@@ -11,6 +11,8 @@ import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
+
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedSets;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -372,21 +374,14 @@ public class Run implements Runnable, DispatchObserver {
     public void runPendingDeletes(){
         if(!pendingDeletes.isEmpty()){
             for(Host host : pendingDeletes.keys()){
-                SshSession sshSession = new SshSession(
-                    host.getHostName(),
+                AbstractShell shell = AbstractShell.getShell(
                     host,
-                    config.getKnownHosts(),
-                    config.getIdentity(),
-                    config.getPassphrase(),
-                    config.getTimeout(),
                     "",
                     getDispatcher().getScheduler(),
-                    false
-                );
-
+                    false);
                 Set<String> deleteList = pendingDeletes.get(host);
                 for(String delete : deleteList){
-                    sshSession.execSync("rm "+delete);
+                    shell.execSync("rm "+delete);
                 }
             }
         }
@@ -531,7 +526,6 @@ public class Run implements Runnable, DispatchObserver {
             if(ok) {
                 try {
                     runLatch.await();
-
                 } catch (InterruptedException e) {
                     //e.printStackTrace();
                 } finally{
@@ -608,21 +602,29 @@ public class Run implements Runnable, DispatchObserver {
                 if(config.getSettings().has(RunConfig.TRACE_NAME)){
                     name = name+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                 }
-                SshSession session = new SshSession(
-                    name,
-                    host,
-                    config.getKnownHosts(),
-                    config.getIdentity(),
-                    config.getPassphrase(),
-                    config.getTimeout(),
-                    "",
-                    getDispatcher().getScheduler(),
-                    isTrace(name));
-                if ( session.isReady() ) {
+                AbstractShell shell = AbstractShell.getShell(
+                        host,
+                        "",
+                        getDispatcher().getScheduler(),
+                        isTrace(name)
+                );
+                shell.setName(name);
+
+//                SshSession session = new SshSession(
+//                    name,
+//                    host,
+//                    config.getKnownHosts(),
+//                    config.getIdentity(),
+//                    config.getPassphrase(),
+//                    config.getTimeout(),
+//                    "",
+//                    getDispatcher().getScheduler(),
+//                    isTrace(name));
+                if ( shell.isReady() ) {
                     //TODO configure session delay
                     //session.setDelay(SuffixStream.NO_DELAY);
                     ScriptContext scriptContext = new ScriptContext(
-                        session,
+                        shell,
                         config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
                         this,
                         profiles.get(name),
@@ -630,10 +632,10 @@ public class Run implements Runnable, DispatchObserver {
                             (Boolean)config.getSetting("check-exit-code",false)
                     );
                     getDispatcher().addScriptContext(scriptContext);
-                    return session.isOpen();
+                    return shell.isOpen();
                 }
                 else {
-                    session.close();
+                    shell.close();
                     return false;
                 }
             });
@@ -661,20 +663,18 @@ public class Run implements Runnable, DispatchObserver {
         config.getAllHostsInRoles().forEach(host->{
             connectSessions.add(()->{
                 String name = "pre-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
-                SshSession session = new SshSession(
-                    name,
-                    host,
-                    config.getKnownHosts(),
-                    config.getIdentity(),
-                    config.getPassphrase(),
-                    config.getTimeout(),
-                    "",getDispatcher().getScheduler(),
-                    isTrace(name));
-                if ( session.isReady() ) {
+                AbstractShell shell = AbstractShell.getShell(
+                        host,
+                        "",
+                        getDispatcher().getScheduler(),
+                        isTrace(name)
+                );
+                shell.setName(name);
+                if ( shell.isReady() ) {
                     //TODO configure session delay
                     //session.setDelay(SuffixStream.NO_DELAY);
                     ScriptContext scriptContext = new ScriptContext(
-                        session,
+                        shell,
                         config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
                         this,
                         profiles.get(name),
@@ -682,10 +682,10 @@ public class Run implements Runnable, DispatchObserver {
                             (Boolean)config.getSetting("check-exit-code",false)
                     );
                     getDispatcher().addScriptContext(scriptContext);
-                    return session.isOpen();
+                    return shell.isOpen();
                 }
                 else {
-                    session.close();
+                    shell.close();
                     return false;
                 }
             });
@@ -733,20 +733,18 @@ public class Run implements Runnable, DispatchObserver {
                role.getHosts(config).forEach(host->{
                    connectSessions.add(()->{
                        String name = roleName+"-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
-                       SshSession session = new SshSession(
-                               name,
+                       AbstractShell shell =  AbstractShell.getShell(
                                host,
-                               config.getKnownHosts(),
-                               config.getIdentity(),
-                               config.getPassphrase(),
-                               config.getTimeout(),
-                               "", getDispatcher().getScheduler(),
-                                isTrace(name));
-                       if ( session.isReady() ) {
+                               "",
+                               getDispatcher().getScheduler(),
+                               isTrace(name)
+                       );
+                       shell.setName(name);
+                       if ( shell.isReady() ) {
                            //TODO configure session delay
                            //session.setDelay(SuffixStream.NO_DELAY);
                            ScriptContext scriptContext = new ScriptContext(
-                                   session,
+                                   shell,
                                    config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
                                    this,
                                    profiles.get(name),
@@ -754,11 +752,11 @@ public class Run implements Runnable, DispatchObserver {
                                    (Boolean)config.getSetting("check-exit-code",false)
                            );
                            getDispatcher().addScriptContext(scriptContext);
-                           return session.isOpen();
+                           return shell.isOpen();
                        }
                        else {
-                           logger.error("failed to connect "+host.getSafeString());
-                           session.close();
+                           logger.error("setup failed to connect "+host.getSafeString());
+                           shell.close();
                            return false;
                        }
                    });
@@ -801,23 +799,19 @@ public class Run implements Runnable, DispatchObserver {
                         connectSessions.add(() -> {
                             String name = script.getName()+":"+script.getUid()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                             timer.start("connect:" + host.toString());
-                            SshSession session = new SshSession(
-                                    name,
+                            AbstractShell shell = AbstractShell.getShell(
                                     host,
-                                    config.getKnownHosts(),
-                                    config.getIdentity(),
-                                    config.getPassphrase(),
-                                    config.getTimeout(),
                                     setupCommand,
                                     getDispatcher().getScheduler(),
                                     isTrace(name)
-
                             );
-                            if (session.isReady()) {
+                            shell.setName(name);
+                            if (shell.isReady()) {
+                                //shell.shSync(setupCommand); //moved into getShell
                                 //session.setDelay(SuffixStream.NO_DELAY);
                                 timer.start("context:" + host.toString());
                                 ScriptContext scriptContext = new ScriptContext(
-                                        session,
+                                        shell,
                                         scriptState,
                                         this,
                                         timer,
@@ -826,17 +820,17 @@ public class Run implements Runnable, DispatchObserver {
                                 );
 
                                 getDispatcher().addScriptContext(scriptContext);
-                                boolean rtrn = session.isOpen();
+                                boolean rtrn = shell.isOpen();
                                 timer.start("waiting for start");
                                 return rtrn;
                             } else {
-                                logger.error("failed to connect "+host.getSafeString()
+                                logger.error("run failed to connect "+host.getSafeString()
                                         +(host.hasPassword() ?
                                             ", verify ssh works with the provided username and password" :
                                             ", verify password-less ssh works with the selected keys"
                                         )
                                 );
-                                session.close();
+                                shell.close();
                                 return false;
                             }
                         });
@@ -897,21 +891,18 @@ public class Run implements Runnable, DispatchObserver {
                     String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
                     connectSessions.add(()->{
                         String name = roleName + "-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
-                        SshSession session = new SshSession(
-                                name,
+                        AbstractShell shell = AbstractShell.getShell(
                                 host,
-                                config.getKnownHosts(),
-                                config.getIdentity(),
-                                config.getPassphrase(),
-                                config.getTimeout(),
-                                setupCommand,
+                                "",
                                 getDispatcher().getScheduler(),
-                                isTrace(name));
-                        if ( session.isReady() ) {
+                                isTrace(name)
+                        );
+                        shell.setName(name);
+                        if ( shell.isReady() ) {
 
                             //session.setDelay(SuffixStream.NO_DELAY);
                             ScriptContext scriptContext = new ScriptContext(
-                                    session,
+                                    shell,
                                     config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
                                     this,
                                     profiles.get(roleName + "-cleanup@" + host.getShortHostName()),
@@ -919,11 +910,11 @@ public class Run implements Runnable, DispatchObserver {
                                     (Boolean)config.getSetting("check-exit-code",false)
                             );
                             getDispatcher().addScriptContext(scriptContext);
-                            return session.isOpen();
+                            return shell.isOpen();
                         }
                         else {
-                            logger.error("failed to connect "+host.getSafeString());
-                            session.close();
+                            logger.error("cleanup failed to connect "+host.getSafeString());
+                            shell.close();
                             return false;
                         }
                     });
@@ -945,6 +936,11 @@ public class Run implements Runnable, DispatchObserver {
     }
     private void postRun(){
         logger.debug("{}.postRun",this);
+        getConfig().getAllHostsInRoles().forEach(host->{
+            if(host.isContainer() && host.needStopContainer()){
+
+            }
+        });
         String tree = config.getState().tree();//tree filters itself
         stateLogger.debug("{} closing state:\n{}",config.getName(),tree);
         runLatch.countDown();

@@ -6,6 +6,8 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -110,6 +112,8 @@ public class SshTestBase {
 
     public static void restartContainer(){
         if(container!=null) {
+            String identity = host.getIdentity();
+            String passphrase = host.getPassphrase();
             int randomPort = container.getMappedPort(22);
             //Consumer<CreateContainerCmd> cmd = e -> e.withPortBindings(new PortBinding(Ports.Binding.bindPort(randomPort), new ExposedPort(22)));
             Consumer<CreateContainerCmd> cmd = e -> e.withHostConfig(new HostConfig().withPortBindings(new PortBinding(Ports.Binding.bindPort(randomPort), new ExposedPort(22))));
@@ -119,6 +123,11 @@ public class SshTestBase {
             container.start();
             String hostname = container.getHost();
             host = new Host("root",hostname,null,container.getMappedPort(22));
+            host.setIdentity(identity);
+            host.setPassphrase(passphrase);
+            hostDefinition = new HostDefinition(host.toString());
+
+
         }
     }
 
@@ -162,20 +171,40 @@ public class SshTestBase {
            .withExposedPorts(22);
         container.start();
         String hostname=container.getHost();
-        host = new Host("root",hostname,null,container.getMappedPort(22),null);
+        host = new Host("root",hostname,null,container.getMappedPort(22),null,false,null,null);
+        host.setIdentity(getPath("keys/qdup").toFile().getPath());
+        hostDefinition = new HostDefinition(host.toString());
+
+
     }
     private static Host host;
+    private static HostDefinition hostDefinition;
 
     public SshTestBase(){}
 
+    /**
+     * Reads a file on the remote file system
+     * @param path
+     * @return
+     */
     public String readFile(String path){
         return exec("/bin/sh","-c","cat "+path);
     }
 
+    /**
+     * Reads a file on the local file system
+     * @param path
+     * @return
+     */
     public String readFile(Path path) {
         StringBuilder contents = new StringBuilder();
         try (Stream<String> lines = Files.lines(path)){
-            lines.forEach(line -> {contents.append(line); contents.append(System.lineSeparator());});
+            lines.forEach(line -> {
+                if(contents.length()>0){
+                    contents.append(System.lineSeparator());
+                }
+                contents.append(line);
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -195,32 +224,31 @@ public class SshTestBase {
         }
     }
 
-    public SshSession getSession(){
+    public AbstractShell getSession(){
         return getSession(SCHEDULED_THREAD_POOL_EXECUTOR,false);
     }
-    public SshSession getSession(boolean trace){
+    public AbstractShell getSession(boolean trace){
         return getSession(SCHEDULED_THREAD_POOL_EXECUTOR,trace);
     }
-    public SshSession getSession(ScheduledThreadPoolExecutor executor, boolean trace){
+    public AbstractShell getSession(ScheduledThreadPoolExecutor executor, boolean trace){
         String userHome = System.getProperty("user.home");
         String currentDir = System.getProperty("user.dir");
         String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
-        SshSession sshSession = new SshSession(
-                getHost().toString(),
+        AbstractShell shell = AbstractShell.getShell(
                 getHost(),
-                userHome+"/.ssh/known_hosts",
-                getIdentity(),
-                null,
-                5,
-                setupCommand,
                 executor,
-           trace
+                trace
         );
-        assertTrue("local ssh session failed to connect",sshSession.isOpen());
-        return sshSession;
+        assertTrue("local ssh session failed to connect",shell.isOpen());
+        return shell;
     }
 
     public static Host getHost(){return host;}
+    public static HostDefinition getHostDefinition(){return hostDefinition;}
+    public static Host getLocalHost(){
+        Host rtrn = new Host();
+        return rtrn;
+    }
     public static Host getPasswordHost(){
         return new Host(host.getUserName(),host.getHostName(),"password",host.getPort());
     }

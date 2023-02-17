@@ -9,31 +9,29 @@ import io.hyperfoil.tools.yaup.Sets;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.yaml.DeferableConstruct;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.hyperfoil.tools.yaup.yaml.OverloadConstructor.json;
 
-public class HostConstruct extends DeferableConstruct {
+public class HostDefinitionConstruct extends DeferableConstruct {
+
+    public HostDefinitionConstruct(){
+        super();
+    }
     @Override
     public Object construct(Node node) {
-        Host rtrn = null;
+        HostDefinition rtrn = null;
         if(node instanceof ScalarNode){
-            rtrn = Host.parse(((ScalarNode)node).getValue());
+            rtrn = new HostDefinition(((ScalarNode)node).getValue());
         }else if (node instanceof MappingNode){
             Json json = json(node);
-            if(json.has("username") && json.has("hostname")){
-                rtrn = new Host(
-                        json.getString("username"),
-                        json.getString("hostname"),
-                        json.getString("password",null),
-                        (int)json.getLong("port",Host.DEFAULT_PORT),
-                        json.getString("prompt",null)
-                );
+            List<String> unknown = HostDefinition.unknownKeys(json.keys().stream().map(Object::toString).collect(Collectors.toList()));
+            if(!unknown.isEmpty()){
+                throw new YAMLException("Unknown host attributes: "+unknown+node.getStartMark());
             }
-            Set<Object> extra = Sets.unique(json.keys(),Sets.of("hostname","username","password","port"));
-            if(!extra.isEmpty()){
-                throw new YAMLException("unexpected "+extra+" keys for host "+node.getStartMark());
-            }
+            rtrn = new HostDefinition(json);
         }
         if(rtrn==null){
             throw new YAMLException("Failed to construct host from "+node.getStartMark());

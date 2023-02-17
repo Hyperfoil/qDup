@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -31,7 +32,7 @@ public class Reboot extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        SshSession session = context.getSession();
+        AbstractShell session = context.getSession();
         if(target!=null && !target.isEmpty()){
 
             //TODO check if reboot is not necessary?
@@ -104,7 +105,8 @@ public class Reboot extends Cmd {
                 //e.printStackTrace(); //TODO what to do with interrupted Reboot?
             }
             logger.info("{} retry @ {} for {}", Instant.now().toString(),interval);
-            session.connect(interval,"",false);//TODO setupEnv
+            session.connect();
+            //session.connect(interval,"",false);//TODO setupEnv
             currentMillis = System.currentTimeMillis();
         } while (!session.isOpen() && currentMillis - startMillis < this.timeout);
         if(!session.isOpen()){

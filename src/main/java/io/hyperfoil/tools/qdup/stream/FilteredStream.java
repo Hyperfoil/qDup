@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * Created by wreicher
  * A MultiStream that filters content before writing to subsequent OutputStreams.
  * TODO tree of filters to speed up filtering content
- * TODO need to also create a a suffix filter (for PROMPT)
+ * TODO need to also create a suffix filter (for PROMPT)
  */
 public class FilteredStream extends MultiStream{
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
@@ -34,6 +34,10 @@ public class FilteredStream extends MultiStream{
         filters = new ConcurrentHashMap<>();//to ensure key order
         replacements = new HashMap<>();
         observers = new LinkedList<>();
+    }
+
+    public String getBuffered(){
+        return new String(buffered,0,writeIndex);
     }
 
     public void flushBuffer(){
@@ -183,7 +187,7 @@ public class FilteredStream extends MultiStream{
                             }
                         }
                         if(filtered){
-                            //tellObservers(matchedName); //FIX, move to after using hte filter
+                            //tellObservers(matchedName); //FIX, move to after using the filter
                             postFilterDrop += 2;
                             if ( flushIndex < currentIndex) {
                                 superWrite(buffered,flushIndex, currentIndex - flushIndex);
