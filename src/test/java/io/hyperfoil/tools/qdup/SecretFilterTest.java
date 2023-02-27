@@ -9,6 +9,7 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -17,6 +18,45 @@ import static org.junit.Assert.*;
 
 public class SecretFilterTest extends SshTestBase {
 
+   @Test
+   public void secret_order(){
+      SecretFilter filter = new SecretFilter();
+      filter.addSecret("barb");
+      filter.addSecret("bara");
+      filter.addSecret("barbar");
+
+      Iterator<String> iter = filter.getSecrets().iterator();
+      assertTrue(iter.hasNext());
+      String current = iter.next();
+      assertEquals("first entry should be longest","barbar",current);
+      assertTrue(iter.hasNext());
+      current = iter.next();
+      assertEquals("second entry should be alphabetical","bara",current);
+      current = iter.next();
+      assertEquals("third entry should be alphabetical","barb",current);
+
+   }
+   @Test
+   public void secret_contains_another_secret(){
+      SecretFilter filter = new SecretFilter();
+      filter.addSecret("bar");
+      filter.addSecret("foobar");
+      String output = filter.filter("foobar");
+      assertEquals("full input should be filtered: "+filter.getSecrets(), REPLACEMENT,output);
+   }
+
+   @Test
+   public void add_empty_filter(){
+      SecretFilter filter = new SecretFilter();
+      filter.addSecret("");
+      assertTrue("adding an empty string filter should be rejected",filter.getSecrets().isEmpty());
+   }
+   @Test
+   public void add_blank_filter(){
+      SecretFilter filter = new SecretFilter();
+      filter.addSecret("  ");
+      assertTrue("adding an empty string filter should be rejected",filter.getSecrets().isEmpty());
+   }
 
    @Test
    public void filter_with_curly_brackets(){
