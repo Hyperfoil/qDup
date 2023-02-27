@@ -11,14 +11,21 @@ public class SecretFilter {
 
    public static final String REPLACEMENT = "********";
 
-   private Set<String> secrets;
+   private SortedSet<String> secrets;
 
    public SecretFilter(){
-      this.secrets = new HashSet<>();
+      //sorts longest to shortest then alphabetically
+      this.secrets = new TreeSet<>((a,b)->{
+         return a.length() != b.length() ? b.length() - a.length() : a.compareTo(b);
+      });
    }
 
    public void addSecret(String secret){
-      secrets.add(secret);
+      if(secret == null || secret.isEmpty()){
+
+      } else {
+         secrets.add(secret);
+      }
    }
    public void loadSecrets(SecretFilter filter){
       secrets.addAll(filter.secrets);
