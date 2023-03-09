@@ -51,7 +51,7 @@ They occur after any pending `queue-download` from the run stage so it is safe t
 cat ~/.ssh/id_rsa.pub | ssh user@server 'cat >> .ssh/authorized_keys'
 ....
 
-TIP: For more information on how to configure ssh, please refer to link:./ssh-config.adoc[ssh-config]
+TIP: For more information on how to configure ssh, please refer to link:./reference/ssh-config.adoc[ssh-config]
 
 * Create a simple test script
 ....
@@ -92,8 +92,8 @@ Check the link:./jar.adoc[jar] documentation on what else can be done with the u
 
 qDup scripts contain the following sections;
 
-* link:./scripts.adoc[scripts] - The sequence of commands to run on hosts
-* link:./hosts.adoc[hosts] - The configuration for connecting via SSH
-* link:./roles.adoc[roles] - Assign scripts to hosts to define the steps in the test
-* link:./states.adoc[states] - JSON-like data that describes the run-time state
-* link:./globals.adoc[globals] - Global settings and functions
+* link:./reference/scripts.adoc[scripts] - The sequence of commands to run on hosts
+* link:./reference/hosts.adoc[hosts] - The configuration for connecting via SSH
+* link:./reference/roles.adoc[roles] - Assign scripts to hosts to define the steps in the test
+* link:./reference/states.adoc[states] - JSON-like data that describes the run-time state
+* link:./reference/globals.adoc[globals] - Global settings and functions
