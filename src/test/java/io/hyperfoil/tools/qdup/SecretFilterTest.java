@@ -58,12 +58,6 @@ public class SecretFilterTest extends SshTestBase {
       filter.addSecret("");
       assertTrue("adding an empty string filter should be rejected",filter.getSecrets().isEmpty());
    }
-   @Test
-   public void add_empty_filter(){
-      SecretFilter filter = new SecretFilter();
-      filter.addSecret("");
-      assertTrue("adding an empty string filter should be rejected",filter.getSecrets().isEmpty());
-   }
 
    @Test
    public void filter_with_curly_brackets(){
