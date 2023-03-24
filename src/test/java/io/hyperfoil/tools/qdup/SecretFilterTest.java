@@ -10,6 +10,13 @@ import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
 import java.util.Iterator;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -150,6 +157,88 @@ public class SecretFilterTest extends SshTestBase {
       String runJsonContents = readFile(tmpDir.getPath().resolve("run.json"));
       assertFalse("log should not contain BAR\n"+runLogContents,runLogContents.contains("BAR"));
       assertFalse("run.json should not contain BAR\n"+runJsonContents,runLogContents.contains("BAR"));
+      try {
+         Json json = Json.fromString(runJsonContents);
+         assertFalse("json should not be empty",json.isEmpty());
+      }catch(RuntimeException e){
+         fail("Exception creating json from run.js\n"+e.getMessage());
+      }
+   }
+
+   @Test
+   public void check_lock_for_sendText_from_args(){
+      try {
+         File yamlFile = File.createTempFile("qdup","yaml",tmpDir.getPath().toFile());
+         FileOutputStream fileOutputStream = new FileOutputStream(yamlFile);
+         Files.copy(stream(""+
+                         "scripts:",
+                 "  secrets:",
+                 "  - sh: sleep 10s",
+                 "    timer:",
+                 "      1s:",
+                 "      - send-text: ${{foo}}",
+                 "      4s:",
+                 "      - ctrlC",
+                 "hosts:",
+                 "  local: " + getHost(),
+                 "roles:",
+                 "  doit:",
+                 "    hosts: [local]",
+                 "    setup-scripts: [secrets]",
+                 "states:",
+                 "  foo: blank"
+         ),yamlFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+         String[] args = {"-S","_foo=bar","-i", getIdentity(), "-B", tmpDir.toString(), yamlFile.getPath()};
+         QDup qDup = new QDup(args);
+         boolean success = qDup.run();
+         assertTrue("qdup didn't run",success);
+
+         String runLogContents = readFile(tmpDir.getPath().resolve("run.log"));
+         String runJsonContents = readFile(tmpDir.getPath().resolve("run.json"));
+         assertFalse("log should not contain bar\n"+runLogContents,runLogContents.contains("bar"));
+         assertFalse("run.json should not contain bar\n"+runJsonContents,runLogContents.contains("bar"));
+
+
+      }catch(IOException e){
+         e.printStackTrace();
+         fail("failed to create test yaml file");
+      }
+
+   }
+   @Test
+   public void check_log_for_sendText_from_states(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+              "  secrets:",
+              "  - sh: sleep 10s",
+              "    timer:",
+              "      1s:",
+              "      - send-text: ${{foo}}",
+              "      4s:",
+              "      - ctrlC",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    setup-scripts: [secrets]",
+              "states:",
+              "  "+SecretFilter.SECRET_NAME_PREFIX+"foo: bar"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      String runLogContents = readFile(tmpDir.getPath().resolve("run.log"));
+      String runJsonContents = readFile(tmpDir.getPath().resolve("run.json"));
+      assertFalse("log should not contain bar\n"+runLogContents,runLogContents.contains("bar"));
+      assertFalse("run.json should not contain bar\n"+runJsonContents,runLogContents.contains("bar"));
       try {
          Json json = Json.fromString(runJsonContents);
          assertFalse("json should not be empty",json.isEmpty());
