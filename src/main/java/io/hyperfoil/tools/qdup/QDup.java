@@ -5,7 +5,11 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunError;
 import io.hyperfoil.tools.qdup.config.log4j.QdupConfigurationFactory;
 import org.apache.commons.cli.*;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.ConfigurationFactory;
+import org.apache.logging.log4j.core.impl.Log4jContextFactory;
+import org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry;
+import org.apache.logging.log4j.spi.LoggerContextFactory;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.qdup.config.RunConfig;
@@ -431,13 +435,20 @@ public class QDup {
         yamlParser = Parser.getInstance();
     }
 
+    private static void disableLoggerShutdownHook(){
+        final LoggerContextFactory factory = LogManager.getFactory();
+        if (factory instanceof Log4jContextFactory) {
+            Log4jContextFactory contextFactory = (Log4jContextFactory) factory;
+            ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
+        }
+    }
+
     public static void main(String[] args) {
+        disableLoggerShutdownHook();
         ConfigurationFactory.setConfigurationFactory(new QdupConfigurationFactory());
         QDup toRun = new QDup(args);
-        boolean ok = toRun.run();
-        if(!ok){
-            System.exit(1);
-        }
+        toRun.run();
+        LogManager.shutdown();
     }
 
     public boolean run() {
@@ -628,7 +639,14 @@ public class QDup {
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     if (!run.isAborted() && dispatcher.isRunning() && !dispatcher.isStopping()) {
                         run.abort(false);
-                        run.writeRunJson();
+                        Optional<Thread> mainThread = Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals("main")).findFirst();
+                        if (mainThread.isPresent()) {
+                            try {
+                                mainThread.get().join();
+                            } catch (InterruptedException e) {
+                                logger.warn("Error waiting the termination of main thread", e);
+                            }
+                        }
                     }
                 }, "shutdown-abort"));
 
