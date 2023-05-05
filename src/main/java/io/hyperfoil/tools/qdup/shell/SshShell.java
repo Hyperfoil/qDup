@@ -329,7 +329,7 @@ public class SshShell extends AbstractShell{
                 }
                 clientSession.addPublicKeyIdentity(keyPair);
             } catch (GeneralSecurityException e) {
-                logger.error("{} failed to load identity {}",getName(),getHost().getIdentity());
+                logger.error("{} failed to load identity {}\n{}",getName(),getHost().getIdentity(),e.getMessage());
                 return null;
             }
             if (getHost().hasPassword()) {
