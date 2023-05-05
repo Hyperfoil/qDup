@@ -26,9 +26,12 @@ public class HostDefinition {
     public static final String PLATFORM_LOGIN = "platform-login";
     public static final String EXEC = "exec";
 
+    public static final String UPLOAD = "upload";
+    public static final String DOWNLOAD = "download";
+
     public static final List<String> KEYS = Arrays.asList(
             USERNAME,HOSTNAME,PASSWORD,PORT,PROMPT,LOCAL,PLATFORM,CONTAINER,CHECK_CONTAINER_ID,CHECK_CONTAINER_NAME,
-            START_CONTAINER,STOP_CONTAINER,CONNECT_SHELL,PLATFORM_LOGIN,EXEC
+            START_CONTAINER,STOP_CONTAINER,CONNECT_SHELL,PLATFORM_LOGIN,EXEC,UPLOAD,DOWNLOAD
     );
 
     public static List<String> unknownKeys(Collection<String> keys){
@@ -111,6 +114,13 @@ public class HostDefinition {
             if(mapping.has(EXEC)){
                 rtrn.setExec(toList(mapping.get(EXEC)));
             }
+            if(mapping.has(UPLOAD)){
+                rtrn.setUpload(toList(mapping.get(UPLOAD)));
+            }
+            if(mapping.has(DOWNLOAD)){
+                rtrn.setDownload(toList(mapping.get(DOWNLOAD)));
+            }
+
         }
         return rtrn;
     }
