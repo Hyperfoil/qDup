@@ -27,6 +27,7 @@ import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.apache.logging.log4j.core.pattern.RegexReplacement;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -218,6 +219,7 @@ public class Run implements Runnable, DispatchObserver {
                             .setLayout(
                                     PatternLayout.newBuilder()
                                             .withPattern("%d{HH:mm:ss.SSS} %msg%n%throwable")
+                                            .withRegexReplacement(RegexReplacement.createRegexReplacement())
                                             .build()
                             ).build();
                     logAppender.start();
@@ -463,7 +465,13 @@ public class Run implements Runnable, DispatchObserver {
             e.printStackTrace();
         }
     }
-    public void abort(Boolean skipCleanUp){
+
+    /**
+     *
+     * @param skipCleanUp
+     * @return true iff this was the call that aborted the current run
+     */
+    public boolean abort(Boolean skipCleanUp){
         if(aborted.compareAndSet(false,true)){
             getConfig().getState().set(QDUP_GLOBAL+"."+QDUP_GLOBAL_ABORTED,true);//add ABORTED state for any cleanup scripts
             coordinator.clearWaiters();
@@ -478,9 +486,12 @@ public class Run implements Runnable, DispatchObserver {
             //runPendingDownloads();//added here in addition to queueCleanupScripts to download when run aborts
             //abort doesn't end the run, cleanup ends the run
             //runLatch.countDown();
+            return true;//we aborted
         }else{
             logger.info("abort called when already aborted");
+            dispatcher.stop(false);
         }
+        return false;
     }
 
     @Override
