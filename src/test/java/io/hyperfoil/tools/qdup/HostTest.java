@@ -8,6 +8,15 @@ public class HostTest {
 
 
    @Test
+   public void parse_windows_domain_username_password_hostname_port(){
+      Host h = Host.parse("domain/username:pwd@hostname.with.domain:31337");
+      assertEquals("domain/username",h.getUserName());
+      assertEquals("pwd",h.getPassword());
+      assertEquals("hostname.with.domain",h.getHostName());
+      assertEquals("hostname",h.getShortHostName());
+      assertEquals("port",31337,h.getPort());
+   }
+   @Test
    public void parse_username_password_hostname_port(){
       Host h = Host.parse("username:pwd@hostname.with.domain:31337");
       assertEquals("username",h.getUserName());

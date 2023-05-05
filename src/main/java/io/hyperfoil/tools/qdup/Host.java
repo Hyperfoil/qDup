@@ -34,8 +34,8 @@ public class Host {
 
     public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "-q", "/dev/null","/bin/bash");
     //LOCAL_EXEC uses System.getRuntime().exec(...)
-    public static final List<String> LOCAL_LINUX_UPLOAD = Arrays.asList("cp","${{source}}","${{destination}}");
-    public static final List<String> LOCAL_LINUX_DOWNLOAD = Arrays.asList("cp","${{source}}","${{destination}}");
+    public static final List<String> LOCAL_LINUX_UPLOAD = Arrays.asList("cp","-r","${{source}}","${{destination}}");
+    public static final List<String> LOCAL_LINUX_DOWNLOAD = Arrays.asList("cp","-r","${{source}}","${{destination}}");
     public static final List<String> LOCAL_LINUX_FILE_SIZE = Arrays.asList("du","-cb","${{source}}","|","grep","total","|","cut","-d","\t","-f1");
 
     private static final String SSH_FILE_PASS = "${{= host.password ? `sshpass -p ${host.password}` : \"\"}}";

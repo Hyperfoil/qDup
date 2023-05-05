@@ -58,7 +58,14 @@ public class HostDefinition {
         }
     }
 
-
+    @Override
+    public String toString(){
+        if(isOneLine()){
+            return oneLine;
+        } else {
+            return mapping.toString();
+        }
+    }
 
     public boolean isOneLine(){
         return oneLine!=null;
