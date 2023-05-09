@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import org.junit.Test;
 
@@ -14,7 +15,7 @@ public class AbstractShellTest extends SshTestBase {
     @Test
     public void getShell_localShell(){
         Host host = Host.parse(Host.LOCAL);
-        AbstractShell shell = AbstractShell.getShell(host,new ScheduledThreadPoolExecutor(2),false);
+        AbstractShell shell = AbstractShell.getShell(host,new ScheduledThreadPoolExecutor(2),new SecretFilter(), false);
         assertNotNull("shell should not be null",shell);
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
@@ -24,7 +25,7 @@ public class AbstractShellTest extends SshTestBase {
     @Test
     public void getShell_containerShell(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
-        AbstractShell shell = AbstractShell.getShell(host,new ScheduledThreadPoolExecutor(2),false);
+        AbstractShell shell = AbstractShell.getShell(host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),false);
         assertNotNull("shell should not be null",shell);
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
@@ -34,7 +35,7 @@ public class AbstractShellTest extends SshTestBase {
     @Test
     public void getShell_sshShell(){
         Host host = getHost();
-        AbstractShell shell = AbstractShell.getShell(host,new ScheduledThreadPoolExecutor(2),false);
+        AbstractShell shell = AbstractShell.getShell(host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),false);
         assertNotNull("shell should not be null",shell);
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());

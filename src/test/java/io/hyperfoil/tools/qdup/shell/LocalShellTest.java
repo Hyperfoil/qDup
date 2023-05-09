@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.RunTest;
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import org.junit.Test;
 
@@ -19,6 +20,7 @@ public class LocalShellTest extends SshTestBase {
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
             false
         );
         try {
@@ -35,6 +37,7 @@ public class LocalShellTest extends SshTestBase {
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
                 false
         );
         boolean connected = shell.connect();
@@ -62,6 +65,7 @@ public class LocalShellTest extends SshTestBase {
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
                 false
         );
         boolean connected = shell.connect();
@@ -83,6 +87,7 @@ public class LocalShellTest extends SshTestBase {
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
                 false
         );
         boolean connected = shell.connect();

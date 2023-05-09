@@ -245,6 +245,7 @@ public class LocalTest extends SshTestBase{
         AbstractShell shell = AbstractShell.getShell(
                 host,
                 new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
                 false
         );
         String response = shell.shSync("echo 'foo' > /tmp/foo.txt");

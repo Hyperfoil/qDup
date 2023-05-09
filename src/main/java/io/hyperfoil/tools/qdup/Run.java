@@ -1,10 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
-import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.DispatchObserver;
-import io.hyperfoil.tools.qdup.cmd.Dispatcher;
-import io.hyperfoil.tools.qdup.cmd.Script;
-import io.hyperfoil.tools.qdup.cmd.ScriptContext;
+import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.cmd.impl.Download;
 import io.hyperfoil.tools.qdup.cmd.impl.RoleEnv;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
@@ -12,7 +8,6 @@ import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
-
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedSets;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -27,7 +22,6 @@ import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
-import org.apache.logging.log4j.core.pattern.RegexReplacement;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -41,7 +35,12 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -211,17 +210,15 @@ public class Run implements Runnable, DispatchObserver {
                         }
                     }
                     logAppender = FileAppender.newBuilder()
-                            //unique name for restart issue
-                            .setName(Run.RUN_LOGGER_NAME)
-                            .withFileName(Paths.get(getOutputPath(),"run.log").toString())
-                            .withImmediateFlush(true)
-                            .withAppend(false)
-                            .setLayout(
-                                    PatternLayout.newBuilder()
-                                            .withPattern("%d{HH:mm:ss.SSS} %msg%n%throwable")
-                                            .withRegexReplacement(RegexReplacement.createRegexReplacement())
-                                            .build()
-                            ).build();
+                        //unique name for restart issue
+                        .setName(Run.RUN_LOGGER_NAME)
+                        .withFileName(Paths.get(getOutputPath(),"run.log").toString())
+                        .withImmediateFlush(true)
+                        .withAppend(false)
+                        .setLayout(PatternLayout.newBuilder()
+                            .withPattern("%d{HH:mm:ss.SSS} %msg%n%throwable")
+                            .build())
+                        .build();
                     logAppender.start();
                     ctx.updateLoggers();
                     config.getLoggers().get(loggerName).addAppender(logAppender, Level.ALL,null);
@@ -380,6 +377,7 @@ public class Run implements Runnable, DispatchObserver {
                     host,
                     "",
                     getDispatcher().getScheduler(),
+                    getConfig().getState().getSecretFilter(),
                     false);
                 Set<String> deleteList = pendingDeletes.get(host);
                 for(String delete : deleteList){
@@ -617,6 +615,7 @@ public class Run implements Runnable, DispatchObserver {
                         host,
                         "",
                         getDispatcher().getScheduler(),
+                        getConfig().getState().getSecretFilter(),
                         isTrace(name)
                 );
                 shell.setName(name);
@@ -678,6 +677,7 @@ public class Run implements Runnable, DispatchObserver {
                         host,
                         "",
                         getDispatcher().getScheduler(),
+                        getConfig().getState().getSecretFilter(),
                         isTrace(name)
                 );
                 shell.setName(name);
@@ -748,6 +748,7 @@ public class Run implements Runnable, DispatchObserver {
                                host,
                                "",
                                getDispatcher().getScheduler(),
+                               getConfig().getState().getSecretFilter(),
                                isTrace(name)
                        );
                        shell.setName(name);
@@ -814,6 +815,7 @@ public class Run implements Runnable, DispatchObserver {
                                     host,
                                     setupCommand,
                                     getDispatcher().getScheduler(),
+                                    getConfig().getState().getSecretFilter(),
                                     isTrace(name)
                             );
                             shell.setName(name);
@@ -906,6 +908,7 @@ public class Run implements Runnable, DispatchObserver {
                                 host,
                                 "",
                                 getDispatcher().getScheduler(),
+                                getConfig().getState().getSecretFilter(),
                                 isTrace(name)
                         );
                         shell.setName(name);

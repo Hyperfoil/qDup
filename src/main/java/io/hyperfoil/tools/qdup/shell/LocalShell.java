@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -24,8 +25,8 @@ public class LocalShell extends AbstractShell{
 
     private final AtomicInteger connectCounter = new AtomicInteger(0);
 
-    public LocalShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, boolean trace) {
-        super(host, setupCommand, executor, trace);
+    public LocalShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace) {
+        super(host, setupCommand, executor, filter, trace);
     }
 
 
@@ -122,7 +123,8 @@ public class LocalShell extends AbstractShell{
                 getHost(),
                 setupCommand,
                 executor,
-                true
+                getFilter(),
+                trace
         );
     }
 

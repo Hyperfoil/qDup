@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import org.junit.Test;
 
@@ -18,6 +19,7 @@ public class SshShellTest extends SshTestBase {
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
                 false
         );
 

@@ -237,6 +237,7 @@ public class SshTestBase {
         AbstractShell shell = AbstractShell.getShell(
                 getHost(),
                 executor,
+                new SecretFilter(),
                 trace
         );
         assertTrue("local ssh session failed to connect",shell.isOpen());

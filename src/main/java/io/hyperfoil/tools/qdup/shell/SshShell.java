@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.stream.MultiStream;
@@ -119,7 +120,7 @@ public class SshShell extends AbstractShell{
                 //release any permits
                 if(isActive()){
                     if(Status.Ready.equals(previousStatus)){
-                        logger.warn("reconnect invoking semaphoreCallback due to active command during disconnect\n  command:"+currentAction.getCommand());
+                        logger.warn("reconnect invoking semaphoreCallback due to active command during disconnect\n  command:"+getFilter().filter(currentAction.getCommand()));
                         if(sessionStreams!=null) {
                             String output = getShOutput(true);
                             if(semaphoreCallback!=null){
@@ -145,8 +146,8 @@ public class SshShell extends AbstractShell{
     }
 
 
-    public SshShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, boolean trace) {
-        super(host, setupCommand, executor, trace);
+    public SshShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace) {
+        super(host, setupCommand, executor, filter, trace);
     }
 
     @Override
@@ -393,6 +394,8 @@ public class SshShell extends AbstractShell{
                 }
                 channelExec.open().verify(9L, TimeUnit.SECONDS);
             } catch (IOException e) {
+                logger.error("{} failed to connect client to {} {}",getName(),getHost().getSafeString(),e.getMessage());
+
             }
         }
     }
@@ -409,6 +412,7 @@ public class SshShell extends AbstractShell{
                 getHost(),
                 setupCommand,
                 executor,
+                getFilter(),
                 trace
         );
     }

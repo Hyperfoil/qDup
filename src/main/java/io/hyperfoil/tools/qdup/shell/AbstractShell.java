@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
@@ -99,26 +100,28 @@ public abstract class AbstractShell {
     Semaphore shellLock;
     SessionStreams sessionStreams;
 
+    private SecretFilter filter;
+
     private Host host;
 
-    public static final AbstractShell getShell(Host host,ScheduledThreadPoolExecutor executor, boolean trace){
-        return getShell(host,"",executor,trace);
+    public static final AbstractShell getShell(Host host,ScheduledThreadPoolExecutor executor,SecretFilter filter, boolean trace){
+        return getShell(host,"",executor,filter,trace);
     }
-    public static final AbstractShell getShell(Host host,String setupCommand, ScheduledThreadPoolExecutor executor, boolean trace){
+    public static final AbstractShell getShell(Host host,String setupCommand, ScheduledThreadPoolExecutor executor,SecretFilter filter, boolean trace){
         AbstractShell shell = null;
         if(host.isContainer()){
-            shell = new ContainerShell(host,setupCommand,executor,trace);
+            shell = new ContainerShell(host,setupCommand,executor,filter,trace);
         }else if (host.isLocal()){
-            shell = new LocalShell(host,setupCommand,executor,trace);
+            shell = new LocalShell(host,setupCommand,executor,filter,trace);
         }else {
-            shell = new SshShell(host,setupCommand,executor,trace);
+            shell = new SshShell(host,setupCommand,executor,filter,trace);
         }
         //should this conect the shell or just create the correct shell?
         boolean connected = shell.connect();
         return shell;
     }
 
-    public AbstractShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, boolean trace){
+    public AbstractShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace){
         this.host = host;
         this.setupCommand = setupCommand;
         this.executor = executor;
@@ -141,6 +144,7 @@ public abstract class AbstractShell {
 
     abstract PrintStream connectShell();
 
+    public SecretFilter getFilter(){return filter;}
     public boolean connect(){
         Status previousStates = status;
         if(isOpen()){
@@ -216,7 +220,7 @@ public abstract class AbstractShell {
                     }
                 }
             } catch (InterruptedException e) {
-                logger.warn("{}@{} interrupted while waiting for initial PROMPT", host.getUserName(), host.getHostName());
+                logger.warn("{} interrupted while waiting for initial PROMPT", host.getSafeString());
                 Thread.interrupted();
             }
             if (sessionStreams != null) { //sessionStreams can be null if an exception was thrown trying to connect
@@ -312,7 +316,7 @@ public abstract class AbstractShell {
             try {
                 shellLock.acquire();
                 if (permits() != 0) {
-                    logger.error("ShSession " + getName() + "cmd=" + command + " sh.acquire --> permits==" + permits());
+                    logger.error("ShSession " + getName() + "cmd=" + getFilter().filter(command) + " sh.acquire --> permits==" + permits());
                     assert permits() == 0;
                 }
             } catch (InterruptedException e) {
@@ -354,7 +358,7 @@ public abstract class AbstractShell {
             commandStream.println(command);
             commandStream.flush();
         } else {
-            logger.error("Shell is not connected for " + command);
+            logger.error("Shell is not connected for " + getFilter().filter(command));
         }
 
     }
@@ -366,7 +370,7 @@ public abstract class AbstractShell {
                     target.callback.accept(input,name);
                 }
             }else{
-                logger.warn("failed to perform callback for "+target.getCommand());
+                logger.warn("failed to perform callback for "+getFilter().filter(target.getCommand()));
             }
         }
     }
@@ -380,7 +384,7 @@ public abstract class AbstractShell {
                 //fire and forget
             }
         } else {
-            logger.error("Shell is not connected for response "+command);
+            logger.error("Shell is not connected for response "+getFilter().filter(command));
         }
     }
     public String execSync(String command){
@@ -616,7 +620,7 @@ public abstract class AbstractShell {
             if(wait){
                 try {
                     if (shellLock.availablePermits() <= 0) {
-                        logger.info("{} closing but shell still locked {}", getHost(), lastCommand);
+                        logger.info("{} closing but shell still locked {}", getHost(), getFilter().filter(lastCommand));
                     }
                     shellLock.acquire();
                     if (permits() != 0) {

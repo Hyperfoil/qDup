@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.yaup.AsciiArt;
@@ -29,8 +30,8 @@ public class ContainerShell extends AbstractShell{
     private AbstractShell shell;
     private String containerId = null;
 
-    public ContainerShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, boolean trace) {
-        super(host, setupCommand, executor, trace);
+    public ContainerShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace) {
+        super(host, setupCommand, executor, filter, trace);
     }
 
     //TODO should aso accept the state or some state representation
@@ -43,9 +44,9 @@ public class ContainerShell extends AbstractShell{
         //TODO how do we specify custom shell container sub-host?
         Host subHost = getHost().isLocal() ? new Host() : new Host(getHost().getUserName(),getHost().getHostName(),getHost().getPassword(),getHost().getPort());
         if(getHost().isLocal()){
-            shell = new LocalShell(subHost,setupCommand,executor,trace);
+            shell = new LocalShell(subHost,setupCommand,executor,getFilter(),trace);
         } else {
-            shell = new SshShell(subHost,setupCommand,executor,trace);
+            shell = new SshShell(subHost,setupCommand,executor,getFilter(),trace);
         }
         boolean connected = shell.connect();
         if(!connected){
@@ -160,6 +161,7 @@ public class ContainerShell extends AbstractShell{
             getHost(),
             setupCommand,
             executor,
+            getFilter(),
             trace
         );
     }

@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import org.junit.Test;
@@ -22,6 +23,7 @@ public class ContainerShellTest extends SshTestBase {
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
             false
         );
         boolean connected = shell.connect();
@@ -36,6 +38,7 @@ public class ContainerShellTest extends SshTestBase {
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
             false
         );
         boolean connected = shell.connect();
@@ -49,6 +52,7 @@ public class ContainerShellTest extends SshTestBase {
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
             false
         );
         boolean connected = shell.connect();
@@ -60,6 +64,7 @@ public class ContainerShellTest extends SshTestBase {
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
             false
         );
         connected = shell.connect();
@@ -79,6 +84,7 @@ public class ContainerShellTest extends SshTestBase {
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
             false
         );
         assertFalse("host should not have a containerId",host.hasContainerId());
@@ -96,6 +102,7 @@ public class ContainerShellTest extends SshTestBase {
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
             false
         );
         assertFalse("host should not have a containerId",host.hasContainerId());

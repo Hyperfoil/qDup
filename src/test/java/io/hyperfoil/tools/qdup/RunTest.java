@@ -21,15 +21,21 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.config.Property;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.slf4j.Log4jLogger;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -543,6 +549,46 @@ public class RunTest extends SshTestBase {
    }
 
    @Test
+   public void test_check_exit_code_in_script(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+             "scripts:",
+              "  foo:",
+              "    - sh: ls /tmp; (exit 01);",
+              "    - sh: echo $?",
+              "      then:",
+              "      - regex: \"^0$\"",
+              "        then:",
+              "        - set-state: RUN.error false",
+              "        else:",
+              "        - set-state: RUN.error true",
+              "    - sh: doesnotexist",
+              "    - sh: echo $?",
+              "    - sh: pwd",
+              "    - sh: history",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+
+      State state = config.getState();
+      System.out.println(state.tree());
+      assertTrue("state should have error",state.has("error"));
+      assertEquals("state.error should be true","true",state.get("error"));
+   }
+
+   @Test
    public void test_check_exit_code(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
@@ -699,6 +745,7 @@ public class RunTest extends SshTestBase {
       AbstractShell shell = AbstractShell.getShell(
               getHost(),
               scheduled,
+              state.getSecretFilter(),
               false
       );
       RunConfig config = builder.buildConfig(Parser.getInstance());
@@ -1651,7 +1698,6 @@ public class RunTest extends SshTestBase {
 
       assertTrue("queue-download should execute despite done", downloaded.exists());
    }
-
    @Test
    public void timer_resolve_with_reference(){
       Parser parser = Parser.getInstance();

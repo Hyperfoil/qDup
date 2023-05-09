@@ -1015,7 +1015,7 @@ public abstract class Cmd {
       try {
          run(input, context);
       }catch(Exception e){
-         e.printStackTrace();
+         context.error("Error: "+e.getMessage()+"\n  "+this);
          abort("Exception from "+this);
       }
    }
