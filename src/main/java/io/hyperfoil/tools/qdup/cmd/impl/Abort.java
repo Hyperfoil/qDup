@@ -27,10 +27,7 @@ public class Abort extends Cmd {
                 context.isColorTerminal()?AsciiArt.ANSI_RESET:""
             )
         );
-        boolean aborted = context.abort(this.skipCleanup);
-        if(!aborted){
-            context.close();
-        }
+        context.abort(this.skipCleanup);
         //context.next(input); calling this would execute any commands after abort, which is wrong :)
         //result.next(this,input);
     }
