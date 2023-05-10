@@ -1016,7 +1016,7 @@ public abstract class Cmd {
          run(input, context);
       }catch(Exception e){
          context.error("Error: "+e.getMessage()+"\n  "+this);
-         abort("Exception from "+this);
+         context.abort(false);
       }
    }
 
