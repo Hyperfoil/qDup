@@ -363,6 +363,12 @@ public abstract class AbstractShell {
         }
 
     }
+
+    /**
+     * This is the callback that is invoked when a shell prompt is found at the end of the input
+     * @param input
+     * @param name
+     */
     public void callback(String input,String name){
         ShAction target = currentAction;
         if(target!=null) {

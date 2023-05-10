@@ -174,22 +174,22 @@ public class SshShell extends AbstractShell{
             sshClient.addSessionListener(new SessionListener() {
                 @Override
                 public void sessionEstablished(Session session) {
-                    logger.info("{} client established",getName());
+                    logger.debug("{} client established",getName());
                 }
 
                 @Override
                 public void sessionCreated(Session session) {
-                    logger.info("{} client created",getName());
+                    logger.debug("{} client created",getName());
                 }
 
                 @Override
                 public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
-                    logger.info("{} client disconnected",getName());
+                    logger.debug("{} client disconnected",getName());
                 }
 
                 @Override
                 public void sessionClosed(Session session) {
-                    logger.info("{} client disconnected",getName());
+                    logger.debug("{} client disconnected",getName());
                 }
             });
             CoreModuleProperties.IDLE_TIMEOUT.set(sshClient, Duration.ofSeconds(7*24*3600));
@@ -267,22 +267,22 @@ public class SshShell extends AbstractShell{
 
                 @Override
                 public void sessionCreated(Session session) {
-                    logger.info("{} session created",getName());
+                    logger.trace("{} session created",getName());
                 }
 
                 @Override
                 public void sessionPeerIdentificationReceived(Session session, String version, List<String> extraLines) {
-                    logger.info("{} session identification received",getName());
+                    logger.trace("{} session identification received",getName());
                 }
 
                 @Override
                 public void sessionNegotiationStart(Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal) {
-                    logger.info("{} session negotiation start",getName());
+                    logger.trace("{} session negotiation start",getName());
                 }
 
                 @Override
                 public void sessionNegotiationEnd(Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal, Map<KexProposalOption, String> negotiatedOptions, Throwable reason) {
-                    logger.info("{} session negotiation end",getName());
+                    logger.trace("{} session negotiation end",getName());
                 }
 
                 @Override
@@ -292,17 +292,17 @@ public class SshShell extends AbstractShell{
 
                 @Override
                 public void sessionException(Session session, Throwable t) {
-                    logger.info("{} session exception: {}",getName(),t.getMessage());
+                    logger.trace("{} session exception: {}",getName(),t.getMessage());
                 }
 
                 @Override
                 public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
-                    logger.info("{} session disconnect",getName());
+                    logger.trace("{} session disconnect",getName());
                 }
 
                 @Override
                 public void sessionClosed(Session session) {
-                    logger.info("{} session closed",getName());
+                    logger.trace("{} session closed",getName());
                 }
             });
 
