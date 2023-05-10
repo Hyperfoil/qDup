@@ -140,6 +140,7 @@ public abstract class AbstractShell {
             blockingSemaphore.release();
         };
         sessionStreams = new SessionStreams(getName(),executor);
+        this.filter = filter;
     }
 
     abstract PrintStream connectShell();
