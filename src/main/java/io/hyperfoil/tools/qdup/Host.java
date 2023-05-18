@@ -2,7 +2,6 @@ package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.net.InetAddress;
@@ -10,7 +9,6 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -155,7 +153,7 @@ public class Host {
     private String password;
     private String userName;
     private int port;
-    private boolean isSh = true;
+    private boolean isShell = true;
     private String prompt = null; //
     private boolean isLocal = false;
     private String identity = RunConfigBuilder.DEFAULT_IDENTITY;
@@ -199,7 +197,7 @@ public class Host {
         this.hostName = hostName;
         this.password = password;
         this.port = port;
-        this.isSh = prompt == NO_PROMPT || prompt.isBlank();
+        this.isShell = prompt == NO_PROMPT || prompt.isBlank();
         this.prompt = prompt;
         this.isLocal = isLocal;
         if(isLocal){
@@ -421,7 +419,7 @@ public class Host {
     public boolean isLocal(){return isLocal;}
     public boolean hasPrompt(){return prompt!=null && !prompt.isEmpty();}
     public String getPrompt(){return prompt;}
-    public boolean isSh(){return isSh;}
+    public boolean isShell(){return isShell;}
     public boolean hasPassword(){return password!=null && !password.isEmpty();}
     public String getPassword(){return password;}
     public boolean hasUsername(){return userName!=null && !userName.isBlank();}
@@ -440,15 +438,19 @@ public class Host {
     private List<String> populateList(State state,List<String> list){
         return list.stream().map(v->Cmd.populateStateVariables(v,null,state,null,null,null,true)).collect(Collectors.toUnmodifiableList());
     }
+
+    private String nullOrPopulate(String input,State state){
+        return input == null ? null : Cmd.populateStateVariables(input,null,state,null,null);
+    }
     public void populate(State state){
-        hostName = Cmd.populateStateVariables(hostName,null,state,null,null);
-        password = Cmd.populateStateVariables(password,null,state,null,null);
-        userName = Cmd.populateStateVariables(userName,null,state,null,null);
-        prompt = Cmd.populateStateVariables(prompt,null,state,null,null);
-        identity = Cmd.populateStateVariables(identity,null,state,null,null);
-        passphrase = Cmd.populateStateVariables(passphrase,null,state,null,null);
-        platform = Cmd.populateStateVariables(platform,null,state,null,null);
-        container = Cmd.populateStateVariables(container,null,state,null,null);
+        hostName = nullOrPopulate(hostName,state);
+        password = nullOrPopulate(password,state);
+        userName = nullOrPopulate(userName,state);
+        prompt = nullOrPopulate(prompt,state);
+        identity = nullOrPopulate(identity,state);
+        passphrase = nullOrPopulate(passphrase,state);
+        platform = nullOrPopulate(platform,state);
+        container = nullOrPopulate(container,state);
         getFileSize = populateList(state,getFileSize);
         upload = populateList(state,upload);
         download = populateList(state,download);
@@ -499,7 +501,7 @@ public class Host {
         if(hasIdentity()){
             rtrn.set("identity",getIdentity());
         }
-        if(!isSh()){
+        if(!isShell()){
             rtrn.set("shShell",false);
         }
         if(hasContainerId()){

@@ -12,6 +12,8 @@ import org.yaml.snakeyaml.nodes.Tag;
 
 import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 
@@ -74,12 +76,33 @@ public class HostDefinitionConstructTest {
         assertEquals("port",22,loaded.getPort());
     }
     @Test
-    public void map_full(){
-        Host loaded = yaml.loadAs("username: userName\nhostname: hostName.subdomain.domain.com\nport: 22\npassword: foo",HostDefinition.class).toHost(new State(""));
+    public void map_with_download(){
+        HostDefinition definition = yaml.loadAs("username: userName\nhostname: hostName.subdomain.domain.com\ndownload:\n - scp\n - \"-r\"\n - ${{source}}\n - ${{destination}}",HostDefinition.class);
+        assertFalse(definition.isOneLine());
+        Host host = definition.toHost(new State(""));
+        List<String> download = host.getDownload();
+        assertEquals("expect two entries on download",4,download.size());
+        assertEquals("download[0]: "+download,"scp",download.get(0));
+        assertEquals("download[1]: "+download,"-r",download.get(1));
+        assertEquals("download[2]: "+download,"${{source}}",download.get(2));
+        assertEquals("download[3]: "+download,"${{destination}}",download.get(3));
+    }
+    @Test
+    public void map_username_hostname_identity(){
+        Host loaded = yaml.loadAs("username: userName\nhostname: hostName.subdomain.domain.com\nidentity: foo",HostDefinition.class).toHost(new State(""));
         assertNotNull("should load from map",loaded);
         assertEquals("username","userName",loaded.getUserName());
         assertEquals("hostname","hostName.subdomain.domain.com",loaded.getHostName());
-        assertEquals("port",22,loaded.getPort());
+        assertTrue("host has identity",loaded.hasIdentity());
+        assertEquals("identity","foo",loaded.getIdentity());
+    }
+    @Test
+    public void map_username_hostname_port_password(){
+        Host loaded = yaml.loadAs("username: userName\nhostname: hostName.subdomain.domain.com\nport: 2222\npassword: foo",HostDefinition.class).toHost(new State(""));
+        assertNotNull("should load from map",loaded);
+        assertEquals("username","userName",loaded.getUserName());
+        assertEquals("hostname","hostName.subdomain.domain.com",loaded.getHostName());
+        assertEquals("port",2222,loaded.getPort());
     }
     @Test(expected = YAMLException.class)
     public void map_extra_keys(){

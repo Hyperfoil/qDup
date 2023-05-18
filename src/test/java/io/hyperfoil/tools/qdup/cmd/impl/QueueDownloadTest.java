@@ -1,8 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
-import io.hyperfoil.tools.qdup.Local;
-import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.Script;
@@ -10,14 +8,16 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.converter.FileSizeConverter;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import org.junit.Test;
-import io.hyperfoil.tools.qdup.SshTestBase;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -28,6 +28,65 @@ import static org.junit.Assert.*;
 
 public class QueueDownloadTest extends SshTestBase {
 
+
+    @Test
+    public void custom_download_scp(){
+        Parser parser = Parser.getInstance();
+        parser.setAbortOnExitCode(true);
+        RunConfigBuilder builder = getBuilder();
+
+        builder.loadYaml(parser.loadFile("pwd", stream("" +
+                "scripts:",
+                "  foo:",
+                "   - sh: ls -al /root/.ssh",
+                "   - sh: mkdir -p /tmp/foo/folder-one",
+                "   - sh: mkdir -p /tmp/foo/folder-two",
+                "   - sh: echo 'uno' >> /tmp/foo/folder-one/uno.txt",
+                "   - sh: echo 'dos' >> /tmp/foo/folder-two/dos.txt",
+                "   - queue-download: /tmp/foo/folder-one/uno.txt",
+                "hosts:",
+                "  local:",
+                "    username: "+getHost().getUserName(),
+                "    hostname: "+getHost().getHostName(),
+//                "    password: password",
+                "    port: "+getHost().getPort(),
+                "    identity: "+getHost().getIdentity(),
+                "    download:",
+                "    - scp",
+                "    - \"-q\"",
+                "    - \"-i\"",
+                "    - "+getPath("keys/qdup").toFile().getPath().toString(),
+                "    - \"-o\"",
+                "    - StrictHostKeyChecking=no",
+                "    - \"-o\"",
+                "    - UserKnownHostsFile=/dev/null",
+                "    - \"-P\"",
+                "    - ${{host.port}}",
+                "    - \"-r\"",
+                "    - ${{host.username}}@${{host.hostname}}:${{source}}",
+                "    - ${{destination}}",
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts: [foo]"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+
+        Host h = config.getAllHostsInRoles().iterator().next();
+        assertNotNull("host should exit",h);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+        doit.run();
+
+        State state = doit.getConfig().getState();
+        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/uno.txt");
+
+        File tmpFile = new File(tmpDir.toString());
+        String tree = AsciiArt.printTree(new File(tmpDir.toString()),(f)-> f.listFiles() == null ? Collections.EMPTY_LIST : Arrays.asList(f.listFiles()),v->(v.isDirectory()? "/":"")+v.getName());
+        assertTrue("uno should exist @ "+uno.getPath()+"\n"+tree,uno.exists());
+    }
     @Test(timeout = 50_000)
     public void path_star_slash_star(){
         Parser parser = Parser.getInstance();

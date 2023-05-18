@@ -4,7 +4,6 @@ package io.hyperfoil.tools.qdup;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.stream.MultiStream;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -39,11 +38,9 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -614,7 +611,7 @@ public class SshSession {
                 channelShell.open().verify().isOpened();
             }
             commandStream = new PrintStream(channelShell.getInvertedIn());
-            if(host.isSh()) {
+            if(host.isShell()) {
                 shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"");
             }
             if (setupCommand != null && !setupCommand.trim().isEmpty()) {

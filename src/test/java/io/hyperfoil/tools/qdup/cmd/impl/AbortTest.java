@@ -58,7 +58,6 @@ public class AbortTest extends SshTestBase {
 
         assertEquals("abort should still call cleanup script","true",config.getState().get("bar"));
         assertEquals("abort should stop current script","false",config.getState().get("foo"));
-        System.out.println(state.tree());
     }
 
     @Test
@@ -109,7 +108,5 @@ public class AbortTest extends SshTestBase {
         assertEquals("abort should still call cleanup script","true",config.getState().get("bar"));
         assertEquals("abort should stop current cleanup script","false",config.getState().get("barbar"));
         assertEquals("abort should stop current run script","false",config.getState().get("foo"));
-
-        System.out.println(state.tree());
     }
 }

@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -25,7 +26,11 @@ public class SshPasswordTestBase extends SshTestBase{
 
     @BeforeClass
     public static void createContainer() {
-        setup(getPath("keys/qdup.password.pub"));
+        try {
+            setup(getPath("keys/qdup.password.pub"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
