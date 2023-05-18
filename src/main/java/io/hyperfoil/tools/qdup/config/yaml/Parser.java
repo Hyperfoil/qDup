@@ -97,9 +97,10 @@ public class Parser {
         rtrn.addCmd(
                 AddPrompt.class,
                 "add-prompt",
-                (cmd) -> cmd.getPrompt(),
+                (cmd) -> cmd.isShell() ? Map.of("prompt",cmd.getPrompt(),HostDefinition.IS_SHELL,cmd.isShell()) :  cmd.getPrompt(),
                 (str,prefix,suffix) -> new AddPrompt(str),
-                null
+                (json)->new AddPrompt(json.getString("prompt"),json.getBoolean(HostDefinition.IS_SHELL,false)),
+                "prompt",HostDefinition.IS_SHELL
         );
         rtrn.addCmd(
                 Countdown.class,

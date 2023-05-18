@@ -26,12 +26,15 @@ public class HostDefinition {
     public static final String PLATFORM_LOGIN = "platform-login";
     public static final String EXEC = "exec";
 
+    public static final String IDENTITY = "identity";
     public static final String UPLOAD = "upload";
     public static final String DOWNLOAD = "download";
 
+    public static final String IS_SHELL = "is-shell";
+
     public static final List<String> KEYS = Arrays.asList(
             USERNAME,HOSTNAME,PASSWORD,PORT,PROMPT,LOCAL,PLATFORM,CONTAINER,CHECK_CONTAINER_ID,CHECK_CONTAINER_NAME,
-            START_CONTAINER,STOP_CONTAINER,CONNECT_SHELL,PLATFORM_LOGIN,EXEC,UPLOAD,DOWNLOAD
+            START_CONTAINER,STOP_CONTAINER,CONNECT_SHELL,PLATFORM_LOGIN,EXEC,UPLOAD,DOWNLOAD, IS_SHELL,IDENTITY
     );
 
     public static List<String> unknownKeys(Collection<String> keys){
@@ -120,6 +123,10 @@ public class HostDefinition {
             if(mapping.has(DOWNLOAD)){
                 rtrn.setDownload(toList(mapping.get(DOWNLOAD)));
             }
+            if(mapping.has(IDENTITY)){
+                rtrn.setIdentity(mapping.get(IDENTITY).toString());
+            }
+
 
         }
         return rtrn;
@@ -129,7 +136,7 @@ public class HostDefinition {
             return Arrays.asList(null);
         }else if(object instanceof Json){
             Json json = (Json)object;
-            return Arrays.asList(json.values().stream().map(Object::toString).collect(Collectors.joining()));
+            return json.values().stream().map(Object::toString).collect(Collectors.toList());
         }else{
             return Arrays.asList(object.toString());
         }

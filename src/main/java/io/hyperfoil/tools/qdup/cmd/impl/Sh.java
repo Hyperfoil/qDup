@@ -1,10 +1,8 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
-import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.Script;
-import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 
@@ -44,6 +42,7 @@ public class Sh extends Cmd {
     public void setIgnoreExitCode(boolean ignoreExitCode){
         this.ignoreExitCode = ignoreExitCode;
     }
+
     public void addPrompt(String prompt,String response){
         this.prompt.put(prompt,response);
     }
@@ -108,7 +107,12 @@ public class Sh extends Cmd {
     @Override
     public void postRun(String output,Context context){
         String toLog = getLogOutput(output,context);
-        if(context.getSession()!=null && context.getSession().isOpen() && SshSession.PROMPT.equals(getPreviousPrompt()) && context.getSession().getHost().isSh()){
+        if(context.getSession()!=null &&
+                context.getSession().isOpen() &&
+                /*SshSession.PROMPT.equals(getPreviousPrompt()) &&*/
+                context.getSession().isPromptShell(getPreviousPrompt()) &&
+                context.getSession().getHost().isShell())
+        {
             String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
             String pwd = context.getSession().shSync("pwd");
             context.setCwd(pwd);
@@ -123,7 +127,7 @@ public class Sh extends Cmd {
                     context.log(toLog);
                 } else {
                     context.error(toLog);
-                    if (context.checkExitCode() && !isIgnoreExitCode()) {
+                    if ( shouldCheckExit(context) ) {
                         boolean couldBeCtrlC = walk(CmdLocation.createTmp(), (cmd) -> cmd instanceof CtrlC).stream().anyMatch(Boolean::booleanValue);
                         if( !couldBeCtrlC) {
                             Cmd cmd = this;
@@ -145,6 +149,10 @@ public class Sh extends Cmd {
         }else{
             context.log(toLog);
         }
+    }
+
+    public boolean shouldCheckExit(Context context){
+        return (context.checkExitCode() && !isIgnoreExitCode());
     }
 
     @Override

@@ -583,7 +583,6 @@ public class RunTest extends SshTestBase {
       doit.run();
 
       State state = config.getState();
-      System.out.println(state.tree());
       assertTrue("state should have error",state.has("error"));
       assertEquals("state.error should be true","true",state.get("error"));
    }

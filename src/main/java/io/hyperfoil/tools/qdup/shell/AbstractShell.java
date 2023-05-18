@@ -2,16 +2,14 @@ package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.SshSession;
-import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -99,6 +97,8 @@ public abstract class AbstractShell {
     PrintStream commandStream;
     Semaphore shellLock;
     SessionStreams sessionStreams;
+    private Map<String,Boolean> isPromptShell;
+
 
     private SecretFilter filter;
 
@@ -141,6 +141,7 @@ public abstract class AbstractShell {
         };
         sessionStreams = new SessionStreams(getName(),executor);
         this.filter = filter;
+        this.isPromptShell = new HashMap<>();
     }
 
     abstract PrintStream connectShell();
@@ -167,7 +168,7 @@ public abstract class AbstractShell {
             }
             //is setting this new breaking something in LocalShell??
             sessionStreams = new SessionStreams(getName(),executor);
-            //TODO need to replace lambda with method access for changes to sessionStrema to be visible
+            //TODO need to replace lambda with method access for changes to sessionStream to be visible
             semaphoreCallback = (name) -> {
                 String output = getShOutput(true);
                 //TODO use atomic boolean to set expecting response and check for true before release?
@@ -188,11 +189,10 @@ public abstract class AbstractShell {
                     logger.error("ShSession " + getName() + " " + getLastCommand() + " release -> permits==" + permits() + "\n" + output);
                     assert permits() == 1;
                 }
-
             };
-            sessionStreams.addPrompt(PROMPT,PROMPT,"");
-            if(getHost().hasPrompt()){
-                sessionStreams.addPrompt(getHost().getPrompt(),getHost().getPrompt(),"");
+            addPrompt(PROMPT,true);
+            if(getHost().hasPrompt()){ //TODO should we only add default prompt if host does NOT have a prompt?
+                addPrompt(getHost().getPrompt(), getHost().isShell());
             }
             sessionStreams.addPromptCallback(this.semaphoreCallback);
             commandStream = connectShell();
@@ -200,7 +200,7 @@ public abstract class AbstractShell {
                 logger.error("{} failed to connect to {}",getName(),getHost().getSafeString());
                 return false;
             }
-            if(getHost().isSh()){
+            if(getHost().isShell()){
                 shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"");
             }
             if(setupCommand !=null && !setupCommand.trim().isEmpty()){
@@ -413,8 +413,12 @@ public abstract class AbstractShell {
     }
     public abstract void exec(String command, Consumer<String> callback);
 
-    public void addPrompt(String prommpt) {
-        sessionStreams.addPrompt(prommpt);
+    public void addPrompt(String prompt,boolean isShell) {
+        sessionStreams.addPrompt(prompt);
+        isPromptShell.put(prompt,isShell);
+    }
+    public boolean isPromptShell(String prompt){
+        return isPromptShell.getOrDefault(prompt,false);
     }
     public void reboot(){
         throw new UnsupportedOperationException("shell does not support reboot");

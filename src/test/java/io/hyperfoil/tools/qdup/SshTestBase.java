@@ -11,8 +11,11 @@ import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.images.builder.Transferable;
+import org.testcontainers.utility.MountableFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -102,7 +105,7 @@ public class SshTestBase {
         return getPath("keys/qdup").toFile().getPath();
     }
 
-    static Path getPath(String subDir){
+    public static Path getPath(String subDir){
         return  Paths.get(
                 SshTestBase.class.getProtectionDomain().getCodeSource().getLocation().getPath()
         ).resolve(
@@ -135,16 +138,20 @@ public class SshTestBase {
 
     @BeforeClass
     public static void createContainer() {
-        setup(getPath("keys/qdup.pub"));
-
+        try {
+            setup(getPath("keys/qdup.pub"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
-    public static void setup(Path pubPath ){
+    public static void setup(Path pubPath ) throws IOException {
         String pub = "";
         try {
             pub = Files.readString(pubPath);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        //MountableFile mountableFile = MountableFile.forClasspathResource("keys/qdup.pub",Integer.parseInt("644",8));
         String pubKey = pub;
         container = new GenericContainer(new ImageFromDockerfile()
            .withDockerfileFromBuilder(builder ->
@@ -152,15 +159,21 @@ public class SshTestBase {
                  //.from("alpine:3.2")
                  .from("ubuntu:16.04")
 //                 .from("fedora:35")
-                 .run("apt-get update && apt-get install -y openssh-server openssh-client rsync && apt-get clean")
+                 .run("apt-get update && apt-get install -y openssh-server openssh-client rsync sudo && apt-get clean")
 //                 .run("dnf install -y openssh-server openssh-clients rsync")
+
                  .run("mkdir /var/run/sshd")
                  .run("(umask 077 && test -d /root/.ssh || mkdir /root/.ssh)")
-                 .run("(umask 077 && touch /root/.ssh/authorized_keys)")
-                 .run(" echo \""+pubKey+"\" >> /root/.ssh/authorized_keys")
+////                 .run("(umask 077 && touch /root/.ssh/authorized_keys)")
+////                 .run(" echo \""+pubKey+"\" >> /root/.ssh/authorized_keys")
                  .run("chmod 700 /root/.ssh")
-                 .run("chmod 600 /root/.ssh/authorized_keys")
+
+//                      .run("chown root /root/.ssh/authorized_keys")
+
+//                 .run("chmod 600 /root/.ssh/authorized_keys")
                  //.run("ssh-keygen -A")
+                      .run("ls -al /root/.ssh")
+//                      .run("cat /root/.ssh/authorized_keys")
                  .run("echo 'root:password' | chpasswd")
                  .run("sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config")
                  .run("sed -i 's/#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\\/authorized_keys/g' /etc/ssh/sshd_config")
@@ -168,8 +181,20 @@ public class SshTestBase {
                  .expose(22)
                  .entryPoint("/usr/sbin/sshd -D")
                  .build()))
+                .withCopyToContainer(Transferable.of(Files.readAllBytes(pubPath)),"/root/.ssh/authorized_keys")
+//           .withCopyFileToContainer(mountableFile,"/root/.ssh/authorized_keys")
            .withExposedPorts(22);
         container.start();
+        try {
+            Container.ExecResult response = container.execInContainer("ls","-al","/root/.ssh");
+        }catch(IOException | InterruptedException e){
+            e.printStackTrace();
+        }
+        try {
+            Container.ExecResult response = container.execInContainer("cat","/root/.ssh/authorized_keys");
+        }catch(IOException | InterruptedException e){
+            e.printStackTrace();
+        }
         String hostname=container.getHost();
         host = new Host("root",hostname,null,container.getMappedPort(22),null,false,null,null);
         host.setIdentity(getPath("keys/qdup").toFile().getPath());
