@@ -586,10 +586,8 @@ public abstract class Cmd {
             }
          } catch (PopulatePatternException pe) {
             if (pe.isJsFailure() && !partial) {//partial means we expect there could be missing expressions
-               logger.error(pe.getMessage()+"\n"+pe.getResult());// warn when js evaluation fails
-               pe.printStackTrace();
+               logger.error(pe.getMessage()+"\n"+pe.getResult(),pe);// warn when js evaluation fails
             } else {
-               //pe.printStackTrace();
                logger.debug(pe.getMessage());//changed to debug because runs now fail when patterns are missing
             }
             //return command;//must return input to show there are unpopulated patterns
