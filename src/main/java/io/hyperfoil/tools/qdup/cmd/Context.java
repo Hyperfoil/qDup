@@ -30,7 +30,7 @@ public interface Context {
     Cmd getCurrentCmd();
 
     Script getScript(String name,Cmd command);
-    AbstractShell getSession();
+    AbstractShell getShell();
     Host getHost();
     State getState();
     void addPendingDownload(String path,String destination, Long maxSize);

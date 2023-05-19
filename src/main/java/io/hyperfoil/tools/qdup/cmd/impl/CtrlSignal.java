@@ -2,7 +2,6 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
-import io.hyperfoil.tools.yaup.AsciiArt;
 
 public class CtrlSignal extends Cmd {
 
@@ -16,7 +15,7 @@ public class CtrlSignal extends Cmd {
 
    @Override
    public void run(String input, Context context) {
-      context.getSession().ctrl(signal);
+      context.getShell().ctrl(signal);
       context.next(input); //now waits for shell to return prompt
 
    }

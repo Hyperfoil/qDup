@@ -153,9 +153,9 @@ public class SpyContext implements Context {
     }
 
     @Override
-    public AbstractShell getSession() {
+    public AbstractShell getShell() {
         if(context!=null){
-            return context.getSession();
+            return context.getShell();
         }
         return null;
     }

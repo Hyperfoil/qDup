@@ -230,7 +230,7 @@ public class SyncContext implements Context, Runnable{
     }
 
     @Override
-    public AbstractShell getSession() {
+    public AbstractShell getShell() {
         return session;
     }
 

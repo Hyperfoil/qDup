@@ -9,7 +9,6 @@ import io.hyperfoil.tools.qdup.cmd.SpyContext;
 import io.hyperfoil.tools.qdup.cmd.impl.JsCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.ParseCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.vertx.JsonMessageCodec;
@@ -23,11 +22,9 @@ import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSBridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
-import org.json.JSONObject;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.DatagramSocket;
@@ -305,7 +302,7 @@ public class JsonServer implements RunObserver, ContextObserver {
                 response.set("parse",Json.isJsonLike(body) ? Json.fromString(body) : body);
 
                 SpyContext spyContext = new SpyContext(null,state,null);
-                String currentOutput = found.getSession().peekOutput();
+                String currentOutput = found.getShell().peekOutput();
                 toRun.run(currentOutput,spyContext);
 
                 if(spyContext.getErrors().size()>0){
@@ -344,7 +341,7 @@ public class JsonServer implements RunObserver, ContextObserver {
 
 
                     SpyContext spyContext = new SpyContext(null,state,null);
-                    String currentOutput = found.getSession().peekOutput();
+                    String currentOutput = found.getShell().peekOutput();
                     toRun.run(currentOutput,spyContext);
                     Json response = new Json();
                     if(!state.toOwnJson().isEmpty()){
@@ -383,7 +380,7 @@ public class JsonServer implements RunObserver, ContextObserver {
                     state.addChild("clone","");
                     state.getChild("clone").load(found.getState().toJson());
                     SpyContext spyContext = new SpyContext(null,state,null);
-                    String currentOutput = found.getSession().peekOutput();
+                    String currentOutput = found.getShell().peekOutput();
                     if(currentOutput == null || currentOutput.isEmpty()){
                         Cmd previous = found.getCurrentCmd() != null ? found.getCurrentCmd().getPrevious() : null;
                         String input = previous != null ? previous.getOutput() : "";
@@ -419,13 +416,13 @@ public class JsonServer implements RunObserver, ContextObserver {
                 String send  = rc.getBodyAsString();
                 if(send != null && !send.trim().isEmpty()){
                    if("^C".equals(send.toUpperCase())) {
-                       if (found.getSession() != null) {
-                           found.getSession().ctrlC();
+                       if (found.getShell() != null) {
+                           found.getShell().ctrlC();
                            rc.response().end("ok ^C");
                        }
                    }else if ("^\\".equals(send)) {
-                       if (found.getSession() != null) {
-                           found.getSession().ctrl('\\');
+                       if (found.getShell() != null) {
+                           found.getShell().ctrl('\\');
                            rc.response().end("ok ^\\");
                        }
                    }else if (send.startsWith("^")){
@@ -435,16 +432,16 @@ public class JsonServer implements RunObserver, ContextObserver {
                        }else if (send.equals("^skip")){
                            found.skip(found.getCurrentCmd().getOutput());
                        }else if(send.length()==2){
-                           if(found.getSession() != null) {
-                               found.getSession().ctrl(send.charAt(1));
+                           if(found.getShell() != null) {
+                               found.getShell().ctrl(send.charAt(1));
                                rc.response().end("ok ^"+send.charAt(1));
                            }
                        }
 
                    }else{
                        //does this enable remote code injection before the next cmd?
-                      if(found.getSession()!=null){
-                         found.getSession().response(send);
+                      if(found.getShell()!=null){
+                         found.getShell().response(send);
                           rc.response().end("ok");
                       }
                    }

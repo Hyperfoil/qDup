@@ -61,7 +61,7 @@ public class Exec extends Cmd {
             );
             scriptContext.getRun().getDispatcher().addScriptContext(newContext,false);
             Cmd skip = getSkip();
-            newContext.getSession().exec(populatedCommand, (response ) ->{
+            newContext.getShell().exec(populatedCommand, (response ) ->{
                 newContext.next(response);
             });
             if (skip != null) {
@@ -73,7 +73,7 @@ public class Exec extends Cmd {
                 scriptContext.run();
             }
         }else {
-            context.getSession().exec(populatedCommand, (response) -> {
+            context.getShell().exec(populatedCommand, (response) -> {
                 context.next(response);
             });
         }

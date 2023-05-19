@@ -68,7 +68,7 @@ public class Download extends Cmd {
         Host host = hostSupplier.get();
 
         String remotePath = context == null ? path : populateStateVariables(path,this,context);
-        String basePath = context == null ? null : context.getRunOutputPath()+ File.separator+context.getSession().getHost().getHostName();
+        String basePath = context == null ? null : context.getRunOutputPath()+ File.separator+context.getShell().getHost().getHostName();
         String destinationPath =  context == null ? destination : populateStateVariables(basePath + File.separator +destination,this,context);
 
 

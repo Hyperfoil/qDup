@@ -4,10 +4,8 @@ import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
-import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
@@ -24,7 +22,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -36,7 +33,7 @@ public class ScriptContext implements Context, Runnable{
 
     private class SharedScriptContext extends ScriptContext{
         public SharedScriptContext(SystemTimer timer,Cmd root, boolean checkExitCode){
-            super(ScriptContext.this.getSession(),
+            super(ScriptContext.this.getShell(),
                ScriptContext.this.getState(),
                ScriptContext.this.getRun(),
                timer,
@@ -78,7 +75,7 @@ public class ScriptContext implements Context, Runnable{
             AtomicReferenceFieldUpdater.newUpdater(ScriptContext.class,Cmd.class,"currentCmd");
     private static final String CLOSE_QUEUE = "CLOSE_LINE_QUEUE_"+System.currentTimeMillis();
 
-    private final AbstractShell session;
+    private final AbstractShell shell;
     private final Cmd rootCmd;
     private boolean checkExitCode;
     private final State state;
@@ -131,14 +128,14 @@ public class ScriptContext implements Context, Runnable{
                 cmdName = root.toString();
             }
         }
-        return (cmdName.isEmpty() ? "" : cmdName+":"+getRootCmd().getUid()+"@") + (getSession()!=null ? getSession().getHost().toString() : "");
+        return (cmdName.isEmpty() ? "" : cmdName+":"+getRootCmd().getUid()+"@") + (getShell()!=null ? getShell().getHost().toString() : "");
     }
 
     public ScriptContext(AbstractShell session, State state, Run run, SystemTimer timer, Cmd rootCmd, boolean checkExitCode){
         this(session,state,run,timer,rootCmd.deepCopy(),null,checkExitCode);
     }
     private ScriptContext(AbstractShell shell, State state, Run run, SystemTimer timer, Cmd rootCmd,Cmd setCurrentCmd, boolean checkExitCode){
-        this.session = shell;
+        this.shell = shell;
         this.rootCmd = rootCmd;
         this.currentCmd = null;
         setCurrentCmd(null,setCurrentCmd==null?rootCmd:setCurrentCmd);
@@ -148,8 +145,8 @@ public class ScriptContext implements Context, Runnable{
         this.cmdTimer = timer;
         this.checkExitCode = checkExitCode;
 
-        if(this.session!=null){
-            session.addLineObserver(
+        if(this.shell !=null){
+            this.shell.addLineObserver(
                 getClass().getSimpleName(),
                 (line)->{
                     this.update(line);
@@ -194,8 +191,8 @@ public class ScriptContext implements Context, Runnable{
     public Script getScript(String name,Cmd command){
         return run.getConfig().getScript(name,command,this.getState());
     }
-    public AbstractShell getSession(){
-        return session;
+    public AbstractShell getShell(){
+        return shell;
     }
 
 
@@ -206,7 +203,7 @@ public class ScriptContext implements Context, Runnable{
 
     @Override
     public Host getHost() {
-        return session.getHost();
+        return shell.getHost();
     }
 
     public Coordinator getCoordinator(){return run.getCoordinator();}
@@ -223,18 +220,18 @@ public class ScriptContext implements Context, Runnable{
     private void checkClose(){
         int currentCount = this.sessionCounter.decrementAndGet();
         if(currentCount==0) {
-            session.close();
+            shell.close(false);
         }
     }
 
     public State getState(){return state;}
     @Override
     public void addPendingDownload(String path,String destination, Long maxSize){
-        run.addPendingDownload(session.getHost(),path,destination, maxSize);
+        run.addPendingDownload(shell.getHost(),path,destination, maxSize);
     }
     @Override
     public void addPendingDelete(String path){
-        run.addPendingDelete(session.getHost(),path);
+        run.addPendingDelete(shell.getHost(),path);
     }
     public void abort(Boolean skipCleanup){
         isAborted=true;
@@ -429,7 +426,7 @@ public class ScriptContext implements Context, Runnable{
         ScheduledFuture future = run.getDispatcher().getScheduler().schedule(()->{
             if(toWatch.equals(getCurrentCmd())){
                 toRun.doRun(""+timeout,new SyncContext(
-                    this.getSession(),
+                    this.getShell(),
                     this.getState(),
                     this.getRun(),
                     this.getContextTimer(),
@@ -472,7 +469,7 @@ public class ScriptContext implements Context, Runnable{
             setStartTime(timestamp);
             setUpdateTime(timestamp);
             if (cmd.hasSignalWatchers()){
-                Supplier<String> inputSupplier = ()->getSession().peekOutput();
+                Supplier<String> inputSupplier = ()-> getShell().peekOutput();
                 for(String name : cmd.getSignalNames()){
                     String populatedName = null;
                     try {
@@ -483,7 +480,7 @@ public class ScriptContext implements Context, Runnable{
                     }
                     List<Cmd> toCall = cmd.getSignal(name);
                     Cmd root = new ActiveCheckCmd(getCurrentCmd());
-                    SyncContext syncContext = new SyncContext(this.getSession(),this.getState(),this.getRun(),this.getContextTimer(),root,this);
+                    SyncContext syncContext = new SyncContext(this.getShell(),this.getState(),this.getRun(),this.getContextTimer(),root,this);
                     toCall.forEach(root::then);
                     signalCmds.put(name,root);
                     getCoordinator().waitFor(populatedName,root,syncContext,inputSupplier);
@@ -516,7 +513,7 @@ public class ScriptContext implements Context, Runnable{
                         logger.trace("watch.line: {}",line);
                         for (Cmd watcher : cmd.getWatchers()) {
                             SyncContext watcherContext = new SyncContext(
-                               this.getSession(),
+                               this.getShell(),
                                this.getState(),
                                this.getRun(),
                                this.getCommandTimer(),

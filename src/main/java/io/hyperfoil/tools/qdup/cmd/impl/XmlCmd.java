@@ -6,7 +6,6 @@ import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import io.hyperfoil.tools.yaup.xml.XmlOperation;
 import io.hyperfoil.tools.yaup.xml.pojo.Xml;
-import io.hyperfoil.tools.yaup.xml.pojo.XmlPath;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,7 +62,7 @@ public class XmlCmd extends Cmd {
                 remotePath = removeQuotes(remotePath);
 
                 if(!remotePath.isEmpty() && !remotePath.startsWith("/")){
-                    String pwd = context.getSession().shSync("pwd");
+                    String pwd = context.getShell().shSync("pwd");
                     if(path.startsWith("./")){
                         path = path.substring(2);//remove the ./
                     }
@@ -73,9 +72,9 @@ public class XmlCmd extends Cmd {
             if(remotePath==null || remotePath.isEmpty()){
                 xml = Xml.parse(input);
             }else{
-                tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getSession().getHost().getHostName(),"."+System.currentTimeMillis());
+                tmpDest = File.createTempFile("cmd-"+this.getUid()+"-"+context.getShell().getHost().getHostName(),"."+System.currentTimeMillis());
 
-                boolean ok = context.getLocal().download(remotePath,tmpDest.getPath(),context.getSession().getHost());
+                boolean ok = context.getLocal().download(remotePath,tmpDest.getPath(),context.getShell().getHost());
                 if(!ok){
                     successful=false;
                     context.error("failed to fetch xml file "+remotePath);
@@ -121,7 +120,7 @@ public class XmlCmd extends Cmd {
                     out.print(xml.documentString());
                     out.flush();
                 }
-                boolean ok = context.getLocal().upload(tmpDest.getPath(), remotePath, context.getSession().getHost());
+                boolean ok = context.getLocal().upload(tmpDest.getPath(), remotePath, context.getShell().getHost());
                 if(!ok){
                     successful=false;
                     context.error("failed to upload xml to "+remotePath);
@@ -129,7 +128,7 @@ public class XmlCmd extends Cmd {
                 }
             }
         } catch (IOException e) {
-            logger.error("{}@{} failed to create local tmp file",this.toString(),context.getSession().getHost().getHostName(),e);
+            logger.error("{}@{} failed to create local tmp file",this.toString(),context.getShell().getHost().getHostName(),e);
             successful = false;
             output = "COULD NOT LOAD: "+path;
         } finally {

@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
-import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
@@ -32,7 +31,7 @@ public class Reboot extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        AbstractShell session = context.getSession();
+        AbstractShell session = context.getShell();
         if(target!=null && !target.isEmpty()){
 
             //TODO check if reboot is not necessary?

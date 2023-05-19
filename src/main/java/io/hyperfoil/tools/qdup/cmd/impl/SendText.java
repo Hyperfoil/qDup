@@ -23,7 +23,7 @@ public class SendText extends Cmd {
    @Override
    public void run(String input, Context context) {
       populatedText = Cmd.populateStateVariables(text,this,context);
-      context.getSession().response(populatedText);
+      context.getShell().response(populatedText);
       context.next(input);
    }
 

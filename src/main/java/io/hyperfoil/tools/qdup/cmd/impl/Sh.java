@@ -4,7 +4,6 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 
 import java.util.*;
@@ -72,7 +71,7 @@ public class Sh extends Cmd {
         context.getCommandTimer().start("invoke");
         //TODO do we need to manually remove the lineObserver?
         if(prompt.isEmpty()) {
-            context.getSession().sh(populatedCommand, (output,promptName)->{
+            context.getShell().sh(populatedCommand, (output, promptName)->{
                 setPreviousPrompt(promptName);
                 context.next(output);
             });
@@ -84,7 +83,7 @@ public class Sh extends Cmd {
                 populated.put(populatedKey,populatedValue);
             });
 
-            context.getSession().sh(
+            context.getShell().sh(
                     populatedCommand,
                     (output,promptName)->{
                         setPreviousPrompt(promptName);
@@ -108,19 +107,19 @@ public class Sh extends Cmd {
     @Override
     public void postRun(String output,Context context){
         String toLog = getLogOutput(output,context);
-        if(context.getSession()!=null &&
-                context.getSession().isOpen() &&
+        if(context.getShell()!=null &&
+                context.getShell().isOpen() &&
                 /*SshSession.PROMPT.equals(getPreviousPrompt()) &&*/
-                context.getSession().isPromptShell(getPreviousPrompt()) &&
-                context.getSession().getHost().isShell())
+                context.getShell().isPromptShell(getPreviousPrompt()) &&
+                context.getShell().getHost().isShell())
         {
-            String response = context.getSession().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
-            String pwd = context.getSession().shSync("pwd");
+            String response = context.getShell().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
+            String pwd = context.getShell().shSync("pwd");
             context.setCwd(pwd);
             context.getCommandTimer().getJson().set("response",response);
             context.getCommandTimer().getJson().set("cwd",pwd);
-            context.getSession().shSync("(exit $__qdup_ec);");
-            context.getSession().flushAndResetBuffer();
+            context.getShell().shSync("(exit $__qdup_ec);");
+            context.getShell().flushAndResetBuffer();
 
             //not working in lab :(
             if(toLog != null && !toLog.isBlank()) {
@@ -143,7 +142,7 @@ public class Sh extends Cmd {
                                 cmd = cmd.getParent();
                             }
 
-                            context.error("aborting run due to exit code "+response+"\n  host: "+context.getSession().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
+                            context.error("aborting run due to exit code "+response+"\n  host: "+context.getShell().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
                             context.abort(false);
                         }
                     }

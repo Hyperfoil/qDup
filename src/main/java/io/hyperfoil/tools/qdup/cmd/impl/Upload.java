@@ -25,13 +25,13 @@ public class Upload extends Cmd {
 
         //create remote directory
         if(populatedDestination.endsWith("/")) {
-            context.getSession().sh("mkdir -p " + populatedDestination);
+            context.getShell().sh("mkdir -p " + populatedDestination);
         }
         
         boolean worked = context.getLocal().upload(
             populatedPath,
             populatedDestination,
-            context.getSession().getHost()
+            context.getShell().getHost()
         );
         if(!worked){
             context.error("failed to upload "+populatedPath+" to "+populatedDestination);

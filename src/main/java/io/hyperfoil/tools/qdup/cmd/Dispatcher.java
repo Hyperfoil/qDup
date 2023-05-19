@@ -158,13 +158,13 @@ public class Dispatcher {
             Json entry = new Json();
             Cmd currentCmd = context.getCurrentCmd();
             entry.set("name",Cmd.populateStateVariables(currentCmd.toString(),currentCmd,context));
-            entry.set("host",context.getSession().getHost().getSafeString());
+            entry.set("host",context.getShell().getHost().getSafeString());
             entry.set("uid",currentCmd.getUid());
             entry.set("contextId",context.getContextId());
             entry.set("script",rootCmd.getUid()+":"+rootCmd.toString());
             if(currentCmd instanceof Sh){
                 entry.set("input",currentCmd.getPrevious()!=null?currentCmd.getPrevious().getOutput():"");
-                entry.set("output",context.getSession().peekOutput());
+                entry.set("output",context.getShell().peekOutput());
             }
             entry.set("startTime",context.getStartTime());
             entry.set("runTime",(System.currentTimeMillis()-context.getStartTime()));
@@ -219,7 +219,7 @@ public class Dispatcher {
                 Cmd command = context.getCurrentCmd();
                 long lastUpdate = context.getUpdateTime();
                 logger.trace("Nanny checking:\n  host={}\n  command={}",
-                        context.getSession().getHost(),
+                        context.getShell().getHost(),
                         command);
 
                 //checking if the command is waiting for a signal
@@ -245,7 +245,7 @@ public class Dispatcher {
 
                 if(command.hasIdleTimer() &&  timestamp - lastUpdate > command.getIdleTimer()){
                     if(command instanceof Sh){
-                        String output = context.getSession().peekOutput();
+                        String output = context.getShell().peekOutput();
                         boolean hasPrompt = output.contains(SshSession.PROMPT);
                         boolean moreInput = output.endsWith("> ");
                         String parentName = null;
@@ -258,11 +258,11 @@ public class Dispatcher {
                                     context.isColorTerminal() ? AsciiArt.ANSI_RED : "",
                                     context.isColorTerminal() ? AsciiArt.ANSI_RESET : "",
                                     command,
-                                    context.getSession().getHost().getHostName(),
+                                    context.getShell().getHost().getHostName(),
                                     context.getContextId(),
                                     script + (parentName.equals(null)? "" : ":" + parentName),
                                     String.format("%5.2f", (1.0 * timestamp - lastUpdate) / 1_000),
-                                    context.getSession().peekOutputTail());
+                                    context.getShell().peekOutputTail());
                         }
 
 
@@ -321,7 +321,7 @@ public class Dispatcher {
        addScriptContext(context,true);
     }
     public void addScriptContext(ScriptContext context, boolean autoRun){
-        logger.trace("add script {} to {}",context.getRootCmd(),context.getSession().getHost().getHostName());
+        logger.trace("add script {} to {}",context.getRootCmd(),context.getShell().getHost().getHostName());
 
         context.setObserver(observer);
 
@@ -331,14 +331,14 @@ public class Dispatcher {
         );
         contextById.put(context.getContextId(),context);
         if(previous!=null){
-            logger.error("already have getScript.tail={} mapped to {}@{}",context.getRootCmd().getTail().getUid(),context.getRootCmd(),context.getSession().getHost().getHostName());
+            logger.error("already have getScript.tail={} mapped to {}@{}",context.getRootCmd().getTail().getUid(),context.getRootCmd(),context.getShell().getHost().getHostName());
         }
         if(isRunning.get()){
             ScriptContext contextResult = scriptContexts.get(context.getRootCmd());
             scriptObservers.forEach(observer -> observer.onStart(contextResult));
             if(autoRun) {
                logger.info("queueing\n  host={}\n  script={}",
-                  contextResult.getSession().getHost().getHostName(),
+                  contextResult.getShell().getHost().getHostName(),
                   context.getRootCmd());
                context.getContextTimer().start("waiting in run queue");
                getExecutor().submit(context);
@@ -348,7 +348,7 @@ public class Dispatcher {
     public String debug(){
         StringBuilder sb = new StringBuilder();
         scriptContexts.forEach(((cmd, contextResult) -> {
-            sb.append(contextResult.getSession().getHost()+" = "+cmd.getUid()+" "+cmd.toString());
+            sb.append(contextResult.getShell().getHost()+" = "+cmd.getUid()+" "+cmd.toString());
             sb.append(System.lineSeparator());
         }));
         return sb.toString();
@@ -371,7 +371,7 @@ public class Dispatcher {
                     ScriptContext contextResult = scriptContexts.get(script);
                     scriptObservers.forEach(observer -> observer.onStart(contextResult));
                     logger.trace("queueing\n  host={}\n  script={}",
-                            contextResult.getSession().getHost().getHostName(),
+                            contextResult.getShell().getHost().getHostName(),
                             script);
                     contextResult.getContextTimer().start("waiting in run queue");
                     getExecutor().submit(contextResult);
@@ -420,13 +420,13 @@ public class Dispatcher {
                         if (!ctx.isAborted()) {
                             Cmd activeCmd = ctx.getCurrentCmd();
                             if (activeCmd instanceof Sh) {
-                                String peekOutput = ctx.getSession().peekOutput();
+                                String peekOutput = ctx.getShell().peekOutput();
                                 //ctx.getSession().ctrlC();//end any current action
-                                ctx.getSession().markAborting();//prevents shSync
+                                ctx.getShell().markAborting();//prevents shSync
                                 activeCmd.postRun(peekOutput, ctx);
                             }
                             ctx.closeLineQueue();
-                            ctx.getSession().close(wait);//forces a close on context, Abstract violation needs fixing
+                            ctx.getShell().close(wait);//forces a close on context, Abstract violation needs fixing
                         }
                     }catch(Throwable thrown){
                         thrown.printStackTrace();

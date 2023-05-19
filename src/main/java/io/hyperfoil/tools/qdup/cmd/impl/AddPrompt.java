@@ -25,7 +25,7 @@ public class AddPrompt extends Cmd {
    public void run(String input, Context context) {
        populatedPrompt = Cmd.populateStateVariables(prompt,this,context);
 
-       context.getSession().addPrompt(populatedPrompt, isShell);
+       context.getShell().addPrompt(populatedPrompt, isShell);
 
       context.next(input);
    }
