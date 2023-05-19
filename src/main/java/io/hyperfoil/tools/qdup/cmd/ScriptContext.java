@@ -300,7 +300,7 @@ public class ScriptContext implements Context, Runnable{
             rootString = rootCmd.toString();
         }
         String filteredMessage = state.getSecretFilter().filter(message);
-        getRunLogger().info("{}:{}@{}:{}",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
+        getRunLogger().info("{}:{}@{}: {}",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
     }
     public void error(String message){
         String rootString;
@@ -313,9 +313,9 @@ public class ScriptContext implements Context, Runnable{
         }
         String filteredMessage = state.getSecretFilter().filter(message);
         if(isColorTerminal()){
-            getRunLogger().error(AsciiArt.ANSI_RED+"{}:{}@{}:{}"+AsciiArt.ANSI_RESET,rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
+            getRunLogger().error(AsciiArt.ANSI_RED+"{}:{}@{}: {}"+AsciiArt.ANSI_RESET,rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
         }else{
-            getRunLogger().error("{}:{}@{}:{}",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
+            getRunLogger().error("{}:{}@{}: {}",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
         }
 
     }
