@@ -9,6 +9,7 @@ import org.slf4j.ext.XLoggerFactory;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public abstract class AbstractShell {
 
@@ -359,7 +361,7 @@ public abstract class AbstractShell {
             commandStream.println(command);
             commandStream.flush();
         } else {
-            logger.error("Shell is not connected for " + getFilter().filter(command));
+            logger.error(getName()+" shell is not connected for " + getFilter().filter(command));
         }
 
     }

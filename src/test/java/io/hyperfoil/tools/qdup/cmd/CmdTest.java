@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.*;
+import io.hyperfoil.tools.qdup.cmd.impl.SendText;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunRule;
@@ -44,6 +45,19 @@ public class CmdTest extends SshTestBase {
       assertTrue("watcher should see that it is observing",watcher.isObserving());
    }
 
+   @Test
+   public void walk_two_timers(){
+      AtomicInteger counter = new AtomicInteger(0);
+      BiFunction<Cmd, CmdLocation,Void> consumer = (cmd, watching)->{counter.incrementAndGet();return null;};
+
+      Cmd sh = Cmd.sh("sleep 10s");
+      sh.addTimer(1000,new SendText("foo"));
+      sh.addTimer(4000,Cmd.ctrlC());
+
+      sh.walk(CmdLocation.createTmp(),consumer);
+
+      assertEquals("walk should visit both timers",3,counter.get());
+   }
    @Test
    public void walk_single_then(){
       AtomicInteger counter = new AtomicInteger(0);

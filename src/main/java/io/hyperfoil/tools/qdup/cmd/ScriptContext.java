@@ -48,6 +48,9 @@ public class ScriptContext implements Context, Runnable{
         }
     }
 
+    /**
+     * Command that calls next if the target command is the active command for the context
+     */
     private class ActiveCheckCmd extends Cmd{
 
         private Cmd target;
@@ -98,6 +101,7 @@ public class ScriptContext implements Context, Runnable{
 
     private String cwd="";
     private String homeDir="";
+    private boolean isAborted=false;
     @Override
     public String getCwd(){return cwd;}
     @Override
@@ -211,6 +215,10 @@ public class ScriptContext implements Context, Runnable{
     public void close() {
         checkClose();
     }
+    @Override
+    public boolean isAborted(){
+        return isAborted;
+    }
 
     private void checkClose(){
         int currentCount = this.sessionCounter.decrementAndGet();
@@ -229,6 +237,8 @@ public class ScriptContext implements Context, Runnable{
         run.addPendingDelete(session.getHost(),path);
     }
     public void abort(Boolean skipCleanup){
+        isAborted=true;
+        close();
         run.abort(skipCleanup);
     }
     public void done(){
@@ -340,7 +350,7 @@ public class ScriptContext implements Context, Runnable{
                 startCurrentCmd();
             }else{
                 //TODO how to handle failing to change?
-                System.out.printf("%s%n",AsciiArt.ANSI_BLUE+"failed to change to "+toCall+AsciiArt.ANSI_RESET);
+                //System.out.printf("%s%n",AsciiArt.ANSI_BLUE+"failed to change to "+toCall+AsciiArt.ANSI_RESET);
             }
         }
     }
@@ -377,7 +387,7 @@ public class ScriptContext implements Context, Runnable{
     }
     protected void startCurrentCmd(){
         Run run = getRun();
-        if(run!=null) {
+        if(run!=null && !isAborted()) {
             getContextTimer().start("waiting in run queue");
             run.getDispatcher().submit(this);
         }

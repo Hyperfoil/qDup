@@ -314,9 +314,9 @@ public class QDup {
 
         //exit code checking
         options.addOption(
-                Option.builder("x")
-                        .longOpt("exitCode")
-                        .desc("flag to enable exit code checking")
+                Option.builder("ix")
+                        .longOpt("ignore-exit-code")
+                        .desc("disable abort on non-zero exit code")
                         .build()
         );
 
@@ -390,7 +390,7 @@ public class QDup {
         colorTerminal = commandLine.hasOption("colorTerminal");
         jsonPort = Integer.parseInt(commandLine.getOptionValue("jsonport", "" + JsonServer.DEFAULT_PORT));
 
-        exitCode = commandLine.hasOption("exitCode");
+        exitCode = !commandLine.hasOption("ignore-exit-code");
 
         outputPath = null;
         DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");

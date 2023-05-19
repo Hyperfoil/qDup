@@ -438,8 +438,77 @@ public class RunTest extends SshTestBase {
       assertTrue("foo should be an array:"+foo,foo.isArray());
       assertEquals("foo should have 2 entries",2,foo.size());
    }
+
    @Test
-   public void test_exitcode_abort(){
+   public void test_exit_code_run_and_cleanup(){
+      Parser parser = Parser.getInstance();
+      parser.setAbortOnExitCode(true);
+      RunConfigBuilder builder = getBuilder();
+
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+              "scripts:",
+              "  foo:",
+              "  - sh: whoami; (exit 42);",
+              "  - set-state: RUN.doesnotexist true",
+              "  bar:",
+              "  - set-state: RUN.clean true",
+              "hosts:",
+              "  self: " + getHost()+"",
+              "roles:",
+              "  doit:",
+              "    hosts: [self]",
+              "    run-scripts: [foo]",
+              "    cleanup-scripts: [bar]",
+              "states:",
+              "  clean: false"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State state = doit.getConfig().getState();
+
+      assertFalse("run should not reach set-state\n"+state.tree(),state.has("doesnotexist"));
+      assertEquals("cleanup should run\n"+state.tree(),"true",state.get("clean"));
+   }
+   @Test
+   public void test_exit_code_stops_other_scripts(){
+      Parser parser = Parser.getInstance();
+      parser.setAbortOnExitCode(true);
+      RunConfigBuilder builder = getBuilder();
+
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+              "scripts:",
+              "  foo:",
+              "  - sh: whoami; (exit 42);",
+              "  - set-state: RUN.doesnotexist true",
+              "  bar:",
+              "  - sleep: 4s",
+              "  - set-state: RUN.bad true",
+              "hosts:",
+              "  self: " + getHost()+"",
+              "roles:",
+              "  doit:",
+              "    hosts: [self]",
+              "    run-scripts: [foo, bar]",
+              "states:",
+              "  bad: false"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State state = doit.getConfig().getState();
+
+      assertFalse("run should not reach set-state\n"+state.tree(),state.has("doesnotexist"));
+      assertEquals("other script should stop before set-state\n"+state.tree(),"false",state.get("bad"));
+   }
+   @Test
+   public void test_exit_code_abort_runs_cleanup(){
       Parser parser = Parser.getInstance();
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
@@ -454,12 +523,17 @@ public class RunTest extends SshTestBase {
               "    - sh: echo $?",
               "    - sh: pwd",
               "    - sh: history",
+              "  bar:",
+              "  - set-state: RUN.clean true",
               "hosts:",
               "  self: " + getHost()+"",
               "roles:",
               "  doit:",
               "    hosts: [self]",
-              "    run-scripts: [foo]"
+              "    run-scripts: [foo]",
+              "    cleanup-scripts: [bar]",
+              "states:",
+              "  clean: false"
       )));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -469,8 +543,10 @@ public class RunTest extends SshTestBase {
 
       State state = doit.getConfig().getState();
 
-      assertFalse("run should not reach set-state",state.has("doesnotexist"));
+      assertFalse("run should not reach set-state\n"+state.tree(),state.has("doesnotexist"));
+      assertEquals("cleanup should run\n"+state.tree(),"true",state.get("clean"));
    }
+
 
    @Test(timeout = 50_000)
    public void abort_in_cleanup(){
@@ -506,7 +582,7 @@ public class RunTest extends SshTestBase {
 
 
    @Test
-   public void test_exitcode_abort_state(){
+   public void test_exit_code_abort_state(){
       Parser parser = Parser.getInstance();
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
@@ -730,8 +806,10 @@ public class RunTest extends SshTestBase {
       assertEquals("pwd should be /root and not include motd","/root",sb.toString());
    }
 
-   @Test
-   public void test_exitCode() {
+   @Test @Ignore //I'm not sure what this test eas doing but it wasn't doing it right
+           //the context wasn't added to the dispatcher
+            //the script was never added to the run
+   public void test_exit_code() {
       Semaphore block = new Semaphore(0);
       Sh cmd = new Sh("whoami; pwd; (exit 42);");
       cmd.then(Cmd.code(((input, state) -> {
@@ -1198,7 +1276,7 @@ public class RunTest extends SshTestBase {
    }
 
    @Test
-   public void echo_exitStatus() {
+   public void echo_exit_status() {
       StringBuilder pwdFirstChildInput = new StringBuilder();
       StringBuilder echoChildInput = new StringBuilder();
       StringBuilder pwdChildInput = new StringBuilder();

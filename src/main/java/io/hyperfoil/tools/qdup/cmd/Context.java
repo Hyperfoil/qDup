@@ -3,14 +3,11 @@ package io.hyperfoil.tools.qdup.cmd;
 import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.Local;
-import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
-import org.slf4j.Logger;
-import org.slf4j.profiler.Profiler;
 
 public interface Context {
 
@@ -45,6 +42,7 @@ public interface Context {
     Coordinator getCoordinator();
     Json getTimestamps();
     void close();
+    boolean isAborted();
 
     void setCwd(String dir);
     String getCwd();

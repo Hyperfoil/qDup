@@ -165,7 +165,7 @@ public class SecretFilterTest extends SshTestBase {
          File yamlFile = File.createTempFile("qdup","yaml",tmpDir.getPath().toFile());
          FileOutputStream fileOutputStream = new FileOutputStream(yamlFile);
          Files.copy(stream(""+
-                         "scripts:",
+                 "scripts:",
                  "  secrets:",
                  "  - sh: sleep 10s",
                  "    timer:",

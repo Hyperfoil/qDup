@@ -15,7 +15,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -310,7 +309,9 @@ public class Dispatcher {
 
     private ExecutorService getExecutor(){return executor;}
     public void submit(Runnable runnable){
-        getExecutor().submit(runnable);
+        if(isRunning()) {
+            getExecutor().submit(runnable);
+        }
     }
 
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> toCall) throws InterruptedException{
@@ -415,20 +416,21 @@ public class Dispatcher {
                 }
                 //needs to occur before we notify observers because observers can queue next stage
                 scriptContexts.forEach((cmd,ctx)->{
-                    try{
-                    Cmd activeCmd = ctx.getCurrentCmd();
-                    if(activeCmd instanceof Sh){
-                        String peekOutput = ctx.getSession().peekOutput();
-                        //ctx.getSession().ctrlC();//end any current action
-                        ctx.getSession().markAborting();//prevents shSync
-                        activeCmd.postRun(peekOutput,ctx);
-                    }
-                    ctx.closeLineQueue();
-                    ctx.getSession().close(wait);
+                    try {
+                        if (!ctx.isAborted()) {
+                            Cmd activeCmd = ctx.getCurrentCmd();
+                            if (activeCmd instanceof Sh) {
+                                String peekOutput = ctx.getSession().peekOutput();
+                                //ctx.getSession().ctrlC();//end any current action
+                                ctx.getSession().markAborting();//prevents shSync
+                                activeCmd.postRun(peekOutput, ctx);
+                            }
+                            ctx.closeLineQueue();
+                            ctx.getSession().close(wait);//forces a close on context, Abstract violation needs fixing
+                        }
                     }catch(Throwable thrown){
                         thrown.printStackTrace();
                     }
-
                 });
                 scriptContexts.clear();
             }

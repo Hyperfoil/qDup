@@ -4,7 +4,6 @@ import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
@@ -13,7 +12,6 @@ import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.slf4j.Logger;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
-import org.slf4j.profiler.Profiler;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
@@ -257,6 +255,7 @@ public class SyncContext implements Context, Runnable{
 
     @Override
     public void abort(Boolean skipCleanup) {
+        close();
         run.abort(skipCleanup);
     }
 
@@ -283,6 +282,11 @@ public class SyncContext implements Context, Runnable{
     @Override
     public void close() {
         //TODO should this also close the session
+    }
+    @Override
+    public boolean isAborted(){
+        //false becuase a sync context cannot yet be closed
+        return scriptContext!=null?scriptContext.isAborted() : false;
     }
 
     @Override
