@@ -419,6 +419,7 @@ public class SshShell extends AbstractShell{
 
     @Override
     public void close() {
+        statusUpdater.set(this,Status.Closing);
         try {
             if(channelShell!=null && channelShell.isOpen()) {
                 channelShell.close();
