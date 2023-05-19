@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 
 import java.util.*;
@@ -128,7 +129,9 @@ public class Sh extends Cmd {
                 } else {
                     context.error(toLog);
                     if ( shouldCheckExit(context) ) {
-                        boolean couldBeCtrlC = walk(CmdLocation.createTmp(), (cmd) -> cmd instanceof CtrlC).stream().anyMatch(Boolean::booleanValue);
+                        boolean couldBeCtrlC = walk(CmdLocation.createTmp(), (cmd) -> {
+                            return cmd instanceof CtrlC;
+                        }).stream().anyMatch(Boolean::booleanValue);
                         if( !couldBeCtrlC) {
                             Cmd cmd = this;
                             StringBuilder stack = new StringBuilder();
