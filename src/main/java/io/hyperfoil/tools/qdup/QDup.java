@@ -447,8 +447,16 @@ public class QDup {
         disableLoggerShutdownHook();
         //ConfigurationFactory.setConfigurationFactory(new QdupConfigurationFactory());
         QDup toRun = new QDup(args);
-        boolean ok = toRun.run();
-        LogManager.shutdown();
+        try {
+            boolean ok = toRun.run();
+            LogManager.shutdown();
+            if (!ok) {
+                System.exit(1);//something went wrong
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+            System.exit(1);//something went really wrong
+        }
     }
 
     public boolean run() {
