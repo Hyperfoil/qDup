@@ -4,7 +4,7 @@
         <File name="file" fileName="/tmp/qdup.log">
             <PatternLayout>
 <!--                <Pattern>%d %p %c{1.} %m %ex%n</Pattern>-->
-                <Pattern>%d %p %c %m %ex%n</Pattern>
+                <Pattern>%d %m %ex%n</Pattern>
             </PatternLayout>
         </File>
         <Console name="STDOUT" target="SYSTEM_OUT" follow="true">
