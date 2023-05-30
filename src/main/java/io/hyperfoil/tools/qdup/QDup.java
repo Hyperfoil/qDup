@@ -445,9 +445,9 @@ public class QDup {
 
     public static void main(String[] args) {
         disableLoggerShutdownHook();
-        ConfigurationFactory.setConfigurationFactory(new QdupConfigurationFactory());
+        //ConfigurationFactory.setConfigurationFactory(new QdupConfigurationFactory());
         QDup toRun = new QDup(args);
-        toRun.run();
+        boolean ok = toRun.run();
         LogManager.shutdown();
     }
 
@@ -633,7 +633,7 @@ public class QDup {
                 run.getRunLogger().info("Running qDup version {} @ {}", getVersion(), getHash());
                 logger.info("output path = " + run.getOutputPath());
                 if(checkExitCode()){
-                    logger.info("checking sh exit codes");
+                    logger.info("shell exit code checks enabled");
                 }
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {

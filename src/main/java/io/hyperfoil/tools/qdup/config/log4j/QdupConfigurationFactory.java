@@ -13,8 +13,8 @@ import org.apache.logging.log4j.core.config.yaml.YamlConfiguration;
 
 import java.util.Properties;
 
-@Plugin(name = "QdupConfigurationFactory", category = "ConfigurationFactory")
-@Order(99_999)
+//@Plugin(name = "QdupConfigurationFactory", category = "ConfigurationFactory")
+//@Order(99_999)
 public class QdupConfigurationFactory extends ConfigurationFactory {
 
     /**
@@ -22,7 +22,8 @@ public class QdupConfigurationFactory extends ConfigurationFactory {
      */
     public static final String[] SUFFIXES = new String[] {".xml",".properties"};
 
-    public QdupConfigurationFactory(){}
+    public QdupConfigurationFactory(){
+    }
 
     @Override
     protected String[] getSupportedTypes() {
@@ -31,10 +32,10 @@ public class QdupConfigurationFactory extends ConfigurationFactory {
 
     @Override
     public Configuration getConfiguration(LoggerContext loggerContext, ConfigurationSource source) {
-
         String sourceStr = source.getLocation();
         AbstractConfiguration configuration = null;
         if(sourceStr.endsWith("xml")) {
+
             //configuration = new XmlConfiguration(loggerContext,source);
             configuration = new QdupXMLConfiguration(loggerContext,source);
         }else if (sourceStr.endsWith("properties") || sourceStr.endsWith("prop")){

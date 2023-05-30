@@ -209,7 +209,7 @@ public class Run implements Runnable, DispatchObserver {
                         .setName(Run.RUN_LOGGER_NAME)
                         .withFileName(Paths.get(getOutputPath(),"run.log").toString())
                         .withImmediateFlush(true)
-                        .withAppend(false)
+                        .withAppend(false)//changed from false to test output during mvn test
                         .setLayout(PatternLayout.newBuilder()
                             .withPattern("%d{HH:mm:ss.SSS} %msg%n%throwable")
                             .build())
@@ -881,9 +881,8 @@ public class Run implements Runnable, DispatchObserver {
     }
 
     private boolean queueCleanupScripts(){
-        logger.info("{}.queueCleanupScripts",this);
         //run before cleanup
-        logger.debug("{}.setup",this);
+        logger.debug("{}.cleanup",this);
 
         //Observer to set the Env.Diffs
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
