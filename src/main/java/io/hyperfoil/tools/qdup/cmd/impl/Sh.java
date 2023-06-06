@@ -159,7 +159,9 @@ public class Sh extends Cmd {
 
     @Override
     public Cmd copy() {
-        return new Sh(this.command,super.isSilent(),prompt);
+        Sh rtrn = new Sh(this.getCommand(),super.isSilent(),prompt);
+        rtrn.setIgnoreExitCode(isIgnoreExitCode());
+        return rtrn;
     }
 
     @Override public String toString(){
