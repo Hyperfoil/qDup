@@ -20,5 +20,5 @@ stored in the same folder structure as the qDup script.
 
 [source,yaml]
 ----
-- upload: ${{ENV.SCRIPTS_DIR}}/web.xml
+- upload: ${{ENV.SCRIPT_DIR}}/web.xml
 ----
