@@ -224,15 +224,28 @@ public class Dispatcher {
 
                 //checking if the command is waiting for a signal
                 if(command instanceof WaitFor){
-
+                    //the context is waiting by definition
                 }else {
+                    //check for repeat-until
                     Cmd target = command;
-                    boolean isWaiting = false;
+                    boolean isWaiting = false; //if the context is waiting for a signal
 
                     do {
                         if (target instanceof RepeatUntilSignal) {
+                            RepeatUntilSignal repeatUntilSignal = (RepeatUntilSignal) target;
+                            String repeatUntilSignalName = Cmd.populateStateVariables(repeatUntilSignal.getName(),target,context);
                             boolean selfSignals = ((RepeatUntilSignal)target).isSelfSignaling();
-                            isWaiting = !selfSignals;
+                            if(!selfSignals){
+                                //check if the repeat-until is already signalled
+                                int signalCount = context.getCoordinator().getSignalCount(repeatUntilSignalName);
+                                if(signalCount > 0){
+                                    isWaiting = true;
+                                }
+                                //TODO check for remote signalling?
+                                if(!isWaiting){}
+                            }else{//selfSignaling is not waiting
+                                isWaiting = false;
+                            }
                         }
                     } while (!isWaiting && target.hasParent() && (target = target.getParent()) != null);
                     if(!isWaiting){
