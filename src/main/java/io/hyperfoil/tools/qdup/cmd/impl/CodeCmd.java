@@ -31,7 +31,7 @@ public class CodeCmd extends Cmd {
                     codeResult = ((Code)instance).run(input, new State.CmdState( context.getState(), this ) );
                 }
             } catch (InstantiationException|IllegalAccessException|ClassNotFoundException| InvocationTargetException e) {
-                logger.error("Failed to load "+className+": {}",e.getMessage(),e);
+                logger.error("Failed to load "+className+": "+e.getMessage(),e);
             }
         }else if (code != null) {
             codeResult = code.run(input, new State.CmdState( context.getState(), this ) );

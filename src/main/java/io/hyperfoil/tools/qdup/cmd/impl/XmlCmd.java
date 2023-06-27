@@ -128,7 +128,7 @@ public class XmlCmd extends Cmd {
                 }
             }
         } catch (IOException e) {
-            logger.error("{}@{} failed to create local tmp file",this.toString(),context.getShell().getHost().getHostName(),e);
+            logger.error(this.toString()+"@"+context.getShell().getHost().getHostName()+" failed to create local tmp file",e);
             successful = false;
             output = "COULD NOT LOAD: "+path;
         } finally {
