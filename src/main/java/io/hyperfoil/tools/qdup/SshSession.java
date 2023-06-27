@@ -649,10 +649,10 @@ public class SshSession {
             sessionStreams.reset(); //to remove any motd that may be in the stream
 
         } catch (GeneralSecurityException e){
-            logger.error("Security exception while connecting to {}@{} using {}\n{}",host.getUserName(),host.getHostName(),identity,e.getMessage(), e);
+            logger.error("Security exception while connecting to "+host.getSafeString()+" using "+identity+"\n"+e.getMessage(), e);
         } catch (IOException e) {
             //e.printStackTrace();
-            logger.error("Exception while connecting to {}@{} using {}\n{}", host.getUserName(), host.getHostName(), identity, e.getMessage(), e);
+            logger.error("Exception while connecting to "+host.getSafeString()+" using using "+identity+"\n"+e.getMessage(), e);
         } finally {
             logger.trace("{} session.isOpen={} shell.isOpen={}",
                     this.getName(),

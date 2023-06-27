@@ -53,7 +53,7 @@ public class LocalShell extends AbstractShell{
                     shellProcess = pb.start();
                     rtrn = new PrintStream(shellProcess.getOutputStream());
                 } catch (IOException e) {
-                    logger.error("{} failed to start shell process",getName(),e);
+                    logger.error(getName()+" failed to start shell process",e);
                     return null;
                 }
                 int count = connectCounter.getAndIncrement() + 1;
@@ -69,7 +69,7 @@ public class LocalShell extends AbstractShell{
                             }
                         }
                     } catch (IOException e) {
-                        logger.error("{} error reading from shell stream",getName(),e);
+                        logger.error(getName()+" error reading from shell stream",e);
                     }
                     logger.info("{} reader thread is stopping",getName());
                 });
@@ -99,7 +99,7 @@ public class LocalShell extends AbstractShell{
                     }
                     callback.accept(sb.toString());
                 } catch (IOException e) {
-                    logger.error("{} error reading from shell stream",getName(),e);
+                    logger.error(getName()+" error reading from shell stream",e);
                 }
                 logger.info("{} reader thread is stopping",getName());
             });
@@ -137,9 +137,9 @@ public class LocalShell extends AbstractShell{
                 //Runtime.getRuntime().exec("bg "+chld.pid());
                 shellProcess.waitFor(1, TimeUnit.SECONDS);
             } catch (IOException e) {
-                logger.error("{} error while trying to stop shell process",getName(),e);
+                logger.error(getName()+" error while trying to stop shell process",e);
             } catch (InterruptedException e) {
-                logger.error("{} error while waiting for shell to stop",getName(),e);
+                logger.error(getName()+" error while waiting for shell to stop",e);
             }
         }
         if(readerThread!=null && readerThread.isAlive()){
