@@ -13,6 +13,18 @@ import static org.junit.Assert.*;
 
 public class QDupTest extends SshTestBase{
 
+    private class Output {
+        private String exit;
+        private String output;
+
+        public Output(String output, String exit){
+            this.output = output;
+            this.exit = exit;
+        }
+        public String getOutput(){return output;}
+        public String getExit(){return exit;}
+    }
+
     public static String makeFile(String...lines){
         String rtrn = "";
         try {
@@ -38,7 +50,7 @@ public class QDupTest extends SshTestBase{
         }
         return rtrn;
     }
-    public String[] runMain(String...args){
+    private Output runMain(String...args){
         String result = "0";
         SecurityManager securityManager = System.getSecurityManager();
         System.setSecurityManager(new TempSecurityManager());
@@ -62,7 +74,7 @@ public class QDupTest extends SshTestBase{
             System.setOut(originalOut);
             System.setSecurityManager(securityManager);
         }
-        return new String[]{result,baos.toString()};
+        return new Output(baos.toString(),result);
     }
 
     class TempSecurityManager extends SecurityManager {
@@ -78,7 +90,7 @@ public class QDupTest extends SshTestBase{
     }
     @Test
     public void main_exit_sh() {
-        String output[] = runMain(
+        Output output = runMain(
                 "-i",
                 getIdentity(),
                 makeFile(
@@ -97,18 +109,46 @@ public class QDupTest extends SshTestBase{
                 )
         );
         assertNotNull(output);
-        assertEquals("Qdup.main should exit with 1","1",output[0]);
+        assertEquals("Qdup.main should exit with 1","1",output.getExit());
+    }
+
+    @Test
+    public void yaml_with_else(){
+        Output output = runMain(
+                "-Y",
+                makeFile(
+                        "hosts:",
+                        "  local: "+getHost(),
+                        "scripts:",
+                        "  doit:",
+                        "  - sh: cat log",
+                        "  - regex: foo",
+                        "    then:",
+                        "    - sh: echo 'found'",
+                        "    else:",
+                        "    - sh: echo 'lost'",
+                        "",
+                        "roles:",
+                        "  run:",
+                        "    hosts: [local]",
+                        "    run-scripts:",
+                        "    - doit"
+                )
+        );
+        assertNotNull(output);
+        System.out.println(output.getExit());
+        System.out.println(output.getOutput());
     }
 
     @Test
     public void main_exit_invalid_args(){
-        String output[] = runMain("");
+        Output output = runMain("");
         assertNotNull(output);
-        assertEquals("incorrect exit code for invalid args to QDup.main"+output[1],"1",output[0]);
+        assertEquals("incorrect exit code for invalid args to QDup.main"+output.getOutput(),"1",output.getExit());
     }
     @Test
     public void main_exit_bad_yaml(){
-        String output[] = runMain(
+        Output output = runMain(
                 "-i",
                 getIdentity(),
                 makeFile(
@@ -127,11 +167,11 @@ public class QDupTest extends SshTestBase{
                 )
         );
         assertNotNull(output);
-        assertEquals("incorrect exit code for invalid args to QDup.main"+output[1],"1",output[0]);
+        assertEquals("incorrect exit code for invalid args to QDup.main"+output.getOutput(),"1",output.getExit());
     }
     @Test
     public void main_exit_sh_ignore() {
-        String output[] = runMain(
+        Output output = runMain(
                 "-ix",
                 "-i",
                 getIdentity(),
@@ -151,7 +191,7 @@ public class QDupTest extends SshTestBase{
                 )
         );
         assertNotNull(output);
-        assertEquals("Qdup.main should exit with 0","0",output[0]);
+        assertEquals("Qdup.main should exit with 0","0",output.getExit());
     }
     @Test
     public void exit_code_checking_by_default(){
