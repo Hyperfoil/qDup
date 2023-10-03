@@ -109,12 +109,12 @@ public class SessionStreams extends MultiStream {
    public String printBuffers(){
       StringBuilder sb = new StringBuilder();
       sb.append(getName()+"\n");
-      sb.append("escapeFiltered "+escapeFilteredStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
-      sb.append("└ suffixStream "+suffixStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
-      sb.append("  ├ filteredStream "+filteredStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
-      sb.append("  │ ├ lineEmitting "+lineEmittingStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
-      sb.append("  │ └ shStream "+shStream.toString().replaceAll("[\r\n]","\\\\n")+"\n");
-      sb.append("  └ promptStream "+promptStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"\n");
+      sb.append("escapeFiltered "+escapeFilteredStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"_\n");
+      sb.append("└ suffixStream "+suffixStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"_\n");
+      sb.append("  ├ filteredStream "+filteredStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"_\n");
+      sb.append("  │ ├ lineEmitting "+lineEmittingStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"_\n");
+      sb.append("  │ └ shStream "+shStream.toString().replaceAll("[\r\n]","\\\\n")+"_\n");
+      sb.append("  └ promptStream "+promptStream.getBuffered().replaceAll("[\r\n]","\\\\n")+"_\n");
       return sb.toString();
    }
 
@@ -223,6 +223,11 @@ public class SessionStreams extends MultiStream {
       suffixStream.addSuffix(name,prompt,replacement);
    }
 
+   public void sharePrompts(SessionStreams otherStreams){
+      suffixStream.getSuffixes().forEach((name)->{
+         otherStreams.addPrompt(name,suffixStream.getSuffix(name), suffixStream.getReplacement(name));
+      });
+   }
    public void addPromptCallback(Consumer<String> callback){
       suffixStream.addConsumer(callback);
    }

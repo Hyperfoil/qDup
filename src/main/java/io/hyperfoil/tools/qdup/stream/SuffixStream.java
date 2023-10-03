@@ -122,13 +122,25 @@ public class SuffixStream extends MultiStream {
     }
     public void addSuffix(String name,String suffix,String replacement){
         suffixes.put(name,suffix.getBytes());
-        replacements.put(name,replacement.getBytes());
+        if(replacement!=null) {
+            replacements.put(name, replacement.getBytes());
+        }else{
+            replacements.remove(name);
+        }
     }
     public boolean hasSuffix(String name){
         return suffixes.containsKey(name);
     }
     public Set<String> getSuffixes(){
         return suffixes.keySet();
+    }
+    public String getSuffix(String name){
+        return new String(suffixes.getOrDefault(name,new byte[0]));
+    }
+    public String getReplacement(String name){
+        return
+                replacements.containsKey(name) ?
+                new String(replacements.get(name)) : null;
     }
     public Map<String,String> getReplacements(){
         Map<String,String> rtrn = new HashMap<>();
