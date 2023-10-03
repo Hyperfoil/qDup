@@ -18,16 +18,29 @@ import java.util.stream.Collectors;
 public class Host {
 
     public static final List<String> PODMAN_LOGIN = Arrays.asList("podman login -u ${{host.username}} -p ${{host.password}} ${{target}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_LOGIN = Arrays.asList("docker login -u ${{host.username}} -p ${{host.password}} ${{target}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_START_CONTAINER = Arrays.asList("podman run --detach ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_START_CONTAINER = Arrays.asList("docker run --detach ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_STOP_CONTAINER = Arrays.asList("podman stop ${{container}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_STOP_CONTAINER = Arrays.asList("docker stop ${{container}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_REMOVE_CONTAINER = Arrays.asList("podman rm ${{container}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_REMOVE_CONTAINER = Arrays.asList("docker rm ${{container}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_CONNECT_SHELL = Arrays.asList("podman exec --interactive --tty ${{container}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_CONNECT_SHELL = Arrays.asList("docker exec --interactive --tty ${{container}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> PODMAN_START_CONNECTED_CONTAINER = Arrays.asList("podman run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_START_CONNECTED_CONTAINER = Arrays.asList("docker run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_EXEC = Arrays.asList("podman exec ${{container}} ${{command}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_EXEC = Arrays.asList("docker exec ${{container}} ${{command}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_CHECK_CONTAINER_ID = Arrays.asList("podman ps --filter id=${{container}} --format=\"{{.ID}}\"");
+    public static final List<String> DOCKER_CHECK_CONTAINER_ID = Arrays.asList("docker ps --filter id=${{container}} --format=\"{{.ID}}\"");
     public static final List<String> PODMAN_CHECK_CONTAINER_NAME = Arrays.asList("podman ps --filter name=${{container}} --format=\"{{.Names}}\"");
+    public static final List<String> DOCKER_CHECK_CONTAINER_NAME = Arrays.asList("docker ps --filter name=${{container}} --format=\"{{.Names}}\"");
     public static final List<String> PODMAN_UPLOAD = Arrays.asList("podman","cp","${{source}}","${{container}}:${{destination}}");
+    public static final List<String> DOCKER_UPLOAD = Arrays.asList("docker","cp","${{source}}","${{container}}:${{destination}}");
     public static final List<String> PODMAN_DOWNLOAD = Arrays.asList("podman","cp","${{container}}:${{source}}","${{destination}}");
+    public static final List<String> DOCKER_DOWNLOAD = Arrays.asList("docker","cp","${{container}}:${{source}}","${{destination}}");
     public static final List<String> PODMAN_FILE_SIZE = Arrays.asList("podman exec ${{container}} du -bc ${{source}} | grep total | cut -d '\t' -f1");
+    public static final List<String> DOCKER_FILE_SIZE = Arrays.asList("docker exec ${{container}} du -bc ${{source}} | grep total | cut -d '\t' -f1");
 
 
     public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "-q", "/dev/null","/bin/bash");
@@ -172,6 +185,7 @@ public class Host {
     private List<String> checkContainerId;
     private List<String> checkContainerName;
     private List<String> startContainer;
+    private List<String> startConnectedContainer;
     private List<String> stopContainer;
     private List<String> connectShell;
     private List<String> removeContainer;
@@ -218,10 +232,24 @@ public class Host {
                     this.checkContainerId=PODMAN_CHECK_CONTAINER_ID;
                     this.checkContainerName=PODMAN_CHECK_CONTAINER_NAME;
                     this.startContainer=PODMAN_START_CONTAINER;
+                    this.startConnectedContainer=PODMAN_START_CONNECTED_CONTAINER;
                     this.stopContainer=PODMAN_STOP_CONTAINER;
                     this.connectShell=PODMAN_CONNECT_SHELL;
                     this.removeContainer=PODMAN_REMOVE_CONTAINER;
                     this.exec=PODMAN_EXEC;
+                    break;
+                case "docker":
+                    this.getFileSize=DOCKER_FILE_SIZE;
+                    this.upload=DOCKER_UPLOAD;
+                    this.download=DOCKER_DOWNLOAD;
+                    this.checkContainerId=DOCKER_CHECK_CONTAINER_ID;
+                    this.checkContainerName=DOCKER_CHECK_CONTAINER_NAME;
+                    this.startContainer=DOCKER_START_CONTAINER;
+                    this.startConnectedContainer=DOCKER_START_CONNECTED_CONTAINER;
+                    this.stopContainer=DOCKER_STOP_CONTAINER;
+                    this.connectShell=DOCKER_CONNECT_SHELL;
+                    this.removeContainer=DOCKER_REMOVE_CONTAINER;
+                    this.exec=DOCKER_EXEC;
                     break;
                 default:
                     this.getFileSize= Collections.EMPTY_LIST;
@@ -230,6 +258,7 @@ public class Host {
                     this.checkContainerId=Collections.EMPTY_LIST;
                     this.checkContainerName=Collections.EMPTY_LIST;
                     this.startContainer=Collections.EMPTY_LIST;
+                    this.startConnectedContainer=Collections.EMPTY_LIST;
                     this.stopContainer=Collections.EMPTY_LIST;
                     this.connectShell=Collections.EMPTY_LIST;
                     this.removeContainer=Collections.EMPTY_LIST;
@@ -243,11 +272,12 @@ public class Host {
             this.checkContainerId=Collections.EMPTY_LIST;
             this.checkContainerName=Collections.EMPTY_LIST;
             this.startContainer=Collections.EMPTY_LIST;
+            this.startConnectedContainer=Collections.EMPTY_LIST;
             this.stopContainer=Collections.EMPTY_LIST;
             this.connectShell= LOCAL_LINUX_CONNECT_SHELL;
             this.removeContainer=Collections.EMPTY_LIST;
             this.exec=Collections.EMPTY_LIST;//uses system.getRuntime().exec()
-        }else{//ssh, remember when that was all we suppported?
+        }else{//ssh, remember when that was the only use case?
             this.getFileSize= SSH_FILE_SIZE;
             this.upload= SSH_UPLOAD;
             this.download= SSH_DOWNLOAD;
@@ -353,6 +383,11 @@ public class Host {
     }
     public void setStartContainer(List<String> startContainer) {
         this.startContainer = startContainer;
+    }
+    public boolean hasStartConnectedContainer(){return hasProcessArgs(startConnectedContainer);}
+    public List<String> getStartConnectedContainer(){return startConnectedContainer;}
+    public void setStartConnectedContainer(List<String> startConnectedContainer){
+        this.startConnectedContainer = startConnectedContainer;
     }
     public boolean hasStopContainer(){return hasProcessArgs(stopContainer);}
     public List<String> getStopContainer() {
