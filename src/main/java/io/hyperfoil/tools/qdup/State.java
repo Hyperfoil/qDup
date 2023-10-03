@@ -428,7 +428,9 @@ public class State {
     }
     private Json filter(Json input){
         input.forEach((k,v)->{
-            if(v instanceof Json){
+            if(v == null){
+                //do not need to filter null values
+            }else if(v instanceof Json){
                 filter((Json)v);
             }else {
                 input.set(k, v != null ? getSecretFilter().filter(v.toString()) : null );
