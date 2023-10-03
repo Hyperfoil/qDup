@@ -35,8 +35,10 @@ public class SecretFilter {
    //TODO https://stackoverflow.com/questions/1326682/java-replacing-multiple-different-substring-in-a-string-at-once-or-in-the-most
    public String filter(String input){
       String rtrn = input;
-      for(String secret : secrets){
-         rtrn = rtrn.replace(secret,REPLACEMENT);
+      if (input != null) {
+         for(String secret : secrets){
+            rtrn = rtrn.replace(secret,REPLACEMENT);
+         }
       }
       return rtrn;
    }
