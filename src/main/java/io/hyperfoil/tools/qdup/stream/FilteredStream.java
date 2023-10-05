@@ -188,7 +188,8 @@ public class FilteredStream extends MultiStream{
                         }
                         if(filtered){
                             //tellObservers(matchedName); //FIX, move to after using the filter
-                            postFilterDrop += 2;
+                            //used 2 for \r\n but there can also be a \r from bracket paste mode's ?2004l\r
+                            postFilterDrop += 3;
                             if ( flushIndex < currentIndex) {
                                 superWrite(buffered,flushIndex, currentIndex - flushIndex);
                             }
@@ -230,6 +231,7 @@ public class FilteredStream extends MultiStream{
                     flushIndex = writeIndex;//TODO testing if fixes double write
                 }
                 //compact the buffer if we haven't flushed everything
+                //TODO I think tail \r\n bug is happening here
                 if (flushIndex > 0 ) {
                     System.arraycopy(buffered, flushIndex, buffered, 0, writeIndex-flushIndex);
                     writeIndex=writeIndex-flushIndex;

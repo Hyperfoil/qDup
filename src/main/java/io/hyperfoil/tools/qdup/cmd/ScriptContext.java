@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
+import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
@@ -347,7 +348,6 @@ public class ScriptContext implements Context, Runnable{
                 startCurrentCmd();
             }else{
                 //TODO how to handle failing to change?
-                //System.out.printf("%s%n",AsciiArt.ANSI_BLUE+"failed to change to "+toCall+AsciiArt.ANSI_RESET);
             }
         }
     }
@@ -499,7 +499,6 @@ public class ScriptContext implements Context, Runnable{
                     );
                 }
             }
-
             if (cmd.hasWatchers()) {
                 String line = "";
                 try {
