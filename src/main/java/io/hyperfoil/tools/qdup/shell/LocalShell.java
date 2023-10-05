@@ -3,6 +3,9 @@ package io.hyperfoil.tools.qdup.shell;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.stream.MultiStream;
+import io.hyperfoil.tools.qdup.stream.SessionStreams;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -29,7 +32,10 @@ public class LocalShell extends AbstractShell{
         super(host, setupCommand, executor, filter, trace);
     }
 
-
+    @Override
+    void updateSessionStream(SessionStreams sessionStreams){
+        //nothing to do when the sessionstream changes
+    }
     @Override
     PrintStream connectShell() {
         PrintStream rtrn = null;
@@ -65,7 +71,7 @@ public class LocalShell extends AbstractShell{
                     try {
                         while ((len = in.read(buff, 0, buff.length-1)) >= 0 && connectCounter.get() == count) {
                             if( len>0 ) {
-                                sessionStreams.write(buff, 0, len);
+                                getSessionStreams().write(buff, 0, len);
                             }
                         }
                     } catch (IOException e) {

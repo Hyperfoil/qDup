@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.shell;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
+import org.apache.sshd.common.session.Session;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 
@@ -98,7 +99,7 @@ public abstract class AbstractShell {
     private Map<String, BiConsumer<String,String>> shObservers;
     PrintStream commandStream;
     Semaphore shellLock;
-    SessionStreams sessionStreams;
+    private SessionStreams sessionStreams;
     private Map<String,Boolean> isPromptShell;
 
 
@@ -147,6 +148,19 @@ public abstract class AbstractShell {
     }
 
     abstract PrintStream connectShell();
+    abstract void updateSessionStream(SessionStreams sessionStreams);
+    final void setSessionStreams(SessionStreams sessionStreams){
+        //TODO copy prompts from original sessionStreams to new sessionStreams
+        this.sessionStreams.sharePrompts(sessionStreams);
+        this.sessionStreams = sessionStreams;
+        updateSessionStream(sessionStreams);
+        //trying fix shSync after setSessionStreams is called
+        sessionStreams.addPromptCallback(this.semaphoreCallback);
+        sessionStreams.addLineConsumer(this::lineConsumers);
+
+
+    }
+    SessionStreams getSessionStreams(){return this.sessionStreams;}
 
     public SecretFilter getFilter(){return filter;}
     public boolean connect(){
@@ -242,9 +256,15 @@ public abstract class AbstractShell {
             logger.trace("{} shell.isOpen={}",getName(),isOpen());
             rtrn = isOpen();
         }
+        if(rtrn){
+            postConnect();
+        }
         return rtrn;
     }
     void shConnecting(String command){
+        if(commandStream == null){
+            return;
+        }
         Semaphore semaphore = new Semaphore(0);
         BiConsumer<String,String> consumer = (response,promptName) -> {
             String output = getShOutput(true);
@@ -258,20 +278,34 @@ public abstract class AbstractShell {
         }
     }
 
+    public void postConnect(){}
+
     public String shSync(String command) {
         return shSync(command, null);
     }
+
     public String shSync(String command, Map<String, String> prompt) {
-        if(Status.Closing.equals(status)){
+        return shSync(command,prompt,0);
+    }
+    public String shSync(String command, Map<String, String> prompt,int seconds) {
+        if(commandStream==null || Status.Closing.equals(status)){
             return "";
         }
+        blockingResponse.setLength(0);//clear the blockingConsumer
         addShObserver(SH_BLOCK_CALLBACK, blockingConsumer);
         if (blockingSemaphore.availablePermits() != 0 ){
             logger.error("ERROR: blockingSemaphorePermits = {}\n  command = {}",blockingSemaphore.availablePermits(),command);
         }
         sh(command, prompt);
+        boolean acquired = false;
         try {
-            blockingSemaphore.acquire();//released in the observer
+            if(seconds > 0){
+              acquired = blockingSemaphore.tryAcquire(seconds,TimeUnit.SECONDS);
+
+            } else {
+                blockingSemaphore.acquire();//released in the observer
+                acquired = true;
+            }
         } catch (InterruptedException e) {
             logger.error("Interrupted waiting for shSync " + command, e);
             Thread.interrupted();
@@ -312,7 +346,7 @@ public abstract class AbstractShell {
         logger.trace("{} sh: {}, lock: {}", getHost(), command, acquireLock);
         ShAction newAction = new ShAction(command,acquireLock,callback,prompt);
         lastCommand = command;
-        if (command == null) {
+        if (command == null || commandStream == null) {
             return;
         }
         if (acquireLock) {

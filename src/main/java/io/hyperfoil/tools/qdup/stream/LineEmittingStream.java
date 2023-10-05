@@ -104,6 +104,10 @@ public class LineEmittingStream extends OutputStream {
                         emit(buffered, 0, writeIndex);
                         reset();
                     }
+                    //There can be 2 trailing newlines
+                    if (i + 1 < len && (b[off + i + 1] == 10 || b[off + i + 1] == 13)) {//skip the next CR or LR
+                        i++;//skip over the CR or LR
+                    }
                     if (i + 1 < len && (b[off + i + 1] == 10 || b[off + i + 1] == 13)) {//skip the next CR or LR
                         i++;//skip over the CR or LR
                     }

@@ -237,7 +237,6 @@ public class NannyTest extends SshTestBase {
       doit.run();
 
       State state = config.getState();
-      System.out.println(state.tree());
       assertFalse("state should NOT have reachedBar\n"+state.tree(),state.has("reachedBar"));
       assertFalse("state should NOT have reachedFoo\n"+state.tree(),state.has("reachedFoo"));
       assertTrue("state should have foo\n"+state.tree(),state.has("foo"));

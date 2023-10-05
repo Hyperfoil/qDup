@@ -11,6 +11,7 @@ import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
@@ -157,12 +158,20 @@ public class SshTestBase {
            .withDockerfileFromBuilder(builder ->
               builder
                  //.from("alpine:3.2")
-                 .from("ubuntu:16.04")
+                 .from("ubuntu:23.04")
 //                 .from("fedora:35")
-                 .run("apt-get update && apt-get install -y openssh-server openssh-client rsync sudo && apt-get clean")
+                 .run("apt-get update && apt-get install -y openssh-server openssh-client rsync sudo curl && apt-get clean")
+//                      .run("curl -fsSL https://get.docker.com -o get-docker.sh")
+//                      .run("ulimit -n 1048576")
+//                      .run("sh ./get-docker.sh")
+
+//                      .volume("/var/run/docker.sock:/var/run/docker.sock")
+//                      .volume("/bin/docker:/bin/docker")
+
+                      //.run("service docker start")///etc/init.d/docker: 61: ulimit: error setting limit (Operation not permitted)
 //                 .run("dnf install -y openssh-server openssh-clients rsync")
 
-                 .run("mkdir /var/run/sshd")
+                 .run("mkdir -p /var/run/sshd")
                  .run("(umask 077 && test -d /root/.ssh || mkdir /root/.ssh)")
 ////                 .run("(umask 077 && touch /root/.ssh/authorized_keys)")
 ////                 .run(" echo \""+pubKey+"\" >> /root/.ssh/authorized_keys")
@@ -172,7 +181,7 @@ public class SshTestBase {
 
 //                 .run("chmod 600 /root/.ssh/authorized_keys")
                  //.run("ssh-keygen -A")
-                      .run("ls -al /root/.ssh")
+                  .run("ls -al /root/.ssh")
 //                      .run("cat /root/.ssh/authorized_keys")
                  .run("echo 'root:password' | chpasswd")
                  .run("sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config")
@@ -182,6 +191,8 @@ public class SshTestBase {
                  .entryPoint("/usr/sbin/sshd -D")
                  .build()))
                 .withCopyToContainer(Transferable.of(Files.readAllBytes(pubPath)),"/root/.ssh/authorized_keys")
+                .withFileSystemBind("/var/run/docker.sock","/var/run/docker.sock", BindMode.READ_WRITE)
+                .withFileSystemBind("/bin/docker","/bin/docker", BindMode.READ_ONLY)
 //           .withCopyFileToContainer(mountableFile,"/root/.ssh/authorized_keys")
            .withExposedPorts(22);
         container.start();

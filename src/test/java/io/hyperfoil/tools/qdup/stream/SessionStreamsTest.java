@@ -127,8 +127,27 @@ public class SessionStreamsTest {
       }catch(IOException e){
          fail(e.getMessage());
       }
-
-
       assertEquals("expect 2 entries in array: "+emitted.toString(),2,emitted.size());
    }
+   @Test
+   public void line_emitting_with_filter(){
+      SessionStreams sessionStreams = getStreams();
+
+      List<String> emitted = new ArrayList<>();
+      sessionStreams.getLineEmittingStream().addConsumer(emitted::add);
+
+      sessionStreams.getFilteredStream().addFilter("command","command","");
+      try{
+         write(sessionStreams,"command\r\n");
+         write(sessionStreams,"foo\r\n");
+         write(sessionStreams,"bar\r\n");
+      }catch(IOException e){
+         fail(e.getMessage());
+      }
+      assertEquals("expect 2 entries in array: "+emitted.toString(),2,emitted.size());
+
+
+
+   }
+
 }

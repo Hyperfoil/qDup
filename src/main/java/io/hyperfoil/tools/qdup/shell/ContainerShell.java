@@ -4,12 +4,14 @@ import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.stream.SessionStreams;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -34,15 +36,33 @@ public class ContainerShell extends AbstractShell{
         super(host, setupCommand, executor, filter, trace);
     }
 
-    //TODO should aso accept the state or some state representation
+    private String populateList(List<String> toPopulate, Json variables){
+        List<String> populated = Cmd.populateList(variables,toPopulate);
+        String populatedCommand = populated.stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.joining(" "));
+        return populatedCommand;
+    }
+
+    @Override
+    void updateSessionStream(SessionStreams sessionStreams){
+
+    }
+
+    //TODO should also accept the state or some state representation
     @Override
     PrintStream connectShell() {
+        int connectTimeoutSeconds = 10;
         //starts the shell
         PrintStream rtrn = null;
         //need an alt host that has the default connection method for local or remote shell, then we use provided host to connect to the container
         //how doe this work if we want a custom shell on the alt host?
         //TODO how do we specify custom shell container sub-host?
         Host subHost = getHost().isLocal() ? new Host() : new Host(getHost().getUserName(),getHost().getHostName(),getHost().getPassword(),getHost().getPort());
+        if(getHost().hasIdentity()){
+            subHost.setIdentity(getHost().getIdentity());
+        }
+        if(getHost().hasPassphrase()) {
+            subHost.setPassphrase(getHost().getPassphrase());
+        }
         if(getHost().isLocal()){
             shell = new LocalShell(subHost,setupCommand,executor,getFilter(),trace);
         } else {
@@ -53,46 +73,60 @@ public class ContainerShell extends AbstractShell{
             logger.error("failed to connect {} shell for container to {}",getHost().isLocal() ? "local" : "remote", getHost().getSafeString());
             return null;
         }
-        if(getHost().hasContainerId()){
+        boolean connectSetContainerId=false;
+        String startError = null;
+        if(getHost().hasContainerId()){ //an already running container
             containerId = getHost().getContainerId();
         }else{
             if(getHost().hasStartContainer()){
                 Json json = new Json();
                 json.set("host",getHost().toJson());
                 json.set("image",getHost().getDefinedContainer());
-                List<String> populated = Cmd.populateList(json,getHost().getStartContainer());
-                if(Cmd.hasPatternReference(populated,StringUtil.PATTERN_PREFIX)){
-                    //how do we fail
+                String populatedCommand = populateList(getHost().getStartContainer(),json);
+                if(populatedCommand.contains(StringUtil.PATTERN_PREFIX)){
+                    //TODO how to fail when container start fails
                 }else{
-                    String populatedCommand = populated.stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.joining(" "));
-                    containerId = shell.shSync(populatedCommand);
-                    getHost().setContainerId(containerId);
+                    containerId = shell.shSync(populatedCommand,null,connectTimeoutSeconds);
+                    if(containerId.contains("\n") || containerId.isBlank()){
+                        //assume the container started connected
+                        //cannot shSync because connection is not ready...
+                        rtrn = shell.commandStream;
+                        shell.setSessionStreams(getSessionStreams());
+                    } else {
+                        if(containerId.matches("[0-9a-f]{64}")){
+                            getHost().setContainerId(containerId);
+                            connectSetContainerId=true;
+                        }else{
+                            String ec = shell.shSync("echo $?");
+                            if(!"0".equals(ec)){
+                                //we won't try to connect once start errors
+                                startError = containerId;
+
+                            }
+                            containerId = getHost().getDefinedContainer();
+                        }
+                        //check for errors
+                    }
                 }
             }else{
                 //handled by containerId==null check later
             }
         }
-        if(containerId==null || containerId.isBlank()){
-            logger.error("failed to start container {}",getHost());
-        }
-        //this works for local podman but not podman on a remote connection
-        //we need to hijack the ssh
-        if(getHost().hasConnectShell()){
+        if(rtrn == null && getHost().hasConnectShell() && startError == null){
             Json json = new Json();
             json.set("host",getHost().toJson());
             json.set("image",getHost().getDefinedContainer());
             json.set("container",containerId);//idk which we should use
             json.set("containerId",containerId);//TODO decide if container or containerId
-            List<String> populated = Cmd.populateList(json,getHost().getConnectShell());
-            if(Cmd.hasPatternReference(populated,StringUtil.PATTERN_PREFIX)){
+            String populatedConnectShell = populateList(getHost().getConnectShell(),json);
+            if( populatedConnectShell.contains(StringUtil.PATTERN_PREFIX)){
                 //how do we fail
             }else{
-                String populatedCommand = populated.stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.joining(" "));
                 Semaphore connectingShellLock = new Semaphore(0);
                 AtomicBoolean hasError = new AtomicBoolean(false);
-                String errorMessage = "Error";
-                sessionStreams.addLineConsumer((line)->{
-                    if( line.contains(errorMessage) || line.matches(errorMessage)){
+                List<String> errorMessages = Arrays.asList("Error","-bash");
+                getSessionStreams().addLineConsumer((line)->{
+                    if(errorMessages.stream().anyMatch(e->line.contains(e) || line.matches(e))){
                         hasError.set(true);
                     }
                     if(!line.isBlank()) {//how are we getting a blank line? is there an error in FilteredStream newline filtering after stripping command?
@@ -100,29 +134,77 @@ public class ContainerShell extends AbstractShell{
                     }
                 });
                 //TODO replace with method that also adds the command from other sessionStreams
-                shell.sessionStreams = sessionStreams;//moved before sh so filterStream would see the command
-                shell.sh(populatedCommand,false,(prompt,output)->{ },null);//use sh without the lock
-                long timeout = 2_000;
+                //why was the sessionStreams changed before sending connectShell?
+                //this only worked for LocalShell
+                shell.setSessionStreams(getSessionStreams());//moved before sh so filterStream would see the command
+                //calling shSync on shell::LocalShell doesn't work after changing sessionStreams
+
+                //testing using shSync
+                //shell.sh(populatedConnectShell,false,(prompt,output)->{ },null);//use sh without the lock
+
+                String fsz = shell.shSync(populatedConnectShell,null,10);
+                if(fsz.isBlank()){
+                    //we probably timed out due to container prompt
+                }else{
+                    //we probably got an error
+                }
+                long timeout = 10_000;
                 try {
                     //TODO custom timeout
                     boolean acquired = connectingShellLock.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-                    if(!acquired){//this means we didn't get a message with a newline, we likely got the prompt.
-                    }else{
+                    if(acquired){
                         //if we acquired the lock there was probably an error message
+                    }else{
+                        //this means we didn't get a message with a newline, we likely got the prompt.
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
                 if(hasError.get()){
-                    logger.error("failed to connect container shell for {}",getHost());
+                    if(!getHost().hasStartConnectedContainer()) {
+                        logger.error("failed to connect to container shell for {}\n{}", getHost(), shell.getSessionStreams().currentOutput());
+                    }
+                    if(connectSetContainerId){
+                        getHost().setContainerId(Host.NO_CONTAINER);
+                    }
                 }else {
                     rtrn = shell.commandStream;
                 }
             }
-        }else{
-            //Honestly an invalid host should not get to this point so we should not need to check it
+        }
+        if(rtrn == null && getHost().hasStartConnectedContainer()){
+            if(shell.getSessionStreams() != getSessionStreams()){
+                //shell.sessionStreams = sessionStreams;
+                shell.setSessionStreams(getSessionStreams());
+            }
+
+            Json json = new Json();
+            json.set("host",getHost().toJson());
+            json.set("image",getHost().getDefinedContainer());
+            json.set("container",containerId);//idk which we should use
+            json.set("containerId",containerId);//TODO decide if container or containerId
+            String populatedCommand = populateList(getHost().getStartConnectedContainer(),json);
+            String output = shell.shSync(populatedCommand,null,connectTimeoutSeconds);
+            if(output!=null && output.isEmpty()){//output is empty when timeout triggers
+                output = getSessionStreams().currentOutput();
+                rtrn = shell.commandStream;
+            }
         }
         return rtrn;
+    }
+
+    @Override
+    public void postConnect(){
+        if(!getHost().hasContainerId()){
+            String unameN = shSync("uname -n");
+            getHost().setContainerId(unameN);
+        }else{
+            String unameN = shSync("uname -n");
+            if(!unameN.equals(getHost().getContainerId())){
+                logger.error("container Id changed for "+getHost().getSafeString());
+                getHost().setContainerId(unameN);
+            }
+        }
     }
 
     @Override

@@ -8,7 +8,31 @@ import static org.junit.Assert.*;
 
 public class ReadStateTest {
 
-
+   @Test
+   public void run_combined_empty_state_returns_else(){
+      SpyContext context = new SpyContext();
+      context.getState().set("foo","");
+      context.getState().set("bar","");
+      ReadState readState = new ReadState("${{foo}}${{bar}}");
+      readState.onElse(Cmd.NO_OP());
+      readState.doRun("input",context);
+      assertEquals("read-state should call next with input","input",context.getNext());
+      Cmd next = readState.getNext();
+      assertNotNull("read-state next should return else when missing",next);
+      assertTrue("next should be no-op",next instanceof Cmd.NO_OP);
+   }
+   @Test
+   public void run_check_boolean_value(){
+      SpyContext context = new SpyContext();
+      context.getState().set("foo",false);
+      ReadState readState = new ReadState("${{=${{foo}} ? 'true' : '' }}");
+      readState.onElse(Cmd.NO_OP());
+      readState.doRun("input",context);
+      assertEquals("read-state should call next with input","input",context.getNext());
+      Cmd next = readState.getNext();
+      assertNotNull("read-state next should return else when missing",next);
+      assertTrue("next should be no-op",next instanceof Cmd.NO_OP);
+   }
    @Test
    public void run_getNext_returns_else(){
       SpyContext context = new SpyContext();

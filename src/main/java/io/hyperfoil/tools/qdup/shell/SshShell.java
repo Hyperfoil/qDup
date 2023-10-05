@@ -5,6 +5,7 @@ import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.stream.MultiStream;
+import io.hyperfoil.tools.qdup.stream.SessionStreams;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -121,7 +122,7 @@ public class SshShell extends AbstractShell{
                 if(isActive()){
                     if(Status.Ready.equals(previousStatus)){
                         logger.warn("reconnect invoking semaphoreCallback due to active command during disconnect\n  command:"+getFilter().filter(currentAction.getCommand()));
-                        if(sessionStreams!=null) {
+                        if(getSessionStreams()!=null) {
                             String output = getShOutput(true);
                             if(semaphoreCallback!=null){
                                 semaphoreCallback.accept("SessionWatcher");
@@ -150,6 +151,11 @@ public class SshShell extends AbstractShell{
         super(host, setupCommand, executor, filter, trace);
     }
 
+    @Override
+    void updateSessionStream(SessionStreams sessionStreams){
+        channelShell.setOut(getSessionStreams());//efs or ss
+        channelShell.setErr(getSessionStreams());//PROMPT goes to error stream so have to listen there too
+    }
     @Override
     PrintStream connectShell() {
         if(isOpen()){
@@ -352,8 +358,8 @@ public class SshShell extends AbstractShell{
             channelShell.setPtyLines(80);
             channelShell.setUsePty(true);
 
-            channelShell.setOut(sessionStreams);//efs or ss
-            channelShell.setErr(sessionStreams);//PROMPT goes to error stream so have to listen there too
+            channelShell.setOut(getSessionStreams());//efs or ss
+            channelShell.setErr(getSessionStreams());//PROMPT goes to error stream so have to listen there too
             channelShell.addChannelListener(new SessionWatcher());
 
             long timeoutMillis = 5;

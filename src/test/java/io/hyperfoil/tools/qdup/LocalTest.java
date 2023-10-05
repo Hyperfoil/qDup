@@ -241,7 +241,10 @@ public class LocalTest extends SshTestBase{
 
     @Test
     public void container_download(){
-        Host host = Host.parse("quay.io/wreicher/omb");
+        Host host = Host.parse("quay.io/fedora/fedora");
+        //host.setStartContainer(List.of("podman run -it ${{host.container}} /bin/bash"));
+//        host.setConnectShell(List.of("podman run -it ${{host.container}} /bin/bash"));
+//        host.setStartContainer(List.of());
         AbstractShell shell = AbstractShell.getShell(
                 host,
                 new ScheduledThreadPoolExecutor(2),

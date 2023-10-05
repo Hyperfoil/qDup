@@ -80,6 +80,31 @@ public class FilteredStreamTest {
         assertEquals("should filter each occurrence of both filters","BIZ",read);
     }
 
+    @Test
+    public void filter_trailing_newlines(){
+        FilteredStream filteredStream = new FilteredStream();
+        filteredStream.addFilter("foo","FOO");
+        ByteArrayOutputStream bao = new ByteArrayOutputStream();
+        filteredStream.addStream("bao",bao);
+        try {
+            filteredStream.write("FOO\r\n".getBytes());
+            //filteredStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String read;
+        read = new String(bao.toByteArray());
+        assertEquals("should not read newlines","",read);
+        String expected = "B\r\n";
+        try {
+            filteredStream.write(expected.getBytes());
+            //filteredStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        read = new String(bao.toByteArray());
+        assertEquals("should see expected output",expected,read);
+    }
 
     @Test
     public void filterAcrossWrites(){
