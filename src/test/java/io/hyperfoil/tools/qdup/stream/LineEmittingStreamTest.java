@@ -12,6 +12,22 @@ import static org.junit.Assert.*;
 public class LineEmittingStreamTest {
 
     @Test
+    public void buffering(){
+        LineEmittingStream stream = new LineEmittingStream();
+        List<String> lines = new ArrayList<>();
+        stream.addConsumer(line->lines.add(line));
+
+        byte toWrite[] = new byte[10*1024];
+        toWrite[10*1024-1] = 13;
+        try{
+            stream.write(toWrite,10,10);
+            stream.write(toWrite,0,toWrite.length);
+        }catch(ArrayIndexOutOfBoundsException e){
+            fail(e.getMessage());
+        }
+
+    }
+    @Test
     public void buffer_part_of_write(){
         LineEmittingStream stream = new LineEmittingStream();
         List<String> lines = new ArrayList<>();

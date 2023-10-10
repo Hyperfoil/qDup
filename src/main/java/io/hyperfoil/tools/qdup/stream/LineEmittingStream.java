@@ -94,7 +94,8 @@ public class LineEmittingStream extends OutputStream {
                         emit(b, writeFrom, off + i - writeFrom);
                     } else {//have to add up to off+i to buffered to emit all at once
                         if (writeIndex + off + i >= buffered.length) {
-                            byte newBuffered[] = new byte[buffered.length * 2];
+                            int needed = writeIndex + off + i - buffered.length;
+                            byte newBuffered[] = new byte[buffered.length + needed];
                             System.arraycopy(buffered, 0, newBuffered, 0, writeIndex);
                             buffered = newBuffered;
                         }
