@@ -28,6 +28,65 @@ public class CmdTest extends SshTestBase {
    @Rule
    public Timeout globalTimeout = Timeout.seconds(120);
 
+
+   @Test
+   public void getExternalStateReference_no_references(){
+      Cmd cmd = Cmd.sh("foo");
+      List<String> refs = cmd.getExternalStateReferences();
+      assertNotNull("references should not be null",refs);
+      assertEquals("references should be empty",0,refs.size());
+   }
+   @Test
+   public void getExternalStateReference_not_include_self_defined(){
+      Cmd cmd = Cmd.NO_OP();
+      cmd.then(Cmd.setState("foo","bar"));
+      cmd.then(Cmd.sh("echo ${{foo}}"));
+      cmd.then(Cmd.sh("echo ${{bar}}"));
+      List<String> refs = cmd.getExternalStateReferences();
+      assertNotNull("references should not be null",refs);
+      assertEquals("there should be 1 reference: "+refs,1,refs.size());
+      assertEquals("reference[0] should be bar","bar",refs.get(0));
+   }
+
+   @Test
+   public void getExternalStateReference_nested_reference(){
+      Cmd cmd = Cmd.NO_OP();
+      cmd.then(Cmd.sh("echo ${{${{foo}}.bar}}"));
+      List<String> refs = cmd.getExternalStateReferences();
+      assertNotNull("references should not be null",refs);
+      assertEquals("number of references: "+refs,2,refs.size());
+      assertEquals("reference[0]","foo",refs.get(0));
+      assertEquals("reference[1]","${{foo}}.bar",refs.get(1));
+   }
+
+   @Test
+   public void getExternalStateReference_from_state(){
+      RunConfigBuilder builder = new RunConfigBuilder();
+      builder.getState().set("foo","bar");
+      Cmd cmd = Cmd.NO_OP();
+      cmd.then(Cmd.sh("echo ${{bar}}"));
+      cmd.then(Cmd.sh("echo ${{foo}}"));
+      List<String> refs = cmd.getExternalStateReferences(Parser.getInstance(),builder);
+      assertNotNull("references should not be null",refs);
+      assertEquals("number of references: "+refs,1,refs.size());
+      assertEquals("reference[0]","bar",refs.get(0));
+   }
+
+   @Test
+   public void getExternalStateReference_from_with(){
+      RunConfigBuilder builder = new RunConfigBuilder();
+      builder.getState().set("foo","bar");
+      Cmd cmd = Cmd.NO_OP();
+      cmd.with("foo","fuz");
+      cmd.then(Cmd.sh("echo ${{bar}}"));
+      cmd.then(Cmd.sh("echo ${{foo}}"));
+      List<String> refs = cmd.getExternalStateReferences(Parser.getInstance(),builder);
+      assertNotNull("references should not be null",refs);
+      assertEquals("number of references: "+refs,1,refs.size());
+      assertEquals("reference[0]","bar",refs.get(0));
+   }
+
+
    @Test
    public void observe_watch(){
       AtomicInteger counter = new AtomicInteger(0);

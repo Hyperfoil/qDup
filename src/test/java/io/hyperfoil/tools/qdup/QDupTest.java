@@ -136,8 +136,6 @@ public class QDupTest extends SshTestBase{
                 )
         );
         assertNotNull(output);
-        System.out.println(output.getExit());
-        System.out.println(output.getOutput());
     }
 
     @Test

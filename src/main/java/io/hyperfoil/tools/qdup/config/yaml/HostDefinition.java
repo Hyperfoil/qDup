@@ -18,6 +18,7 @@ public class HostDefinition {
     public static final String LOCAL = "local";
     public static final String PLATFORM = "platform";
     public static final String CONTAINER = "container";
+    public static final String CONTAINER_ID = "containerId";
     public static final String CHECK_CONTAINER_ID = "check-container-id";
     public static final String CHECK_CONTAINER_NAME = "check-container-name";
     public static final String START_CONTAINER = "start-container";

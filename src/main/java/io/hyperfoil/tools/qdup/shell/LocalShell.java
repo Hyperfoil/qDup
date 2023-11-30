@@ -21,6 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * This shell is a direct connection to a local shell process.
+ * The process is started with a ProcessBuilder and a dedicated thread for reading the input stream and passing 
+ * bytes to the associated SessionStream.
+ */
 public class LocalShell extends AbstractShell{
 
     private Thread readerThread;

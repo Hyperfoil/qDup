@@ -125,6 +125,17 @@ public class PatternValuesMapTest {
         assertEquals("key should be value","value",map.get("key"));
     }
     @Test
+    public void mutate_state_array(){
+        Cmd cmd = Cmd.sh("ls");
+        State state = new State(State.RUN_PREFIX);
+        state.set("key",Json.fromString("['uno','dos']"));
+        Cmd.Ref ref = new Cmd.Ref(cmd);
+
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
+
+        String response = Cmd.populateStateVariables("${{= ${{key}}.pop()}}", cmd, state, null, new Json(), ref);
+    }
+    @Test
     public void find_from_state_with_prefix(){
         Cmd cmd = Cmd.sh("ls");
         State state = new State(State.RUN_PREFIX);

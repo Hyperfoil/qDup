@@ -37,6 +37,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Parser {
@@ -698,9 +700,12 @@ public class Parser {
 
             @Override
             public Tag resolve(NodeId kind, String value, boolean implicit) {
-                return super.resolve(kind,value,implicit);
+                Tag resolved = super.resolve(kind,value,implicit);
+                return resolved;
             }
         };
+
+        resolver.addImplicitResolver(new Tag("pattern"), Pattern.compile("\\$"),"$",Integer.MAX_VALUE);
         yaml = new Yaml(constructor, mapRepresenter, dumperOptions,resolver);
 //        constructor.addTypeDescription(new TypeDescription(
 //                Host.class,
@@ -712,7 +717,12 @@ public class Parser {
                 return new Host("","",null,22,null,true,"podman",null);
             }
         });
-
+        constructor.addConstruct(new Tag("pattern"), new DeferableConstruct() {
+            @Override
+            public Object construct(Node node) {
+                return defer(node);
+            }
+        });
         constructor.addConstruct(new Tag("cmd"), new DeferableConstruct() {
             @Override
             public Object construct(Node node) {
@@ -846,10 +856,6 @@ public class Parser {
 
     public YamlFile loadFile(String path, String content) {
         YamlFile loaded = null;
-
-//        Json loadedJson = Json.fromYaml(content);
-//        Json errors = validator.validate(loadedJson);
-//        if(!errors.isEmpty()){}
         try {
             loaded = yaml.loadAs(content, YamlFile.class);
         } catch (YAMLException e) {
@@ -862,7 +868,6 @@ public class Parser {
         }
         return loaded;
     }
-
     //Moved from CmdBuilder because removing waml code
     //TODO split should not split ${{...}}
     public static List<String> split(String input){

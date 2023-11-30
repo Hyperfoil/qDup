@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.net.InetAddress;
@@ -21,14 +22,17 @@ public class Host {
     public static final List<String> DOCKER_LOGIN = Arrays.asList("docker login -u ${{host.username}} -p ${{host.password}} ${{target}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_START_CONTAINER = Arrays.asList("podman run --detach ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> DOCKER_START_CONTAINER = Arrays.asList("docker run --detach ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> PODMAN_STOP_CONTAINER = Arrays.asList("podman stop ${{container}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> DOCKER_STOP_CONTAINER = Arrays.asList("docker stop ${{container}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> PODMAN_REMOVE_CONTAINER = Arrays.asList("podman rm ${{container}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> DOCKER_REMOVE_CONTAINER = Arrays.asList("docker rm ${{container}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> PODMAN_CREATE_CONNECTED_CONTAINER = Arrays.asList("podman run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_CREATE_CONNECTED_CONTAINER = Arrays.asList("docker run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> PODMAN_STOP_CONTAINER = Arrays.asList("podman stop ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_STOP_CONTAINER = Arrays.asList("docker stop ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> PODMAN_REMOVE_CONTAINER = Arrays.asList("podman rm ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_REMOVE_CONTAINER = Arrays.asList("docker rm ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_CONNECT_SHELL = Arrays.asList("podman exec --interactive --tty ${{container}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> DOCKER_CONNECT_SHELL = Arrays.asList("docker exec --interactive --tty ${{container}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> PODMAN_START_CONNECTED_CONTAINER = Arrays.asList("podman run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> DOCKER_START_CONNECTED_CONTAINER = Arrays.asList("docker run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> PODMAN_START_CONNECTED_CONTAINER = Arrays.asList("podman start --interactive --attach ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_START_CONNECTED_CONTAINER = Arrays.asList("docker start --interactive --attach ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_OLD_START_CONNECTED_CONTAINER = Arrays.asList("docker run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_EXEC = Arrays.asList("podman exec ${{container}} ${{command}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> DOCKER_EXEC = Arrays.asList("docker exec ${{container}} ${{command}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_CHECK_CONTAINER_ID = Arrays.asList("podman ps --filter id=${{container}} --format=\"{{.ID}}\"");
@@ -176,7 +180,8 @@ public class Host {
     private String platform;//currently only podman, eventually docker, oc, kubernetes
     private String container;//the target for the container can be an image or an already running container ID or container name
     private String containerId;
-    private boolean needStopContainer =true;
+    //assume we connect to a running container
+    private boolean needStopContainer = false;
     //things that normally just use the default
     private List<String> getFileSize;
     private List<String> upload;
@@ -184,6 +189,7 @@ public class Host {
 
     private List<String> checkContainerId;
     private List<String> checkContainerName;
+    private List<String> createConnectedContainer;
     private List<String> startContainer;
     private List<String> startConnectedContainer;
     private List<String> stopContainer;
@@ -231,6 +237,7 @@ public class Host {
                     this.download=PODMAN_DOWNLOAD;
                     this.checkContainerId=PODMAN_CHECK_CONTAINER_ID;
                     this.checkContainerName=PODMAN_CHECK_CONTAINER_NAME;
+                    this.createConnectedContainer=PODMAN_CREATE_CONNECTED_CONTAINER;
                     this.startContainer=PODMAN_START_CONTAINER;
                     this.startConnectedContainer=PODMAN_START_CONNECTED_CONTAINER;
                     this.stopContainer=PODMAN_STOP_CONTAINER;
@@ -244,6 +251,7 @@ public class Host {
                     this.download=DOCKER_DOWNLOAD;
                     this.checkContainerId=DOCKER_CHECK_CONTAINER_ID;
                     this.checkContainerName=DOCKER_CHECK_CONTAINER_NAME;
+                    this.createConnectedContainer=DOCKER_CREATE_CONNECTED_CONTAINER;
                     this.startContainer=DOCKER_START_CONTAINER;
                     this.startConnectedContainer=DOCKER_START_CONNECTED_CONTAINER;
                     this.stopContainer=DOCKER_STOP_CONTAINER;
@@ -271,6 +279,7 @@ public class Host {
             this.download= LOCAL_LINUX_DOWNLOAD;
             this.checkContainerId=Collections.EMPTY_LIST;
             this.checkContainerName=Collections.EMPTY_LIST;
+            this.createConnectedContainer=Collections.EMPTY_LIST;
             this.startContainer=Collections.EMPTY_LIST;
             this.startConnectedContainer=Collections.EMPTY_LIST;
             this.stopContainer=Collections.EMPTY_LIST;
@@ -283,6 +292,7 @@ public class Host {
             this.download= SSH_DOWNLOAD;
             this.checkContainerId=Collections.EMPTY_LIST;
             this.checkContainerName=Collections.EMPTY_LIST;
+            this.createConnectedContainer=Collections.EMPTY_LIST;
             this.startContainer=Collections.EMPTY_LIST;
             this.stopContainer=Collections.EMPTY_LIST;
             this.connectShell=Collections.EMPTY_LIST;//uses ssh and accepts the default shell
@@ -295,6 +305,13 @@ public class Host {
             errors.add(message);
         }
         return false;
+    }
+    public Host withoutContainer(){
+        Json json = toJson();
+        json.remove(HostDefinition.CONTAINER);
+        json.remove(HostDefinition.CONTAINER_ID);
+        HostDefinition definition = new HostDefinition(json);
+        return definition.toHost(null);
     }
     public boolean isValid(){
         return isValid(null);
@@ -384,6 +401,15 @@ public class Host {
     public void setStartContainer(List<String> startContainer) {
         this.startContainer = startContainer;
     }
+    public boolean hasCreateConnectedContainer(){
+        return hasProcessArgs(createConnectedContainer);
+    }
+    public List<String> getCreateConnectedContainer(){
+        return createConnectedContainer;
+    }
+    public void setCreateConnectedContainer(List<String> createConnectedContainer){
+        this.createConnectedContainer = createConnectedContainer;
+    }
     public boolean hasStartConnectedContainer(){return hasProcessArgs(startConnectedContainer);}
     public List<String> getStartConnectedContainer(){return startConnectedContainer;}
     public void setStartConnectedContainer(List<String> startConnectedContainer){
@@ -449,7 +475,19 @@ public class Host {
     public boolean hasIdentity(){return !RunConfigBuilder.DEFAULT_IDENTITY.equals(identity);}
     public boolean isContainer(){return container!=null && !container.trim().isEmpty();}
     public boolean needStopContainer(){return needStopContainer;}
+    public void setNeedStopContainer(boolean needStopContainer){
+        this.needStopContainer = needStopContainer;
+    }
     public String getDefinedContainer(){return container;}
+
+    /**
+     * Returns true if the host has a containerId that is different than what was defined as the container
+     * This is used to determine if the container should be stopped after the run.
+     * @return
+     */
+    public boolean startedContainer(){
+        return isContainer() && hasContainerId() && !getDefinedContainer().equals(getContainerId());
+    }
 
     public boolean isLocal(){return isLocal;}
     public boolean hasPrompt(){return prompt!=null && !prompt.isEmpty();}
@@ -539,11 +577,15 @@ public class Host {
         if(!isShell()){
             rtrn.set("shShell",false);
         }
-        if(hasContainerId()){
-            rtrn.set("containerId",containerId);
-        }
         if(isContainer()){
-            rtrn.set("container",container);
+            rtrn.set("platform",platform);
+            if(hasContainerId()){
+                rtrn.set("containerId",containerId);
+            }
+            if(isContainer()){
+                rtrn.set("container",container);
+            }
+            //TODO add any custom container commands
         }
         return rtrn;
     }

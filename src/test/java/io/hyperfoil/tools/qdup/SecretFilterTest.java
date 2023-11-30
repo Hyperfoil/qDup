@@ -147,8 +147,8 @@ public class SecretFilterTest extends SshTestBase {
       assertNotNull("run state should contain match",match);
       assertEquals("output should be actual value of secret","BAR__BAR",output.toString());
       assertEquals("matches should be actual value of secret","BAR__BAR",match.toString());
-      String runLogContents = readFile(tmpDir.getPath().resolve("run.log"));
-      String runJsonContents = readFile(tmpDir.getPath().resolve("run.json"));
+      String runLogContents = readLocalFile(tmpDir.getPath().resolve("run.log"));
+      String runJsonContents = readLocalFile(tmpDir.getPath().resolve("run.json"));
       assertFalse("log should not contain BAR\n"+runLogContents,runLogContents.contains("BAR"));
       assertFalse("run.json should not contain BAR\n"+runJsonContents,runLogContents.contains("BAR"));
       try {
@@ -188,8 +188,8 @@ public class SecretFilterTest extends SshTestBase {
          boolean success = qDup.run();
          assertTrue("qdup didn't run",success);
 
-         String runLogContents = readFile(tmpDir.getPath().resolve("run.log"));
-         String runJsonContents = readFile(tmpDir.getPath().resolve("run.json"));
+         String runLogContents = readLocalFile(tmpDir.getPath().resolve("run.log"));
+         String runJsonContents = readLocalFile(tmpDir.getPath().resolve("run.json"));
          assertFalse("log should not contain bar\n"+runLogContents,runLogContents.contains("bar"));
          assertFalse("run.json should not contain bar\n"+runJsonContents,runLogContents.contains("bar"));
 
@@ -229,8 +229,8 @@ public class SecretFilterTest extends SshTestBase {
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
 
-      String runLogContents = readFile(tmpDir.getPath().resolve("run.log"));
-      String runJsonContents = readFile(tmpDir.getPath().resolve("run.json"));
+      String runLogContents = readLocalFile(tmpDir.getPath().resolve("run.log"));
+      String runJsonContents = readLocalFile(tmpDir.getPath().resolve("run.json"));
       assertFalse("log should not contain bar\n"+runLogContents,runLogContents.contains("bar"));
       assertFalse("run.json should not contain bar\n"+runJsonContents,runLogContents.contains("bar"));
       try {

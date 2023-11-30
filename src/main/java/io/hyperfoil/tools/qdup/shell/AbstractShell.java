@@ -23,6 +23,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * This is the base shell for qDup's command execution. 
+ * qDup creates an instance of AbstractShell based on the Host information and uses that shell to execute all `sh` or `exec` commands.
+ * The shell uses an instance of SessionStreams and a shared semaphore to coordinate command execution.
+ */
 public abstract class AbstractShell {
 
     public static final String PROMPT = "<_#%@_qdup_@%#_> "; // a string unlikely to appear in the output of any command
@@ -162,6 +167,10 @@ public abstract class AbstractShell {
     }
     SessionStreams getSessionStreams(){return this.sessionStreams;}
 
+    
+    public ScheduledThreadPoolExecutor getScheduledExector(){
+        return executor;
+    }
     public SecretFilter getFilter(){return filter;}
     public boolean connect(){
         Status previousStates = status;

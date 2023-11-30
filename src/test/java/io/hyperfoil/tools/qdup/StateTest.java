@@ -164,6 +164,40 @@ public class StateTest extends SshTestBase{
     }
 
     @Test
+    public void array_spread_with_quote_in_value(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("",stream(""+
+                "scripts:",
+                "  foo:",
+                "  - for-each: query ${{bar}}",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    run-scripts:",
+                "    - foo:",
+                "        with:",
+                "          bar: ${{= [ ...${{multi}}, ${{also}} ]}}",
+                "states:",
+                "  inline: [{name: 'jvm'},{name: 'native'}]",
+                "  multi:",
+                "  - istio_request_bytes_sum",
+                "  - tgi_queue_size",
+                "  - avg_over_time(tgi_queue_size[1m])",
+                "  also:",
+                "  - container_cpu_usage_seconds_total{container!=\"POD\",container!=\"\"}",
+                "  - container_memory_usage_bytes{container!=\"POD\",container!=\"\"}",
+                "  - pod:container_cpu_usage:sum",
+                "  - pod:container_memory_usage_bytes:sum"
+        )));
+
+        RunConfig config = builder.buildConfig(parser);
+        String populated = Cmd.populateStateVariables("${{=[...${{multi}}, ...${{also}}]}}",null,config.getState(),null,null);
+    }
+
+    @Test
     public void array_index_reference(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();

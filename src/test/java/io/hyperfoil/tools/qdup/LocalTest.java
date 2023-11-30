@@ -1,12 +1,19 @@
 package io.hyperfoil.tools.qdup;
 
+import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
+import io.hyperfoil.tools.qdup.config.yaml.HostDefinitionConstruct;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
+import io.hyperfoil.tools.qdup.shell.ContainerShell;
+import io.hyperfoil.tools.yaup.json.Json;
+
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -164,7 +171,7 @@ public class LocalTest extends SshTestBase{
             assertEquals("foo",read);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            fail(e.getMessage());
         } finally {
             if(toSend !=null && toSend.exists()){
                 toSend.delete();
@@ -175,7 +182,51 @@ public class LocalTest extends SshTestBase{
         }
     }
     @Test
-    public void local_upload(){
+    public void remote_container_upload_file(){
+        Json hostJson = getHost().toJson();
+        hostJson.set("container","quay.io/fedora/fedora");
+        hostJson.set("platform","docker");
+        HostDefinition hostDefinition = new HostDefinition(hostJson);
+        Host host = hostDefinition.toHost(new State(""));        
+        assertFalse(host.isLocal());
+        assertTrue(host.isContainer());
+        File toSend = null;
+        //first we need to create the container
+        AbstractShell shell = AbstractShell.getShell(
+                host,
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+        );
+        assertTrue("shell should be open",shell.isOpen());
+        assertTrue("shell should be ready",shell.isReady());
+        try {
+            toSend = File.createTempFile("tmp","local");
+            toSend.deleteOnExit();
+            Files.write(toSend.toPath(),"foo".getBytes());
+            Local local = new Local(getBuilder().buildConfig(Parser.getInstance()));
+            local.upload(toSend.getPath(),"/tmp/foo.txt",host);
+            String lsOutput = shell.shSync("ls -l /tmp");
+            assertTrue("/tmp/foo.txt should exist in container",lsOutput.contains("foo.txt"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(toSend !=null && toSend.exists()){
+                toSend.delete();
+            }
+            ContainerShell containerShell = new ContainerShell(
+                host,
+                "",
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+            );
+            containerShell.stopContainerIfStarted();            
+        }
+    }    
+
+    @Test
+    public void local_upload_file(){
         Host host = new Host();//creates a local host
         assertTrue(host.isLocal());
         File toSend = null;
@@ -192,7 +243,7 @@ public class LocalTest extends SshTestBase{
             local.upload(toSend.getPath(),toRead.getPath(),host);
             assertTrue(toRead.getPath()+" should exist",toRead.exists());
 
-            String read = readFile(toRead.toPath());
+            String read = readLocalFile(toRead.toPath());
             assertEquals("foo",read);
 
         } catch (IOException e) {
@@ -206,6 +257,45 @@ public class LocalTest extends SshTestBase{
             }
         }
     }
+    @Test
+    public void local_container_upload_file(){
+        Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora");
+        assertTrue(host.isLocal());
+        assertTrue(host.isContainer());
+        File toSend = null;
+        //first we need to create the container
+        AbstractShell shell = AbstractShell.getShell(
+                host,
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+        );
+        assertTrue("shell should be open",shell.isOpen());
+        assertTrue("shell should be ready",shell.isReady());
+        try {
+            toSend = File.createTempFile("tmp","local");
+            toSend.deleteOnExit();
+            Files.write(toSend.toPath(),"foo".getBytes());
+            Local local = new Local(getBuilder().buildConfig(Parser.getInstance()));
+            local.upload(toSend.getPath(),"/tmp/foo.txt",host);
+            String lsOutput = shell.shSync("ls -l /tmp");
+            assertTrue("/tmp/foo.txt should exist in container",lsOutput.contains("foo.txt"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(toSend !=null && toSend.exists()){
+                toSend.delete();
+            }
+            ContainerShell containerShell = new ContainerShell(
+                host,
+                "",
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+            );
+            containerShell.stopContainerIfStarted();            
+        }
+    }    
     @Test
     public void local_download(){
         Host host = new Host();//creates a local host
@@ -224,7 +314,7 @@ public class LocalTest extends SshTestBase{
             local.download(toSend.getPath(),toRead.getPath(),host);
             assertTrue(toRead.getPath()+" should exist",toRead.exists());
 
-            String read = readFile(toRead.toPath());
+            String read = readLocalFile(toRead.toPath());
             assertEquals("foo",read);
 
         } catch (IOException e) {
@@ -240,16 +330,14 @@ public class LocalTest extends SshTestBase{
     }
 
     @Test
-    public void container_download(){
+    public void local_container_download_file(){
         Host host = Host.parse("quay.io/fedora/fedora");
-        //host.setStartContainer(List.of("podman run -it ${{host.container}} /bin/bash"));
-//        host.setConnectShell(List.of("podman run -it ${{host.container}} /bin/bash"));
-//        host.setStartContainer(List.of());
         AbstractShell shell = AbstractShell.getShell(
-                host,
-                new ScheduledThreadPoolExecutor(2),
-                new SecretFilter(),
-                false
+            host,
+            "",
+            new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
+            false
         );
         String response = shell.shSync("echo 'foo' > /tmp/foo.txt");
         response = shell.shSync("ls -al /tmp/foo.txt");
@@ -260,17 +348,91 @@ public class LocalTest extends SshTestBase{
             //toRead.deleteOnExit();
             local.download("/tmp/foo.txt",toRead.getPath(),host);
             assertTrue("downloaded file should exist",toRead.exists());
-            String read = readFile(toRead.toPath());
+            String read = readLocalFile(toRead.toPath());
             assertEquals("foo",read);
-
         } catch (IOException e) {
             fail(e.getMessage());
         } finally {
-//            if(toRead !=null && toRead.exists()){
-//                toRead.delete();
-//            }
+            ContainerShell containerShell = new ContainerShell(
+                host,
+                "",
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+            );
+            containerShell.stopContainerIfStarted();
         }
     }
+    //TODO how do we truly test remote when testcontainers run containers locally?
+    @Test
+    public void remote_container_download_file(){
+        Json hostJson = getHost().toJson();
+        hostJson.set("container","quay.io/fedora/fedora");
+        hostJson.set("platform","docker");
+        HostDefinition hostDefinition = new HostDefinition(hostJson);
+        Host host = hostDefinition.toHost(new State(""));
+        AbstractShell shell = AbstractShell.getShell(
+                host,
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+        );
+        assertTrue("shell should be open",shell.isOpen());
+        assertTrue("shell should be ready",shell.isReady());
+        String response = shell.shSync("echo 'foo' > /tmp/foo.txt");
+        response = shell.shSync("ls -al /tmp/foo.txt");
+        Local local = new Local(getBuilder().buildConfig(Parser.getInstance()));
+        assertFalse("/tmp/foo.txt should not exist in testcontainer",exists("/tmp/foo.txt"));
+        try{
+            
+            File toRead = File.createTempFile("tmp","local");
+            toRead.deleteOnExit();
+            local.download("/tmp/foo.txt",toRead.getPath(),host);
+            assertTrue("downloaded file should exist",toRead.exists());
+            String read = readLocalFile(toRead.toPath());
+            assertEquals("foo",read);
+        } catch (IOException e) {
+            fail(e.getMessage());
+        } finally {}
+    }
+    @Test
+    public void remote_container_download_folder(){
+        Json hostJson = getHost().toJson();
+        hostJson.set("container","quay.io/fedora/fedora");
+        hostJson.set("platform","docker");
+        HostDefinition hostDefinition = new HostDefinition(hostJson);
+        Host host = hostDefinition.toHost(new State(""));
+        AbstractShell shell = AbstractShell.getShell(
+                host,
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+        );
+        assertTrue("shell should be open",shell.isOpen());
+        assertTrue("shell should be ready",shell.isReady());
+        String containerDir = shell.shSync("mktemp -d");
+        String response = "";
+        response = shell.shSync("echo 'foo' > "+containerDir+"/foo.txt");
+        response = shell.shSync("echo 'bar' > "+containerDir+"/bar.txt");
+        response = shell.shSync("ls -al "+containerDir);
+        Local local = new Local(getBuilder().buildConfig(Parser.getInstance()));
+        assertFalse("/tmp/foo.txt should not exist in testcontainer",exists("/tmp/foo.txt"));
+        try{
+            
+            File dest = Files.createTempDirectory("tmp").toFile();
+            dest.deleteOnExit();
+            //add / to download content not folder
+            local.download(containerDir+"/",dest.getPath(),host);
+            assertTrue("downloaded file should exist",dest.exists());
+            File foo = Path.of(dest.getPath(), "foo.txt").toFile();
+            File bar = Path.of(dest.getPath(), "bar.txt").toFile();
+
+            assertTrue("foo should exist",foo.exists());
+            assertTrue("bar should exist",bar.exists());
+        } catch (IOException e) {
+            fail(e.getMessage());
+        } finally {}
+    }    
     @Test
     public void remote_ssh_download(){
         Host host = getHost();
@@ -295,7 +457,7 @@ public class LocalTest extends SshTestBase{
 
             local.download("/tmp/destination.txt",toRead.getPath(),host);
 
-            read = readFile(toRead.toPath());
+            read = readLocalFile(toRead.toPath());
             assertEquals("foo",read);
 
         } catch (IOException e) {

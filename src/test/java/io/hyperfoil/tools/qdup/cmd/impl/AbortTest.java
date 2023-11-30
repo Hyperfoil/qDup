@@ -52,7 +52,7 @@ public class AbortTest extends SshTestBase {
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
 
-        String logContents = readFile(tmpDir.getPath().resolve("run.log"));
+        String logContents = readLocalFile(tmpDir.getPath().resolve("run.log"));
 
         State state = config.getState();
 
@@ -101,7 +101,7 @@ public class AbortTest extends SshTestBase {
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
 
-        String logContents = readFile(tmpDir.getPath().resolve("run.log"));
+        String logContents = readLocalFile(tmpDir.getPath().resolve("run.log"));
 
         State state = config.getState();
 

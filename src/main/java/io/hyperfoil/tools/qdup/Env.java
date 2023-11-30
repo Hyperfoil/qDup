@@ -9,10 +9,15 @@ import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * This class is used to track the environment variables of an AbstractShell.
+ * qDup tracks changes to the environmend during the setup-scripts for a role and applies those same changes
+ * to all AbstractShell connections for run-scripts or `cleanup-scripts`.
+ */
 public class Env {
     private final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-    public static Set FILTER = Sets.of(
+    public static Set<String> FILTER = Sets.of(
         "XDG_SESSION_ID",
         "SSH_CLIENT",
         "SSH_TTY",

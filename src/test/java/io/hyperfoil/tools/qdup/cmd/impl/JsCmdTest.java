@@ -169,6 +169,36 @@ public class JsCmdTest {
         assertEquals("state.FOO should contain 3 entries",3,((Json)context.getState().get("FOO")).size());
     }
     @Test
+    public void pop_from_state(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO", Json.fromString("[\"one\",\"two\"]"));
+        JsCmd jsCmd = new JsCmd("(input,state)=>state.FOO.pop()");
+        jsCmd.run("input",context);
+        assertEquals("expect removed entry","two",context.getNext());
+        Object found = context.getState().get("FOO");
+        assertNotNull("state should still contain FOO",found);
+        assertTrue("FOO should be json",found instanceof Json);
+        Json json = (Json)found;
+        assertTrue("FOO should still be an array",json.isArray());
+        assertEquals("FOO should have 1 entry "+json,1,json.size());
+        assertEquals("FOO should still have 'one' "+json,"one", json.get(0).toString());
+    }
+    @Test
+    public void shift_from_state(){
+        SpyContext context = new SpyContext();
+        context.getState().set("FOO", Json.fromString("[\"one\",\"two\"]"));
+        JsCmd jsCmd = new JsCmd("(input,state)=>state.FOO.shift()");
+        jsCmd.run("input",context);
+        assertEquals("expect removed entry","one",context.getNext());
+        Object found = context.getState().get("FOO");
+        assertNotNull("state should still contain FOO",found);
+        assertTrue("FOO should be json",found instanceof Json);
+        Json json = (Json)found;
+        assertTrue("FOO should still be an array",json.isArray());
+        assertEquals("FOO should have 1 entry "+json,1,json.size());
+        assertEquals("FOO should still have 'one' "+json,"two", json.get(0).toString());
+    }
+    @Test
     public void push_object_to_state_array_dot(){
         SpyContext context = new SpyContext();
         context.getState().set("FOO", Json.fromString("[\"one\",\"two\"]"));

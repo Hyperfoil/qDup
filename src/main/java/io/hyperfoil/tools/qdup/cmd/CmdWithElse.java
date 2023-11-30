@@ -1,14 +1,11 @@
 package io.hyperfoil.tools.qdup.cmd;
 
-import io.hyperfoil.tools.qdup.cmd.impl.Regex;
-import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public abstract class CmdWithElse extends Cmd{
 

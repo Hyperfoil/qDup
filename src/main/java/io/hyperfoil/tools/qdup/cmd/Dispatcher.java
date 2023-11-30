@@ -256,7 +256,7 @@ public class Dispatcher {
 
                 //check for idle sh
 
-                if(command.hasIdleTimer() &&  timestamp - lastUpdate > command.getIdleTimer()){
+                if(command.hasIdleTimer() &&  timestamp - lastUpdate > command.getIdleTimer(context.getState())){
                     if(command instanceof Sh){
                         String output = context.getShell().peekOutput();
                         boolean hasPrompt = output.contains(SshSession.PROMPT);
@@ -399,15 +399,6 @@ public class Dispatcher {
 
 
     }
-//    public void schedule(Cmd command,Runnable runnable,long delay){
-//        schedule(command,runnable,delay,TimeUnit.MILLISECONDS);
-//    }
-//    public void schedule(Cmd command,Runnable runnable,long delay,TimeUnit timeUnit){
-//        ScheduledFuture<?> future = scheduler.schedule(runnable,delay,timeUnit);
-//        if(activeCommands.containsKey(command)){
-//            activeCommands.get(command).setScheduledFuture(future);
-//        }
-//    }
     public void shutdown(){
         stop();
         if(autoClose){

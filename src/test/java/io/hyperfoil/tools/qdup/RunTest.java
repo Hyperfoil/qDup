@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.cmd.impl.AddPrompt;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
@@ -7,35 +8,24 @@ import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.qdup.config.RunSummary;
-import io.hyperfoil.tools.qdup.config.rule.SignalCounts;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.*;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.config.Property;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
-import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
-import org.apache.logging.log4j.core.layout.PatternLayout;
-import org.apache.logging.slf4j.Log4jLogger;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -120,7 +110,40 @@ public class RunTest extends SshTestBase {
       assertFalse(state.has("fizz"));
 
    }
+   @Test
+   public void script_with_at_runtime(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("signal",stream(""+ "scripts:",
+              "  set:",
+              "    - set-state: RUN.bar buz",
+              "    - set-state: RUN.buz.biz biz",
+              "  sig:",
+              "    - set-state: RUN.sig ${{foo}}",
+              "hosts:",
+              "  test: "+getHost(),
+              "roles:",
+              "  role:",
+              "    hosts: [test]",
+              "    setup-scripts:",
+              "    - set",
+              "    run-scripts:",
+              "    - sig:",
+              "        with:",
+              "          foo: ${{buz.biz}}"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      State state = config.getState();
+      assertTrue("state should have sig",state.has("sig"));
+      assertEquals("sig should be far","biz",state.get("sig").toString());
+
+
+   }
    @Test(timeout = 20_000)
    public void signal_in_timer_on_waitfor(){
       Parser parser = Parser.getInstance();
@@ -1097,7 +1120,7 @@ public class RunTest extends SshTestBase {
       doit.run();
 
 
-      String logContents = readFile(tmpDir.getPath().resolve("run.log"));
+      String logContents = readLocalFile(tmpDir.getPath().resolve("run.log"));
       assertTrue("run log is empty\n"+logContents+"\n"+logContents.length(), logContents.length() > 0);
       Boolean containsUnsubstituted = logContents.contains("signal: ${{OBJ.name}}-started");
       assertTrue("File contains ${{OBJ.name}}-started", !containsUnsubstituted);
@@ -1151,7 +1174,7 @@ public class RunTest extends SshTestBase {
       ctx.updateLoggers();
       doit.run();
 
-      String logContents = readFile(tmpDir.getPath().resolve("run.log"));
+      String logContents = readLocalFile(tmpDir.getPath().resolve("run.log"));
       assertTrue("run log is empty "+logContents.length(), logContents.length() > 0);
       Boolean containsStartingState = logContents.contains("starting state:");
       Boolean containsOutputState = logContents.contains("closing state:");
@@ -1160,6 +1183,96 @@ public class RunTest extends SshTestBase {
 
    }
 
+   //This is failing because the files already exist on testcontainer from previous run :(
+   //
+   @Test
+   public void multiple_stages_in_container() {
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      Json hostJson = getHost().toJson();
+      hostJson.set("container","quay.io/fedora/fedora");
+      hostJson.set("platform","docker");
+      builder.loadYaml(parser.loadFile("signal", stream("" +
+              "scripts:",
+              "  foo:",
+              "    - sh: echo foo > /tmp/foo.txt",
+              "    - sh: ls /tmp",
+              "    - signal: FOO",
+              "  bar:",
+              "    - wait-for: FOO",
+              "    - sh: echo bar > /tmp/bar.txt",
+              "    - sh: ls /tmp",
+              "    - signal: BAR",
+              "  biz:",
+              "    - wait-for: BAR",
+              "    - sh: echo biz > /tmp/biz.txt",
+              "    - sh: ls /tmp",
+              "    - queue-download: /tmp/foo.txt",
+              "    - queue-download: /tmp/bar.txt",
+              "    - queue-download: /tmp/biz.txt",
+              "hosts:",
+              "  local: " + hostJson.toString(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    setup-scripts: [foo]",
+              "    run-scripts: [bar]",
+              "    cleanup-scripts: [biz]"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      
+      config.getScript("foo").then(Cmd.code((input,state)->{
+         return Result.next(input);
+      }));
+      config.getScript("bar").then(Cmd.code((input,state)->{
+         return Result.next(input);
+      }));
+      config.getScript("foo").then(Cmd.code((input,state)->{
+         return Result.next(input);
+      }));
+
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      //TODO exists checks the file is in the testcontainer, not the qDup created container
+      //we do NOT want the file to exist in the test container
+      //we want the file to exist in the secondary container we created
+
+      //cannot run these checks because testcontainer has files from previous run
+      // assertFalse("foo should not exist in the testcontainer", exists("/tmp/foo.txt"));
+      // assertFalse("bar should not exist in the testcontainer", exists("/tmp/bar.txt"));
+      // assertFalse("biz should not exist in the testcontainer", exists("/tmp/biz.txt"));
+
+      Local local = getLocal();
+      //only one host in the test
+      Host containerHost = doit.getConfig().getAllHostsInRoles().iterator().next();
+      try {
+         File fooFile = File.createTempFile("tmp","local");
+         fooFile.deleteOnExit();         
+         File barFile = File.createTempFile("tmp","local");
+         barFile.deleteOnExit();
+         File bizFile = File.createTempFile("tmp","local");
+         bizFile.deleteOnExit();         
+         local.download("/tmp/foo.txt", fooFile.getAbsolutePath(), containerHost);
+         local.download("/tmp/bar.txt", barFile.getAbsolutePath(), containerHost);
+         local.download("/tmp/biz.txt", bizFile.getAbsolutePath(), containerHost);
+
+         String foo = readLocalFile(fooFile.toPath());
+         String bar = readLocalFile(barFile.toPath());
+         String biz = readLocalFile(bizFile.toPath());
+
+         assertEquals("unexpected content of downloaded foo","foo", foo);
+         assertEquals("unexpected content of downloaded bar","bar", bar);
+         assertEquals("unexpected content of downloaded biz","biz", biz);
+
+      } catch (IOException e) {
+         // TODO Auto-generated catch block
+         fail(e.getMessage());
+      }
+      
+      
+   }
    @Test
    public void signal_in_previous_stage() {
       Parser parser = Parser.getInstance();
@@ -1527,7 +1640,7 @@ public class RunTest extends SshTestBase {
          "    - regex: Task",
          "      then:",
          "      - ctrlC",
-         "      - sleep: 3s",
+         "      - sleep: 3s", //we need this to give the cmd time to end, otherwise the second ctrlC still occurs
          "      - ctrlC",
          "      - set-state: RUN.FOO ${{RUN.FOO:}}-worked",
          "    - regex: PID",
@@ -1564,6 +1677,75 @@ public class RunTest extends SshTestBase {
       doit.run();
       dispatcher.shutdown();
 
+      assertEquals("should only run one signal command",1,signals.size());
+      assertEquals("watcher should finish even if watched already stopped","-found",config.getState().get("PID"));
+      assertEquals("skipped signal for stopped watcher should not stop subsequent commands","-worked",config.getState().get("FOO"));
+   }
+
+   /*
+      multiple lines trigger this multiple times before the command is not active. 
+      I do not see a way around this because some commands need double ctrlC
+    */
+   @Test @Ignore
+   public void watch_ctrlC_multiple_lines_match_quickly(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+              "  biz:",
+              "  - wait-for: created",
+              "  - sleep: 2s",
+              "  - sh: echo -e 'biz\\nbiz\\nbiz\\nbiz' >> /tmp/test.log",
+              "  - sleep: 1s",
+              "  - sh: echo -e 'fin'",
+//              "  - done",
+              "  foo:",
+              "  - sleep: 1s",
+              "  - sh: touch /tmp/test.log",
+              "  - signal: created",
+              "  - sh: ",
+              "      command: tail -f /tmp/test.log",
+              "      silent: false",
+              "    watch:",
+              "    - regex: biz",
+              "      then:",
+              "      - ctrlC",
+              "  - sh: pwd",
+              "  - set-state: RUN.reached true",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo, biz]",
+              "states:",
+              "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
+              "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
+              "  charlie: {name: \"cat\"}"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      List<String> signals = new ArrayList<>();
+      StringBuilder tailOutput = new StringBuilder();
+      dispatcher.addContextObserver(new ContextObserver() {
+         @Override
+         public void preStart(Context context, Cmd command) {
+            if(command instanceof CtrlSignal){
+               signals.add(command.toString());
+            }
+         }
+         @Override
+         public void preStop(Context context, Cmd command, String output) {
+            if(command.toString().contains("tail -f")){
+               tailOutput.append(output);
+            }
+         }
+      });
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+      dispatcher.shutdown();
       assertEquals("should only run one signal command",1,signals.size());
       assertEquals("watcher should finish even if watched already stopped","-found",config.getState().get("PID"));
       assertEquals("skipped signal for stopped watcher should not stop subsequent commands","-worked",config.getState().get("FOO"));
@@ -2035,7 +2217,7 @@ public class RunTest extends SshTestBase {
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
 
-      String logContents = readFile(tmpDir.getPath().resolve("run.log"));
+      String logContents = readLocalFile(tmpDir.getPath().resolve("run.log"));
       assertTrue("run log is empty", logContents.length() > 0);
       Boolean containsUnsubstituted = logContents.contains("${{DYNAMIC_SCRIPT}}@localhost");
       assertTrue("File contains ${{DYNAMIC_SCRIPT}}@localhost", !containsUnsubstituted);
@@ -2060,7 +2242,7 @@ public class RunTest extends SshTestBase {
 
       Path path1 = tmpDir.getPath().resolve("run.log");
       assertTrue("run log does not exist: " + path1.toAbsolutePath(), path1.toFile().exists());
-      String logContents = readFile(path1);
+      String logContents = readLocalFile(path1);
       assertTrue("run log is empty\n"+logContents+"\n"+logContents.length(), logContents.length() > 0);
 
 

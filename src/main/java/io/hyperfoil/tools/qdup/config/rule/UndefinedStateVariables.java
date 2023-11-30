@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.JsSnippet;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.qdup.cmd.PatternValuesMap;
 import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
 import io.hyperfoil.tools.qdup.cmd.impl.Regex;
 import io.hyperfoil.tools.qdup.cmd.impl.SetState;
@@ -13,13 +14,14 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedLists;
+import io.hyperfoil.tools.yaup.PopulatePatternException;
+import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.JsonMap;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /*
  Find any ${{foo}} where foo is not previously set or available from state or withs
@@ -29,6 +31,8 @@ public class UndefinedStateVariables implements RunRule {
     private HashedLists<String, RSSCRef> usedVariables;
     private HashedLists<String, RSSCRef> setVariables;
     private HashedLists<String, RSSCRef> neededVariables;
+
+    private List<String> missingVariables;
     private Parser parser;
     private Set<String> ignore;
 
@@ -52,6 +56,7 @@ public class UndefinedStateVariables implements RunRule {
         usedVariables = new HashedLists<>();
         setVariables = new HashedLists<>();
         neededVariables = new HashedLists<>();
+        missingVariables = new ArrayList<>();
         this.ignore = new HashSet<>(ignore);
         this.jsSnippets = jsSnippets;
     }
@@ -75,7 +80,11 @@ public class UndefinedStateVariables implements RunRule {
         String trimmed = trim(name);
         usedVariables.put(trimmed, ref);
     }
-
+    public List<String> getMissingVariables(){return Collections.unmodifiableList(missingVariables);}
+    public void clearMissingVariables(){missingVariables.clear();}
+    private void addMissingVariable(String variable){
+        missingVariables.add(variable);
+    }
     private void addSetVariable(String name, RSSCRef ref, RunSummary summary) {
         String trimmed = trim(name);
         if(!hasSetVariable(trimmed) && hasNeedVariable(trimmed)){
@@ -156,7 +165,6 @@ public class UndefinedStateVariables implements RunRule {
 
     @Override
     public void scan(CmdLocation location, Cmd command, Cmd.Ref ref, RunConfigBuilder config, RunSummary summary) {
-
         if(!command.isStateScan()){
             return;
         }
@@ -223,8 +231,8 @@ public class UndefinedStateVariables implements RunRule {
             String populated = Cmd.populateStateVariables(commandStr, command, config.getState(), dummyCoordinator, null, ref, true);
             if (Cmd.hasStateReference(populated, command)) {
 
-                List<String> neededVariables = Cmd.getStateVariables(populated, command, config.getState(), null, null,ref);
-                neededVariables
+                List<String> cmdNeededVariables = Cmd.getStateVariables(populated, command, config.getState(), null, null,ref);
+                cmdNeededVariables
                     .stream()
                     .filter(var->{boolean rtrn = !(
                         command.hasWith(var) ||
@@ -251,15 +259,42 @@ public class UndefinedStateVariables implements RunRule {
     @Override
     public void close(RunConfigBuilder config, RunSummary summary) {
         neededVariables.keys().stream()
+            //remove needed variables that are already set or start with a set key (for json)
             .filter(key->!hasSetVariable(key))
+            //remove entries that use
+            .filter(key->{
+                if(key.contains("qd_") && key.contains("_qd")){
+                    PatternValuesMap map = new PatternValuesMap(null,config.getState(),null,null,null);
+                    List<String> missing = null;
+                    try {
+                        List<String> found = StringUtil.getPatternNames(key,
+                        map,
+                                (o)->(o instanceof String) ? StringUtil.PATTERN_PREFIX+o.toString()+StringUtil.PATTERN_SUFFIX : o,
+                                "qd_",
+                        StringUtil.PATTERN_DEFAULT_SEPARATOR,
+                        "_qd",
+                        StringUtil.PATTERN_JAVASCRIPT_PREFIX
+                        );
+                        missing = found.stream().filter(k->!hasSetVariable(k)).collect(Collectors.toList());
+                    } catch (PopulatePatternException e) {
+                        //what causes a PPE here?
+                        e.printStackTrace();
+                    }
+                    //TODO qDup should warn this reference depends on the runtime values found above
+                    return !missing.isEmpty();
+                }
+                return true;
+            })
             .forEach(key->{
                 neededVariables.get(key).forEach(ref->{
+                    String newKey = key.replaceAll("qd_","\\$\\{\\{").replaceAll("_qd",StringUtil.PATTERN_SUFFIX);
+                    addMissingVariable(newKey);
                     summary.addError(
                         ref.getRole(),
                         ref.getStage(),
                         ref.getScript(),
                         ref.getCommand().toString(),
-                        key+" is used before it appears to be set"
+                        newKey+" is used before it appears to be set"
                     );
                 });
             });

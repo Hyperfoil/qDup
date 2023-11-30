@@ -50,10 +50,9 @@ public class Abort extends Cmd {
     public String getLogOutput(String output,Context context){
 
         String touse = populatedMessage!=null ? populatedMessage : message;
-
         return
             (context.isColorTerminal() ? AsciiArt.ANSI_RED : "")+
-            "abort: "+message+
+            "abort: "+touse+
             (context.isColorTerminal() ? AsciiArt.ANSI_RESET : "");
     }
 }

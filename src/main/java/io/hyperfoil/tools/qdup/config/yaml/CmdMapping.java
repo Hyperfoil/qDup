@@ -176,6 +176,9 @@ public class CmdMapping<T extends Cmd> implements Mapping, WithDefer {
                 rtrn.put(IDLE_TIMER,"false");
             }
         }
+        if(!cmd.isStateScan()){
+            rtrn.put(STATE_SCAN, "false");
+        }
         return rtrn;
     }
 

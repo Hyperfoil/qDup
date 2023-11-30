@@ -2,8 +2,6 @@ package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.SshSession;
-import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.stream.MultiStream;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
 import org.apache.sshd.client.SshClient;
@@ -42,6 +40,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+/**
+ * This shell uses an ssh connection. SshShell can use either identity files or username and password authentication.
+ * The authentication mechanism is based on the information in the Host used to connect the shell.
+ */
 public class SshShell extends AbstractShell{
 
     private SshClient sshClient;

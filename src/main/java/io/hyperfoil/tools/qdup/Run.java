@@ -8,6 +8,7 @@ import io.hyperfoil.tools.qdup.config.Role;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
+import io.hyperfoil.tools.qdup.shell.ContainerShell;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.HashedSets;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -945,8 +946,16 @@ public class Run implements Runnable, DispatchObserver {
     private void postRun(){
         logger.debug("{}.postRun",this);
         getConfig().getAllHostsInRoles().forEach(host->{
-            if(host.isContainer() && host.needStopContainer()){
-
+            if(host.isContainer() && host.needStopContainer() && host.startedContainer()){
+                if(host.hasStopContainer()){
+                    ContainerShell containerShell = new ContainerShell(
+                        host, 
+                        "",
+                        dispatcher.getScheduler(), 
+                        getConfig().getState().getSecretFilter(), 
+                        false);
+                    containerShell.stopContainerIfStarted();
+                }
             }
         });
         String tree = config.getState().tree();//tree filters itself

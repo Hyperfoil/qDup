@@ -2,18 +2,14 @@ package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
-import io.hyperfoil.tools.yaup.AsciiArt;
-import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ContainerShell extends AbstractShell{
+//TODO test if the image has to get pulled too
 
 /*
     podman run --detach <image>
@@ -36,7 +33,7 @@ public class ContainerShell extends AbstractShell{
         super(host, setupCommand, executor, filter, trace);
     }
 
-    private String populateList(List<String> toPopulate, Json variables){
+    public static String populateList(List<String> toPopulate, Json variables){
         List<String> populated = Cmd.populateList(variables,toPopulate);
         String populatedCommand = populated.stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.joining(" "));
         return populatedCommand;
@@ -54,7 +51,7 @@ public class ContainerShell extends AbstractShell{
         //starts the shell
         PrintStream rtrn = null;
         //need an alt host that has the default connection method for local or remote shell, then we use provided host to connect to the container
-        //how doe this work if we want a custom shell on the alt host?
+        //how does this work if we want a custom shell (zsh?) on the alt host?
         //TODO how do we specify custom shell container sub-host?
         Host subHost = getHost().isLocal() ? new Host() : new Host(getHost().getUserName(),getHost().getHostName(),getHost().getPassword(),getHost().getPort());
         if(getHost().hasIdentity()){
@@ -75,6 +72,7 @@ public class ContainerShell extends AbstractShell{
         }
         boolean connectSetContainerId=false;
         String startError = null;
+        
         if(getHost().hasContainerId()){ //an already running container
             containerId = getHost().getContainerId();
         }else{
@@ -82,6 +80,8 @@ public class ContainerShell extends AbstractShell{
                 Json json = new Json();
                 json.set("host",getHost().toJson());
                 json.set("image",getHost().getDefinedContainer());
+                json.set("container",getHost().getDefinedContainer());
+                json.set("containerId",getHost().getDefinedContainer());
                 String populatedCommand = populateList(getHost().getStartContainer(),json);
                 if(populatedCommand.contains(StringUtil.PATTERN_PREFIX)){
                     //TODO how to fail when container start fails
@@ -93,8 +93,10 @@ public class ContainerShell extends AbstractShell{
                         rtrn = shell.commandStream;
                         shell.setSessionStreams(getSessionStreams());
                     } else {
+                        //we started a new container (docker and podman)
                         if(containerId.matches("[0-9a-f]{64}")){
                             getHost().setContainerId(containerId);
+                            getHost().setNeedStopContainer(true);
                             connectSetContainerId=true;
                         }else{
                             String ec = shell.shSync("echo $?");
@@ -130,6 +132,7 @@ public class ContainerShell extends AbstractShell{
                         hasError.set(true);
                     }
                     if(!line.isBlank()) {//how are we getting a blank line? is there an error in FilteredStream newline filtering after stripping command?
+                        //blank line was probably from bash bracket paste mode
                         connectingShellLock.release();
                     }
                 });
@@ -142,16 +145,15 @@ public class ContainerShell extends AbstractShell{
                 //testing using shSync
                 //shell.sh(populatedConnectShell,false,(prompt,output)->{ },null);//use sh without the lock
 
-                String fsz = shell.shSync(populatedConnectShell,null,10);
+                String fsz = shell.shSync(populatedConnectShell,null,connectTimeoutSeconds);
                 if(fsz.isBlank()){
                     //we probably timed out due to container prompt
                 }else{
                     //we probably got an error
                 }
-                long timeout = 10_000;
                 try {
                     //TODO custom timeout
-                    boolean acquired = connectingShellLock.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+                    boolean acquired = connectingShellLock.tryAcquire(connectTimeoutSeconds, TimeUnit.MILLISECONDS);
                     if(acquired){
                         //if we acquired the lock there was probably an error message
                     }else{
@@ -161,11 +163,37 @@ public class ContainerShell extends AbstractShell{
                     throw new RuntimeException(e);
                 }
                 if(hasError.get()){
-                    if(!getHost().hasStartConnectedContainer()) {
-                        logger.error("failed to connect to container shell for {}\n{}", getHost(), shell.getSessionStreams().currentOutput());
-                    }
+                    
                     if(connectSetContainerId){
-                        getHost().setContainerId(Host.NO_CONTAINER);
+                        if(getHost().hasCreateConnectedContainer()){
+                            Json ccJson = new Json();
+                            ccJson.set("host",getHost().toJson());
+                            ccJson.set("image",getHost().getDefinedContainer());                            
+                            String populatedCreateConnected = populateList(getHost().getCreateConnectedContainer(),ccJson);
+                            if(populatedCreateConnected.contains(StringUtil.PATTERN_PREFIX)){
+                                //TODO how do we fail in this case?
+                            }else{
+                                hasError.set(false);
+                                SessionStreams currentShellSessionStreams = shell.getSessionStreams();
+                                if(currentShellSessionStreams != getSessionStreams()){
+                                    shell.setSessionStreams(getSessionStreams());
+                                }
+                                String output = shell.shSync(populatedCreateConnected,null,connectTimeoutSeconds);
+                                if(output!=null && output.isEmpty()){//output is empty when timeout triggers
+                                    output = getSessionStreams().currentOutput();
+                                    rtrn = shell.commandStream;
+                                    //clearing containerId to be set by postConnect
+                                    getHost().setContainerId(Host.NO_CONTAINER);
+                                }                                
+                                
+                            }
+                        }
+                        //this what from when we would start a new container, now we reconnect
+                        //getHost().setContainerId(Host.NO_CONTAINER);
+                    }else{
+                        if(!getHost().hasStartConnectedContainer()) {
+                            logger.error("failed to connect to container shell for {}\n{}", getHost(), shell.getSessionStreams().currentOutput());
+                        }
                     }
                 }else {
                     rtrn = shell.commandStream;
@@ -198,11 +226,36 @@ public class ContainerShell extends AbstractShell{
         if(!getHost().hasContainerId()){
             String unameN = shSync("uname -n");
             getHost().setContainerId(unameN);
+            getHost().setNeedStopContainer(true);
         }else{
             String unameN = shSync("uname -n");
             if(!unameN.equals(getHost().getContainerId())){
                 logger.error("container Id changed for "+getHost().getSafeString());
-                getHost().setContainerId(unameN);
+                //getHost().setContainerId(unameN);
+            }
+        }
+    }
+
+    /**
+     * Will stop the container of the host indicates it was started by qDup
+     */
+    public void stopContainerIfStarted(){
+        if(getHost().isContainer() && getHost().needStopContainer() && getHost().startedContainer()){
+            if(getHost().hasStopContainer()){
+                Host jumpHost = getHost().withoutContainer();
+                AbstractShell shell = AbstractShell.getShell(jumpHost, getScheduledExector(), getFilter(), false);
+                Json json = new Json();
+                json.set("host",getHost().toJson());
+                json.set("image",getHost().getDefinedContainer());
+                json.set("container",getHost().getDefinedContainer());
+                json.set("containerId",getHost().getContainerId());
+                String populatedCommand = ContainerShell.populateList(getHost().getStopContainer(),json);
+                if(populatedCommand.contains(StringUtil.PATTERN_PREFIX)){
+                    logger.error("failed to populate pattern to stop container\n"+populatedCommand+"\n"+getHost());
+                }else{
+                    String response = shell.shSync(populatedCommand);
+                    //
+                }                
             }
         }
     }

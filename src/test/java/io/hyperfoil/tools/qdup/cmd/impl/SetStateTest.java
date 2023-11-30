@@ -53,6 +53,19 @@ public class SetStateTest extends SshTestBase {
       assertEquals("FOO[0].value should be uno","uno",json.get("value"));
    }
 
+
+   @Test
+   public void convert_to_json(){
+      SpyContext spyContext = new SpyContext();
+      SetState setState = new SetState("foo","[ { \"uno\":\"one\"},{ \"dos\":\"two\"}]");
+      setState.run("",spyContext);
+      assertTrue("foo should be defined in state",spyContext.getState().has("foo"));
+      Object foo = spyContext.getState().get("foo");
+      assertTrue("foo should be json: "+foo,foo instanceof Json);
+      Json json = (Json)foo;
+      assertTrue("foo should be an array: "+json,json.isArray());
+      assertEquals("foo should have 2 entries: "+json,2,json.size());
+   }
    @Test
    public void replace_same_name_from_state(){
       SetState setState = new SetState("FOO","${{FOO:bar}}");
@@ -144,6 +157,53 @@ public class SetStateTest extends SshTestBase {
 
       assertTrue("state should have key",state.has("key"));
       assertEquals("key should be mac with : replaced with -",mac.replace(":","-"),state.get("key"));
+   }
+
+   @Test
+   public void json_from_folded_yaml(){
+      String mac = "00:11:22:33:44:0b";
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("",stream(""+
+              "scripts:",
+              "  foo:",
+              "  - set-state:",
+              "      key: RUN.foo ",
+              "      value: > ",
+              "          [",
+              "          {\"op\": \"add\", \"path\": \"/metadata/annotations/serving.kserve.io~1enable-prometheus-scraping\", \"value\" : \"true\"}",
+              "          ,{\"op\": \"add\", \"path\": \"/spec/predictor/maxReplicas\", \"value\" : ${{biz}} }",
+              "          ,{\"op\": \"add\", \"path\": \"/spec/predictor/minReplicas\", \"value\" : ${{buz}} }",
+              "          ]",
+              "  - set-state: RUN.ARGS ${{= ${{FOO:[\"a\",\"b\"]}}.join(' ')}}",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts:",
+              "      - foo:",
+              "states:",
+              "  host:",
+              "    mac: \""+mac+"\"",
+              "  biz: 1",
+              "  buz: 8"
+      )));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+
+      dispatcher.shutdown();
+
+      State state = config.getState();
+      assertTrue("state should have key",state.has("foo"));
+
+
    }
 
 

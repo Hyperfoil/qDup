@@ -1,6 +1,9 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
+import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.PatternValuesMap;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunConfig;
@@ -9,13 +12,89 @@ import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
-public class UndefinedStateVariablesTest extends SshTestBase {
+public class UndefinedStateVariablesTest {
 
+    public static InputStream stream(String...input){
+        return new ByteArrayInputStream(
+                String.join("\n", Arrays.asList(input)).getBytes()
+        );
+    }
+    public RunConfigBuilder getBuilder(){
+        return new RunConfigBuilder();
+    }
+    @Test
+    public void script_with_at_runtime(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+ "scripts:",
+                "  set:",
+                "    - set-state: RUN.bar buz",
+                "    - set-state: RUN.buz.biz biz",
+                "  sig:",
+                "    - set-state: RUN.sig ${{foo}}",
+                "hosts:",
+                "  test: fakeUser@fakeHost",
+                "roles:",
+                "  role:",
+                "    hosts: [test]",
+                "    setup-scripts:",
+                "    - set",
+                "    run-scripts:",
+                "    - sig:",
+                "        with:",
+                "          foo: ${{${{bar}}.biz}}"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("config should not have errors: "+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        RunSummary summary = new RunSummary();
+        UndefinedStateVariables rule = new UndefinedStateVariables(parser);
+        summary.addRule("state",rule);
+        summary.scan(config.getRolesValues(),builder);
+        assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+    }
+    @Test
+    public void script_missing_with_at_runtime(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("signal",stream(""+ "scripts:",
+                "  set:",
+                "    - set-state: RUN.biz buz",
+                "    - set-state: RUN.buz.biz biz",
+                "  sig:",
+                "    - set-state: RUN.sig ${{foo}}",
+                "hosts:",
+                "  test: fakeUser@fakeHost",
+                "roles:",
+                "  role:",
+                "    hosts: [test]",
+                "    setup-scripts:",
+                "    - set",
+                "    run-scripts:",
+                "    - sig:",
+                "        with:",
+                "          foo: ${{${{bar}}.biz}}"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        assertTrue("config should have errors: "+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
+        RunSummary summary = new RunSummary();
+        UndefinedStateVariables rule = new UndefinedStateVariables(parser);
+        summary.addRule("state",rule);
+        summary.scan(config.getRolesValues(),builder);
+        assertTrue("expected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        List<String> missing = rule.getMissingVariables();
+        assertEquals("missing should have 2 entries",2,missing.size());
+        assertTrue("missing should include 'bar'",missing.contains("bar"));
+        assertTrue("missing should include '${{bar}}.biz'",missing.contains("${{bar}}.biz"));
+    }
     @Test
     public void from_separate_file_state_jsonpath_reference_constant_with_minus(){
         Parser parser = Parser.getInstance();
@@ -274,7 +353,7 @@ public class UndefinedStateVariablesTest extends SshTestBase {
                 "      then:",
                 "      - sh: echo ${{BAR}}",
                 "hosts:",
-                "  local: "+getHost(),
+                "  local: fakeUser@fakeHost",
                 "roles:",
                 "  doit:",
                 "    hosts: [local]",

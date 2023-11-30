@@ -7,6 +7,7 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import org.junit.After;
 import org.junit.Before;
@@ -14,6 +15,7 @@ import org.junit.BeforeClass;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.images.PullPolicy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.MountableFile;
@@ -55,6 +57,10 @@ public class SshTestBase {
 
     private static final ScheduledThreadPoolExecutor SCHEDULED_THREAD_POOL_EXECUTOR = new ScheduledThreadPoolExecutor(2);
 
+    //added to simplify exchanging files with test container that uses identity
+    public Local getLocal(){
+        return new Local(getBuilder().buildConfig(Parser.getInstance()));        
+    }
     public RunConfigBuilder getBuilder(){
         return getBuilder("qdup");
     }
@@ -154,13 +160,15 @@ public class SshTestBase {
         }
         //MountableFile mountableFile = MountableFile.forClasspathResource("keys/qdup.pub",Integer.parseInt("644",8));
         String pubKey = pub;
-        container = new GenericContainer(new ImageFromDockerfile()
+        container = new GenericContainer(new ImageFromDockerfile("local/qdup-testcontainer",false)
            .withDockerfileFromBuilder(builder ->
               builder
                  //.from("alpine:3.2")
                  .from("ubuntu:23.04")
 //                 .from("fedora:35")
                  .run("apt-get update && apt-get install -y openssh-server openssh-client rsync sudo curl && apt-get clean")
+//                      .run("apt-get install -y apt-transport-https")
+//                      .run("apt-get install -y openssh-server openssh-client rsync sudo curl && apt-get clean")
 //                      .run("curl -fsSL https://get.docker.com -o get-docker.sh")
 //                      .run("ulimit -n 1048576")
 //                      .run("sh ./get-docker.sh")
@@ -190,6 +198,7 @@ public class SshTestBase {
                  .expose(22)
                  .entryPoint("/usr/sbin/sshd -D")
                  .build()))
+                .withImagePullPolicy(PullPolicy.defaultPolicy())
                 .withCopyToContainer(Transferable.of(Files.readAllBytes(pubPath)),"/root/.ssh/authorized_keys")
                 .withFileSystemBind("/var/run/docker.sock","/var/run/docker.sock", BindMode.READ_WRITE)
                 .withFileSystemBind("/bin/docker","/bin/docker", BindMode.READ_ONLY)
@@ -232,7 +241,7 @@ public class SshTestBase {
      * @param path
      * @return
      */
-    public String readFile(Path path) {
+    public String readLocalFile(Path path) {
         StringBuilder contents = new StringBuilder();
         try (Stream<String> lines = Files.lines(path)){
             lines.forEach(line -> {
@@ -247,7 +256,7 @@ public class SshTestBase {
         return contents.toString();
 
     }
-        public boolean exists(String path){
+    public boolean exists(String path){
         String response = exec("/bin/sh","-c","test -f "+path+" && echo \"exists\"").trim();
         return response.contains("exists");
     }

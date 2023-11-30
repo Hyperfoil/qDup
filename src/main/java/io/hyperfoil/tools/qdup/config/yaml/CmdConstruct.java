@@ -187,12 +187,7 @@ public class CmdConstruct extends DeferableConstruct {
                     if(value.toLowerCase().equals("false")){
                         cmd.disableIdleTimer();
                     }else {
-                        long millis = StringUtil.parseToMs(value);
-                        if(millis <= 0){
-                            throw new YAMLException(CmdMapping.IDLE_TIMER+" can be false or a valid duration "+valueNode.getStartMark());
-                        }else{
-                            cmd.setIdleTimer(millis);
-                        }
+                        cmd.setIdleTimer(value);
                     }
                 }else{
                     throw new YAMLException(CmdMapping.IDLE_TIMER+" requires a scalar "+valueNode.getStartMark());

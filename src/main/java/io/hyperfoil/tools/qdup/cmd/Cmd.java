@@ -2,10 +2,13 @@ package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.SecretFilter;
+import io.hyperfoil.tools.qdup.Stage;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
-import io.hyperfoil.tools.qdup.config.RunRule;
+import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
+import io.hyperfoil.tools.qdup.config.rule.UndefinedStateVariables;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
@@ -528,6 +531,7 @@ public abstract class Cmd {
          rtrn = StringUtil.getPatternNames(
                  command,
                  map,
+                 (k)->(k instanceof String) ? "qd_"+k.toString()+"_qd" : k,
                  cmd == null ? StringUtil.PATTERN_PREFIX : cmd.getPatternPrefix(),
                  cmd == null ? StringUtil.PATTERN_DEFAULT_SEPARATOR : cmd.getPatternSeparator(),
                  cmd == null ? StringUtil.PATTERN_SUFFIX : cmd.getPatternSuffix(),
@@ -548,6 +552,8 @@ public abstract class Cmd {
             }
          } catch (PopulatePatternException e){
                rtrn = e.getResult();
+         } catch (Throwable t){
+            t.printStackTrace();
          }
          return rtrn;
       }).filter(v->v!=null).collect(Collectors.toUnmodifiableList());
@@ -570,6 +576,7 @@ public abstract class Cmd {
       return populateStateVariables(command,cmd,state,coordinator,timestamps,ref,false);
    }
    public static String populateStateVariables(String command, Cmd cmd, State state, Coordinator coordinator, Json timestamps, Ref ref,boolean partial) {
+
       String rtrn = null;
       if(command == null){
          rtrn = "";
@@ -614,7 +621,7 @@ public abstract class Cmd {
    private Cmd parent;
    private Cmd stateParent;
 
-   private long idleTimer = DEFAULT_IDLE_TIMER;
+   private String idleTimer = ""+DEFAULT_IDLE_TIMER;
    protected boolean silent = false;
    private boolean stateScan = true;
 
@@ -637,52 +644,129 @@ public abstract class Cmd {
       this.stateParent = null;
       this.uid = uidGenerator.incrementAndGet();
    }
-
+   /**
+    * Set if this command should be scanned for state references.
+    * @param stateScan
+    */
    public void setStateScan(boolean stateScan){
       this.stateScan = stateScan;
    }
+   /**
+    * Returns true if the command should be scanned for state references.
+    * The default value is true
+    * @return
+    */
    public boolean isStateScan(){return stateScan;}
-   public boolean hasCustomIdleTimer(){return idleTimer!=DEFAULT_IDLE_TIMER;}
-   public boolean hasIdleTimer(){return idleTimer > 0;}
-   public long getIdleTimer(){return idleTimer;}
-   public void setIdleTimer(long idleTimer){
+   /**
+    * Returns true if the idle timer is not the default value. This includes when the idle timer is disabled
+    * @return
+    */
+   public boolean hasCustomIdleTimer(){return !idleTimer.equals(""+DEFAULT_IDLE_TIMER);}
+   /**
+    * Returns true if the idleTimer is set to a valid value (including the default value).
+    * Effectively returns true if the idleTimer is not disabled
+    * @return
+    */
+   public boolean hasIdleTimer(){return idleTimer.isEmpty();}
+   /**
+    * Get the defined number of milliconds the command is expected to be idle. 
+    * This value can be any duration supported by StringUtil.parseToMs and can include pattern references.
+    * @return
+    */
+   public String getIdleTimer(){return idleTimer;}
+   /**
+    * Return the number of milliseconds the command is expected to be idle based on values from state.
+    * @param state
+    * @return
+    */
+   public long getIdleTimer(State state){
+      String rtrn = Cmd.populateStateVariables(getIdleTimer(),this.getStateParent(),state,null,null);
+      return Math.round(StringUtil.parseToMs(rtrn));
+   }
+   /**
+    * Set the value for the idle timer including any pattern references that will be resolved each time the command runs.
+    * An empty value or a value that resolves to < 0 disables the idleTimer.
+    * @param idleTimer
+    */
+   public void setIdleTimer(String idleTimer){
       this.idleTimer = idleTimer;
    }
+   /**
+    * Disables the idle timer
+    */
    public void disableIdleTimer(){
-      this.idleTimer = DISABLED_IDLE_TIMER;
+      this.idleTimer = "";
    }
 
    private void preChild(Cmd child){}
 
+   /**
+    * Returns true if the command has a custom pattern prefix
+    * @return
+    */
    public boolean hasPatternPrefix(){
       return !StringUtil.PATTERN_PREFIX.equals(getPatternPrefix());
    }
+   /**
+    * Return the pattern prefix that is used for pattern references in this command.
+    * @return
+    */
    public String getPatternPrefix() {
       return patternPrefix;
    }
-
+   /**
+    * Set the pattern prefix for pattern references in this command.
+    * Pattern prefixes are not inherited by children so this will only effect the current command.
+    * @param patternPrefix
+    */
    public void setPatternPrefix(String patternPrefix) {
       this.patternPrefix = patternPrefix;
    }
-
+   /**
+    * Returns true if the command uses a custom pattern suffix
+    * @return
+    */
    public boolean hasPatternSuffix(){
       return !StringUtil.PATTERN_SUFFIX.equals(getPatternSuffix());
    }
+   /**
+    * Returns the pattern suffix that is used for pattern references in this command.
+    * @return
+    */
    public String getPatternSuffix() {
       return patternSuffix;
    }
-
+   /**
+    * Set the pattern suffix that is used for this command.
+    * Pattern suffixes are not inherited by children so this will only effect the current command.
+    * This is normally used when the command contains pattern references and json where the default
+    * suffix '}}' is likely to occur
+    * @param patternSuffix
+    */
    public void setPatternSuffix(String patternSuffix) {
       this.patternSuffix = patternSuffix;
    }
-
+   /**
+    * Returns true if the command has a custom pattern separator.
+    * @return
+    */
    public boolean hasPatternSeparator(){
       return !StringUtil.PATTERN_DEFAULT_SEPARATOR.equals(getPatternSeparator());
    }
+   /**
+    * Returns the pattern separate used for pattern references in this command.
+    * @return
+    */
    public String getPatternSeparator() {
       return patternSeparator;
    }
-
+   /**
+    * Set the pattern separator for patterns references in this command.
+    * Pattern separators are not inherited by children so this will only effect the current command.
+    * This is normally used when the command contains pattern references and json where the default
+    * separator ':' is likely to occur.
+    * @param patternSeparator
+    */
    public void setPatternSeparator(String patternSeparator) {
       this.patternSeparator = patternSeparator;
    }
@@ -698,7 +782,12 @@ public abstract class Cmd {
       this.patternJavascriptPrefix = patternJavascriptPrefix;
    }
 
-
+   /**
+    * Adds a command that will run if the `name` signal is reached while this command is running.
+    * @param name
+    * @param command
+    * @return
+    */
    public Cmd onSignal(String name, Cmd command) {
       command.stateParent = this;
       onSignal.put(name, command);
@@ -1078,6 +1167,23 @@ public abstract class Cmd {
          }
       }
       return clone;
+   }
+
+   public List<String> getExternalStateReferences(){
+      RunConfigBuilder builder = new RunConfigBuilder();
+      return getExternalStateReferences(Parser.getInstance(),builder);
+   }
+   public List<String> getExternalStateReferences(Parser parser, RunConfigBuilder builder){
+      CmdLocation location = new CmdLocation("", Stage.Setup,"","", CmdLocation.Position.Child);
+      Cmd.Ref ref = new Cmd.Ref(this);
+      UndefinedStateVariables udsv = new UndefinedStateVariables(parser);
+      RunSummary runSummary = new RunSummary();
+      this.walk(location,(cmd,cmdLocation)->{
+         udsv.scan(cmdLocation,cmd,ref,builder,runSummary);
+         return true;
+      });
+      udsv.close(builder,runSummary);
+      return udsv.getMissingVariables();
    }
 
    public Json toJson(){

@@ -1,9 +1,8 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.impl.ForEach;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.apache.http.client.utils.URIBuilder;
@@ -18,10 +17,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -98,17 +99,65 @@ public class Local {
    public boolean upload(String path, String destination, Host host) {
       if (path == null || path.isEmpty() || destination == null || destination.isEmpty() || !host.hasUpload()) {
          return false;
+      } else if (!((new File(path)).exists())){
+         logger.error("File does not exist for upload: "+path);
+         return false;
+      } else if (!host.isLocal() && host.hasContainerId()){
+         logger.info("Local.upload({},{}:{})", path, host.getSafeString(), destination);
+         Host remoteHost = host.withoutContainer();
+         AbstractShell shell = AbstractShell.getShell(
+            remoteHost, 
+            "",
+            new ScheduledThreadPoolExecutor(1), 
+            new SecretFilter(), 
+            false);
+         String remoteDestination = shell.shSync("mktemp -d");
+         boolean uploaded = upload(path,remoteDestination,remoteHost);
+         if(!uploaded){
+            logger.error("failed to upload "+path+" to remote host as part of upload to "+host);
+            return false;
+         }
+         File localFile = new File(path);
+         Path remotePath = Path.of(remoteDestination,localFile.getName());
+         String remoteString = remotePath.toString();
+         Json json = new Json();
+         json.set("host",host.toJson());
+         json.set("source",remoteString);
+         json.set("destination",destination);
+         json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
+         json.set("identity",hasIdentity()?getIdentity():false);
+         if(host.hasContainerId()){
+            json.set("container",host.getContainerId());
+         }
+         //we need to upload command to send to host, we will send the file from remoteHost
+         List<String> populated = Cmd.populateList(json,host.getUpload()).stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+         if(Cmd.hasPatternReference(populated, StringUtil.PATTERN_PREFIX)){
+            logger.error("failed to populate remote upload pattern: "+populated.stream().collect(Collectors.joining(" "))+"\nhost: "+remoteHost);
+            return false;
+         }
+         String mergedUpload = populated.stream().collect(Collectors.joining(" "));
+         String mergedResponse = shell.shSync(mergedUpload);
+         //output
+         //cleanup the folder we created on the remoteHost
+         String rmResponse = shell.shSync("rm -rf "+remoteDestination);
+         //
+         return true;
       } else {
-         logger.info("Local.upload({}:{},{})", host.getSafeString(), path, destination);
+         logger.info("Local.upload({},{}:{})", path, host.getSafeString(), destination);
          Json json = new Json();
          json.set("host",host.toJson());
          json.set("source",path);
          json.set("destination",destination);
          json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
          json.set("identity",hasIdentity()?getIdentity():false);
+         if(host.hasContainerId()){
+            json.set("container",host.getContainerId());
+         }
 
          List<String> populated = Cmd.populateList(json,host.getUpload()).stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
          if(Cmd.hasPatternReference(populated,StringUtil.PATTERN_PREFIX)){
+            logger.error("failed to populate upload pattern: "+populated.stream().collect(Collectors.joining(" "))+"\nhost: "+host);
+
             return false;
          }else{
 
@@ -196,7 +245,47 @@ public class Local {
    public boolean download(String path, String destination, Host host) {
       if (path == null || path.isEmpty() || destination == null || destination.isEmpty() || !host.hasDownload()) {
          return false;
-      } else {
+      } else if (!host.isLocal() && host.hasContainerId()){
+         logger.info("Local.download({}:{},{})", host.getSafeString(), path, destination);
+         Host remoteHost = host.withoutContainer();
+         AbstractShell shell = AbstractShell.getShell(
+            remoteHost, 
+            "",
+            new ScheduledThreadPoolExecutor(1), 
+            new SecretFilter(), 
+            false);
+         //TODO this temp remomte directory should be created based on the host type
+         String remoteDestination = shell.shSync("mktemp -d");
+         Json json = new Json();
+         json.set("host",host.toJson());
+         json.set("source",path);
+         //need a tmp destination on the remoteHost
+         json.set("destination",remoteDestination);
+         json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
+         json.set("identity",hasIdentity()?getIdentity():false);
+         if(host.hasContainerId()){
+            json.set("container",host.getContainerId());
+         }
+         List<String> populated = Cmd.populateList(json,host.getDownload()).stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+         String mergedPopulated = populated.stream().collect(Collectors.joining(" "));
+         if(mergedPopulated.contains(StringUtil.PATTERN_PREFIX)){
+            logger.error("unable to fully populate download: "+mergedPopulated);
+            return false;
+         }
+         
+         String mergeResponse = shell.shSync(mergedPopulated);
+         String remoteFileStr = shell.shSync("ls -c1 "+remoteDestination);
+         List<String> remoteFiles = Arrays.asList(remoteFileStr.split(System.lineSeparator()));
+         //if there's only one file we need to directly target it
+         //otherwise we download everything in the remote folder
+         String suffix = remoteFiles.size() == 1 ? "/"+remoteFiles.get(0) + (path.endsWith("/") ? "/" : "") : "/";
+         //at this point the files should exist on remoteDestination
+         //adding the / to end of remoteDestination to transfer content not folder
+         boolean rtrn = download(remoteDestination+suffix, destination, remoteHost);
+         //at this point the files are local, we can delete the remote dir
+         String remoteDeleteResp = shell.shSync("rm -rf "+remoteDestination);
+         return rtrn;
+      }else{
          logger.info("Local.download({}:{},{})", host.getSafeString(), path, destination);
          Json json = new Json();
          json.set("host",host.toJson());
@@ -207,16 +296,18 @@ public class Local {
          if(host.hasContainerId()){
             json.set("container",host.getContainerId());
          }
-
+         //this is painfully slow in vscode debugger :(
          List<String> populated = Cmd.populateList(json,host.getDownload()).stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
          if(Cmd.hasPatternReference(populated,StringUtil.PATTERN_PREFIX)){
             return false;
-         }else{
-
          }
-         return runSyncProcess(populated,"download",(line)->{
+         StringBuffer sb = new StringBuffer();
+         boolean rtrn =  runSyncProcess(populated,"download",(line)->{
             logger.debug(line);
+            sb.append(line);
+            sb.append(System.lineSeparator());
          });
+         return rtrn;
       }
    }
 

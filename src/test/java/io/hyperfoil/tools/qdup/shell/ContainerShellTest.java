@@ -3,7 +3,6 @@ package io.hyperfoil.tools.qdup.shell;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.SshTestBase;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import org.junit.Test;
 
 import java.io.File;
@@ -36,7 +35,7 @@ public class ContainerShellTest extends SshTestBase {
     public void failure_container_stops_before_connect(){
         Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
         host.setStartConnectedContainer(Collections.EMPTY_LIST);
-        //host = Host.parse("quay.io/wreicher/omb");
+        host.setCreateConnectedContainer(Collections.EMPTY_LIST);
         AbstractShell shell = new ContainerShell(
             host,
             "",
@@ -53,7 +52,7 @@ public class ContainerShellTest extends SshTestBase {
     @Test
     public void container_start_also_connects(){
         Host host = Host.parse("quay.io/fedora/fedora");
-        host.setStartContainer(Host.PODMAN_START_CONNECTED_CONTAINER);
+        host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
         AbstractShell shell = new ContainerShell(
                 host,
                 "",
@@ -92,7 +91,8 @@ public class ContainerShellTest extends SshTestBase {
                 "registry.access.redhat.com/ubi8/ubi");
         host.setPassphrase(getHost().getPassphrase());
         host.setIdentity(getHost().getIdentity());
-        host.setStartContainer(Host.DOCKER_START_CONNECTED_CONTAINER);
+        //why were we setting start connected for docker?
+        //host.setStartContainer(Host.DOCKER_START_CONNECTED_CONTAINER);
         AbstractShell shell = new ContainerShell(
                 host,
                 "",
@@ -109,7 +109,7 @@ public class ContainerShellTest extends SshTestBase {
     @Test
     public void container_connect_also_performs_start(){
         Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
-        host.setConnectShell(Host.PODMAN_START_CONNECTED_CONTAINER);
+        host.setConnectShell(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
         AbstractShell shell = new ContainerShell(
                 host,
                 "",
@@ -129,7 +129,6 @@ public class ContainerShellTest extends SshTestBase {
     @Test
     public void container_stops_before_connect_then_starts_connected(){
         Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
-        //host = Host.parse("quay.io/wreicher/omb");
         AbstractShell shell = new ContainerShell(
                 host,
                 "",
@@ -145,6 +144,7 @@ public class ContainerShellTest extends SshTestBase {
         assertNotEquals("shell should be using a different userId",output,systemUser);
     }
 
+    //This ensures we can connect to the same container for setup, run, cleanup
     @Test
     public void connect_to_containerId_after_first_connect(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
@@ -197,7 +197,7 @@ public class ContainerShellTest extends SshTestBase {
     @Test
     public void start_that_connects_still_sets_containerId(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
-        host.setStartContainer(Host.PODMAN_START_CONNECTED_CONTAINER);
+        host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
         AbstractShell shell = new ContainerShell(
                 host,
                 "",
