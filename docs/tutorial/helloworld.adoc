@@ -23,7 +23,7 @@ The `testuser` example username should be replaced with the output of `whoami`.
 If you get a `command not found` or the prompted for a `Password:` when running `ssh` then please refer to the link:./prerequisites.adoc[prerequisites]
 
 == qDup jar
-qDup is distributed as an executable jar (Java's version of a zip). Download the latest `uber` jar from link:https://github.com/Hyperfoil/qDup/releases/latest:[github]
+qDup is distributed as an executable jar (Java's version of a zip). Download the latest `uber` jar from link:https://github.com/Hyperfoil/qDup/releases/latest[github]
 
 == YAML script
 qDup scripts use are saved as yaml. We can explore the yaml structure in later tutorials.
