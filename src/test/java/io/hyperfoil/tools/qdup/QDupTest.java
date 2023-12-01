@@ -52,19 +52,18 @@ public class QDupTest extends SshTestBase{
     }
     private Output runMain(String...args){
         String result = "0";
-        SecurityManager securityManager = System.getSecurityManager();
-        System.setSecurityManager(new TempSecurityManager());
         PrintStream originalOut = System.out;
         PrintStream originalErr = System.err;
-
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final String utf8 = StandardCharsets.UTF_8.name();
-
+        boolean ok = true;
         try (PrintStream tempPrintStream = new PrintStream(baos, true, utf8)) {
 //            System.setOut(tempPrintStream);
 //            System.setErr(tempPrintStream);
             System.setProperty("disableRestApi", "true");
-            QDup.main(args);
+            QDup qdup = new QDup(args);
+            ok = qdup.run();
+            //QDup.main(args);
         } catch (SecurityException e) {
             result = e.getMessage();
         } catch (UnsupportedEncodingException e) {
@@ -72,22 +71,10 @@ public class QDupTest extends SshTestBase{
         } finally {
             System.setErr(originalErr);
             System.setOut(originalOut);
-            System.setSecurityManager(securityManager);
         }
-        return new Output(baos.toString(),result);
+        return new Output(baos.toString(),ok ? "0" : "1");
     }
 
-    class TempSecurityManager extends SecurityManager {
-        @Override
-        public void checkExit(int status) {
-            throw new SecurityException(String.valueOf(status)); //do not exit JVM if System.exit() is called
-        }
-
-        @Override
-        public void checkPermission(Permission perm) {
-            // Allow other activities by default
-        }
-    }
     @Test
     public void main_exit_sh() {
         Output output = runMain(
