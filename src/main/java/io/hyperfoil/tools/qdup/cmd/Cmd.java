@@ -685,7 +685,7 @@ public abstract class Cmd {
    }
    /**
     * Set the value for the idle timer including any pattern references that will be resolved each time the command runs.
-    * An empty value or a value that resolves to < 0 disables the idleTimer.
+    * An empty value or a value that resolves to less than 0 disables the idleTimer.
     * @param idleTimer
     */
    public void setIdleTimer(String idleTimer){
