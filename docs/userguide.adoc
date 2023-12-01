@@ -19,7 +19,7 @@ The Tutorials are the best place to get started. They walk us from new to qDup t
 
 1. link:../docs/tutorial/prerequisites.adoc[prerequisites]
 2. link:../docs/tutorial/helloworld.adoc[hello world]
-3. link:../docs/tutorial/quarkusgetstarted.adoc[quarksu getting started app]
+3. link:../docs/tutorial/quarkusgetstarted.adoc[quarkus getting started app]
 
 After the tutorials, check out the `How To` for more specific scenarios
 
