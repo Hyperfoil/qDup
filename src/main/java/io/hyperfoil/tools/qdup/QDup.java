@@ -444,6 +444,8 @@ public class QDup {
     }
 
     public static void main(String[] args) {
+        //https://github.com/oracle/graaljs/issues/764
+        System.setProperty("polyglotimpl.DisableClassPathIsolation", "true");        
         disableLoggerShutdownHook();
         //ConfigurationFactory.setConfigurationFactory(new QdupConfigurationFactory());
         QDup toRun = new QDup(args);
