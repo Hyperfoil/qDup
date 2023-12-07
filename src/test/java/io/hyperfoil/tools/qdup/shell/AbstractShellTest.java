@@ -30,6 +30,8 @@ public class AbstractShellTest extends SshTestBase {
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
         assertTrue("shell should be ContainerShell but was "+shell.getClass().getSimpleName(),shell instanceof ContainerShell);
+        ContainerShell containerShell = (ContainerShell)shell;
+        containerShell.stopContainerIfStarted();
     }
 
     @Test

@@ -148,7 +148,8 @@ public class ContainerShellTest extends SshTestBase {
     @Test
     public void connect_to_containerId_after_first_connect(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
-        AbstractShell shell = new ContainerShell(
+        
+        ContainerShell shell = new ContainerShell(
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -156,25 +157,29 @@ public class ContainerShellTest extends SshTestBase {
             false
         );
         boolean connected = shell.connect();
-        assertTrue("shell should be connected",connected);
-        assertTrue("host should have a containerId",host.hasContainerId());
-        String containerId = host.getContainerId();
-        shell.close();
-        shell = new ContainerShell(
-            host,
-            "",
-            new ScheduledThreadPoolExecutor(2),
-            new SecretFilter(),
-            false
-        );
-        connected = shell.connect();
-        assertTrue("shell should be connected",connected);
-        assertTrue("host should have a containerId",host.hasContainerId());
-        String newContainerId = host.getContainerId();
-        assertEquals("should have same containerId",containerId,newContainerId);
-        String response = shell.shSync("mktemp");
-        File f = new File(response);
-        assertFalse("File should not exist on local filesystem",f.exists());
+        try{
+            assertTrue("shell should be connected",connected);
+            assertTrue("host should have a containerId",host.hasContainerId());
+            String containerId = host.getContainerId();
+            shell.close();
+            shell = new ContainerShell(
+                host,
+                "",
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+            );
+            connected = shell.connect();
+            assertTrue("shell should be connected",connected);
+            assertTrue("host should have a containerId",host.hasContainerId());
+            String newContainerId = host.getContainerId();
+            assertEquals("should have same containerId",containerId,newContainerId);
+            String response = shell.shSync("mktemp");
+            File f = new File(response);
+            assertFalse("File should not exist on local filesystem",f.exists());
+        }finally{
+            shell.stopContainerIfStarted();
+        }
     }
 
     @Test
