@@ -12,7 +12,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <graalvm.version>21.2.0</graalvm.version>
+        <graalvm.version>23.1.1</graalvm.version>
         <vertx.version>4.3.3</vertx.version>
         <version.maven.gpg>1.6</version.maven.gpg>
         <version.maven.source>3.2.0</version.maven.source>
@@ -243,16 +243,30 @@
             <artifactId>snakeyaml</artifactId>
             <version>2.2</version>
         </dependency>
-        <!-- <dependency>
+        <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>graal-sdk</artifactId>
             <version>${graalvm.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.js</groupId>
-            <artifactId>js</artifactId>
+        <groupId>org.graalvm.polyglot</groupId>
+        <artifactId>polyglot</artifactId>
+        <version>${graalvm.version}</version>
+        </dependency>
+        <dependency>
+        <groupId>org.graalvm.polyglot</groupId>
+        <artifactId>js-community</artifactId>
+        <version>${graalvm.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.regex</groupId>
+            <artifactId>regex</artifactId>
             <version>${graalvm.version}</version>
-        </dependency> -->
+        </dependency>    
+
+	
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
