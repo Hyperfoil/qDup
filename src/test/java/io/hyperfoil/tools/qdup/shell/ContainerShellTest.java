@@ -19,7 +19,7 @@ public class ContainerShellTest extends SshTestBase {
     @Test(timeout = 5_000)
     public void failure_cannot_connect_remote(){
         Host host = new Host("idk","doesnotexist.localhost",null,22,null,false,"podman","quay.io/wreicher/omb");
-        AbstractShell shell = new ContainerShell(
+        ContainerShell shell = new ContainerShell(
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -27,7 +27,11 @@ public class ContainerShellTest extends SshTestBase {
             false
         );
         boolean connected = shell.connect();
-        assertFalse("shell should not be connected",connected);
+        try{
+            assertFalse("shell should not be connected",connected);
+        }finally{
+            shell.stopContainerIfStarted();
+        }
     }
 
     //@Test(timeout = 10_000)
@@ -36,7 +40,7 @@ public class ContainerShellTest extends SshTestBase {
         Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
         host.setStartConnectedContainer(Collections.EMPTY_LIST);
         host.setCreateConnectedContainer(Collections.EMPTY_LIST);
-        AbstractShell shell = new ContainerShell(
+        ContainerShell shell = new ContainerShell(
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -44,16 +48,20 @@ public class ContainerShellTest extends SshTestBase {
             false
         );
         boolean connected = shell.connect();
-        String output = shell.shSync("date +%s");
-        assertFalse("shell should not be connected",connected);
-        assertNotNull("shSync should not return null even if not connected",output);
-        assertEquals("shSync should return empty string when not connected","",output);
+        try{
+            String output = shell.shSync("date +%s");
+            assertFalse("shell should not be connected",connected);
+            assertNotNull("shSync should not return null even if not connected",output);
+            assertEquals("shSync should return empty string when not connected","",output);
+        }finally{
+            shell.stopContainerIfStarted();
+        }    
     }
     @Test
     public void container_start_also_connects(){
         Host host = Host.parse("quay.io/fedora/fedora");
         host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
-        AbstractShell shell = new ContainerShell(
+        ContainerShell shell = new ContainerShell(
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -61,11 +69,15 @@ public class ContainerShellTest extends SshTestBase {
                 false
         );
         boolean connected = shell.connect();
-        String output = shell.shSync("whoami");
-        String systemUser = System.getProperty("user.name");
-        assertTrue("shell should be connected",connected);
-        assertTrue("host should have a containerId",host.hasContainerId());
-        assertNotEquals("shell should be using a different userId",output,systemUser);
+        try{
+            String output = shell.shSync("whoami");
+            String systemUser = System.getProperty("user.name");
+            assertTrue("shell should be connected",connected);
+            assertTrue("host should have a containerId",host.hasContainerId());
+            assertNotEquals("shell should be using a different userId",output,systemUser);
+        }finally{
+            shell.stopContainerIfStarted();
+        }
     }
 
     @Test
@@ -81,36 +93,40 @@ public class ContainerShellTest extends SshTestBase {
         assertTrue("remote shell should be connected",remoteConnected);
         String remoteHostname = remoteShell.shSync("uname -a");
         Host host = new Host(
-                getHost().getUserName(),
-                getHost().getHostName(),
-                getHost().getPassword(),
-                getHost().getPort(),
-                getHost().getPrompt(),
-                getHost().isLocal(),
-                "docker",
-                "registry.access.redhat.com/ubi8/ubi");
+            getHost().getUserName(),
+            getHost().getHostName(),
+            getHost().getPassword(),
+            getHost().getPort(),
+            getHost().getPrompt(),
+            getHost().isLocal(),
+            "docker",
+            "registry.access.redhat.com/ubi8/ubi");
         host.setPassphrase(getHost().getPassphrase());
         host.setIdentity(getHost().getIdentity());
         //why were we setting start connected for docker?
         //host.setStartContainer(Host.DOCKER_START_CONNECTED_CONTAINER);
-        AbstractShell shell = new ContainerShell(
-                host,
-                "",
-                new ScheduledThreadPoolExecutor(2),
-                new SecretFilter(),
-                false
+        ContainerShell shell = new ContainerShell(
+            host,
+            "",
+            new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
+            false
         );
         boolean connected = shell.connect();
-        assertTrue("shell should be connected",connected);
-        String containerHostname = shell.shSync("uname -a");
-        assertNotEquals("container and remote shell should have different uname",remoteHostname,containerHostname);
-        assertTrue("host should have a containerId",host.hasContainerId());
+        try{
+            assertTrue("shell should be connected",connected);
+            String containerHostname = shell.shSync("uname -a");
+            assertNotEquals("container and remote shell should have different uname",remoteHostname,containerHostname);
+            assertTrue("host should have a containerId",host.hasContainerId());
+        }finally{
+            shell.stopContainerIfStarted();
+        }
     }
     @Test
     public void container_connect_also_performs_start(){
         Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
         host.setConnectShell(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
-        AbstractShell shell = new ContainerShell(
+        ContainerShell shell = new ContainerShell(
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -118,18 +134,22 @@ public class ContainerShellTest extends SshTestBase {
                 false
         );
         boolean connected = shell.connect();
+        try{
         String output = shell.shSync("whoami");
         String systemUser = System.getProperty("user.name");
         assertTrue("shell should be connected",connected);
         assertTrue("host should have a containerId",host.hasContainerId());
         assertNotEquals("shell should be using a different userId",output,systemUser);
+        }finally{
+            shell.stopContainerIfStarted();
+        }
     }
 
 
     @Test
     public void container_stops_before_connect_then_starts_connected(){
         Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
-        AbstractShell shell = new ContainerShell(
+        ContainerShell shell = new ContainerShell(
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -137,11 +157,15 @@ public class ContainerShellTest extends SshTestBase {
                 false
         );
         boolean connected = shell.connect();
-        String output = shell.shSync("whoami");
-        String systemUser = System.getProperty("user.name");
-        assertTrue("shell should be connected",connected);
-        assertTrue("host should have a containerId",host.hasContainerId());
-        assertNotEquals("shell should be using a different userId",output,systemUser);
+        try{
+            String output = shell.shSync("whoami");
+            String systemUser = System.getProperty("user.name");
+            assertTrue("shell should be connected",connected);
+            assertTrue("host should have a containerId",host.hasContainerId());
+            assertNotEquals("shell should be using a different userId",output,systemUser);
+        }finally{
+            shell.stopContainerIfStarted();
+        }
     }
 
     //This ensures we can connect to the same container for setup, run, cleanup
@@ -185,43 +209,51 @@ public class ContainerShellTest extends SshTestBase {
     @Test
     public void connect_sets_containerId(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
-        AbstractShell shell = new ContainerShell(
+        ContainerShell shell = new ContainerShell(
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
             false
         );
-        assertFalse("host should not have a containerId",host.hasContainerId());
-        boolean connected = shell.connect();
-        assertTrue("host should have a containerId",host.hasContainerId());
-        assertTrue("shell should be connected",connected);
-        assertTrue("shell should be open",shell.isOpen());
-        assertTrue("shell should be ready",shell.isReady());
+            assertFalse("host should not have a containerId",host.hasContainerId());
+            boolean connected = shell.connect();
+        try{
+            assertTrue("host should have a containerId",host.hasContainerId());
+            assertTrue("shell should be connected",connected);
+            assertTrue("shell should be open",shell.isOpen());
+            assertTrue("shell should be ready",shell.isReady());
+        }finally{
+            shell.stopContainerIfStarted();
+        }
     }
     @Test
     public void start_that_connects_still_sets_containerId(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
         host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
-        AbstractShell shell = new ContainerShell(
+        ContainerShell shell = new ContainerShell(
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
                 false
         );
-        assertFalse("host should not have a containerId",host.hasContainerId());
-        boolean connected = shell.connect();
-        assertTrue("host should have a containerId",host.hasContainerId());
-        String containerId = host.getContainerId();
-        assertTrue("shell should be connected",connected);
-        assertTrue("shell should be open",shell.isOpen());
-        assertTrue("shell should be ready",shell.isReady());
+            assertFalse("host should not have a containerId",host.hasContainerId());
+            boolean connected = shell.connect();
+        try{
+            assertTrue("host should have a containerId",host.hasContainerId());
+            String containerId = host.getContainerId();
+            assertTrue("shell should be connected",connected);
+            assertTrue("shell should be open",shell.isOpen());
+            assertTrue("shell should be ready",shell.isReady());
+        }finally{
+            shell.stopContainerIfStarted();
+        }
     }
     @Test
     public void connect_replaces_sub_shell(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
-        AbstractShell shell = new ContainerShell(
+        ContainerShell shell = new ContainerShell(
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -229,7 +261,8 @@ public class ContainerShellTest extends SshTestBase {
             false
         );
         assertFalse("host should not have a containerId",host.hasContainerId());
-        boolean connected = shell.connect();
+        boolean connected = shell.connect();        
+        try{
         assertTrue("host should have a containerId",host.hasContainerId());
         assertTrue("shell should be connected",connected);
         assertTrue("shell should be open",shell.isOpen());
@@ -237,5 +270,8 @@ public class ContainerShellTest extends SshTestBase {
         String response = shell.shSync("mktemp");
         File f = new File(response);
         assertFalse("File should not exist on local filesystem",f.exists());
+        }finally{
+            shell.stopContainerIfStarted();
+        }
     }
 }

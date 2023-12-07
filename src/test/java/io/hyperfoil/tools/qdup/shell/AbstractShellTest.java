@@ -26,12 +26,15 @@ public class AbstractShellTest extends SshTestBase {
     public void getShell_containerShell(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
         AbstractShell shell = AbstractShell.getShell(host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),false);
-        assertNotNull("shell should not be null",shell);
-        assertTrue("shell should be open",shell.isOpen());
-        assertTrue("shell should be ready",shell.isReady());
-        assertTrue("shell should be ContainerShell but was "+shell.getClass().getSimpleName(),shell instanceof ContainerShell);
-        ContainerShell containerShell = (ContainerShell)shell;
-        containerShell.stopContainerIfStarted();
+        try{
+            assertNotNull("shell should not be null",shell);
+            assertTrue("shell should be open",shell.isOpen());
+            assertTrue("shell should be ready",shell.isReady());
+            assertTrue("shell should be ContainerShell but was "+shell.getClass().getSimpleName(),shell instanceof ContainerShell);
+        }finally{
+            ContainerShell containerShell = (ContainerShell)shell;
+            containerShell.stopContainerIfStarted();
+        }
     }
 
     @Test
