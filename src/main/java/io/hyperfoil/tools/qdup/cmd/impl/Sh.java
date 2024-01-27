@@ -15,7 +15,7 @@ public class Sh extends Cmd {
     private Map<String,String> prompt;
 
     private String exitCode = "";
-    private boolean ignoreExitCode = false;
+    private String ignoreExitCode = "";
     private String previousPrompt="";
 
     private SystemTimer commandTimer = null;
@@ -38,8 +38,11 @@ public class Sh extends Cmd {
         this.prompt = prompt;
     }
 
-    public boolean isIgnoreExitCode(){return ignoreExitCode;}
-    public void setIgnoreExitCode(boolean ignoreExitCode){
+    public boolean hasIgnoreExitCode(){
+        return ignoreExitCode!=null && !ignoreExitCode.isBlank();
+    }
+    public String getIgnoreExitCode(){return ignoreExitCode;}
+    public void setIgnoreExitCode(String ignoreExitCode){
         this.ignoreExitCode = ignoreExitCode;
     }
 
@@ -154,13 +157,27 @@ public class Sh extends Cmd {
     }
 
     public boolean shouldCheckExit(Context context){
-        return (context.checkExitCode() && !isIgnoreExitCode());
+        if(context.checkExitCode() && hasIgnoreExitCode()){
+            String populated = Cmd.populateStateVariables(getIgnoreExitCode(), this, context);
+            if(Cmd.hasStateReference(populated, this)){
+                //we failed to populate ignore exit code
+                context.error("failed to populate ignore-exit-code: "+populated+" for "+this);
+                context.abort(false);
+            }else{
+                boolean ignore = Boolean.parseBoolean(populated);
+                return !ignore;
+            }
+
+        }
+        return context.checkExitCode();
     }
 
     @Override
     public Cmd copy() {
         Sh rtrn = new Sh(this.getCommand(),super.isSilent(),prompt);
-        rtrn.setIgnoreExitCode(isIgnoreExitCode());
+        if(hasIgnoreExitCode()){
+            rtrn.setIgnoreExitCode(getIgnoreExitCode());
+        }
         return rtrn;
     }
 

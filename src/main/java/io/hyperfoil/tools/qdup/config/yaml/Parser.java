@@ -545,8 +545,8 @@ public class Parser {
                         if (!cmd.getPrompt().isEmpty()) {
                             opts.put("prompt", cmd.getPrompt());
                         }
-                        if(cmd.isIgnoreExitCode()){
-                            opts.put("ignore-exit-code",true);
+                        if (cmd.hasIgnoreExitCode()) {
+                            opts.put("ignore-exit-code",cmd.getIgnoreExitCode());
                         }
                         return map;
                     } else {
@@ -559,7 +559,7 @@ public class Parser {
                     }
                     Sh newCommand = new Sh(str);
                     if(rtrn.isAbortOnExitCode()){
-                        newCommand.setIgnoreExitCode(false);
+                        newCommand.setIgnoreExitCode(Boolean.FALSE.toString());
                     }
                     return newCommand;
                 },
@@ -568,10 +568,10 @@ public class Parser {
                         throw new YAMLException("sh requires a non-empty command ");
                     }
                     Sh sh = new Sh(json.getString("command"), json.getBoolean("silent", false));
-                    if(json.has("ignore-exit-code")){
-                        sh.setIgnoreExitCode(json.getBoolean("ignore-exit-code",false));
-                    }else if (rtrn.isAbortOnExitCode()){
-                        sh.setIgnoreExitCode(false);
+                    if(json.has("ignore-exit-code")) {
+                        sh.setIgnoreExitCode(json.getString("ignore-exit-code",""));
+                    }else if (rtrn.isAbortOnExitCode()) {
+                        sh.setIgnoreExitCode(Boolean.FALSE.toString());
                     }
                     if (json.has("prompt")) {
                         json.getJson("prompt", new Json()).forEach((k, v) -> sh.addPrompt(k.toString(), v.toString()));

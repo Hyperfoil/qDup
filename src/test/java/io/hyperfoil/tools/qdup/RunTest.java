@@ -744,6 +744,68 @@ public class RunTest extends SshTestBase {
       State s = config.getState();
       assertEquals("set-state should run","true",s.get("ran"));
    }
+   @Test
+   public void test_ignore_exit_code_from_pattern(){
+      Parser parser = Parser.getInstance();
+      parser.setAbortOnExitCode(true);
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+             "scripts:",
+              "  foo:",
+              "    - sh: ",
+              "        command: \"ls /tmp; (exit 42);\"",
+              "        ignore-exit-code: ${{ignore-it}}",
+              "    - set-state: RUN.ran true",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]",
+              "states:",
+              "  ran: false",
+              "  ignore-it: true"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State s = config.getState();
+      assertEquals("set-state should run","true",s.get("ran"));
+   }   
+   @Test
+   public void test_ignore_exit_code_from_pattern_not_ignoring(){
+      Parser parser = Parser.getInstance();
+      parser.setAbortOnExitCode(true);
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd", stream("" +
+             "scripts:",
+              "  foo:",
+              "    - sh: ",
+              "        command: \"ls /tmp; (exit 42);\"",
+              "        ignore-exit-code: ${{ignore-it}}",
+              "    - set-state: RUN.ran true",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]",
+              "states:",
+              "  ran: false",
+              "  ignore-it: false"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State s = config.getState();
+      assertEquals("set-state should run","false",s.get("ran"));
+   }      
 
    @Test @Ignore
    public void test_reconnect_client4(){
