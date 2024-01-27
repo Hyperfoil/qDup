@@ -46,8 +46,9 @@ public class Host {
     public static final List<String> PODMAN_FILE_SIZE = Arrays.asList("podman exec ${{container}} du -bc ${{source}} | grep total | cut -d '\t' -f1");
     public static final List<String> DOCKER_FILE_SIZE = Arrays.asList("docker exec ${{container}} du -bc ${{source}} | grep total | cut -d '\t' -f1");
 
-
-    public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "-q", "/dev/null","/bin/bash");
+    //worked on old fedora but not on fedora 39
+    //public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "-q", "/dev/null","/bin/bash");
+    public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "-q","-c","/bin/bash","/dev/null");
     //LOCAL_EXEC uses System.getRuntime().exec(...)
     public static final List<String> LOCAL_LINUX_UPLOAD = Arrays.asList("cp","-r","${{source}}","${{destination}}");
     public static final List<String> LOCAL_LINUX_DOWNLOAD = Arrays.asList("cp","-r","${{source}}","${{destination}}");

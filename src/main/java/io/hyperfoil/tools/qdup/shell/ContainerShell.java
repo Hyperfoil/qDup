@@ -230,7 +230,7 @@ public class ContainerShell extends AbstractShell{
         }else{
             String unameN = shSync("uname -n");
             if(!unameN.equals(getHost().getContainerId())){
-                logger.error("container Id changed for "+getHost().getSafeString());
+                logger.error("container Id changed for "+getHost().getSafeString()+" "+unameN);
                 //getHost().setContainerId(unameN);
             }
         }

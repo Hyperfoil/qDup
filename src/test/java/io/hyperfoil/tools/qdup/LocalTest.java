@@ -1,7 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
-import io.hyperfoil.tools.qdup.config.yaml.HostDefinitionConstruct;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.qdup.shell.ContainerShell;
@@ -13,12 +12,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.junit.Assert.*;
 
@@ -382,6 +378,7 @@ public class LocalTest extends SshTestBase{
         String response = shell.shSync("echo 'foo' > /tmp/foo.txt");
         response = shell.shSync("ls -al /tmp/foo.txt");
         Local local = new Local(getBuilder().buildConfig(Parser.getInstance()));
+        //this is erorring if something else created /tmp/foo.txt, need to use a unique name
         assertFalse("/tmp/foo.txt should not exist in testcontainer",exists("/tmp/foo.txt"));
         try{
             
@@ -416,6 +413,7 @@ public class LocalTest extends SshTestBase{
         response = shell.shSync("echo 'bar' > "+containerDir+"/bar.txt");
         response = shell.shSync("ls -al "+containerDir);
         Local local = new Local(getBuilder().buildConfig(Parser.getInstance()));
+        //this is erorring if something else created /tmp/foo.txt, need to use a unique name
         assertFalse("/tmp/foo.txt should not exist in testcontainer",exists("/tmp/foo.txt"));
         try{
             
