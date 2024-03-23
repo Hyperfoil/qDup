@@ -117,9 +117,13 @@ public class Sh extends Cmd {
                 context.getShell().getHost().isShell())
         {
             String response = context.getShell().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
+            // ensure the output does not contain characters from other processes
+            while(!response.matches("\\d+")){
+                response = context.getShell().shSync("echo $__qdup_ec;");
+            }
             String pwd = context.getShell().shSync("pwd");
             context.setCwd(pwd);
-            context.getCommandTimer().getJson().set("response",response);
+            context.getCommandTimer().getJson().set("exit_code",response);
             context.getCommandTimer().getJson().set("cwd",pwd);
             context.getShell().shSync("(exit $__qdup_ec);");
             context.getShell().flushAndResetBuffer();
