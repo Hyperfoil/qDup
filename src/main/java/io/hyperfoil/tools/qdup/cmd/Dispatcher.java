@@ -429,6 +429,7 @@ public class Dispatcher {
                                 ctx.getShell().markAborting();//prevents shSync
                                 activeCmd.postRun(peekOutput, ctx);
                             }
+                            ctx.getContextTimer().stop();
                             ctx.closeLineQueue();
                             ctx.getShell().close(wait);//forces a close on context, Abstract violation needs fixing
                         }
