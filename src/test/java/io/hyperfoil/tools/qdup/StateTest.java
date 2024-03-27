@@ -18,6 +18,14 @@ import static org.junit.Assert.*;
 
 public class StateTest extends SshTestBase{
 
+    @Test
+    public void case_sensative(){
+        State s = new State("");
+        s.set("build",true);
+        assertTrue(s.has("build"));
+        assertFalse(s.has("Build"));
+        assertFalse(s.has("BUILD"));
+    }
 
     @Test
     public void has_jsonpath_search_found(){
