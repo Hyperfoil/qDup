@@ -1,25 +1,19 @@
 package io.hyperfoil.tools.qdup;
 
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.Context;
-import io.hyperfoil.tools.qdup.cmd.ContextObserver;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
-import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 import io.hyperfoil.tools.yaup.json.Json;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.Assert.*;
 
 public class StateTest extends SshTestBase{
 
     @Test
-    public void case_sensative(){
+    public void case_sensitive(){
         State s = new State("");
         s.set("build",true);
         assertTrue(s.has("build"));
