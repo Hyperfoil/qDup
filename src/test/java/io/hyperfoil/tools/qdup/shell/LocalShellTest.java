@@ -29,6 +29,26 @@ public class LocalShellTest extends SshTestBase {
             fail("should not throw exception: "+e.getMessage());
         }
     }
+    @Test
+    public void sh_rsync(){
+        Host host = new Host();
+        AbstractShell shell = new LocalShell(
+                host,
+                "",
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+        );
+        boolean connected = shell.connect();
+        if(!connected){
+            fail("failed to connect shell");
+        }
+        assertTrue("shell should be open",shell.isOpen());
+        assertTrue("shell should be ready",shell.isReady());
+
+        String exec = shell.shSync("rsync");
+        assertFalse("rsync should be found by the local shell",exec.contains("command not found"));
+    }
 
     @Test
     public void sh_createFile(){

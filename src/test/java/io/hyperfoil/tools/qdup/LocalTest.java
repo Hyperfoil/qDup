@@ -335,6 +335,8 @@ public class LocalTest extends SshTestBase{
             new SecretFilter(),
             false
         );
+        assertTrue("shell should be open",shell.isOpen());
+        assertTrue("shell should be ready",shell.isReady());
         String response = shell.shSync("echo 'foo' > /tmp/foo.txt");
         response = shell.shSync("ls -al /tmp/foo.txt");
         File toRead = null;

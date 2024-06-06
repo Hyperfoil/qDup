@@ -226,7 +226,7 @@ public abstract class AbstractShell {
                 return false;
             }
             if(getHost().isShell()){
-                shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"");
+                shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"; unset PS0;");
             }
             if(setupCommand !=null && !setupCommand.trim().isEmpty()){
                 shConnecting(setupCommand);

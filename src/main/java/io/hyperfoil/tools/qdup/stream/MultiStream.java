@@ -19,7 +19,9 @@ public class MultiStream extends OutputStream{
 
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
-
+    public static String printByteCharacters(String input){
+        return printByteCharacters(input.getBytes(),0,input.getBytes().length);
+    }
     public static String printByteCharacters(byte b[], int off, int len){
         String spaces = "                                                                   ";
         StringBuilder bytes = new StringBuilder();

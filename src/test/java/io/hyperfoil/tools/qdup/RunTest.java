@@ -75,6 +75,43 @@ public class RunTest extends SshTestBase {
            "    - hello-world"
    );
 
+   @Test
+   public void test_stuck_fedora40(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("signal",stream(
+              """
+               scripts:
+                 start-script:
+                   - log: "Running script"
+                   - sh: echo "Hello World!"
+                   - log: "Finished script"
+               
+               hosts:
+                 target-host: ${{HOST}}
+               
+               roles:
+                 db:
+                   hosts:
+                     - target-host
+                   setup-scripts:
+                     - start-script
+               
+               states:
+                 HOST: LOCAL
+               """
+
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State state = config.getState();
+   }
+
    @Test(timeout = 40_000)
    public void waitfor_never_signaled(){
       Parser parser = Parser.getInstance();
