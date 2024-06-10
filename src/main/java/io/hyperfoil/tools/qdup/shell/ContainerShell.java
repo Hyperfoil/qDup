@@ -44,6 +44,14 @@ public class ContainerShell extends AbstractShell{
 
     }
 
+    @Override
+    public void setName(String name){
+        super.setName(name);
+        if(shell!=null){
+            shell.setName(getName()+"-sub-shell");
+        }
+    }
+
     //TODO should also accept the state or some state representation
     @Override
     PrintStream connectShell() {
@@ -65,6 +73,7 @@ public class ContainerShell extends AbstractShell{
         } else {
             shell = new SshShell(subHost,setupCommand,executor,getFilter(),trace);
         }
+        shell.setName(getName()+"-sub-shell");
         boolean connected = shell.connect();
         if(!connected){
             logger.error("failed to connect {} shell for container to {}",getHost().isLocal() ? "local" : "remote", getHost().getSafeString());
@@ -243,7 +252,8 @@ public class ContainerShell extends AbstractShell{
         if(getHost().isContainer() && getHost().needStopContainer() && getHost().startedContainer()){
             if(getHost().hasStopContainer()){
                 Host jumpHost = getHost().withoutContainer();
-                AbstractShell shell = AbstractShell.getShell(jumpHost, getScheduledExector(), getFilter(), false);
+                AbstractShell closeShell = AbstractShell.getShell(jumpHost, getScheduledExector(), getFilter(), false);
+                closeShell.setName(getName()+"-stop-container-sub-shell");
                 Json json = new Json();
                 json.set("host",getHost().toJson());
                 json.set("image",getHost().getDefinedContainer());
@@ -253,9 +263,12 @@ public class ContainerShell extends AbstractShell{
                 if(populatedCommand.contains(StringUtil.PATTERN_PREFIX)){
                     logger.error("failed to populate pattern to stop container\n"+populatedCommand+"\n"+getHost());
                 }else{
-                    String response = shell.shSync(populatedCommand);
+                    String response = closeShell.shSync(populatedCommand);
                     //
-                }                
+                }
+                if ( closeShell != null && closeShell.status != Status.Closing) {
+                    closeShell.close(false);
+                }
             }
         }
     }
@@ -303,8 +316,8 @@ public class ContainerShell extends AbstractShell{
 
     @Override
     public void close() {
-        if(shell!=null && shell.isOpen()) {
-            shell.close();
+        if(shell!=null && shell.status != Status.Closing) {
+            shell.close(false);
         }
     }
 }

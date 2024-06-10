@@ -379,6 +379,7 @@ public class Run implements Runnable, DispatchObserver {
                 for(String delete : deleteList){
                     shell.execSync("rm "+delete);
                 }
+                shell.close(true);
             }
         }
     }
