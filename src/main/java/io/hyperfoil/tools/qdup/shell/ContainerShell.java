@@ -255,7 +255,10 @@ public class ContainerShell extends AbstractShell{
                 }else{
                     String response = shell.shSync(populatedCommand);
                     //
-                }                
+                }
+                if ( shell != null && shell.status != Status.Closing) {
+                    shell.close(true);
+                }
             }
         }
     }
