@@ -110,4 +110,4 @@ hosts:
     container: quay.io/fedora/fedora
     platform: podman
 ```
-The mapping definition is the only way to specify the container platform. The default platform is `docker`
+The mapping definition is the only way to specify the container platform. The default platform is `podman` but `docker` is also supported.
