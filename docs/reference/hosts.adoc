@@ -75,4 +75,39 @@ hosts:
 A local connection is helpful when testing scripts or deploying qdup inside a container.
 
 ## Container Connection
-qDup can start a container on a local or remote container platform. Containerized hosts help isolate changes and control the
+qDup can start a container on a local or remote container platform. Containerized hosts help isolate changes and control the test environment.
+A local container can be specified as just the image name
+```yaml
+hosts:
+  example: quay.io/fedora/fedora
+```
+or `LOCAL` with the image name separated by `//`
+```yaml
+hosts:
+  example: LOCAL//quay.io/fedora/fedora
+```
+qDup also supports specifying an existing image by the containerId
+```yaml
+hosts:
+  example: LOCAL//deadbeef #where deadbeef is the platform containerId
+```
+Using a container Id requires us to explicitly use `LOCAL` or a remote host reference. Remote host references use the same syntax as their container-less counterpart.
+```yaml
+hosts:
+  example: me@myserver:2222//quay.io/fedora/fedora
+```
+The above examples all use the single line notation for a host defintion. qDup also supports a mapping definition
+```
+hosts:
+  example:
+    local: true
+    container: quay.io/fedora/fedora
+    platform: docker
+  remote:
+    username: me
+    hostname: myserver
+    port: 2222
+    container: quay.io/fedora/fedora
+    platform: podman
+```
+The mapping definition is the only way to specify the container platform. The default platform is `podman` but `docker` is also supported.

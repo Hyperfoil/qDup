@@ -248,14 +248,15 @@ public class Local {
       } else if (!host.isLocal() && host.hasContainerId()){
          logger.info("Local.download({}:{},{})", host.getSafeString(), path, destination);
          Host remoteHost = host.withoutContainer();
-         AbstractShell shell = AbstractShell.getShell(
+         ScheduledThreadPoolExecutor stpe = new ScheduledThreadPoolExecutor(1);
+         AbstractShell downloadShell = AbstractShell.getShell(
             remoteHost, 
             "",
-            new ScheduledThreadPoolExecutor(1), 
+            stpe,
             new SecretFilter(), 
             false);
          //TODO this temp remomte directory should be created based on the host type
-         String remoteDestination = shell.shSync("mktemp -d");
+         String remoteDestination = downloadShell.shSync("mktemp -d");
          Json json = new Json();
          json.set("host",host.toJson());
          json.set("source",path);
@@ -273,8 +274,8 @@ public class Local {
             return false;
          }
          
-         String mergeResponse = shell.shSync(mergedPopulated);
-         String remoteFileStr = shell.shSync("ls -c1 "+remoteDestination);
+         String mergeResponse = downloadShell.shSync(mergedPopulated);
+         String remoteFileStr = downloadShell.shSync("ls -c1 "+remoteDestination);
          List<String> remoteFiles = Arrays.asList(remoteFileStr.split(System.lineSeparator()));
          //if there's only one file we need to directly target it
          //otherwise we download everything in the remote folder
@@ -283,7 +284,9 @@ public class Local {
          //adding the / to end of remoteDestination to transfer content not folder
          boolean rtrn = download(remoteDestination+suffix, destination, remoteHost);
          //at this point the files are local, we can delete the remote dir
-         String remoteDeleteResp = shell.shSync("rm -rf "+remoteDestination);
+         String remoteDeleteResp = downloadShell.shSync("rm -rf "+remoteDestination);
+         downloadShell.close(false);
+         stpe.shutdownNow();
          return rtrn;
       }else{
          logger.info("Local.download({}:{},{})", host.getSafeString(), path, destination);
