@@ -162,6 +162,7 @@ public class Dispatcher {
             entry.set("uid",currentCmd.getUid());
             entry.set("contextId",context.getContextId());
             entry.set("script",rootCmd.getUid()+":"+rootCmd.toString());
+            entry.set("cwd",context.getCwd());
             if(currentCmd instanceof Sh){
                 entry.set("input",currentCmd.getPrevious()!=null?currentCmd.getPrevious().getOutput():"");
                 entry.set("output",context.getShell().peekOutput());
@@ -170,6 +171,7 @@ public class Dispatcher {
             entry.set("runTime",(System.currentTimeMillis()-context.getStartTime()));
             entry.set("lastUpdate",context.getUpdateTime());
             entry.set("idleTime",(System.currentTimeMillis()-context.getUpdateTime()));
+
             rtrn.add(entry);
         });
         return rtrn;
