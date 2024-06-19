@@ -96,7 +96,11 @@ public class ContainerShell extends AbstractShell{
                     //TODO how to fail when container start fails
                 }else{
                     containerId = shell.shSync(populatedCommand,null,connectTimeoutSeconds);
-                    if(containerId.contains("\n") || containerId.isBlank()){
+                    if(containerId.contains("Error:") || containerId.isBlank()){
+                        //there was an error reported from container runtime
+                        logger.error("error starting {} container {} : {}",getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), containerId);
+                        return null;
+                    } else if(containerId.contains("\n") || containerId.isBlank()){
                         //assume the container started connected
                         //cannot shSync because connection is not ready...
                         rtrn = shell.commandStream;
