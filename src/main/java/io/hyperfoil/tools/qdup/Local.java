@@ -105,13 +105,14 @@ public class Local {
       } else if (!host.isLocal() && host.hasContainerId()){
          logger.info("Local.upload({},{}:{})", path, host.getSafeString(), destination);
          Host remoteHost = host.withoutContainer();
-         AbstractShell shell = AbstractShell.getShell(
+         ScheduledThreadPoolExecutor stpe = new ScheduledThreadPoolExecutor(1);
+         AbstractShell uploadShell = AbstractShell.getShell(
             remoteHost, 
             "",
-            new ScheduledThreadPoolExecutor(1), 
+            stpe,
             new SecretFilter(), 
             false);
-         String remoteDestination = shell.shSync("mktemp -d");
+         String remoteDestination = uploadShell.shSync("mktemp -d");
          boolean uploaded = upload(path,remoteDestination,remoteHost);
          if(!uploaded){
             logger.error("failed to upload "+path+" to remote host as part of upload to "+host);
@@ -136,10 +137,12 @@ public class Local {
             return false;
          }
          String mergedUpload = populated.stream().collect(Collectors.joining(" "));
-         String mergedResponse = shell.shSync(mergedUpload);
+         String mergedResponse = uploadShell.shSync(mergedUpload);
          //output
          //cleanup the folder we created on the remoteHost
-         String rmResponse = shell.shSync("rm -rf "+remoteDestination);
+         String rmResponse = uploadShell.shSync("rm -rf "+remoteDestination);
+         uploadShell.close();
+         stpe.shutdownNow();
          //
          return true;
       } else {
