@@ -105,16 +105,18 @@ public class Local {
       } else if (!host.isLocal() && host.hasContainerId()){
          logger.info("Local.upload({},{}:{})", path, host.getSafeString(), destination);
          Host remoteHost = host.withoutContainer();
+         ScheduledThreadPoolExecutor stpe = new ScheduledThreadPoolExecutor(1);
          AbstractShell shell = AbstractShell.getShell(
             remoteHost, 
             "",
-            new ScheduledThreadPoolExecutor(1), 
+            stpe,
             new SecretFilter(), 
             false);
          String remoteDestination = shell.shSync("mktemp -d");
          boolean uploaded = upload(path,remoteDestination,remoteHost);
          if(!uploaded){
             logger.error("failed to upload "+path+" to remote host as part of upload to "+host);
+            stpe.shutdownNow();
             return false;
          }
          File localFile = new File(path);
@@ -133,6 +135,7 @@ public class Local {
          List<String> populated = Cmd.populateList(json,host.getUpload()).stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
          if(Cmd.hasPatternReference(populated, StringUtil.PATTERN_PREFIX)){
             logger.error("failed to populate remote upload pattern: "+populated.stream().collect(Collectors.joining(" "))+"\nhost: "+remoteHost);
+            stpe.shutdownNow();
             return false;
          }
          String mergedUpload = populated.stream().collect(Collectors.joining(" "));
@@ -141,6 +144,7 @@ public class Local {
          //cleanup the folder we created on the remoteHost
          String rmResponse = shell.shSync("rm -rf "+remoteDestination);
          //
+         stpe.shutdownNow();
          return true;
       } else {
          logger.info("Local.upload({},{}:{})", path, host.getSafeString(), destination);
