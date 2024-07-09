@@ -49,6 +49,7 @@ public class Host {
     //worked on old fedora but not on fedora 39
     //public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "-q", "/dev/null","/bin/bash");
     public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "-q","-c","/bin/bash","/dev/null");
+    public static final List<String> LOCAL_MACOS_CONNECT_SHELL = Arrays.asList("script", "-q", "/dev/null", "/bin/bash");
     //LOCAL_EXEC uses System.getRuntime().exec(...)
     public static final List<String> LOCAL_LINUX_UPLOAD = Arrays.asList("cp","-r","${{source}}","${{destination}}");
     public static final List<String> LOCAL_LINUX_DOWNLOAD = Arrays.asList("cp","-r","${{source}}","${{destination}}");
@@ -284,7 +285,11 @@ public class Host {
             this.startContainer=Collections.EMPTY_LIST;
             this.startConnectedContainer=Collections.EMPTY_LIST;
             this.stopContainer=Collections.EMPTY_LIST;
-            this.connectShell= LOCAL_LINUX_CONNECT_SHELL;
+            if (System.getProperty("os.name").toUpperCase().contains("MAC")) {
+                this.connectShell = LOCAL_MACOS_CONNECT_SHELL;
+            } else {
+                this.connectShell = LOCAL_LINUX_CONNECT_SHELL;
+            }
             this.removeContainer=Collections.EMPTY_LIST;
             this.exec=Collections.EMPTY_LIST;//uses system.getRuntime().exec()
         }else{//ssh, remember when that was the only use case?
