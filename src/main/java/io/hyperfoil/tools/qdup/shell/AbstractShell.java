@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractShell {
 
-    public static final String PROMPT = "<_#%@_qdup_@%#_> "; // a string unlikely to appear in the output of any command
+    public static final String PROMPT = "<_#__qdup__#_> "; // a string unlikely to appear in the output of any command
     public static final int RECONNECT_RETRY_DELAY = 10_000;
     public static final int MAX_RECONNECT_ATTEMPTS = 10;
 
@@ -316,8 +316,12 @@ public abstract class AbstractShell {
                 acquired = true;
             }
         } catch (InterruptedException e) {
-            logger.error("Interrupted waiting for shSync " + command, e);
-            Thread.interrupted();
+            if(isReady()) {
+                logger.error("Interrupted waiting for shSync " + command, e);
+            }else{
+                //this is expected
+            }
+            Thread.currentThread().interrupt();
         } finally {
             removeShObserver(SH_BLOCK_CALLBACK);
         }
