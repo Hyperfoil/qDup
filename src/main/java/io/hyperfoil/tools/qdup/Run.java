@@ -550,6 +550,23 @@ public class Run implements Runnable, DispatchObserver {
             writeRunJson();
         }
     }
+    public boolean joinLatch(){
+        try {
+            runLatch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+        return true;
+    }
+    public boolean joinLatch(long timeout,TimeUnit unit){
+        try{
+            return runLatch.await(timeout,unit);
+        }catch (InterruptedException e){
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
     private boolean connectAll(List<Callable<Boolean>> toCall,int timeout){
         boolean ok = false;
         try {
