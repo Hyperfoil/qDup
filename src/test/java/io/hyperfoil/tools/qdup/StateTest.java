@@ -29,6 +29,21 @@ public class StateTest extends SshTestBase{
         assertTrue(found);
     }
     @Test
+    public void has_jsonpath_search_contains_found(){
+        State s = new State("");
+        s.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
+        boolean found = s.has("key[?(@.key contains \"uno\")]");
+        assertTrue(found);
+    }
+    @Test
+    public void get_jsonpath_search_contains_found(){
+        State s = new State("");
+        s.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
+
+        String found = s.get("key[?(@.key contains \"uno\")].value").toString();
+        assertEquals("one",found);
+    }
+    @Test
     public void has_jsonpath_search_missing(){
         State s = new State("");
         s.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
@@ -46,6 +61,39 @@ public class StateTest extends SshTestBase{
         State s = new State("");
         s.set("key",Json.fromString("[ {\"key\":\"uno-uno\",\"value\":\"one\"}, {\"key\":\"dos-dos\",\"value\":\"two\"}]"));
         Object found = s.get("key[?(@.key == \"uno-dos\")]");
+    }
+
+    @Test
+    public void set_state_contains(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",stream(""+
+                "scripts:",
+                "  buz:",
+                "  - set-state: RUN.found ${{response.items[?(@.name contains \"uno\" && @.name contains \"o-u\")]}}",
+                "hosts:",
+                "  local: " + getHost(),
+                "roles:",
+                "  doit:",
+                "    hosts: [local]",
+                "    setup-scripts: [buz]",
+                "states:",
+                "  response:",
+                "    items:",
+                "    - key: one",
+                "      name: uno-uno",
+                "    - key: two",
+                "      name: dos-dos"
+        )));
+        RunConfig config = builder.buildConfig(parser);
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+        assertTrue("state should have found\n"+config.getState().toJson().toString(2),config.getState().has("found"));
+        Object found = config.getState().get("found");
+        assertTrue(found instanceof Json);
+        Json json = (Json)found;
     }
 
 

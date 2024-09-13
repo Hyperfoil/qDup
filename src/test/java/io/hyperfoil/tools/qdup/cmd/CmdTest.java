@@ -222,6 +222,9 @@ public class CmdTest extends SshTestBase {
       State state = new State("");
       state.set("FOO", Json.fromString("[{\"key\":\"foo-bar\",\"value\":\"one\"},{\"key\":\"foo-biz\",\"value\":\"one\"}]"));
       String response = Cmd.populateStateVariables("${{FOO[?(@.key == \"foo-buz\")]}}",null,state,null,null);
+      //TODO do we want an empty array or to indicate the pattern failed to populate?
+      assertEquals("response should be an empty array","[]",response);
+
    }
 
    @Test

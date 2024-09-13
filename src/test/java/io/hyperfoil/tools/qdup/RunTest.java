@@ -1622,6 +1622,37 @@ public class RunTest extends SshTestBase {
 
    }
 
+   //uses timeout because this test prevents an infite loop that previously prevented system exit
+   @Test(timeout = 60_000)
+   public void abort_in_timer() {
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+
+      builder.loadYaml(parser.loadFile("json", stream("" +
+              "scripts:",
+              "  foo:",
+              "  - sh: sleep 120s",
+              "    timer:",
+              "      10s:",
+              "      - abort: too long",
+              "hosts:",
+              "  local: " + getHost(),
+              "roles:",
+              "  doit:",
+              "    hosts: [local]",
+              "    run-scripts: [foo]"
+      )));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+
+      doit.run();
+      dispatcher.shutdown();
+   }
+
+
    @Test(timeout = 45_000)
    public void abort_callsCleanup() {
       StringBuilder setup = new StringBuilder();

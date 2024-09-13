@@ -23,8 +23,8 @@ public class AbstractShellTest extends SshTestBase {
     }
 
     @Test
-    public void getShell_containerShell(){
-        Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
+    public void getShell_podman_containerShell(){
+        Host host = new Host("","",null,22,null,true,"podman","quay.io/fedora/fedora");
         AbstractShell shell = AbstractShell.getShell(host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),false);
         try{
             assertNotNull("shell should not be null",shell);

@@ -30,7 +30,7 @@ public class LocalShellTest extends SshTestBase {
         }
     }
     @Test
-    public void sh_rsync(){
+    public void shSync_rsync(){
         Host host = new Host();
         AbstractShell shell = new LocalShell(
                 host,
@@ -48,6 +48,25 @@ public class LocalShellTest extends SshTestBase {
 
         String exec = shell.shSync("rsync");
         assertFalse("rsync should be found by the local shell",exec.contains("command not found"));
+    }
+    @Test
+    public void shSync_podman(){
+        Host host = new Host();
+        AbstractShell shell = new LocalShell(
+                host,
+                "",
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+        );
+        boolean connected = shell.connect();
+        if(!connected){
+            fail("failed to connect shell");
+        }
+        assertTrue("shell should be open",shell.isOpen());
+        assertTrue("shell should be ready",shell.isReady());
+        String exec = shell.shSync("docker");
+        assertFalse("command should be found by the local shell: "+exec,exec.contains("command not found"));
     }
 
     @Test
