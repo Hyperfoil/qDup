@@ -8,6 +8,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -336,10 +337,18 @@ public class State {
                     currentKey = currentKey.substring(target.prefix.length());
                 }
                 rtrn = target.json.has(currentKey) ? target.json.get(currentKey) : Json.find(target.json,currentKey.startsWith("$") ? currentKey : "$."+currentKey);
+                //why was this part added? doesn't it incorrectly skip the filtering for valid filters that don't match?
+                //was this copied from has which needed this logic for ensuring jsonpaths exist?
                 if(rtrn == null && Json.isJsonSearchPath(currentKey)){
                     String keyPrefix = Json.getPreSearchPath(currentKey);
                     if(!keyPrefix.isBlank()){
-                        rtrn = Json.find(target.json,keyPrefix.startsWith("$") ? keyPrefix : "$." + keyPrefix);
+                        Object fnd =  Json.find(target.json,keyPrefix.startsWith("$") ? keyPrefix : "$." + keyPrefix);
+                        if(fnd != null){ //the search was valid but we didn't find anything
+                            rtrn = new Json(true); //is retuning an empty list the correct response for a filter miss?
+                            //from https://github.com/json-path/JsonPath
+                            //Indefinite paths always returns a list (as represented by current JsonProvider).
+                            //and using $( means they are indefined
+                        }
                     }
                 }
             } while (rtrn == null && (target = target.parent) != null);
