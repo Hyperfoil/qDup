@@ -48,7 +48,7 @@ public class Host {
 
     //worked on old fedora but not on fedora 39
     //public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "-q", "/dev/null","/bin/bash");
-    public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "-q","-c","/bin/bash","/dev/null");
+    public static final List<String> LOCAL_LINUX_CONNECT_SHELL = Arrays.asList("script", "--quiet","--command","/bin/bash","/dev/null");
     public static final List<String> LOCAL_MACOS_CONNECT_SHELL = Arrays.asList("script", "-q", "/dev/null", "/bin/bash");
     //LOCAL_EXEC uses System.getRuntime().exec(...)
     public static final List<String> LOCAL_LINUX_UPLOAD = Arrays.asList("cp","-r","${{source}}","${{destination}}");
