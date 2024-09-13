@@ -143,7 +143,6 @@ public class Local {
          //output
          //cleanup the folder we created on the remoteHost
          String rmResponse = shell.shSync("rm -rf "+remoteDestination);
-         //
          stpe.shutdownNow();
          return true;
       } else {
