@@ -110,6 +110,7 @@ public class Sh extends Cmd {
     @Override
     public void postRun(String output,Context context){
         String toLog = getLogOutput(output,context);
+        //if the remove shell has exit codes and the response came from the base shell
         if(context.getShell()!=null &&
                 context.getShell().isOpen() &&
                 /*SshSession.PROMPT.equals(getPreviousPrompt()) &&*/
@@ -118,16 +119,21 @@ public class Sh extends Cmd {
         {
             String response = context.getShell().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
             // ensure the output does not contain characters from other processes
-            while(!response.matches("\\d+")){
+            // this gets into a hot loop when ctrl+C the process
+            int retry = 0;
+            while(retry < 5 && !response.matches("\\d+") && !response.isBlank() && context.getShell().isReady() && !context.isAborted()){
                 response = context.getShell().shSync("echo $__qdup_ec;");
+                retry++;
             }
-            String pwd = context.getShell().shSync("pwd");
-            context.setCwd(pwd);
-            context.getCommandTimer().getJson().set("exit_code",response);
-            context.getCommandTimer().getJson().set("cwd",pwd);
-            context.getShell().shSync("(exit $__qdup_ec);");
-            context.getShell().flushAndResetBuffer();
-
+            if (!response.isBlank() && context.getShell().isReady() && !context.isAborted()) {
+                //trying to only run these if the previous shSync had a result to avoid deadlocking
+                String pwd = context.getShell().shSync("pwd");
+                context.setCwd(pwd);
+                context.getCommandTimer().getJson().set("exit_code", response);
+                context.getCommandTimer().getJson().set("cwd", pwd);
+                context.getShell().shSync("(exit $__qdup_ec);");
+                context.getShell().flushAndResetBuffer();
+            }
             //not working in lab :(
             if(toLog != null && !toLog.isBlank()) {
                 if ("0".equals(response)) {
