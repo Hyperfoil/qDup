@@ -17,6 +17,7 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
+import sun.misc.Signal;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
@@ -63,7 +64,6 @@ public class QDup {
     private RunConfig config;
 
     private Parser yamlParser;
-
 
     public boolean checkExitCode(){return exitCode;}
 
@@ -646,19 +646,19 @@ public class QDup {
                     logger.info("shell exit code checks enabled");
                 }
 
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                Signal.handle(new Signal("INT"),(signal)->{
                     if (!run.isAborted() && dispatcher.isRunning() && !dispatcher.isStopping()) {
                         run.abort(false);
                         Optional<Thread> mainThread = Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals("main")).findFirst();
                         if (mainThread.isPresent()) {
-                            try {
-                                mainThread.get().join();
-                            } catch (InterruptedException e) {
-                                logger.warn("Error waiting the termination of main thread", e);
-                            }
+                            run.joinLatch(120,TimeUnit.SECONDS);
                         }
+                    } else if (Stage.Cleanup.equals(run.getStage()) && dispatcher.isRunning() && !dispatcher.isStopping()){
+                        run.abort(true);
                     }
-                }, "shutdown-abort"));
+                });
+                //Is this what is causing ctrl+C to hang?
+                //removing this prevnets the hang when using ctrl+C but it also prevents cleanup
 
                 Boolean startJsonServer = !Boolean.parseBoolean(System.getProperty("disableRestApi", "false"));
 
