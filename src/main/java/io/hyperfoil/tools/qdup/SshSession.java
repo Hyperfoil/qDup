@@ -791,7 +791,7 @@ public class SshSession {
             blockingSemaphore.acquire();//released in the observer
         } catch (InterruptedException e) {
             logger.error("Interrupted waiting for shSync " + command, e);
-            Thread.interrupted();
+            Thread.currentThread().interrupt();
         } finally {
             removeShObserver(SH_BLOCK_CALLBACK);
         }
