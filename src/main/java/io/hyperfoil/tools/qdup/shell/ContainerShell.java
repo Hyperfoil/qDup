@@ -96,7 +96,7 @@ public class ContainerShell extends AbstractShell{
                     //TODO how to fail when container start fails
                 }else{
                     containerId = shell.shSync(populatedCommand,null,connectTimeoutSeconds);
-                    if(containerId.contains("Error:") || containerId.isBlank()){
+                    if(containerId.contains("Error:") || containerId.contains("command not found")){
                         //there was an error reported from container runtime
                         logger.error("error starting {} container {} : {}",getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), containerId);
                         return null;
@@ -229,6 +229,11 @@ public class ContainerShell extends AbstractShell{
             if(output!=null && output.isEmpty()){//output is empty when timeout triggers
                 output = getSessionStreams().currentOutput();
                 rtrn = shell.commandStream;
+            }
+            if(output.contains("Error:") || output.isBlank() || output.contains("command not found")){
+                //there was an error reported from container runtime
+                logger.error("error starting {} container {} : {}",getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), output);
+                rtrn = null;
             }
         }
         return rtrn;
