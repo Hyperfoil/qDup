@@ -43,6 +43,7 @@ public class QDup {
     private final Properties removeStateProperties;
     private final String trace;
     private final String traceName;
+    private final boolean streamLogging;
 
     private String outputPath;
     private String version;
@@ -331,6 +332,13 @@ public class QDup {
                     .build()
         );
 
+        options.addOption(
+                Option.builder()
+                        .longOpt(Globals.STREAM_LOGGING)
+                        .desc("log sh output as each line is available")
+                        .build()
+        );
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine commandLine = null;
@@ -400,6 +408,7 @@ public class QDup {
         traceName = commandLine.getOptionValue("traceName",""+uid);
 
         skipStages = commandLine.hasOption("skip-stages") ? Arrays.asList(commandLine.getOptionValues("skip-stages")).stream().map(str->StringUtil.getEnum(str,Stage.class,Stage.Invalid)).collect(Collectors.toList()) : Collections.EMPTY_LIST;
+        streamLogging = commandLine.hasOption(Globals.STREAM_LOGGING);
 
         if (commandLine.hasOption("basePath")) {
             outputPath = commandLine.getOptionValue("basePath") + "/" + uid;
@@ -578,6 +587,8 @@ public class QDup {
             getSkipStages().forEach(runConfigBuilder::addSkipStage);
         }
 
+        runConfigBuilder.setStreamLogging(streamLogging);
+
         config = runConfigBuilder.buildConfig(yamlParser);
         if (isTest()) {
             //logger.info(config.debug());
@@ -644,6 +655,9 @@ public class QDup {
                 logger.info("output path = " + run.getOutputPath());
                 if(checkExitCode()){
                     logger.info("shell exit code checks enabled");
+                }
+                if(config.isStreamLogging()){
+                    logger.info("stream logging enabled");
                 }
 
                 Signal.handle(new Signal("INT"),(signal)->{

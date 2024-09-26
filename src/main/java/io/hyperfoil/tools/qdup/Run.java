@@ -113,6 +113,7 @@ public class Run implements Runnable, DispatchObserver {
     FileAppender logAppender;
     private List<Stage> skipStages;
 
+
     public Run(String outputPath,RunConfig config,Dispatcher dispatcher){
         if(config==null || dispatcher==null){
             throw new NullPointerException("Run config and dispatcher cannot be null");
@@ -144,6 +145,13 @@ public class Run implements Runnable, DispatchObserver {
         });
         this.pendingDownloads = new HashedSets<>();
         this.pendingDeletes = new HashedSets<>();
+        updateCoordinatedSettings();
+    }
+
+    private void updateCoordinatedSettings(){
+        if(config.isStreamLogging()){
+            coordinator.setSetting(Globals.STREAM_LOGGING,true);
+        }
     }
 
     private boolean removeLogger(){
@@ -777,6 +785,13 @@ public class Run implements Runnable, DispatchObserver {
                                    setup,
                                    (Boolean)config.getSetting("check-exit-code",false)
                            );
+                           if(config.isStreamLogging()){
+                               shell.addLineObserver("stream",(line)->{
+                                   ensureLogger();
+                                    scriptContext.log(line);
+                               });
+                           }
+
                            getDispatcher().addScriptContext(scriptContext);
                            return shell.isOpen();
                        }
@@ -845,7 +860,12 @@ public class Run implements Runnable, DispatchObserver {
                                         script,
                                         (Boolean)config.getSetting("check-exit-code",false)
                                 );
-
+                                if(config.isStreamLogging()){
+                                    shell.addLineObserver("stream",(line)->{
+                                        ensureLogger();
+                                        scriptContext.log(line);
+                                    });
+                                }
                                 getDispatcher().addScriptContext(scriptContext);
                                 boolean rtrn = shell.isOpen();
                                 timer.start("waiting for start");
@@ -936,6 +956,13 @@ public class Run implements Runnable, DispatchObserver {
                                     cleanup,
                                     (Boolean)config.getSetting("check-exit-code",false)
                             );
+                            if(config.isStreamLogging()){
+                                shell.addLineObserver("stream",(line)->{
+                                    ensureLogger();
+                                    scriptContext.log(line);
+                                });
+                            }
+
                             getDispatcher().addScriptContext(scriptContext);
                             return shell.isOpen();
                         }

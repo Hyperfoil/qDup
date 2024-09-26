@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.Script;
@@ -109,6 +110,9 @@ public class Sh extends Cmd {
 
     @Override
     public void postRun(String output,Context context){
+        if(context.getCoordinator().getSetting(Globals.STREAM_LOGGING,false)){
+            return;//stream logging takes care of output for this command
+        }
         String toLog = getLogOutput(output,context);
         //if the remove shell has exit codes and the response came from the base shell
         if(context.getShell()!=null &&

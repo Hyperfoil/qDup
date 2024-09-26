@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 
 public class Globals {
 
+    public static final String STREAM_LOGGING = "stream-logging";
+
     private static final XLogger logger = XLoggerFactory.getXLogger(Globals.class);
 
     private final List<JsSnippet> jsSnippets;

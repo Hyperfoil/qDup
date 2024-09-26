@@ -83,7 +83,7 @@ public class RunConfigBuilder {
    private List<JsSnippet> jsSnippets;
    private List<String> errors;
    private List<Stage> skipStages;
-
+   private boolean streamLogging = false;
    private boolean isValid = false;
 
    public RunConfigBuilder() {
@@ -129,8 +129,12 @@ public class RunConfigBuilder {
          skipStages.add(stage);
       }
    }
-
-
+   public void setStreamLogging(Boolean streamLogging){
+      this.streamLogging = streamLogging;
+   }
+   public boolean isStreamLogging(){
+      return streamLogging;
+   }
    public int errorCount() {
       return errors.size();
    }
@@ -645,7 +649,8 @@ public class RunConfigBuilder {
          getTracePatterns(),
          skipStages,
          settings,
-         jsSnippets
+         jsSnippets,
+         streamLogging
       );
       if(yamlParser.isAbortOnExitCode()){
          rtrn.getSettings().set("check-exit-code",true);

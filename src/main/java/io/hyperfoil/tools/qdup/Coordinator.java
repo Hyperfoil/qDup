@@ -78,6 +78,16 @@ public class Coordinator {
         this.globals = globals;
     }
 
+    public boolean hasSetting(String key){
+        return globals.hasSetting(key);
+    }
+    public void setSetting(String key,Object value){
+        globals.addSetting(key,value);
+    }
+    public <T> T getSetting(String key, T defaultValue){
+        return globals.getSetting(key,defaultValue);
+    }
+
     public List<Waiter> ensureWaitFor(String name){
         waitFors.putIfAbsent(name,Collections.synchronizedList(new LinkedList<>()));
         return waitFors.get(name);
@@ -240,5 +250,6 @@ public class Coordinator {
     public List<String> getJsSnippetContents(){
         return globals.getJsSnippetsContents();
     }
+
 
 }

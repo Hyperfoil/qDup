@@ -85,6 +85,7 @@ public class RunConfig {
     private Set<String> tracePatterns;
 
     private int timeout = 10;
+    private boolean streamLogging;
 
     protected RunConfig(
             String name,
@@ -100,7 +101,8 @@ public class RunConfig {
             Set<String> tracePatterns,
             List<Stage> skipStages,
             Json settings,
-            List<JsSnippet> jsSnippets){
+            List<JsSnippet> jsSnippets,
+            boolean streamLogging){
         this.name = name;
         this.errors = errors;
         this.scripts = scripts;
@@ -119,8 +121,10 @@ public class RunConfig {
         this.settings.merge(settings);
 
         this.snippets = jsSnippets;
+        this.streamLogging = streamLogging;
     }
 
+    public boolean isStreamLogging(){return streamLogging;}
     public boolean hasSkipStages(){return !skipStages.isEmpty();}
     public List<Stage> getSkipStages(){return skipStages;}
 
