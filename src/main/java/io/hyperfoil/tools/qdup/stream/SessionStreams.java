@@ -1,5 +1,7 @@
 package io.hyperfoil.tools.qdup.stream;
 
+import io.hyperfoil.tools.yaup.json.Json;
+
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -105,7 +107,23 @@ public class SessionStreams extends MultiStream {
       super.write(b,off,len);
       //escapeFilteredStream.write(b,off,len);
    }
+   public String jsonBuffers(){
+      Json rtrn = new Json();
+      rtrn.set("escapeFiltered",new Json());
+      rtrn.getJson("escapeFiltered").set("buffer",escapeFilteredStream.getBuffered().replaceAll("[\r\n]","\\\\n"));
+      rtrn.getJson("escapeFiltered").set("suffixStream",new Json());
+      rtrn.getJson("escapeFiltered").getJson("suffixStream").set("buffer",suffixStream.getBuffered().replaceAll("[\r\n]","\\\\n"));
+      rtrn.getJson("escapeFiltered").getJson("suffixStream").set("filteredStream",new Json());
+      rtrn.getJson("escapeFiltered").getJson("suffixStream").getJson("filteredStream").set("buffer",filteredStream.getBuffered().replaceAll("[\r\n]","\\\\n"));
+      rtrn.getJson("escapeFiltered").getJson("suffixStream").getJson("filteredStream").set("lineEmitting",new Json());
+      rtrn.getJson("escapeFiltered").getJson("suffixStream").getJson("filteredStream").getJson("lineEmitting").set("buffer",lineEmittingStream.getBuffered().replaceAll("[\r\n]","\\\\n"));
+      rtrn.getJson("escapeFiltered").getJson("suffixStream").getJson("filteredStream").set("shStream",new Json());
+      rtrn.getJson("escapeFiltered").getJson("suffixStream").getJson("filteredStream").getJson("shStream").set("buffer",shStream.toString().replaceAll("[\r\n]","\\\\n"));
+      rtrn.getJson("escapeFiltered").getJson("suffixStream").set("promptStream",new Json());
+      rtrn.getJson("escapeFiltered").getJson("suffixStream").getJson("promptStream").set("buffer",promptStream.getBuffered().replaceAll("[\r\n]","\\\\n"));
 
+      return rtrn.toString();
+   }
    public String printBuffers(){
       StringBuilder sb = new StringBuilder();
       sb.append(getName()+"\n");

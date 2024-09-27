@@ -287,6 +287,15 @@ public class JsonServer implements RunObserver, ContextObserver {
               e.printStackTrace();
            }
         });
+        router.get("/session/:sessionId/buffer").handler(rc->{
+            String cmdUid = rc.request().getParam("sessionId");
+            Context found = dispatcher.getContext(cmdUid);
+            if(found != null){
+                rc.response().setStatusCode(200).end(found.getShell().bufferJson());
+            }else{
+                rc.response().setStatusCode(400).end("could not find session "+cmdUid);
+            }
+        });
         router.post("/session/:sessionId/parse").handler(rc->{
             String cmdUid = rc.request().getParam("sessionId");
             Context found = dispatcher.getContext(cmdUid);

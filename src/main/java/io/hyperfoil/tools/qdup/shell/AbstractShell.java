@@ -658,6 +658,9 @@ public abstract class AbstractShell {
         }
     }
 
+    public String bufferJson(){
+        return sessionStreams.jsonBuffers();
+    }
     public String peekOutput() {
         return sessionStreams.currentOutput();
     }
