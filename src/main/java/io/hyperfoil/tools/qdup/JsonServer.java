@@ -300,7 +300,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             String cmdUid = rc.request().getParam("sessionId");
             Context found = dispatcher.getContext(cmdUid);
             if(found != null) {
-                String body = rc.getBodyAsString();
+                String body = rc.body().asString();
                 ParseCmd toRun = new ParseCmd(body);
 
                 State state = new State("");
@@ -314,7 +314,7 @@ public class JsonServer implements RunObserver, ContextObserver {
                 String currentOutput = found.getShell().peekOutput();
                 toRun.run(currentOutput,spyContext);
 
-                if(spyContext.getErrors().size()>0){
+                if(!spyContext.getErrors().isEmpty()){
                     spyContext.getErrors().forEach(err->response.add("errors",err));
                     rc.response().end(response.toString());
                 } else if(spyContext.hasSkip()){
