@@ -160,7 +160,7 @@ public class Dispatcher {
             entry.set("name",Cmd.populateStateVariables(currentCmd.toString(),currentCmd,context));
             entry.set("host",context.getShell().getHost().getSafeString());
             entry.set("uid",currentCmd.getUid());
-            entry.set("contextId",context.getContextId());
+            entry.set("sessionId",context.getContextId());
             entry.set("script",rootCmd.getUid()+":"+rootCmd.toString());
             entry.set("cwd",context.getCwd());
             if(currentCmd instanceof Sh){
