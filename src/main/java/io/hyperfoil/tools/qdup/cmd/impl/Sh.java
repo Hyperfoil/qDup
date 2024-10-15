@@ -114,10 +114,9 @@ public class Sh extends Cmd {
 
     @Override
     public void postRun(String output,Context context){
-        if(context.getCoordinator().getSetting(Globals.STREAM_LOGGING,false)){
-            return;//stream logging takes care of output for this command
-        }
-        String toLog = getLogOutput(output,context);
+
+
+
         //if the remove shell has exit codes and the response came from the base shell
         if(context.getShell()!=null &&
                 context.getShell().isOpen() &&
@@ -137,39 +136,48 @@ public class Sh extends Cmd {
                 //trying to only run these if the previous shSync had a result to avoid deadlocking
                 String pwd = context.getShell().shSync("pwd");
                 context.setCwd(pwd);
-                context.getCommandTimer().getJson().set("exit_code", response);
-                context.getCommandTimer().getJson().set("cwd", pwd);
+                context.getCommandTimer().getData().set("exit_code", response);
+                //not including this in the profile data atm
+                //context.getCommandTimer().getData().set("cwd", pwd);
+                //restore the exit code for any user exit code checking in their script
                 context.getShell().shSync("(exit $__qdup_ec);");
                 context.getShell().flushAndResetBuffer();
             }
-            //not working in lab :(
-            if(toLog != null && !toLog.isBlank()) {
-                if ("0".equals(response)) {
-                    context.log(toLog);
-                } else {
-                    context.error(toLog);
-                    if ( shouldCheckExit(context) ) {
-                        boolean couldBeCtrlC = walk(CmdLocation.createTmp(), (cmd) -> {
-                            return cmd instanceof CtrlC;
-                        }).stream().anyMatch(Boolean::booleanValue);
-                        if( !couldBeCtrlC) {
-                            Cmd cmd = this;
-                            StringBuilder stack = new StringBuilder();
-                            while(cmd!=null){
-                                if( !(cmd instanceof ScriptCmd) ){
-                                    stack.append(System.lineSeparator());
-                                    stack.append((cmd instanceof Script ? "script: ":"") + cmd.toString());
-                                }
-                                cmd = cmd.getParent();
-                            }
-
-                            context.error("aborting run due to exit code "+response+"\n  host: "+context.getShell().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
-                            context.abort(false);
-                        }
+            //log the output if not using stream logging
+            if(!context.getCoordinator().getSetting(Globals.STREAM_LOGGING,false)){
+                String toLog = getLogOutput(output,context);
+                if (toLog != null && !toLog.isBlank()) {
+                    if ("0".equals(response)) {
+                        context.log(toLog);
+                    } else {
+                        context.error(toLog);
                     }
                 }
             }
+            //abort on non-zero exit if needed
+            if(!"0".equals(response) && shouldCheckExit(context)){
+                    boolean couldBeCtrlC = walk(CmdLocation.createTmp(), (cmd) -> {
+                        return cmd instanceof CtrlC;
+                    }).stream().anyMatch(Boolean::booleanValue);
+                    if( !couldBeCtrlC) {
+                        Cmd cmd = this;
+                        StringBuilder stack = new StringBuilder();
+                        while(cmd!=null){
+                            if( !(cmd instanceof ScriptCmd) ){
+                                stack.append(System.lineSeparator());
+                                stack.append((cmd instanceof Script ? "script: ":"") + cmd.toString());
+                            }
+                            cmd = cmd.getParent();
+                        }
+
+                        context.error("aborting run due to exit code "+response+"\n  host: "+context.getShell().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
+                        context.abort(false);
+                    }
+            }
+
         }else{
+            //duplicate getting toLog to avoid the overhead if not needed
+            String toLog = getLogOutput(output,context);
             context.log(toLog);
         }
     }
