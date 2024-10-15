@@ -95,6 +95,10 @@ public class Sh extends Cmd {
                     },
                     populated
             );
+            //log the command if using stream logging
+            if(context.getCoordinator().getSetting(Globals.STREAM_LOGGING,false)){
+                context.log(populatedCommand);
+            }
         }
         context.getCommandTimer().start("await-callback");
     }
