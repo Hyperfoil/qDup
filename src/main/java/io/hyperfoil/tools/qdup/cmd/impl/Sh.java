@@ -119,10 +119,10 @@ public class Sh extends Cmd {
 
         //if the remove shell has exit codes and the response came from the base shell
         if(context.getShell()!=null &&
-                context.getShell().isOpen() &&
-                /*SshSession.PROMPT.equals(getPreviousPrompt()) &&*/
-                context.getShell().isPromptShell(getPreviousPrompt()) &&
-                context.getShell().getHost().isShell())
+            context.getShell().isOpen() &&
+            /*SshSession.PROMPT.equals(getPreviousPrompt()) &&*/
+            context.getShell().isPromptShell(getPreviousPrompt()) &&
+            context.getShell().getHost().isShell())
         {
             String response = context.getShell().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
             // ensure the output does not contain characters from other processes
@@ -136,7 +136,17 @@ public class Sh extends Cmd {
                 //trying to only run these if the previous shSync had a result to avoid deadlocking
                 String pwd = context.getShell().shSync("pwd");
                 context.setCwd(pwd);
-                context.getCommandTimer().getData().set("exit_code", response);
+                if(response.matches("\\d+")){
+                    try {
+                        context.getCommandTimer().getData().set("exit_code", Integer.parseInt(response));
+                    }catch (NumberFormatException e){
+                        //this really shouldn't happen but an un-caught exception would be catastrophic
+                        context.getCommandTimer().getData().set("exit_code", response);
+                    }
+                } else {
+                    //well this would be a surprise but craziness can happen
+                    context.getCommandTimer().getData().set("exit_code", response);
+                }
                 //not including this in the profile data atm
                 //context.getCommandTimer().getData().set("cwd", pwd);
                 //restore the exit code for any user exit code checking in their script
