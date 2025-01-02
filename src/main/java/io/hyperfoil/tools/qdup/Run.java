@@ -838,46 +838,51 @@ public class Run implements Runnable, DispatchObserver {
                         }
                         String setupCommand = env.getDiff().getCommand();
                         connectSessions.add(() -> {
-                            String name = script.getName()+":"+script.getUid()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
-                            timer.start("connect:" + host.toString());
-                            AbstractShell shell = AbstractShell.getShell(
-                                    host,
-                                    setupCommand,
-                                    getDispatcher().getScheduler(),
-                                    getConfig().getState().getSecretFilter(),
-                                    isTrace(name)
-                            );
-                            shell.setName(name);
-                            if (shell.isReady()) {
-                                //shell.shSync(setupCommand); //moved into getShell
-                                //session.setDelay(SuffixStream.NO_DELAY);
-                                timer.start("context:" + host.toString());
-                                ScriptContext scriptContext = new ScriptContext(
-                                        shell,
-                                        scriptState,
-                                        this,
-                                        timer,
-                                        script,
-                                        (Boolean)config.getSetting("check-exit-code",false)
+                            try {
+                                String name = script.getName()+":"+script.getUid()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
+                                timer.start("connect:" + host.toString());
+                                AbstractShell shell = AbstractShell.getShell(
+                                        host,
+                                        setupCommand,
+                                        getDispatcher().getScheduler(),
+                                        getConfig().getState().getSecretFilter(),
+                                        isTrace(name)
                                 );
-                                if(config.isStreamLogging()){
-                                    shell.addLineObserver("stream",(line)->{
-                                        ensureLogger();
-                                        scriptContext.log(line);
-                                    });
+                                shell.setName(name);
+                                boolean ready = shell.isReady();
+                                if (ready) {
+                                    //shell.shSync(setupCommand); //moved into getShell
+                                    //session.setDelay(SuffixStream.NO_DELAY);
+                                    timer.start("context:" + host.toString());
+                                    ScriptContext scriptContext = new ScriptContext(
+                                            shell,
+                                            scriptState,
+                                            this,
+                                            timer,
+                                            script,
+                                            (Boolean)config.getSetting("check-exit-code",false)
+                                    );
+                                    if(config.isStreamLogging()){
+                                        shell.addLineObserver("stream",(line)->{
+                                            ensureLogger();
+                                            scriptContext.log(line);
+                                        });
+                                    }
+                                    getDispatcher().addScriptContext(scriptContext);
+                                    boolean rtrn = shell.isOpen();
+                                    timer.start("waiting for start");
+                                    return rtrn;
+                                } else {
+                                    stateLogger.error("run failed to connect "+host.getSafeString()
+                                                    +(host.hasPassword() ?
+                                                    ", verify ssh works with the provided username and password" :
+                                                    ", verify password-less ssh works with the selected keys"
+                                            )
+                                    );
+                                    shell.close();
+                                    return false;
                                 }
-                                getDispatcher().addScriptContext(scriptContext);
-                                boolean rtrn = shell.isOpen();
-                                timer.start("waiting for start");
-                                return rtrn;
-                            } else {
-                                logger.error("run failed to connect "+host.getSafeString()
-                                        +(host.hasPassword() ?
-                                            ", verify ssh works with the provided username and password" :
-                                            ", verify password-less ssh works with the selected keys"
-                                        )
-                                );
-                                shell.close();
+                            } catch (Exception e) {
                                 return false;
                             }
                         });
