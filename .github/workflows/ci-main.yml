@@ -46,12 +46,12 @@ jobs:
         run: mvn --version
       - name: Build
         run: |
-          mvn clean install -DskipTests
+          mvn clean install -DskipTests --no-transfer-progress
       - name: Tar Maven Repo
         shell: bash
         run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven Repo
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: maven-repo
           path: maven-repo.tgz
@@ -75,7 +75,7 @@ jobs:
       - name: Maven Version
         run: mvn --version
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4
         with:
           name: maven-repo
           path: .
@@ -84,11 +84,18 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build
         run: |
-          ./mvnw clean test
-      - name: Upload artifact for failed workflow
-        if: failure()
-        uses: actions/upload-artifact@v2
+          ./mvnw clean test --no-transfer-progress
+      - name: Print JVM Thread Dumps When Cancelled
+        if: cancelled()
+        run: |
+          for jvm_pid in $(jps -q -J-XX:+PerfDisableSharedMem); do
+            jcmd $jvm_pid Thread.print
+          done
+      - name: Upload logs for failed/cancelled workflow
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
         with:
-          name: test logs
+          name: logs
           path: |
             */target/surefire-reports/*
+            /tmp/qdup*

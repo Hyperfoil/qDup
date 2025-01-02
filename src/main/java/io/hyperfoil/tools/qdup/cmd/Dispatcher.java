@@ -185,16 +185,16 @@ public class Dispatcher {
                     AtomicInteger count = new AtomicInteger(0);
                     @Override
                     public Thread newThread(Runnable runnable) {
-                        Thread rtrn = new Thread(runnable,"execute-"+count.getAndAdd(1));
+                        Thread rtrn = new Thread(runnable,"qDup-execute-"+count.getAndAdd(1));
                         rtrn.setUncaughtExceptionHandler(DefaultUncaughtExceptionHandler);
                         return rtrn;
                     }
                 }),
-                new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors()/2,new ThreadFactory() {
+                new ScheduledThreadPoolExecutor(getMinimumScheduleCorePoolSize(),new ThreadFactory() {
                     AtomicInteger count = new AtomicInteger(0);
                     @Override
                     public Thread newThread(Runnable runnable) {
-                        return new Thread(runnable,"schedule-"+count.getAndAdd(1));
+                        return new Thread(runnable,"qDup-schedule-"+count.getAndAdd(1));
                     }
                 }),
                 true
@@ -472,6 +472,17 @@ public class Dispatcher {
             });
         }else if ( onlyWaiters() ){
             stop();
+        }
+    }
+    /*
+     * See: https://github.com/Hyperfoil/qDup/issues/229
+     */
+    private static int getMinimumScheduleCorePoolSize() {
+        int cores = Runtime.getRuntime().availableProcessors() / 2;
+        if (cores < 3) {
+            return 3;
+        } else {
+            return cores;
         }
     }
 }
