@@ -164,7 +164,7 @@ public class SshTestBase {
            .withDockerfileFromBuilder(builder ->
               builder
                  //.from("alpine:3.2")
-                 .from("ubuntu:23.04")
+                 .from("mirror.gcr.io/library/ubuntu:24.10")
 //                 .from("fedora:35")
                  .run("apt-get update && apt-get install -y openssh-server openssh-client rsync sudo curl && apt-get clean")
 //                      .run("apt-get install -y apt-transport-https")
