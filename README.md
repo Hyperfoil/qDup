@@ -25,7 +25,7 @@ See [FAQ](./docs/FAQ.md) for frequently asked questions.
 
 qDup builds to a single executable jar that includes all its dependencies using [Apache Maven](http://maven.apache.org/).
 
-qDup requires [Java 11](https://adoptopenjdk.net/) or higher.
+qDup requires [Java 17](https://adoptopenjdk.net/) or higher.
 
 ```sh
 mvn clean package
