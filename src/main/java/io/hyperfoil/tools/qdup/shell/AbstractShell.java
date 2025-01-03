@@ -605,6 +605,9 @@ public abstract class AbstractShell {
         shObservers.forEach((name,consumer)->{
             int v = c.getAndIncrement();
             logger.info("consumer.accept: {}x", v);
+            if (v == 15) {
+                logger.info("{}={}", name, output);
+            }
             consumer.accept(output,promptName);
             logger.info("consumer.accept: {}x", v);
         });
