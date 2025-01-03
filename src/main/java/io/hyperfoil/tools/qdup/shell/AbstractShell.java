@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiConsumer;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractShell {
 
+    private static final AtomicInteger c = new AtomicInteger();
     public static final String PROMPT = "<_#__qdup__#_> "; // a string unlikely to appear in the output of any command
     public static final int RECONNECT_RETRY_DELAY = 10_000;
     public static final int MAX_RECONNECT_ATTEMPTS = 10;
@@ -601,7 +603,10 @@ public abstract class AbstractShell {
 
     private void shObservers(String output,String promptName) {
         shObservers.forEach((name,consumer)->{
+            int v = c.getAndIncrement();
+            logger.info("consumer.accept: {}x", v);
             consumer.accept(output,promptName);
+            logger.info("consumer.accept: {}x", v);
         });
     }
     public int permits() {
