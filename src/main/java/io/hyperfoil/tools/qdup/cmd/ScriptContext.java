@@ -329,6 +329,7 @@ public class ScriptContext implements Context, Runnable{
         getContextTimer().start("next");
         clearTimers();
         Cmd cmd = getCurrentCmd();
+        logger.info("cmd to execute: {}", cmd.toString());
         if(!signalCmds.isEmpty()){
             signalCmds.forEach((name,onsignal)->{
                 getCoordinator().removeWaiter(name,onsignal);
