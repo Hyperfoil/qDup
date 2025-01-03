@@ -329,19 +329,32 @@ public class ScriptContext implements Context, Runnable{
         getContextTimer().start("next");
         clearTimers();
         Cmd cmd = getCurrentCmd();
+        logger.info("cmd to execute: {}", cmd.toString());
         if(!signalCmds.isEmpty()){
             signalCmds.forEach((name,onsignal)->{
                 getCoordinator().removeWaiter(name,onsignal);
             });
             signalCmds.clear();
         }
+        if (cmd.toString().contains("tail")) {
+            logger.info("before observerPreNext: {}", cmd.toString());
+        }
         observerPreNext(cmd,output);
+        if (cmd.toString().contains("tail")) {
+            logger.info("after observerPreNext: {}", cmd.toString());
+        }
         if(cmd!=null) {
             if(cmd.hasWatchers()){
                 closeLineQueue();
             }
             cmd.setOutput(output);
+            if (cmd.toString().contains("tail")) {
+                logger.info("before postRun: {}", cmd.toString());
+            }
             cmd.postRun(output,this);
+            if (cmd.toString().contains("tail")) {
+                logger.info("after postRun: {}", cmd.toString());
+            }
             Cmd toCall = cmd.getNext();
             boolean changed = setCurrentCmd(cmd,toCall);
             if(changed) {
