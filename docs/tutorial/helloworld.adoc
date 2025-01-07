@@ -9,15 +9,17 @@ qDup is distributed as an executable jar (Java's version of a zip). Download the
 == YAML script
 qDup scripts use are saved as yaml. We can explore the yaml structure in later tutorials.
 Use the following bash command to create a test yaml file.
+
+The `$USER` variable will be replaced by the output of `echo $USER`. You can check by inspecting the yaml file content.
 ```
-#> cat > helloworld.yaml << 'EOF'
+#> cat <<EOF > helloworld.yaml
 scripts:
     tryme:
     - sh: whoami
     - sh: date
     - sh: echo ${{message}}
 hosts:
-    server: testuser@localhost
+    server: $USER@localhost
 roles:
     test:
         hosts:
@@ -30,48 +32,48 @@ EOF
 ```
 
 == Run qDup
-```
-#> java -jar qDup-0.6.15-uber.jar helloworld.yaml
-22:02:13.744 Running qDup version 0.6.15
-22:02:13.745 output path = /tmp/20221005_220213
-22:02:13.912 json server listening at wreicher.users.ipa.redhat.com:31337
-22:02:14.640 starting 1 scripts
-22:02:14.648 tryme:14@localhost:script-cmd: tryme
-22:02:14.650 tryme:14@localhost:tryme
-22:02:15.079 tryme:14@localhost:whoami
-testuser
-22:02:15.514 tryme:14@localhost:date
-Wed 05 Oct 2022 10:02:15 PM EDT
-22:02:15.971 tryme:14@localhost:echo Hello, qDup!
-Hello, qDup!
-22:02:15.994 run-1665021733656 -> /tmp/20221005_220213.queueCleanupScripts
-Finished in 02.046 at /tmp/20221005_220213
-```
 
-If you followed the previous link:./prerequisites.adoc[prerequisites] tutorial and create a new identify file name `id_qdup` then we need to tell qDup to use that instead of the default identify file.
+If you followed the previous link:./prerequisites.adoc[prerequisites] tutorial and create a new identify file name `qdup` then we need to tell qDup to use that instead of the default identify file.
 ```
-#> java -jar qDup-0.6.15-uber.jar -i ~/.ssh/id_qdup helloworld.yaml
+#> java -jar qDup-0.8.5-uber.jar -i ~/.ssh/qdup helloworld.yaml
+
+13:45:49.696 Running qDup version 0.8.5 @ d66bc67
+13:45:49.697 output path = /tmp/20250107_134548
+13:45:49.697 shell exit code checks enabled
+13:45:49.822 json server listening at user-host:31337
+13:45:51.474 starting 1 scripts
+13:45:51.477 tryme:20@localhost: script-cmd: tryme
+13:45:51.478 tryme:20@localhost: tryme
+13:45:51.891 tryme:20@localhost: whoami
+testuser
+13:45:52.304 tryme:20@localhost: date
+Tue Jan  7 01:45:51 PM -03 2025
+13:45:52.717 tryme:20@localhost: echo Hello, qDup!
+Hello, qDup!
+Finished in 02.885 at /tmp/20250107_134548
+
 ```
 
 == Changing the greeting
 
 The `- sh: echo ${{message}}` command uses pattern substitution. qDup uses the `states` value for `message` but we can change that when running qDup by passing in a different value for `message` through the command line.
 ```
-#> java -jar qDup-0.6.15-uber.jar -S message="howdy, qDup" helloworld.yaml
-22:03:16.321 Running qDup version 0.6.15
-22:03:16.322 output path = /tmp/20221005_220316
-22:03:16.483 json server listening at wreicher.users.ipa.redhat.com:31337
-22:03:17.233 starting 1 scripts
-22:03:17.248 tryme:14@localhost:script-cmd: tryme
-22:03:17.253 tryme:14@localhost:tryme
-22:03:17.684 tryme:14@localhost:whoami
+#> java -jar qDup-0.8.5-uber.jar -i ~/.ssh/qdup -S message="howdy, qDup" helloworld.yaml
+
+13:48:21.077 Running qDup version 0.8.5 @ d66bc67
+13:48:21.078 output path = /tmp/20250107_134819
+13:48:21.078 shell exit code checks enabled
+13:48:21.198 json server listening at user-host:31337
+13:48:22.308 starting 1 scripts
+13:48:22.311 tryme:20@localhost: script-cmd: tryme
+13:48:22.312 tryme:20@localhost: tryme
+13:48:22.726 tryme:20@localhost: whoami
 testuser
-22:03:18.102 tryme:14@localhost:date
-Wed 05 Oct 2022 10:03:17 PM EDT
-22:03:18.527 tryme:14@localhost:echo howdy, qDup
+13:48:23.139 tryme:20@localhost: date
+Tue Jan  7 01:48:22 PM -03 2025
+13:48:23.554 tryme:20@localhost: echo howdy, qDup
 howdy, qDup
-22:03:18.569 run-1665021796246 -> /tmp/20221005_220316.queueCleanupScripts
-Finished in 02.050 at /tmp/20221005_220316
+Finished in 02.344 at /tmp/20250107_134819
 
 ```
 The `-S` argument overrides the value in yaml. We can store a default in yaml then use the command line to customize the script execution.
