@@ -1,26 +1,7 @@
 = qDup Hello World
 
 == Prerequisites
-qDup has 3 requirements:
-
-1. linux operating system
-2. java 11 where you run qdup
-3. ssh  running on the target computer
-
-you can verify the prerequisites with two commands:
-```
-#> java -version
-openjdk version "11.0.10" 2021-01-19
-OpenJDK Runtime Environment AdoptOpenJDK (build 11.0.10+9)
-OpenJDK 64-Bit Server VM AdoptOpenJDK (build 11.0.10+9, mixed mode)
-```
-```
-#> ssh testuser@localhost
-Last login: Thu Sep 15 10:01:00 2022 from 192.168.0.1
-```
-The `testuser` example username should be replaced with the output of `whoami`.
-
-If you get a `command not found` or the prompted for a `Password:` when running `ssh` then please refer to the link:./prerequisites.adoc[prerequisites]
+qDup connects to computers through ssh. You need to have a computer that will accept ssh connections. You can setup ssh on your own computer by following the steps in the link:./prerequisites.adoc[prerequisites]
 
 == qDup jar
 qDup is distributed as an executable jar (Java's version of a zip). Download the latest `uber` jar from link:https://github.com/Hyperfoil/qDup/releases/latest[github]
