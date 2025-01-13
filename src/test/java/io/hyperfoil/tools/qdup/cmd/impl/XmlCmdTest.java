@@ -12,7 +12,7 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class XmlCmdTest extends SshTestBase {
+public class XmlCmdTest extends SshContainerTestBase {
 
     //TODO add a test to ensure State and local variables resolve
     @Test

@@ -1,18 +1,16 @@
 package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.RunTest;
 import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import org.junit.Test;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static org.junit.Assert.*;
 
-public class LocalShellTest extends SshTestBase {
+public class LocalShellTest extends SshContainerTestBase {
     @Test
     public void sh_without_connect(){
         Host host = new Host();

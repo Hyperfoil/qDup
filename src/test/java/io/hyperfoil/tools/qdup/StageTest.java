@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
-public class StageTest extends SshTestBase{
+public class StageTest extends SshContainerTestBase {
 
     @Test
     public void isBefore_sameStage(){

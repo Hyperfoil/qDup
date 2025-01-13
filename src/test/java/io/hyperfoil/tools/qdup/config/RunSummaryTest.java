@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertFalse;
 
-public class RunSummaryTest extends SshTestBase {
+public class RunSummaryTest extends SshContainerTestBase {
 
     @Test
     public void self_referencing_two_scripts(){

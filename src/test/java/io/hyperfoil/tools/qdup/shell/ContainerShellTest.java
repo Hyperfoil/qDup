@@ -2,7 +2,7 @@ package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import org.junit.Test;
 
 import java.io.File;
@@ -11,7 +11,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static org.junit.Assert.*;
 
-public class ContainerShellTest extends SshTestBase {
+public class ContainerShellTest extends SshContainerTestBase {
     /**
      * registry.access.redhat.com/ubi8/ubi container exits?
      * also test an invalid container (response is not a valid containerId)

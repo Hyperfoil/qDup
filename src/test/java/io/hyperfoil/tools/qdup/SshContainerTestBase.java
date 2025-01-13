@@ -18,7 +18,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.PullPolicy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.Transferable;
-import org.testcontainers.utility.MountableFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -38,7 +37,10 @@ import java.util.stream.Stream;
 
 import static org.junit.Assert.assertTrue;
 
-public class SshTestBase {
+/**
+ * This base test class provides and way to run the qDup scripts inside a container.
+ */
+public class SshContainerTestBase {
 
 
     protected TmpDir tmpDir;
@@ -114,7 +116,7 @@ public class SshTestBase {
 
     public static Path getPath(String subDir){
         return  Paths.get(
-                SshTestBase.class.getProtectionDomain().getCodeSource().getLocation().getPath()
+                SshContainerTestBase.class.getProtectionDomain().getCodeSource().getLocation().getPath()
         ).resolve(
                 Paths.get(subDir)
         );
@@ -225,7 +227,7 @@ public class SshTestBase {
     private static Host host;
     private static HostDefinition hostDefinition;
 
-    public SshTestBase(){}
+    public SshContainerTestBase(){}
 
     /**
      * Reads a file on the remote file system

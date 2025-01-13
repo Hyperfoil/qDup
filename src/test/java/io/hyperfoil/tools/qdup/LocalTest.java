@@ -18,7 +18,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static org.junit.Assert.*;
 
-public class LocalTest extends SshTestBase{
+public class LocalTest extends SshContainerTestBase {
 
     @Test
     public void pipelineSlit_nosplit(){

@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 
@@ -9,7 +9,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class HostExpressionTest extends SshTestBase {
+public class HostExpressionTest extends SshContainerTestBase {
 
 
    @Test

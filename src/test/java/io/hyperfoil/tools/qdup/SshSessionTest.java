@@ -13,7 +13,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class SshSessionTest extends SshTestBase{
+public class SshSessionTest extends SshContainerTestBase {
 
     static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(4);
 
