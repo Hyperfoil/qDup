@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.qdup;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.cmd.impl.AddPrompt;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
@@ -42,7 +41,7 @@ import static io.hyperfoil.tools.qdup.cmd.PatternValuesMap.QDUP_GLOBAL_ABORTED;
 import static org.junit.Assert.*;
 
 
-public class RunTest extends SshTestBase {
+public class RunTest extends SshContainerTestBase {
 
    public static class ListAppender extends AbstractAppender {
 

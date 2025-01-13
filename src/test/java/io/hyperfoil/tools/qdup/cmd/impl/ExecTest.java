@@ -2,7 +2,7 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.JsonServer;
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
-public class ExecTest extends SshTestBase {
+public class ExecTest extends SshContainerTestBase {
 
 
    @Test

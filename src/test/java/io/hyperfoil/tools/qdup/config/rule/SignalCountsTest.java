@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
-public class SignalCountsTest extends SshTestBase {
+public class SignalCountsTest extends SshContainerTestBase {
 
     @Test
     public void issue_from_runtest(){

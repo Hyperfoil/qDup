@@ -10,7 +10,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 
 import static org.junit.Assert.*;
 
-public class StateTest extends SshTestBase{
+public class StateTest extends SshContainerTestBase {
 
     @Test
     public void case_sensitive(){

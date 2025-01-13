@@ -9,24 +9,20 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.converter.FileSizeConverter;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.AsciiArt;
-import io.hyperfoil.tools.yaup.file.FileUtility;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static io.hyperfoil.tools.qdup.cmd.PatternValuesMap.QDUP_GLOBAL;
-import static io.hyperfoil.tools.qdup.cmd.PatternValuesMap.QDUP_GLOBAL_ABORTED;
 import static org.junit.Assert.*;
 
-public class QueueDownloadTest extends SshTestBase {
+public class QueueDownloadTest extends SshContainerTestBase {
 
 
     @Test

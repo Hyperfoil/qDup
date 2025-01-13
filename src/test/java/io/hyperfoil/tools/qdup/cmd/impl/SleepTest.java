@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
@@ -14,7 +14,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class SleepTest extends SshTestBase {
+public class SleepTest extends SshContainerTestBase {
 
     @Test
     public void parseMs(){

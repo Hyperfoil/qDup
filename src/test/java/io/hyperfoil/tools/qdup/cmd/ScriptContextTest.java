@@ -7,7 +7,7 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ScriptContextTest extends SshTestBase {
+public class ScriptContextTest extends SshContainerTestBase {
 
     private class UpdateCmd extends Cmd {
         private final int count;

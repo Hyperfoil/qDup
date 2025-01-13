@@ -1,9 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
-import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
-import io.hyperfoil.tools.qdup.cmd.Result;
-import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
@@ -11,13 +8,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class SshPasswordTestBase extends SshTestBase{
+public class SshPasswordTestBase extends SshContainerTestBase {
 
     @Override
     public String getIdentity() {

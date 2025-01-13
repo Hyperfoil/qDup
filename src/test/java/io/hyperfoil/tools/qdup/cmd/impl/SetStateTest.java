@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
-public class SetStateTest extends SshTestBase {
+public class SetStateTest extends SshContainerTestBase {
 
 
    @Test

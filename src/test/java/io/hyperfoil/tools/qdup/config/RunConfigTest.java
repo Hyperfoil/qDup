@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -11,7 +11,7 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
-public class RunConfigTest extends SshTestBase {
+public class RunConfigTest extends SshContainerTestBase {
 
    @Test
    public void host_with_download_preserves_variables(){

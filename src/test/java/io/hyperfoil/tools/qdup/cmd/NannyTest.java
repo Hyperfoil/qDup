@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
@@ -15,7 +15,7 @@ import static org.junit.Assert.*;
 /**
  * Test for the Dispatcher nanny task
  */
-public class NannyTest extends SshTestBase {
+public class NannyTest extends SshContainerTestBase {
 
 
 

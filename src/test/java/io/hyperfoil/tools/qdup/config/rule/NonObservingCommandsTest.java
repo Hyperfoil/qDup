@@ -1,11 +1,10 @@
 package io.hyperfoil.tools.qdup.config.rule;
 
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunSummary;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Objects;
@@ -14,7 +13,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class NonObservingCommandsTest extends SshTestBase {
+public class NonObservingCommandsTest extends SshContainerTestBase {
 
     @Test
     public void sh_in_script_in_watch() {

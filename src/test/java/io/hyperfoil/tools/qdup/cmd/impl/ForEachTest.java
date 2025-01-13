@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
@@ -30,7 +30,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class ForEachTest extends SshTestBase {
+public class ForEachTest extends SshContainerTestBase {
 
 
     @Test

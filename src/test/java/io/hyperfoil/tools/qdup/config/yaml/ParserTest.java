@@ -1,6 +1,6 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
-public class ParserTest extends SshTestBase {
+public class ParserTest extends SshContainerTestBase {
 
     public static String join(String...args){
         return Arrays.asList(args).stream().collect(Collectors.joining("\n"));

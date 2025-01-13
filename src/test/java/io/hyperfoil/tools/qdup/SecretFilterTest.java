@@ -13,17 +13,15 @@ import java.util.Iterator;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static io.hyperfoil.tools.qdup.SecretFilter.REPLACEMENT;
 import static org.junit.Assert.*;
 
-public class SecretFilterTest extends SshTestBase {
+public class SecretFilterTest extends SshContainerTestBase {
 
    @Test
    public void secret_order(){

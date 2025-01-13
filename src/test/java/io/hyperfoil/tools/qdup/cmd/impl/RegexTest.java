@@ -12,7 +12,7 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Ignore;
 import org.junit.Test;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
 import io.hyperfoil.tools.yaup.json.Json;
 
@@ -21,7 +21,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class RegexTest extends SshTestBase {
+public class RegexTest extends SshContainerTestBase {
 
     @Test
     public void embedded_dot_all(){

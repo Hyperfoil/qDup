@@ -2,7 +2,7 @@ package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import org.junit.Test;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -10,7 +10,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class AbstractShellTest extends SshTestBase {
+public class AbstractShellTest extends SshContainerTestBase {
 
     @Test
     public void getShell_localShell(){

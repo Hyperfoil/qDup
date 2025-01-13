@@ -4,7 +4,6 @@ import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.cmd.impl.SendText;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
-import io.hyperfoil.tools.qdup.config.RunRule;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -23,7 +22,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
-public class CmdTest extends SshTestBase {
+public class CmdTest extends SshContainerTestBase {
 
    @Rule
    public Timeout globalTimeout = Timeout.seconds(120);

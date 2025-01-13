@@ -1,17 +1,15 @@
 package io.hyperfoil.tools.qdup;
 
-import io.hyperfoil.tools.yaup.AsciiArt;
 import org.junit.Test;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.security.Permission;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class QDupTest extends SshTestBase{
+public class QDupTest extends SshContainerTestBase {
 
     private class Output {
         private String exit;

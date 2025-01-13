@@ -2,14 +2,14 @@ package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 import org.junit.Test;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static org.junit.Assert.*;
 
-public class SshShellTest extends SshTestBase {
+public class SshShellTest extends SshContainerTestBase {
 
 
     @Test(timeout = 10_000)

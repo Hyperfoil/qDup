@@ -8,7 +8,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.CtrlC;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.SshContainerTestBase;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -23,7 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class RunConfigBuilderTest extends SshTestBase {
+public class RunConfigBuilderTest extends SshContainerTestBase {
 
     @Test
     public void role_hosts_pattern_as_expression_existing_host(){
