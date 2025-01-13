@@ -1,129 +1,156 @@
 = Scripting hyperfoil with quarkus getting started
 
-The `curl` command from link:quarkusgetstarted.adoc[Scripting Quarkus getting started] was a substitute for a load driver. We are going to use hyperfoil to drive load to our quarkus application and use qDup `setup-scripts` and `cleanup-scripts` phases to coordinate the test.
+The `curl` command from link:quarkusgetstarted.adoc[Scripting Quarkus getting started] was a substitute for the load generator. We are going to use link:https://hyperfoil.io[Hyperfoil] to drive the load to our quarkus application and use qDup phases to coordinate the test.
 
 == Introduction
 
-This tutorial will introduce us to:
+This tutorial will introduce:
 
-1. Commands that change the ssh shell prompt
-2. qDup `setup-scripts` and `cleanup-scripts`.
-3. qDup `roles`
+1. link:./../reference/command/addprompt.adoc[qDup add-prompt]
+2. link:./../reference/roles.adoc[qDup roles]
 
+== Prerequisites
 
-== Where we left off
+qDup connects to computers through ssh. You need to have a computer that will accept ssh connections. You can setup ssh on your own computer by following the steps in the link:./prerequisites.adoc[prerequisites]
 
-The previous tutorial created a qDup yaml that downloaded Quarkus getting started and ran a single curl against the `quarkus dev` process. We are going to start where it left off:
-
-```yaml
+== Running the experiment
+```
+#> cat > hyperfoil.yaml << 'EOF'
 scripts:
+  setup-hyperfoil:
+  - sh: cd /tmp
+  - sh: mkdir hyperfoil-data
+  - sh: >
+      wget https://github.com/Hyperfoil/Hyperfoil/releases/download/hyperfoil-all-0.27.1/hyperfoil-0.27.1.zip
+      && unzip hyperfoil-0.27.1.zip
+      && cd hyperfoil-0.27.1
+  - sh: "sed -i 's|http://hyperfoil.io|http://localhost:8080|g' examples/single-request.hf.yaml"
+  - sh: export HYPERFOIL_HOME=$(pwd)
+
   test-endpoint:
   - wait-for: ready
     then:
-    - sh: curl localhost:8080/hello #replace localhost if you used a different ssh computer name
-    - signal: done #tells qDup that the "testing" is done
+      - sh: cd $HYPERFOIL_HOME
+      - add-prompt: "[hyperfoil]$ "
+      - sh: ./bin/cli.sh
+      - add-prompt: "[hyperfoil@in-vm]$ " #do not forget the space
+      - sh: start-local
+      - sh: upload examples/single-request.hf.yaml
+      - sh: run single-request
+      - sh: export 0000 --destination=/tmp/hyperfoil-data/report.json
+      - sh: report 0000 --destination=/tmp/hyperfoil-data/report.html
+      - queue-download: /tmp/hyperfoil-data/report.json
+      - queue-download: /tmp/hyperfoil-data/report.html
+      - signal: done
 
-  ensure-quarkus-cli:
-  - sh: which quarkus
-    then:
-    - regex: no quarkus
-      then: #https://quarkus.io/get-started/
-      - sh: "curl -Ls https://sh.jbang.dev | bash -s - trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/"
-      - sh: "curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio"
+  remove-hyperfoil:
+  - sh: cd /tmp && rm -fR hyperfoil*
 
-  getting-started:
+  setup-getting-started:
   - sh: cd /tmp/
   - sh: "[[ ! -d quarkus-quickstarts ]] && git clone https://github.com/quarkusio/quarkus-quickstarts.git"
   - sh: cd quarkus-quickstarts
   - sh: cd getting-started
   - script: ensure-quarkus-cli
+  - sh: export GETTING_STARTED_DIR="$(pwd)" #set an environment variable
+
+  ensure-quarkus-cli:
+  - sh: quarkus version
+    then:
+    - regex: "command not found"
+      then:
+      - sh: "curl -Ls https://sh.jbang.dev | bash -s - trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/"
+      - sh: "curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio"
+      - sh: "source ~/.bashrc"
+
+  run-getting-started:
+  - sh: cd $GETTING_STARTED_DIR #ensure we are in the correct directory
   - sh:
       command: quarkus dev
       prompt:
-        "Press [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>": "r"
+        "Press [e] to edit command line args (currently ''), [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>": "r"
     watch:
-    - regex: "Tests paused"
+    - regex: "Tests completed"
       then:
       - signal: ready
     on-signal:
       done:
-      - ctrlC #exits the process
-
+      - ctrlC
 hosts:
-  test: me@localhost #replace this with your ssh username@hostname
+  test: ${{target-host}}
 roles:
-  example:
+  setup:
     hosts:
     - test
+    setup-scripts:
+    - setup-getting-started
+    run-scripts:
+    - run-getting-started
+  hyperfoil:
+    hosts:
+    - test
+    setup-scripts:
+    - setup-hyperfoil
     run-scripts:
     - test-endpoint
-    - getting-started
+    cleanup-scripts:
+    - remove-hyperfoil
+EOF
+```
+
+Run with and replace `targethost` value with your needs
+```
+targethost=$USER@localhost
+java -jar qDup-0.8.5-uber.jar -i ~/.ssh/qdup hyperfoil.yaml -ix -S target-host=$targethost
 ```
 
 == Splitting the roles
-The previous tutorial created an `example` role to run all of ours scripts. This works but a proper performance test will normally isolate the load generation (currently `curl`) from the process we are testing (currently `quarkus dev`).
-qDup isolates scripts by assigning them to roles that are running on different `hosts`. To isolate `test-endoing` from `getting-started` we need to introduce a second role. Let us call it `hyperfoil`. The `roles` section will now look like the following:
+The previous tutorial created a role to run all of ours scripts. This works but a proper performance test will normally isolate the load generator (`hyperfoil`) from the process we are testing (`quarkus dev`).
+qDup isolates scripts by assigning them to roles that are running on different `hosts`. To isolate `test-endpoint` from `run-getting-started` we need to introduce a second role. Let us call it `hyperfoil`. The `roles` section will now look like the following:
 
 ```yaml
-# ...
 roles:
-  hyperfoil:
-    hosts:
-    - test #we still only have 1 ssh computer
-    run-scripts:
-    - test-endpoint
-  example:
+  setup:
     hosts:
     - test
+    setup-scripts:
+    - setup-getting-started
     run-scripts:
-    - getting-started
+    - run-getting-started
+  hyperfoil:
+    hosts:
+    - test
+    setup-scripts:
+    - setup-hyperfoil
+    run-scripts:
+    - test-endpoint
+    cleanup-scripts:
+    - remove-hyperfoil
 ```
 NOTE: We are only running an ssh server on one computer so we still use the `test` host for both roles but now we could split them if needed.
 
-=== Hyperfoil
-We named the new role `hyperfoil` but right now it is running `curl`. Open up the link:https://hyperfoil.io/quickstart/quickstart1.html[hyperfoil quickstart] ad we are going to follow it's steps in a terminal and add them to the `test-endpoint` script.
+=== Hyperfoil role
+We named the new role `hyperfoil`.
 
-NOTE: we test commands in a terminal while writing our qDup scripts to check their expected output and look for the common challenges that come with automating shell commands.
-
-The first command is to `wget` the hyperfoil release but we are going to start with `cd /tmp` like we did in `getting-started` so that we don't add files to the current home directory.
-
-```yaml
-#...
-  test-endpoint:
-  - sh: cd /tmp
-  - sh: > #the carrot is yaml for combine the lines separated by spaces and helps with long commands
-      wget https://github.com/Hyperfoil/Hyperfoil/releases/download/release-0.22/hyperfoil-0.22.zip
-      && unzip hyperfoil-0.22.zip
-      && cd hyperfoil-0.2
-  - wait-for: ready
-    then:
-    - sh: curl localhost:8080/hello #replace localhost if you used a different ssh computer name
-    - signal: done #tells qDup that the "testing" is done
-```
-
-The next command is to run `> bin/cli.sh`. Test that in terminal and notice how it starts an interactive shell and changes the prompt.
-
-```
-> bin/cli.sh
-[hyperfoil]$
-```
-
-qDup uses a custom prompt to detect when commands finish running. We are going to use the qDup `add-prompt` command to tell qDup there is another prompt that indicates the command is finished.
+==== setup-hyperfoil
+It will download, install Hyperfoil locally and configure the `single-request.hf.yaml` file to use `http://localhost:8080` instead of `http://hyperfoil.io`
 
 ```yaml
-#...
-  test-endpoint:
-  - sh: cd /tmp
-  - sh: >
-      wget https://github.com/Hyperfoil/Hyperfoil/releases/download/release-0.22/hyperfoil-0.22.zip
-      && unzip hyperfoil-0.22.zip
-      && cd hyperfoil-0.2
-  - add-prompt: "[hyperfoil]$ " #we need to the space to be an exact match
+- sh: "sed -i 's|http://hyperfoil.io|http://localhost:8080|g' examples/single-request.hf.yaml"
+```
+
+==== test-endpoint
+
+The next command is to run `> bin/cli.sh`. Notice how it starts an interactive shell and changes the prompt.
+
+qDup uses a custom prompt to detect when commands finish running. We are going to use the qDup `add-prompt` command to tell qDup that there is another prompt that indicates the command is finished.
+
+```yaml
+  - add-prompt: "[hyperfoil]$ "
   - sh: ./bin/cli.sh
-#...
 ```
 
-The next command in the guide is `start-local` This is a command inside the hyperfoil cli but because we used `add-prompt` we can include it as though it is a normal shell command. Test `start-local` in the terminal that us running `bin/cli.sh`.
+The next command in the guide is `start-local`. This is a command inside the hyperfoil cli but because we used `add-prompt` we can include it as though it is a normal shell command.
 ```
 [hyperfoil]$ start-local
 Starting controller in default directory (/tmp/hyperfoil)
@@ -134,231 +161,45 @@ Connected to 127.0.0.1:40041!
 ```
 It changes the prompt again. We are going to add another `add-prompt`
 ```yaml
-#...
-  test-endpoint:
-  - sh: cd /tmp
-  - sh: >
-      wget https://github.com/Hyperfoil/Hyperfoil/releases/download/release-0.22/hyperfoil-0.22.zip
-      && unzip hyperfoil-0.22.zip
-      && cd hyperfoil-0.2
-  - add-prompt: "[hyperfoil]$ "
-  - sh: ./bin/cli.sh
   - add-prompt: "[hyperfoil@in-vm]$ " #do not forget the space
-  - wait-for: ready
-    then:
-    - sh: run start-local
-    - signal: done #tells qDup that the "testing" is done
-#...
+  - sh: start-local
 ```
 NOTE: qDup looks for the prompt at then of the ssh connection. We could combine the two prompts to `]$ ` but a short pattern could incorrectly match part of a command's output and break the script.
 
-The next step in the hyperfoil guide is to upload the test definition.
-```
-upload examples/single-request.hf.yaml
-```
-The test sends a request to http://hyperfoil.io, but we want to test the quarkus app at http://localhost:8080. We can change the example with sed.
-
-```
-sed -i 's/\(\s*\)host:=*/\1host: http:\/\/localhost:8080/g' examples/single-request.hf.yaml
-```
-
-`sed` is a bash command but our script is currently in the hyperfoil cli. We will put the `sed` before the `bin/cli.sh` and associated `add-prompt`.
-
-The next hyperfoil command starts the performance test.
-```
-run single-request
-```
-We can replace the `curl` from our `test-endpoint` and now we have the following script:
+The next step in the hyperfoil guide is to upload the test definition and start the performance test
 ```yaml
-#...
-  test-endpoint:
-  - sh: cd /tmp
-  - sh: >
-      wget https://github.com/Hyperfoil/Hyperfoil/releases/download/release-0.22/hyperfoil-0.22.zip
-      && unzip hyperfoil-0.22.zip
-      && cd hyperfoil-0.2
-  - sh: "sed -i 's/\(\s*\)host:=*/\1host: http:\/\/localhost:8080/g' examples/single-request.hf.yaml"
-  - add-prompt: "[hyperfoil]$ "
-  - sh: ./bin/cli.sh
-  - add-prompt: "[hyperfoil@in-vm]$ " #do not forget the space
-  - sh: start-local
   - sh: upload examples/single-request.hf.yaml
   - sh: run single-request
-#...
 ```
 
 The hyperfoil guide tells us about the `stats` command to see a run summary. We want to save the results with the qDup output files. Hyperfoil can `export` the run data and generate a `report` so we will add them both to our script and `queue-download` both files.
 
 ```yaml
-#...
-  test-endpoint:
-  - sh: cd /tmp
-  - sh: >
-      wget https://github.com/Hyperfoil/Hyperfoil/releases/download/release-0.22/hyperfoil-0.22.zip
-      && unzip hyperfoil-0.22.zip
-      && cd hyperfoil-0.2
-  - sh: "sed -i 's/\(\s*\)host:=*/\1host: http:\/\/localhost:8080/g' examples/single-request.hf.yaml"
-  - add-prompt: "[hyperfoil]$ "
-  - sh: ./bin/cli.sh
-  - add-prompt: "[hyperfoil@in-vm]$ " #do not forget the space
-  - sh: start-local
-  - sh: upload examples/single-request.hf.yaml
-  - sh: run single-request
   - sh: export 0000 --destination=/tmp/report.json
   - sh: report 0000 --destination=/tmp/report.html
   - queue-download: /tmp/report.json
   - queue-download: /tmp/report.html
-#...
 ```
 
 == Setup, Run, and Cleanup
 
-Both of the scripts in our qDup file download resources and start those resources. This works for a simple project but more complex workflows should separate the test setup from executing the test. We can split up `getting-started` into `setup-getting-started` and `run-getting-started`
-
+Notice how we added an `sh: export ...` at the end of `setup-getting-started` and an `sh: cd ...` at the beginning of `run-getting-started`. qDup tracks changes to environment variables during `setup-scripts` and will apply those same environment variable changes to all scripts in the same `role`. Our updated role now has 2 scripts:
 ```yaml
-#...
-  setup-getting-started:
-  - sh: cd /tmp/
-  - sh: "[[ ! -d quarkus-quickstarts ]] && git clone https://github.com/quarkusio/quarkus-quickstarts.git"
-  - sh: cd quarkus-quickstarts
-  - sh: cd getting-started
-  - script: ensure-quarkus-cli
-  - sh: export GETTING_STARTED_DIR="$(pwd)" #set an environment variable
-
-  run-getting-started:
-  - sh: cd $GETTING_STARTED_DIR #ensure we are in the correct directory
-  - sh:
-      command: quarkus dev
-      prompt:
-        "Press [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>": "r"
-    watch:
-    - regex: "Tests paused"
-      then:
-      - signal: ready
-    on-signal:
-      done:
-      - ctrlC #exits the process
-```
-
-Notice how we added an `sh: export ...` at the end of `setup-getting-started` and an `sh: cd ...` at the beginning of `run-getting-started`. qDup tracks changes to environment variables during `setup-scripts` and will apply those same environment variable changes to all `run-scripts` in the same `role`. Our updated `example` role now has 2 scripts:
-```yaml
-#...
 roles:
-  example:
+  setup:
     hosts:
     - test
     setup-scripts:
     - setup-getting-started
     run-scripts:
     - run-getting-started
-#...
 ```
 
-We can make a similar split to our `test-endpoint` script except this time lets call our scripts `setup-hyperfoil` and `test-endpoint`
-```yaml
-#...
-scripts:
-  setup-hyperfoil:
-  - sh: cd /tmp
-  - sh: >
-      wget https://github.com/Hyperfoil/Hyperfoil/releases/download/release-0.22/hyperfoil-0.22.zip
-      && unzip hyperfoil-0.22.zip
-      && cd hyperfoil-0.2
-  - sh: "sed -i 's/\(\s*\)host:=*/\1host: http:\/\/localhost:8080/g' examples/single-request.hf.yaml"
-  - sh: export HYPERFOIL_HOME=$(pwd)
-
-  test-endpoint:
-  - sh: cd $HYPERFOIL_HOME
-  - add-prompt: "[hyperfoil]$ "
-  - sh: ./bin/cli.sh
-  - add-prompt: "[hyperfoil@in-vm]$ " #do not forget the space
-  - sh: start-local
-  - sh: upload examples/single-request.hf.yaml
-  - sh: run single-request
-  - sh: export 0000 --destination=/tmp/report.json
-  - sh: report 0000 --destination=/tmp/report.html
-  - queue-download: /tmp/report.json
-  - queue-download: /tmp/report.html
-```
-
-NOTE: we again used an `sh: export...` and `sh: cd ...` with an environment variable to coordinate between setup and run scripts
-
-Our `test-endpoint` script assumes that the hyperfoil run ID is always `0000` but that will only be true if it is the first time we ran a test using that hyperfoil setup. We could introduce `regex` to identify the run ID from `run single-request` but instead we will remove the Hyperfoil setup in a `cleanup-script`. We are removing the Hyperfoil setup to simulate running in a shared environment where scripts should try and clean up when they are done.
+Our `test-endpoint` script assumes that the hyperfoil run ID is always `0000` but that will only be true if it is the first time we ran a test using that hyperfoil setup. We could introduce `regex` to identify the run ID from `run single-request` but instead we will remove the Hyperfoil setup in a `cleanup-script`. We are removing all the artifacts stored by this setup in order to allow you to rerun the script multiple times.
 
 ```yaml
-#...
-scripts:
   remove-hyperfoil:
-  - sh: rm -r $HYPERFOIL_HOME
-```
-
-When we update the `hyperfoil` role our full qDup file should now includ the following:
-```yaml
-scripts:
-  setup-hyperfoil:
-  - sh: cd /tmp
-  - sh: >
-      wget https://github.com/Hyperfoil/Hyperfoil/releases/download/release-0.22/hyperfoil-0.22.zip
-      && unzip hyperfoil-0.22.zip
-      && cd hyperfoil-0.2
-  - sh: "sed -i 's/\(\s*\)host:=*/\1host: http:\/\/localhost:8080/g' examples/single-request.hf.yaml"
-  - sh: export HYPERFOIL_HOME=$(pwd)
-
-  test-endpoint:
-  - sh: cd $HYPERFOIL_HOME
-  - add-prompt: "[hyperfoil]$ "
-  - sh: ./bin/cli.sh
-  - add-prompt: "[hyperfoil@in-vm]$ " #do not forget the space
-  - sh: start-local
-  - sh: upload examples/single-request.hf.yaml
-  - sh: run single-request
-  - sh: export 0000 --destination=/tmp/report.json
-  - sh: report 0000 --destination=/tmp/report.html
-  - queue-download: /tmp/report.json
-  - queue-download: /tmp/report.html
-
-  remove-hyperfoil:
-  - sh: rm -r $HYPERFOIL_HOME
-
-  setup-getting-started:
-  - sh: cd /tmp/
-  - sh: "[[ ! -d quarkus-quickstarts ]] && git clone https://github.com/quarkusio/quarkus-quickstarts.git"
-  - sh: cd quarkus-quickstarts
-  - sh: cd getting-started
-  - script: ensure-quarkus-cli
-  - sh: export GETTING_STARTED_DIR="$(pwd)" #set an environment variable
-
-  run-getting-started:
-  - sh: cd $GETTING_STARTED_DIR #ensure we are in the correct directory
-  - sh:
-      command: quarkus dev
-      prompt:
-        "Press [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>": "r"
-    watch:
-    - regex: "Tests paused"
-      then:
-      - signal: ready
-    on-signal:
-      done:
-      - ctrlC #exits the process
-
-roles:
-  example:
-    hosts:
-    - test
-    setup-scripts:
-    - setup-getting-started
-    run-scripts:
-    - run-getting-started
-  hyperfoil:
-    hosts:
-    - test #we still only have 1 ssh computer
-    setup-scripts:
-    - setup-hyperfoil
-    run-scripts:
-    - test-endpoint
-    cleanup-scripts:
-    - remove-hyperfoil
+  - sh: cd /tmp && rm -fR hyperfoil*
 ```
 
 == Next steps
