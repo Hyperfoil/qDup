@@ -98,11 +98,7 @@ roles:
 EOF
 ```
 
-Run with and replace `targethost` value with your needs
-```
-targethost=$USER@localhost
-java -jar qDup-0.8.5-uber.jar -i ~/.ssh/qdup hyperfoil.yaml -ix -S target-host=$targethost
-```
+Run with `java -jar qDup-0.8.5-uber.jar -i ~/.ssh/qdup hyperfoil.yaml -ix -S target-host=$USER@localhost`.
 
 == Splitting the roles
 The previous tutorial created a role to run all of ours scripts. This works but a proper performance test will normally isolate the load generator (`hyperfoil`) from the process we are testing (`quarkus dev`).
