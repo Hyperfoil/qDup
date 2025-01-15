@@ -14,6 +14,7 @@ This tutorial will introduce:
 qDup connects to computers through ssh. You need to have a computer that will accept ssh connections. You can setup ssh on your own computer by following the steps in the link:./prerequisites.adoc[prerequisites]
 
 == Running the experiment
+The script will clone the `quarkus-quickstarts` repository, install `quarkus-cli` if needed, and, start the application. In parallel, it will download and install link:https://hyperfoil.io[Hyperfoil]. Once the application is ready, it will start a simple benchmark. In the end, it will upload the result and stop the `quarkus-quickstarts` application.
 ```
 #> cat > hyperfoil.yaml << 'EOF'
 scripts:
