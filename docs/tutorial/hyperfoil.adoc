@@ -102,7 +102,7 @@ EOF
 Run with `java -jar qDup-0.8.5-uber.jar -i ~/.ssh/qdup hyperfoil.yaml -ix -S target-host=$USER@localhost`.
 
 == Splitting the roles
-The previous tutorial created a role to run all of ours scripts. This works but a proper performance test will normally isolate the load generator (`hyperfoil`) from the process we are testing (`quarkus dev`).
+The previous tutorial created a role to run all of ours scripts. This works but a proper performance test will normally isolate the load generator from the process we are testing.
 qDup isolates scripts by assigning them to roles that are running on different `hosts`. To isolate `test-endpoint` from `run-getting-started` we need to introduce a second role. Let us call it `hyperfoil`. The `roles` section will now look like the following:
 
 ```yaml
