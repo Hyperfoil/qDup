@@ -130,7 +130,7 @@ NOTE: We are only running an ssh server on one computer so we still use the `tes
 We named the new role `hyperfoil`.
 
 ==== setup-hyperfoil
-It will download, install Hyperfoil locally and configure the `single-request.hf.yaml` file to use `http://localhost:8080` instead of `http://hyperfoil.io`
+The `qDup` script will download and install link:https://hyperfoil.io[Hyperfoil] locally. The `single-request.hf.yaml` has `http://hyperfoil.io` as a target and the script will replace to `http://localhost:8080` (the endpoint that our application is running) using link:https://www.gnu.org/software/sed/manual/sed.html[sed]
 
 ```yaml
 - sh: "sed -i 's|http://hyperfoil.io|http://localhost:8080|g' examples/single-request.hf.yaml"
