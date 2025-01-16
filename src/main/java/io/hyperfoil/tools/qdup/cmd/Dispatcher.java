@@ -4,6 +4,7 @@ import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.impl.RepeatUntilSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
+import jakarta.validation.constraints.NotNull;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
 import io.hyperfoil.tools.yaup.AsciiArt;
@@ -62,6 +63,7 @@ public class Dispatcher {
 
     private final ThreadPoolExecutor executor;
     private final ScheduledThreadPoolExecutor scheduler;
+    private final ScheduledThreadPoolExecutor callback;
     private ScheduledFuture<?> nannyFuture;
     private final AtomicBoolean isRunning;
     private final AtomicBoolean isStopping;
@@ -181,8 +183,15 @@ public class Dispatcher {
 
     public Dispatcher(){
         this(
-                new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors(), 30, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactory() {
-                    AtomicInteger count = new AtomicInteger(0);
+            Runtime.getRuntime().availableProcessors(),
+            getMinimumScheduleCorePoolSize(),
+            3
+        );
+    }
+    public Dispatcher(int executorCount,int scheduledCount,int callbackCount){
+        this(
+                new ThreadPoolExecutor(executorCount, executorCount, 30, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactory() {
+                    final AtomicInteger count = new AtomicInteger(0);
                     @Override
                     public Thread newThread(Runnable runnable) {
                         Thread rtrn = new Thread(runnable,"qDup-execute-"+count.getAndAdd(1));
@@ -190,22 +199,30 @@ public class Dispatcher {
                         return rtrn;
                     }
                 }),
-                new ScheduledThreadPoolExecutor(getMinimumScheduleCorePoolSize(),new ThreadFactory() {
-                    AtomicInteger count = new AtomicInteger(0);
+                new ScheduledThreadPoolExecutor(scheduledCount,new ThreadFactory() {
+                    final AtomicInteger count = new AtomicInteger(0);
                     @Override
                     public Thread newThread(Runnable runnable) {
                         return new Thread(runnable,"qDup-schedule-"+count.getAndAdd(1));
                     }
                 }),
+                new ScheduledThreadPoolExecutor(callbackCount,new ThreadFactory() {
+                    final AtomicInteger count = new AtomicInteger(0);
+                    @Override
+                    public Thread newThread(Runnable runnable) {
+                        return new Thread(runnable,"qDup-callback-"+count.getAndAdd(1));
+                    }
+                }),
                 true
         );
     }
-    public Dispatcher(ThreadPoolExecutor executor, ScheduledThreadPoolExecutor scheduler) {
-        this(executor,scheduler,false);
+    public Dispatcher(ThreadPoolExecutor executor, ScheduledThreadPoolExecutor scheduler, ScheduledThreadPoolExecutor callback) {
+        this(executor,scheduler,callback,false);
     }
-    private Dispatcher(ThreadPoolExecutor executor, ScheduledThreadPoolExecutor scheduler, boolean autoClose){
+    private Dispatcher(ThreadPoolExecutor executor, ScheduledThreadPoolExecutor scheduler, ScheduledThreadPoolExecutor callback, boolean autoClose){
         this.executor = executor;
         this.scheduler = scheduler;
+        this.callback = callback;
         this.autoClose=autoClose;
 
         this.scriptContexts = new ConcurrentHashMap<>();
@@ -309,6 +326,7 @@ public class Dispatcher {
     }
 
     public ScheduledThreadPoolExecutor getScheduler(){return scheduler;}
+    public ScheduledThreadPoolExecutor getCallback(){return callback;}
 
 
     public void addContextObserver(ContextObserver observer){contextObservers.add(observer);}

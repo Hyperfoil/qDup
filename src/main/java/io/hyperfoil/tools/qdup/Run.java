@@ -380,7 +380,7 @@ public class Run implements Runnable, DispatchObserver {
                 AbstractShell shell = AbstractShell.getShell(
                     host,
                     "",
-                    getDispatcher().getScheduler(),
+                    getDispatcher().getCallback(),
                     getConfig().getState().getSecretFilter(),
                     false);
                 Set<String> deleteList = pendingDeletes.get(host);
@@ -636,7 +636,7 @@ public class Run implements Runnable, DispatchObserver {
                 AbstractShell shell = AbstractShell.getShell(
                         host,
                         "",
-                        getDispatcher().getScheduler(),
+                        getDispatcher().getCallback(),
                         getConfig().getState().getSecretFilter(),
                         isTrace(name)
                 );
@@ -698,7 +698,7 @@ public class Run implements Runnable, DispatchObserver {
                 AbstractShell shell = AbstractShell.getShell(
                         host,
                         "",
-                        getDispatcher().getScheduler(),
+                        getDispatcher().getCallback(),
                         getConfig().getState().getSecretFilter(),
                         isTrace(name)
                 );
@@ -769,7 +769,7 @@ public class Run implements Runnable, DispatchObserver {
                        AbstractShell shell =  AbstractShell.getShell(
                                host,
                                "",
-                               getDispatcher().getScheduler(),
+                               getDispatcher().getCallback(),
                                getConfig().getState().getSecretFilter(),
                                isTrace(name)
                        );
@@ -843,7 +843,7 @@ public class Run implements Runnable, DispatchObserver {
                             AbstractShell shell = AbstractShell.getShell(
                                     host,
                                     setupCommand,
-                                    getDispatcher().getScheduler(),
+                                    getDispatcher().getCallback(),
                                     getConfig().getState().getSecretFilter(),
                                     isTrace(name)
                             );
@@ -940,7 +940,7 @@ public class Run implements Runnable, DispatchObserver {
                         AbstractShell shell = AbstractShell.getShell(
                                 host,
                                 "",
-                                getDispatcher().getScheduler(),
+                                getDispatcher().getCallback(),
                                 getConfig().getState().getSecretFilter(),
                                 isTrace(name)
                         );

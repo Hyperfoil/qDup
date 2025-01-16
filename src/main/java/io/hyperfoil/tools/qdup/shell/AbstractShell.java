@@ -192,7 +192,7 @@ public abstract class AbstractShell {
                 sessionStreams.close();
             }
             //is setting this new breaking something in LocalShell??
-            sessionStreams = new SessionStreams(getName(),executor);
+            sessionStreams = new SessionStreams(getName(),getScheduledExector());
             //TODO need to replace lambda with method access for changes to sessionStream to be visible
             semaphoreCallback = (name) -> {
                 String output = getShOutput(true);
