@@ -1,6 +1,7 @@
 = js
 
-The 'js' command is an opportunity to execute arbitrary javascript code on the `input` from the previous command and the current `state`. The 'then' commands will run if the function returns a "truthy" object or will be skilled if the function does not return, returns `null`, `false`, or a string containing `"false"`
+The 'js' command is an opportunity to execute arbitrary javascript code on the `input` from the previous command and the current `state`.
+The 'then' commands will run if the function returns a "truthy" object or 'else' commands will run if the function does not return, returns `null`, `false`, or a string containing `"false"`
 
 [source,yaml]
 ----
@@ -12,4 +13,26 @@ The 'js' command is an opportunity to execute arbitrary javascript code on the `
     }
 ----
 
+The `js` also supports REPL style javascript evaluate for expressions that do not need access the input from the previous command or the full state object.
+
+[source,yaml]
+----
+ - js: "deadbeef".contains("db")
+----
+
+Both the REPL and function style support state variable references but take caution to properly quote any expressions that should be treated as a string.a
+
+[source,yaml]
+----
+ - js: "${{hostName}".contains("server02")
+----
+
+Using variable references without quotes will work if the value is numeric or boolean but will a text value will be treated as a javascript variable name and not the text value.javascript
+
+[source,yaml]
+----
+ -js: ${{count}} + 2 # works if count is a number
+ -js: ${{useFeature}} # works if useFeature is a boolean or number
+ -js: ${{label}} # does NOT work if label is text unless the value of label exists
+----
 //IMPORTANT: We are experimenting with a global javascript object in master similar to jQuery or lodash that will give read-only access to more of the qDup internals (signals, counters, and state). It can be accessed with `$QD` but it is experimental and currently only in SHAPSHOT from master.

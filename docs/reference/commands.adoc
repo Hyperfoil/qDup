@@ -38,6 +38,7 @@ link:./command/echo.adoc[echo]:: Send the input to the console
 link:./command/exec.adoc[exec]:: Send an exec command to the ssh terminal
 link:./command/foreach.adoc[for-each]:: Repeat the `then` command for each entry in the input
 link:./command/js.adoc[js]:: Run the javascript function
+link:./command/json.adoc[json]:: Evaluate a jsonpath expression against the input if the input is json
 link:./command/log.adoc[log]:: Write the message to the qDup run.log
 link:./command/parse.adoc[parse]:: Use the https://github.com/Hyperfoil/parse[parse] library to parse the input
 link:./command/queuedownload.adoc[queue-download]:: Queue a file for download after the run or cleanup stage

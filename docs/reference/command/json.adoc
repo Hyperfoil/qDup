@@ -1,0 +1,27 @@
+= json
+
+The `json` command is an opportunity to evaluate a jsonpath expression against the input assuming the input is json.
+
+[source,yaml]
+----
+- json: $.metadata.name
+----
+
+The `then` commands will receive the values extracted by the `path` as input if the `path` matches.
+
+[source,yaml]
+----
+- json: $.metadata.name
+  then:
+  - set-state: name
+----
+
+Otherwise the `else` commands will run with the initial input to `json`
+
+[source,yaml]
+----
+- json: $.metadata.name
+  else:
+  - sh: setName.sh
+----
+

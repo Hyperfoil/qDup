@@ -1,11 +1,13 @@
 = abort
 
-End the current command run with an optional error message. Aborted runs will still
-downlaod any files from `queue-download` and will still run cleanup scripts.
+End the current run with an optional error message. Aborted runs will still
+download any files from `queue-download` and will still run cleanup scripts.
 
 [source,yaml]
 ----
-- abort #no error message
-- abort: "failed to meet some great expectations" #abort with error message
+- abort # no error message
+- abort: "failed to meet some great expectations" # abort with error message
 ----
+
+Aborted runs have an `ENV.ABORTED` state variable set to `true` in the run.json
 

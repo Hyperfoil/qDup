@@ -1,6 +1,6 @@
 = add-prompt
 
-qDup detects the end of the previous command by looking for the bash prompt in the terminal output.
+qDup detects the end of the previous command by looking for the terminal prompt at the end of the output.
 Some shell programs will change the prompt during execution (e.g. `psql`). Use `add-prompt`
 to tell qDup to also look for a new prompt string so it can correctly detect when the new
 terminal session (e.g. inside psql) is ready for the next command.
@@ -10,3 +10,16 @@ terminal session (e.g. inside psql) is ready for the next command.
 - add-prompt: "/] " #jboss-cli
 - add-prompt: "/ #] " #jboss-cli batch
 ----
+
+qDup checks the exit code of `sh` commands whenever the host supports standard shell commands (e.g. `echo $?`).
+qDup does not check the exit code after a custom prompt from `add-prompt` unless the prompt is defined as being part of a shell.
+
+[source,yaml]
+----
+- add-prompt:
+    prompt: "/]>"
+    is-shell: true
+----
+
+Setting `is-shell` to `true` enables exit code checking after the default prompt and the custom `/]>` prompt.
+

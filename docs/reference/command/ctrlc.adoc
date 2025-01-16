@@ -26,6 +26,7 @@ scripts:
         - ctrlC
 ----
 We can also use `ctrlC` in a `timer` to run a command for a fixed amount of time.
+
 [source,yaml]
 ----
 scripts:
@@ -34,4 +35,19 @@ scripts:
       timer:
         60s: #collect 60 seconds of performance data
         - ctrlC
+----
+
+Using `ctrlC` to interrupt a `sh` command will result in a non-zero exit code.
+qDup does not abort runs for commands that are interrupted with `ctrlC`.
+If you want a run to abort when sending the `ctrlC` then add an `abort` after the `ctrlC`
+
+[source,yaml]
+----
+scripts:
+    example:
+    - sh: doSomethig.sh
+      timer:
+        30m: #
+        - ctrlC
+        - abort: failed to finish in 30m
 ----

@@ -6,4 +6,7 @@ Child commands will be invoked each time after `name` counter reaches 0.
 [source,yaml]
 ----
 - countdown: myvar 5
+  then:
+  - sh: afterFiveRetries.sh
 ----
+
