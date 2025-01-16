@@ -356,7 +356,7 @@ public abstract class AbstractShell {
     }
     void sh(String command, boolean acquireLock, BiConsumer<String,String> callback, Map<String, String> prompt) {
         command = command.replaceAll("[\r\n]+$", ""); //replace trailing newlines
-        logger.trace("{} sh: {}, lock: {}", getHost(), command, acquireLock);
+        logger.info("{} sh: {}, lock: {}", getHost(), command, acquireLock);
         ShAction newAction = new ShAction(command,acquireLock,callback,prompt);
         lastCommand = command;
         if (command == null || commandStream == null) {
