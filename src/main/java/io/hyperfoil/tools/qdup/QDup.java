@@ -625,6 +625,7 @@ public class QDup {
 
                 final AtomicInteger factoryCounter = new AtomicInteger(0);
                 final AtomicInteger scheduledCounter = new AtomicInteger(0);
+                final AtomicInteger callbackCounter = new AtomicInteger(0);
 
                 BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
 
@@ -640,8 +641,9 @@ public class QDup {
                 ThreadPoolExecutor executor = new ThreadPoolExecutor(getCommandThreads() / 2, getCommandThreads(), 30, TimeUnit.MINUTES, workQueue, factory);
 
                 ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(getScheduledThreads(), runnable -> new Thread(runnable, "qdup-scheduled-" + scheduledCounter.getAndIncrement()));
+                ScheduledThreadPoolExecutor callback = new ScheduledThreadPoolExecutor(getScheduledThreads(), runnable -> new Thread(runnable, "qdup-callback-" + callbackCounter.getAndIncrement()));
 
-                Dispatcher dispatcher = new Dispatcher(executor, scheduled);
+                Dispatcher dispatcher = new Dispatcher(executor, scheduled, callback);
 
 
                 if (System.console()== null){
