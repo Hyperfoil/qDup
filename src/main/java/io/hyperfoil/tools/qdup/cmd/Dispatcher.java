@@ -496,11 +496,6 @@ public class Dispatcher {
      * See: https://github.com/Hyperfoil/qDup/issues/229
      */
     private static int getMinimumScheduleCorePoolSize() {
-        int cores = Runtime.getRuntime().availableProcessors() / 2;
-        if (cores < 3) {
-            return 3;
-        } else {
-            return cores;
-        }
+        return Runtime.getRuntime().availableProcessors() / 2;
     }
 }
