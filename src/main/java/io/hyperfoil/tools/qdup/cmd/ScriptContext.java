@@ -65,6 +65,11 @@ public class ScriptContext implements Context, Runnable{
                 context.skip(input);
             }
         }
+        //NOOPs to prevent default behavior
+        @Override
+        public void postRun(String output,Context context){}
+        @Override
+        public String getLogOutput(String output, Context context) {return null;}
 
         @Override
         public Cmd copy() {
