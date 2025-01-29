@@ -382,66 +382,68 @@ public class QDup {
 //            }
 //            StatusPrinter.printInCaseOfErrorsOrWarnings(context);
 //        }
+        if ( commandLine != null ){
+            knownHosts = commandLine.getOptionValue("knownHosts", RunConfigBuilder.DEFAULT_KNOWN_HOSTS);
+            identity = commandLine.getOptionValue("identity", RunConfigBuilder.DEFAULT_IDENTITY);
+            passphrase = commandLine.getOptionValue("passphrase", RunConfigBuilder.DEFAULT_PASSPHRASE);
+            timeout = Integer.parseInt(commandLine.getOptionValue("timeout", "" + RunConfigBuilder.DEFAULT_SSH_TIMEOUT));
+            commandThreads = Integer.parseInt(commandLine.getOptionValue("commandPool", "24"));
+            scheduledThreads = Integer.parseInt(commandLine.getOptionValue("scheduledPool", "24"));
+            yamlPaths = commandLine.getArgList();
+            stateProps = commandLine.getOptionProperties("S");
+            removeStateProperties = commandLine.getOptionProperties("SX");
+            test = commandLine.hasOption("test");
+            yaml = commandLine.hasOption("yaml");
+            breakpoints = commandLine.hasOption("breakpoint") ? Arrays.asList(commandLine.getOptionValues("breakpoint")) : Collections.EMPTY_LIST;
+            colorTerminal = commandLine.hasOption("colorTerminal");
+            jsonPort = Integer.parseInt(commandLine.getOptionValue("jsonport", "" + JsonServer.DEFAULT_PORT));
 
-        knownHosts = commandLine.getOptionValue("knownHosts", RunConfigBuilder.DEFAULT_KNOWN_HOSTS);
-        identity = commandLine.getOptionValue("identity", RunConfigBuilder.DEFAULT_IDENTITY);
-        passphrase = commandLine.getOptionValue("passphrase", RunConfigBuilder.DEFAULT_PASSPHRASE);
-        timeout = Integer.parseInt(commandLine.getOptionValue("timeout", "" + RunConfigBuilder.DEFAULT_SSH_TIMEOUT));
-        commandThreads = Integer.parseInt(commandLine.getOptionValue("commandPool", "24"));
-        scheduledThreads = Integer.parseInt(commandLine.getOptionValue("scheduledPool", "24"));
-        yamlPaths = commandLine.getArgList();
-        stateProps = commandLine.getOptionProperties("S");
-        removeStateProperties = commandLine.getOptionProperties("SX");
-        test = commandLine.hasOption("test");
-        yaml = commandLine.hasOption("yaml");
-        breakpoints = commandLine.hasOption("breakpoint") ? Arrays.asList(commandLine.getOptionValues("breakpoint")) : Collections.EMPTY_LIST;
-        colorTerminal = commandLine.hasOption("colorTerminal");
-        jsonPort = Integer.parseInt(commandLine.getOptionValue("jsonport", "" + JsonServer.DEFAULT_PORT));
+            exitCode = !commandLine.hasOption("ignore-exit-code");
 
-        exitCode = !commandLine.hasOption("ignore-exit-code");
+            outputPath = null;
+            DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+            String uid = dt.format(LocalDateTime.now());
 
-        outputPath = null;
-        DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-        String uid = dt.format(LocalDateTime.now());
+            trace = commandLine.getOptionValue("trace", "");
+            traceName = commandLine.getOptionValue("traceName",""+uid);
 
-        trace = commandLine.getOptionValue("trace", "");
-        traceName = commandLine.getOptionValue("traceName",""+uid);
+            skipStages = commandLine.hasOption("skip-stages") ? Arrays.asList(commandLine.getOptionValues("skip-stages")).stream().map(str->StringUtil.getEnum(str,Stage.class,Stage.Invalid)).collect(Collectors.toList()) : Collections.EMPTY_LIST;
+            streamLogging = commandLine.hasOption(Globals.STREAM_LOGGING);
 
-        skipStages = commandLine.hasOption("skip-stages") ? Arrays.asList(commandLine.getOptionValues("skip-stages")).stream().map(str->StringUtil.getEnum(str,Stage.class,Stage.Invalid)).collect(Collectors.toList()) : Collections.EMPTY_LIST;
-        streamLogging = commandLine.hasOption(Globals.STREAM_LOGGING);
-
-        if (commandLine.hasOption("basePath")) {
-            outputPath = commandLine.getOptionValue("basePath") + "/" + uid;
-        } else if (commandLine.hasOption("fullPath")) {
-            outputPath = commandLine.getOptionValue("fullPath");
-        } else {
-            outputPath = "/tmp/"+uid;
-        }
-
-        Properties properties = new Properties();
-        try (InputStream is = QDup.class.getResourceAsStream("/META-INF/MANIFEST.MF")) {
-            if (is != null) {
-                properties.load(is);
+            if (commandLine.hasOption("basePath")) {
+                outputPath = commandLine.getOptionValue("basePath") + "/" + uid;
+            } else if (commandLine.hasOption("fullPath")) {
+                outputPath = commandLine.getOptionValue("fullPath");
+            } else {
+                outputPath = "/tmp/"+uid;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try (InputStream is = QDup.class.getResourceAsStream("/META-INF/maven/io.hyperfoil.tools/qDup/pom.properties")) {
-            if (is != null) {
-                properties.load(is);
 
+            Properties properties = new Properties();
+            try (InputStream is = QDup.class.getResourceAsStream("/META-INF/MANIFEST.MF")) {
+                if (is != null) {
+                    properties.load(is);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        version = properties.getProperty("version", "unknown");
-        hash = properties.getProperty("hash", "unknown");
+            try (InputStream is = QDup.class.getResourceAsStream("/META-INF/maven/io.hyperfoil.tools/qDup/pom.properties")) {
+                if (is != null) {
+                    properties.load(is);
 
-        if (yamlPaths.isEmpty()) {
-            logger.error("Missing required yaml file(s)");
-            formatter.printHelp(cmdLineSyntax, options);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            version = properties.getProperty("version", "unknown");
+            hash = properties.getProperty("hash", "unknown");
+
+            if (yamlPaths.isEmpty()) {
+                logger.error("Missing required yaml file(s)");
+                formatter.printHelp(cmdLineSyntax, options);
+            }
+            yamlParser = Parser.getInstance();
         }
-        yamlParser = Parser.getInstance();
+
     }
 
     private static void disableLoggerShutdownHook(){
@@ -644,7 +646,6 @@ public class QDup {
                 ScheduledThreadPoolExecutor callback = new ScheduledThreadPoolExecutor(getScheduledThreads(), runnable -> new Thread(runnable, "qdup-callback-" + callbackCounter.getAndIncrement()));
 
                 Dispatcher dispatcher = new Dispatcher(executor, scheduled, callback);
-
 
                 if (System.console()== null){
                     logger.info("running with detached console");
