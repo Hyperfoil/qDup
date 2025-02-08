@@ -110,26 +110,28 @@ public class SignalCountsTest extends SshTestBase {
     public void signal_in_timer(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-            "scripts:",
-            "  sig:",
-            "    - sh: tail -f /dev/null",
-            "      timer:",
-            "        5m:",
-            "        - set-state: fizz fuzz",
-            "          then:",
-            "          - signal: sig",
-            "  wat:",
-            "    - wait-for: sig",
-            "hosts:",
-            "  local: me@localhost",
-            "roles:",
-            "  role:",
-            "    hosts: [local]",
-            "    run-scripts:",
-            "    - sig:",
-            "    - wat:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+            """                        
+            scripts:
+              sig:
+                - sh: tail -f /dev/null
+                  timer:
+                    5m:
+                    - set-state: fizz fuzz
+                      then:
+                      - signal: sig
+              wat:
+                - wait-for: sig
+            hosts:
+              local: me@localhost
+            roles:
+              role:
+                hosts: [local]
+                run-scripts:
+                - sig:
+                - wat:
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
@@ -143,23 +145,25 @@ public class SignalCountsTest extends SshTestBase {
     public void signal_in_timer_on_waitfor(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-            "scripts:",
-            "  sig:",
-            "    - wait-for: sig",
-            "      timer:",
-            "        5m:",
-            "        - set-state: fizz fuzz",
-            "          then:",
-            "          - signal: sig",
-            "hosts:",
-            "  local: me@localhost",
-            "roles:",
-            "  role:",
-            "    hosts: [local]",
-            "    run-scripts:",
-            "    - sig"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+            """
+            scripts:
+              sig:
+                - wait-for: sig
+                  timer:
+                    5m:
+                    - set-state: fizz fuzz
+                      then:
+                      - signal: sig
+            hosts:
+              local: me@localhost
+            roles:
+              role:
+                hosts: [local]
+                run-scripts:
+                - sig
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
@@ -173,27 +177,29 @@ public class SignalCountsTest extends SshTestBase {
     public void error_waitfor_without_signal(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - wait-for: FOO",
-                "    - sh: tail -f /dev/null",
-                "      timer:",
-                "        5m:",
-                "        - set-state: fizz fuzz",
-                "          then:",
-                "          - signal: sig",
-                "  wat:",
-                "    - wait-for: sig",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - sig:",
-                "    - wat:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  sig:
+                    - wait-for: FOO
+                    - sh: tail -f /dev/null
+                      timer:
+                        5m:
+                        - set-state: fizz fuzz
+                          then:
+                          - signal: sig
+                  wat:
+                    - wait-for: sig
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - sig:
+                    - wat:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
@@ -208,27 +214,29 @@ public class SignalCountsTest extends SshTestBase {
     public void waitfor_empty_string(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - wait-for: ${{missing:}}",
-                "    - sh: tail -f /dev/null",
-                "      timer:",
-                "        5m:",
-                "        - set-state: fizz fuzz",
-                "          then:",
-                "          - signal: sig",
-                "  wat:",
-                "    - wait-for: sig",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - sig:",
-                "    - wat:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  sig:
+                    - wait-for: ${{missing:}}
+                    - sh: tail -f /dev/null
+                      timer:
+                        5m:
+                        - set-state: fizz fuzz
+                          then:
+                          - signal: sig
+                  wat:
+                    - wait-for: sig
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - sig:
+                    - wat:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
@@ -244,23 +252,25 @@ public class SignalCountsTest extends SshTestBase {
     public void signal_in_watcher(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - sh: tail -f /dev/null",
-                "      watch:",
-                "      - signal: sig",
-                "  wat:",
-                "    - wait-for: sig",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - sig:",
-                "    - wat:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  sig:
+                    - sh: tail -f /dev/null
+                      watch:
+                      - signal: sig
+                  wat:
+                    - wait-for: sig
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - sig:
+                    - wat:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
@@ -274,24 +284,26 @@ public class SignalCountsTest extends SshTestBase {
     public void signal_in_onsignal(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - sh: tail -f /dev/null",
-                "      on-signal:",
-                "        foo:",
-                "        - signal: sig",
-                "  wat:",
-                "    - wait-for: sig",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - sig:",
-                "    - wat:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  sig:
+                    - sh: tail -f /dev/null
+                      on-signal:
+                        foo:
+                        - signal: sig
+                  wat:
+                    - wait-for: sig
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - sig:
+                    - wat:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
@@ -305,23 +317,25 @@ public class SignalCountsTest extends SshTestBase {
     public void error_missing_signal_variable_renamed(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - signal: ${{FOO}}",
-                "  inv:",
-                "    - wait-for: ${{FOO}}",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - sig:",
-                "        with: { FOO: BIZ }",
-                "    - inv:",
-                "        with: { FOO: BUZ }"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  sig:
+                    - signal: ${{FOO}}
+                  inv:
+                    - wait-for: ${{FOO}}
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - sig:
+                        with: { FOO: BIZ }
+                    - inv:
+                        with: { FOO: BUZ }
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -337,22 +351,24 @@ public class SignalCountsTest extends SshTestBase {
     public void error_waitfor_in_previous_stage(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - signal: FOO",
-                "  inv:",
-                "    - wait-for: FOO",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    setup-scripts:",
-                "    - inv",
-                "    run-scripts:",
-                "    - sig"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  sig:
+                    - signal: FOO
+                  inv:
+                    - wait-for: FOO
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    setup-scripts:
+                    - inv
+                    run-scripts:
+                    - sig
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -368,19 +384,21 @@ public class SignalCountsTest extends SshTestBase {
     public void error_signal_after_waitfor(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  test:",
-                "    - wait-for: FOO",
-                "    - signal: FOO",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - test:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  test:
+                    - wait-for: FOO
+                    - signal: FOO
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - test:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -396,18 +414,20 @@ public class SignalCountsTest extends SshTestBase {
     public void error_missing_signal(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  test:",
-                "    - wait-for: FOO",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - test:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  test:
+                    - wait-for: FOO
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - test:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -423,21 +443,23 @@ public class SignalCountsTest extends SshTestBase {
     public void setsignal_variable_name_then_waitfor(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  test:",
-                "    - set-signal: ${{BAR}} 1",
-                "    - wait-for: FOO",
-                "hosts:",
-                "  local: me@localhost",
-                "states:",
-                "  BAR: FOO",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - test:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  test:
+                    - set-signal: ${{BAR}} 1
+                    - wait-for: FOO
+                hosts:
+                  local: me@localhost
+                states:
+                  BAR: FOO
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - test:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -452,22 +474,24 @@ public class SignalCountsTest extends SshTestBase {
     public void signal_in_previous_stage(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - signal: FOO",
-                "  inv:",
-                "    - wait-for: FOO",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    setup-scripts:",
-                "    - sig",
-                "    run-scripts:",
-                "    - inv"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  sig:
+                    - signal: FOO
+                  inv:
+                    - wait-for: FOO
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    setup-scripts:
+                    - sig
+                    run-scripts:
+                    - inv
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -482,19 +506,21 @@ public class SignalCountsTest extends SshTestBase {
     public void setsignal_then_waitfor(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  test:",
-                "    - set-signal: FOO 1",
-                "    - wait-for: FOO",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - test:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  test:
+                    - set-signal: FOO 1
+                    - wait-for: FOO
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - test:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -530,23 +556,25 @@ public class SignalCountsTest extends SshTestBase {
     public void signal_name_bound_in_role(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                        "scripts:",
-                "  foo:",
-                "    - signal: ${{FOO:}}",
-                "  bar:",
-                "    - wait-for: ${{BAR}}",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - foo:",
-                "        with: { FOO: foo }",
-                "    - bar:",
-                "        with: { BAR: foo }"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  foo:
+                    - signal: ${{FOO:}}
+                  bar:
+                    - wait-for: ${{BAR}}
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - foo:
+                        with: { FOO: foo }
+                    - bar:
+                        with: { BAR: foo }
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
@@ -669,21 +697,23 @@ public class SignalCountsTest extends SshTestBase {
     public void signal_repeated_in_one_script(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                        "scripts:",
-                "  sig:",
-                "    - signal: FOO",
-                "    - signal: FOO",
-                "    - signal: FOO",
-                "    - signal: FOO",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - sig:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  sig:
+                    - signal: FOO
+                    - signal: FOO
+                    - signal: FOO
+                    - signal: FOO
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - sig:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -698,34 +728,36 @@ public class SignalCountsTest extends SshTestBase {
     public void signal_in_watch(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal_in_watch",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - sh: tail -f /var/log/messages",
-                "      watch:",
-                "      - regex: READY",
-                "        then:",
-                "        - ctrlC:",
-                "        - log: going to signal ${{name}}",
-                "        - signal: ${{name}}",
-                "  wat:",
-                "    - wait-for: ${{to_wait}}",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  water:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - wat:",
-                "        with:",
-                "          to_wait: FOO",
-                "  siger:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - sig:",
-                "        with:",
-                "          name: FOO"
-        )));
+        builder.loadYaml(parser.loadFile("signal_in_watch",
+                """
+                scripts:
+                  sig:
+                    - sh: tail -f /var/log/messages
+                      watch:
+                      - regex: READY
+                        then:
+                        - ctrlC:
+                        - log: going to signal ${{name}}
+                        - signal: ${{name}}
+                  wat:
+                    - wait-for: ${{to_wait}}
+                hosts:
+                  local: me@localhost
+                roles:
+                  water:
+                    hosts: [local]
+                    run-scripts:
+                    - wat:
+                        with:
+                          to_wait: FOO
+                  siger:
+                    hosts: [local]
+                    run-scripts:
+                    - sig:
+                        with:
+                          name: FOO
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         RunSummary summary = new RunSummary();
@@ -741,32 +773,34 @@ public class SignalCountsTest extends SshTestBase {
     public void signal_repeated_sub_script(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  sig:",
-                "    - signal: FOO",
-                "    - signal: ${{BAR}}",
-                "  inv:",
-                "    - script: sig",
-                "      with: {BAR: alpha}",
-                "    - script: sig",
-                "      with: {BAR: bravo}",
-                "    - script: sig",
-                "      with: {BAR: charlie}",
-                "    - script: sig",
-                "      with: {BAR: delta}",
-                "  wat:",
-                "    - wait-for: FOO",
-                "    - done:",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - inv:",
-                "    - wat:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  sig:
+                    - signal: FOO
+                    - signal: ${{BAR}}
+                  inv:
+                    - script: sig
+                      with: {BAR: alpha}
+                    - script: sig
+                      with: {BAR: bravo}
+                    - script: sig
+                      with: {BAR: charlie}
+                    - script: sig
+                      with: {BAR: delta}
+                  wat:
+                    - wait-for: FOO
+                    - done:
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - inv:
+                    - wat:
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
@@ -811,41 +845,43 @@ public class SignalCountsTest extends SshTestBase {
         assertEquals("signal count for FOO",4,signalCounts.getSignalCount("FOO"));
     }
 
-    @Test @Ignore /*TODO work in progress (WIP)*/
+    @Test @Ignore /*TODO expected signal count needs to take else-then branching into account*/
     public void signal_in_then_and_else(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-                "scripts:",
-                "  single:",
-                "    - log: single",
-                "    - signal: sig",
-                "  replicated:",
-                "    - log: replicated",
-                "    - signal: sig",
-                "  caller: ",
-                "    - log: caller",
-                "    - read-state: ${{TOPOLOGY}}",
-                "      then:",
-                "        - regex: single",
-                "          then:",
-                "            - script: single",
-                "          else:",
-                "            - script: replicated",
-                "  waiter:",
-                "    - log: waiting for signal",
-                "    - wait-for: sig",
-                "hosts:",
-                "  local: me@localhost",
-                "roles:",
-                "  role:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - caller",
-                "    - waiter",
-                "states:",
-                "  TOPOLOGY: single"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  single:
+                    - log: single
+                    - signal: sig
+                  replicated:
+                    - log: replicated
+                    - signal: sig
+                  caller:
+                    - log: caller
+                    - read-state: ${{TOPOLOGY}}
+                      then:
+                        - regex: single
+                          then:
+                            - script: single
+                          else:
+                            - script: replicated
+                  waiter:
+                    - log: waiting for signal
+                    - wait-for: sig
+                hosts:
+                  local: me@localhost
+                roles:
+                  role:
+                    hosts: [local]
+                    run-scripts:
+                    - caller
+                    - waiter
+                states:
+                  TOPOLOGY: single
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         RunSummary summary = new RunSummary();
         SignalCounts signalCounts = new SignalCounts();
@@ -860,38 +896,40 @@ public class SignalCountsTest extends SshTestBase {
     public void setSignalCountTest(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  repeat-until:",
-                "  - repeat-until: TEST_DONE",
-                "    then:",
-                "    - wait-for: READY",
-                "    - set-state: RUN.counter ${{= ${{RUN.counter}} + 1}}",
-                "    - set-signal:",
-                "        name: READY",
-                "        count: 1",
-                "        reset: true",
-                "  run-test:",
-                "  - for-each:",
-                "      name: it",
-                "      input: ${{tests}}",
-                "    then:",
-                "    - log: running test ${{it}}",
-                "    - signal: READY",
-                "    - sleep: 500",
-                "  - signal: TEST_DONE",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "      - repeat-until",
-                "      - run-test",
-                "states:",
-                "  counter: 0",
-                "  tests: ['test1', 'test2', 'test3']"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  repeat-until:
+                  - repeat-until: TEST_DONE
+                    then:
+                    - wait-for: READY
+                    - set-state: RUN.counter ${{= ${{RUN.counter}} + 1}}
+                    - set-signal:
+                        name: READY
+                        count: 1
+                        reset: true
+                  run-test:
+                  - for-each:
+                      name: it
+                      input: ${{tests}}
+                    then:
+                    - log: running test ${{it}}
+                    - signal: READY
+                    - sleep: 500
+                  - signal: TEST_DONE
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts:
+                      - repeat-until
+                      - run-test
+                states:
+                  counter: 0
+                  tests: ['test1', 'test2', 'test3']
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());

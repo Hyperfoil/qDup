@@ -43,23 +43,25 @@ public class StageTest extends SshTestBase{
     public void variableSignalName_boundInRole(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-           "scripts:",
-           "  foo:",
-           "    - signal: ${{FOO:}}",
-           "  bar:",
-           "    - wait-for: ${{BAR}}",
-           "hosts:",
-           "  local: me@localhost",
-           "roles:",
-           "  role:",
-           "    hosts: [local]",
-           "    run-scripts:",
-           "    - foo:",
-           "        with: { FOO: foo }",
-           "    - bar:",
-           "        with: { BAR: foo }"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+           """
+           scripts:
+             foo:
+               - signal: ${{FOO:}}
+             bar:
+               - wait-for: ${{BAR}}
+           hosts:
+             local: me@localhost
+           roles:
+             role:
+               hosts: [local]
+               run-scripts:
+               - foo:
+                   with: { FOO: foo }
+               - bar:
+                   with: { BAR: foo }
+           """
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
@@ -162,21 +164,23 @@ public class StageTest extends SshTestBase{
     public void signalMultipleTimesSameScript(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-              "scripts:",
-           "  sig:",
-           "    - signal: FOO",
-           "    - signal: FOO",
-           "    - signal: FOO",
-           "    - signal: FOO",
-           "hosts:",
-           "  local: me@localhost",
-           "roles:",
-           "  role:",
-           "    hosts: [local]",
-           "    run-scripts:",
-           "    - sig:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+           """
+           scripts:
+             sig:
+               - signal: FOO
+               - signal: FOO
+               - signal: FOO
+               - signal: FOO
+           hosts:
+             local: me@localhost
+           roles:
+             role:
+               hosts: [local]
+               run-scripts:
+               - sig:
+           """
+        ));
         RunConfig config = builder.buildConfig(parser);
         Assert.assertEquals("expect 4 signals for FOO",4,config.getSignalCounts().count("FOO"));
     }
@@ -184,31 +188,33 @@ public class StageTest extends SshTestBase{
     public void signalInRepeatedSubScript(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-           "scripts:",
-           "  sig:",
-           "    - signal: FOO",
-           "  inv:",
-           "    - script: sig",
-           "      with: {BAR: alpha}",
-           "    - script: sig",
-           "      with: {BAR: bravo}",
-           "    - script: sig",
-           "      with: {BAR: charlie}",
-           "    - script: sig",
-           "      with: {BAR: delta}",
-           "  wat:",
-           "    - wait-for: FOO",
-           "    - done:",
-           "hosts:",
-           "  local: me@localhost",
-           "roles:",
-           "  role:",
-           "    hosts: [local]",
-           "    run-scripts:",
-           "    - inv:",
-           "    - wat:"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+           """
+           scripts:
+             sig:
+               - signal: FOO
+             inv:
+               - script: sig
+                 with: {BAR: alpha}
+               - script: sig
+                 with: {BAR: bravo}
+               - script: sig
+                 with: {BAR: charlie}
+               - script: sig
+                 with: {BAR: delta}
+             wat:
+               - wait-for: FOO
+               - done:
+           hosts:
+             local: me@localhost
+           roles:
+             role:
+               hosts: [local]
+               run-scripts:
+               - inv:
+               - wat
+           """
+        ));
         RunConfig config = builder.buildConfig(parser);
         Assert.assertEquals("expect 4 signals for FOO",4,config.getSignalCounts().count("FOO"));
     }

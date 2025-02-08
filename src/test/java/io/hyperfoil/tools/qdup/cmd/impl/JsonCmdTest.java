@@ -77,17 +77,19 @@ public class JsonCmdTest extends SshTestBase {
     public void yaml_string(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("signal", stream("" +
-            "scripts:",
-            "  foo:",
-            "    - json: doSomething",
-            "hosts:",
-            "  local: " + getHost(),
-            "roles:",
-            "  doit:",
-            "    hosts: [local]",
-            "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+            """
+            scripts:
+              foo:
+                - json: doSomething
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                run-scripts: [foo]
+            """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         Script foo = config.getScript("foo");
@@ -101,18 +103,20 @@ public class JsonCmdTest extends SshTestBase {
     public void yaml_json(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("signal", stream("" +
-                "scripts:",
-                "  foo:",
-                "    - json:",
-                "        path: doSomething",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+            """
+            scripts:
+              foo:
+                - json:
+                    path: doSomething
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                run-scripts: [foo]
+            """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         Script foo = config.getScript("foo");
@@ -127,20 +131,22 @@ public class JsonCmdTest extends SshTestBase {
     public void yaml_run_then(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("signal", stream("" +
-                "scripts:",
-                "  foo:",
-                "    - sh: echo '{\"foo\":\"bar\"}'",
-                "    - json: \"$.foo\"",
-                "      then:",
-                "      - set-state: RUN.foo",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+            """
+            scripts:
+              foo:
+                - sh: echo '{"foo":"bar"}'
+                - json: "$.foo"
+                  then:
+                  - set-state: RUN.foo
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                run-scripts: [foo]
+            """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
@@ -155,22 +161,24 @@ public class JsonCmdTest extends SshTestBase {
     public void yaml_run_else(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("signal", stream("" +
-                        "scripts:",
-                "  foo:",
-                "    - sh: echo '{\"foo\":\"bar\"}'",
-                "    - json: \"$.NOTfoo\"",
-                "      then:",
-                "      - set-state: RUN.foo",
-                "      else:",
-                "      - set-state: RUN.foo missed",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+            """
+            scripts:
+              foo:
+                - sh: echo '{"foo":"bar"}'
+                - json: "$.NOTfoo"
+                  then:
+                  - set-state: RUN.foo
+                  else:
+                  - set-state: RUN.foo missed
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                run-scripts: [foo]
+            """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();

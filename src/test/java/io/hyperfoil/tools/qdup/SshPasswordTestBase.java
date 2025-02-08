@@ -39,18 +39,20 @@ public class SshPasswordTestBase extends SshTestBase{
     public void passphrase_id_missing_password(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-                "scripts:",
-                "  echo:",
-                "  - sh: echo \"ran\"",
-                "  - set-state: RUN.foo",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [echo]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  echo:
+                  - sh: echo "ran"
+                  - set-state: RUN.foo
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [echo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         //builder.setPassphrase("password");
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
@@ -66,18 +68,20 @@ public class SshPasswordTestBase extends SshTestBase{
     public void passphrase_id_wrong_password(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-                "scripts:",
-                "  echo:",
-                "  - sh: echo \"ran\"",
-                "  - set-state: RUN.foo",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [echo]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  echo:
+                  - sh: echo "ran"
+                  - set-state: RUN.foo
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [echo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         builder.setPassphrase("wrong_password");
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
@@ -93,18 +97,20 @@ public class SshPasswordTestBase extends SshTestBase{
     public void passphrase_id_correct_password(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-                "scripts:",
-                "  echo:",
-                "  - sh: echo \"ran\"",
-                "  - set-state: RUN.foo",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [echo]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  echo:
+                  - sh: echo "ran"
+                  - set-state: RUN.foo
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [echo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         builder.setPassphrase("password");
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();

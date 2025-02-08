@@ -527,24 +527,26 @@ public class CmdTest extends SshTestBase {
    public void run_multiple_thens_check_input_source() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("", stream("" +
-         "scripts:",
-         "  foo:",
-         "  - sh: echo {\"foo\":\"bar\"}",
-         "    then:",
-         "    - json: $.foo",
-         "    then:",
-         "    - set-state: RUN.STORED",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts:",
-         "    - foo:",
-         "states:",
-         "  value: worked"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           foo:
+           - sh: echo {"foo":"bar"}
+             then:
+             - json: $.foo
+             then:
+             - set-state: RUN.STORED
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts:
+             - foo:
+         states:
+           value: worked
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -572,22 +574,24 @@ public class CmdTest extends SshTestBase {
    public void run_with_same_name_from_state(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("", stream("" +
-         "scripts:",
-         "  foo:",
-         "  - set-state: RUN.resolved ${{value}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts:",
-         "    - foo:",
-         "        with:",
-         "          value: ${{value}}",
-         "states:",
-         "  value: worked"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           foo:
+           - set-state: RUN.resolved ${{value}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts:
+             - foo:
+                 with:
+                   value: ${{value}}
+         states:
+           value: worked
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -609,26 +613,28 @@ public class CmdTest extends SshTestBase {
    public void yaml_state_scan(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("", stream("" +
-              "scripts:",
-              "  foo:",
-              "  - sh: |",
-              "      foo bar",
-              "      biz buz",
-              "      fizz fuzz",
-              "    state-scan: false",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts:",
-              "    - foo:",
-              "        with:",
-              "          value: ${{value}}",
-              "states:",
-              "  value: worked"
-      )));
+      builder.loadYaml(parser.loadFile("",
+              """
+              scripts:
+                foo:
+                - sh: |
+                    foo bar
+                    biz buz
+                    fizz fuzz
+                  state-scan: false
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts:
+                  - foo:
+                      with:
+                        value: ${{value}}
+              states:
+                value: worked
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -643,24 +649,26 @@ public class CmdTest extends SshTestBase {
    public void run_with_json_from_state() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("", stream("" +
-         "scripts:",
-         "  foo:",
-         "  - set-state: RUN.name ${{host.name}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts:",
-         "    - foo:",
-         "        with:",
-         "          host: ${{charlie}}",
-         "states:",
-         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-         "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           foo:
+           - set-state: RUN.name ${{host.name}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts:
+             - foo:
+                 with:
+                   host: ${{charlie}}
+         states:
+           alpha: [ {name: "ant"}, {name: "apple"} ]
+           bravo: [ {name: "bear"}, {name: "bull"} ]
+           charlie: {name: "cat"}
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
 
@@ -682,24 +690,26 @@ public class CmdTest extends SshTestBase {
    public void run_with_json() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("", stream("" +
-            "scripts:",
-         "  foo:",
-         "  - set-state: RUN.name ${{host.name}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts:",
-         "    - foo:",
-         "        with:",
-         "          host: {name: \"cat\"}",
-         "states:",
-         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-         "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           foo:
+           - set-state: RUN.name ${{host.name}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts:
+             - foo:
+                 with:
+                   host: {name: "cat"}
+         states:
+           alpha: [ {name: "ant"}, {name: "apple"} ]
+           bravo: [ {name: "bear"}, {name: "bull"} ]
+           charlie: {name: "cat"}
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();

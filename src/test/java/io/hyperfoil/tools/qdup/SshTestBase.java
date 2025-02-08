@@ -301,11 +301,6 @@ public class SshTestBase {
 
 
 
-    public static InputStream stream(String...input){
-        return new ByteArrayInputStream(
-                String.join("\n", Arrays.asList(input)).getBytes()
-        );
-    }
 
     protected static class TmpDir{
         final Path tempDirWithPrefix;

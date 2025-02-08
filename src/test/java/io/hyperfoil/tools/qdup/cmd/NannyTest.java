@@ -23,27 +23,29 @@ public class NannyTest extends SshTestBase {
    public void idle_wait_for(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-         "scripts:",
-         "  foo:",
-         "    - sh: echo \"pwd is $(pwd)\"",
-         "      watch:",
-         "      - regex: \"missingValue\"",
-         "        then:",
-         "        - signal: MISSING",
-         "    - set-state: RUN.done true",
-         "  bar:",
-         "    - wait-for: MISSING",
-         "    - set-state: RUN.never true",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts:",
-         "    - foo:",
-         "    - bar:"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+         """
+         scripts:
+           foo:
+             - sh: echo "pwd is $(pwd)"
+               watch:
+               - regex: "missingValue"
+                 then:
+                 - signal: MISSING
+             - set-state: RUN.done true
+           bar:
+             - wait-for: MISSING
+             - set-state: RUN.never true
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts:
+             - foo:
+             - bar:
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -61,31 +63,32 @@ public class NannyTest extends SshTestBase {
    public void idle_repeat_until(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream(
-         "" +
-         "scripts:",
-         "  foo:",
-         "    - sh: echo \"pwd is $(pwd)\"",
-         "      watch:",
-         "      - regex: \"missingValue\"",
-         "        then:",
-         "        - signal: MISSING",
-         "    - set-state: RUN.done true",
-         "  bar:",
-         "    - repeat-until: MISSING",
-         "      then:",
-         "      - set-state: RUN.count ${{= 1 + ${{RUN.count:0}} }}",
-         "      - sleep: 10s",
-         "    - set-state: RUN.never true",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts:",
-         "    - foo:",
-         "    - bar:"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+         """
+         scripts:
+           foo:
+             - sh: echo "pwd is $(pwd)"
+               watch:
+               - regex: "missingValue"
+                 then:
+                 - signal: MISSING
+             - set-state: RUN.done true
+           bar:
+             - repeat-until: MISSING
+               then:
+               - set-state: RUN.count ${{= 1 + ${{RUN.count:0}} }}
+               - sleep: 10s
+             - set-state: RUN.never true
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts:
+             - foo:
+             - bar:
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -102,35 +105,36 @@ public class NannyTest extends SshTestBase {
    public void self_finishing_repeat_until(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream(
-         "" +
-            "scripts:",
-         "  foo:",
-         "    - sh: echo \"pwd is $(pwd)\"",
-         "      watch:",
-         "      - regex: \"missingValue\"",
-         "        then:",
-         "        - signal: MISSING",
-         "    - set-state: RUN.done true",
-         "  bar:",
-         "    - repeat-until: NOT_MISSING",
-         "      then:",
-         "      - set-state: RUN.count ${{= 1 + ${{RUN.count:0}} }}",
-         "      - read-state: ${{RUN.count}}",
-         "      - regex: 4",
-         "        then:",
-         "        - signal: NOT_MISSING",
-         "      - sleep: 10s",
-         "    - set-state: RUN.reached true",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts:",
-         "    - foo:",
-         "    - bar:"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+         """
+         scripts:
+           foo:
+             - sh: echo "pwd is $(pwd)"
+               watch:
+               - regex: "missingValue"
+                 then:
+                 - signal: MISSING
+             - set-state: RUN.done true
+           bar:
+             - repeat-until: NOT_MISSING
+               then:
+               - set-state: RUN.count ${{= 1 + ${{RUN.count:0}} }}
+               - read-state: ${{RUN.count}}
+               - regex: 4
+                 then:
+                 - signal: NOT_MISSING
+               - sleep: 10s
+             - set-state: RUN.reached true
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts:
+             - foo:
+             - bar:
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -151,36 +155,37 @@ public class NannyTest extends SshTestBase {
       int count = 5;
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream(
-              "" +
-              "scripts:",
-              "  foo:",//docker
-              "    - signal: foo",
-              "    - set-state: RUN.foo ${{= 1 + ${{RUN.foo:0}} }}",
-              "    - wait-for: done",
-              "  biz:",//pmap
-              "    - wait-for: foo",
-              "    - repeat-until: bar",
-              "      then:",
-              "      - set-state: RUN.biz ${{= 1 + ${{RUN.biz:0}} }}",
-              "      - sleep: 100s",
-              "    - set-state: RUN.reachedBiz true",
-              "    - signal: done",
-              "  bar:",//wrk
-              "    - wait-for: foo",
-              "    - sh: sleep 10s",//work
-              "    - signal: bar",
-              "    - set-state: RUN.reachedBar true",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts:",
-              "    - foo:",
-              "    - bar:",
-              "    - biz:"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo: #docker
+                  - signal: foo
+                  - set-state: RUN.foo ${{= 1 + ${{RUN.foo:0}} }}
+                  - wait-for: done
+                biz: #pmap
+                  - wait-for: foo
+                  - repeat-until: bar
+                    then:
+                    - set-state: RUN.biz ${{= 1 + ${{RUN.biz:0}} }}
+                    - sleep: 100s
+                  - set-state: RUN.reachedBiz true
+                  - signal: done
+                bar: #wrk
+                  - wait-for: foo
+                  - sh: sleep 10s #work
+                  - signal: bar
+                  - set-state: RUN.reachedBar true
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts:
+                  - foo:
+                  - bar:
+                  - biz:
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -197,38 +202,39 @@ public class NannyTest extends SshTestBase {
       int count = 10;
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream(
-              "" +
-              "scripts:",
-              "  foo:",
-              "    - repeat-until: FOO",
-              "      then:",
-              "      - set-state: RUN.foo ${{=1 + ${{RUN.foo:0}} }}",
-              "      - regex: "+count,
-              "        then:",
-              "        - signal: BAR",
-              "      - sleep: 10s",
-              "    - set-state: RUN.reachedFoo true",
-
-              "  bar:",
-              "    - repeat-until: BAR",
-              "      then:",
-              "      - set-state: RUN.bar ${{= 1 + ${{RUN.bar:0}} }}",
-              "      - read-state: ${{RUN.bar}}",
-              "      - regex: "+count,
-              "        then:",
-              "        - signal: FOO",
-              "      - sleep: 10s",
-              "    - set-state: RUN.reachedBar true",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts:",
-              "    - foo:",
-              "    - bar:"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - repeat-until: FOO
+                    then:
+                    - set-state: RUN.foo ${{=1 + ${{RUN.foo:0}} }}
+                    - regex: COUNT_REPLACE
+                      then:
+                      - signal: BAR
+                    - sleep: 10s
+                  - set-state: RUN.reachedFoo true
+                bar:
+                  - repeat-until: BAR
+                    then:
+                    - set-state: RUN.bar ${{= 1 + ${{RUN.bar:0}} }}
+                    - read-state: ${{RUN.bar}}
+                    - regex: COUNT_REPLACE
+                      then:
+                      - signal: FOO
+                    - sleep: 10s
+                  - set-state: RUN.reachedBar true
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts:
+                  - foo:
+                  - bar:
+              """.replaceAll("TARGET_HOST",getHost().toString())
+              .replaceAll("COUNT_REPLACE",""+count)
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();

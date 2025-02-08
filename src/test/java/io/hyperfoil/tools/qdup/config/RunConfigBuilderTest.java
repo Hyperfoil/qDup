@@ -29,20 +29,22 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void role_hosts_pattern_as_expression_existing_host(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("first",stream(""+
-            "scripts:",
-            "  foo:",
-            "    - sh: pwd",
-            "hosts:",
-            "  foo: me@localhost",
-            "roles:",
-            "  doit:",
-            "    hosts: ${{hostname}}",
-            "    setup-scripts:",
-            "    - foo",
-            "states:",
-            "  hostname: foo"
-        )));
+        builder.loadYaml(parser.loadFile("first",
+            """
+            scripts:
+              foo:
+                - sh: pwd
+            hosts:
+              foo: me@localhost
+            roles:
+              doit:
+                hosts: ${{hostname}}
+                setup-scripts:
+                - foo
+            states:
+              hostname: foo
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
@@ -59,20 +61,22 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void role_hosts_pattern_as_expression_new_host(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("first",stream(""+
-                "scripts:",
-                "  foo:",
-                "    - sh: pwd",
-                "hosts:",
-                "  foo: you@localhost",
-                "roles:",
-                "  doit:",
-                "    hosts: ${{hostname}}",
-                "    setup-scripts:",
-                "    - foo",
-                "states:",
-                "  hostname: me@localhost"
-        )));
+        builder.loadYaml(parser.loadFile("first",
+                """
+                scripts:
+                  foo:
+                    - sh: pwd
+                hosts:
+                  foo: you@localhost
+                roles:
+                  doit:
+                    hosts: ${{hostname}}
+                    setup-scripts:
+                    - foo
+                states:
+                  hostname: me@localhost
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
@@ -89,20 +93,22 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void role_hosts_pattern_as_expression_new_host_array(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("first",stream(""+
-                        "scripts:",
-                "  foo:",
-                "    - sh: pwd",
-                "hosts:",
-                "  foo: you@localhost",
-                "roles:",
-                "  doit:",
-                "    hosts: ${{hostname}}",
-                "    setup-scripts:",
-                "    - foo",
-                "states:",
-                "  hostname: ['me@localhost','he@localhost','she@localhost']"
-        )));
+        builder.loadYaml(parser.loadFile("first",
+                """
+                scripts:
+                  foo:
+                    - sh: pwd
+                hosts:
+                  foo: you@localhost
+                roles:
+                  doit:
+                    hosts: ${{hostname}}
+                    setup-scripts:
+                    - foo
+                states:
+                  hostname: ['me@localhost','he@localhost','she@localhost']
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
@@ -119,21 +125,23 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void role_hosts_pattern_in_list_existing_host(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("first",stream(""+
-                "scripts:",
-                "  foo:",
-                "    - sh: pwd",
-                "hosts:",
-                "  foo: me@localhost",
-                "roles:",
-                "  doit:",
-                "    hosts:",
-                "    - ${{hostname}}",
-                "    setup-scripts:",
-                "    - foo",
-                "states:",
-                "  hostname: foo"
-        )));
+        builder.loadYaml(parser.loadFile("first",
+                """
+                scripts:
+                  foo:
+                    - sh: pwd
+                hosts:
+                  foo: me@localhost
+                roles:
+                  doit:
+                    hosts:
+                    - ${{hostname}}
+                    setup-scripts:
+                    - foo
+                states:
+                  hostname: foo
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
@@ -151,21 +159,23 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void role_hosts_pattern_in_list_new_host(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("first",stream(""+
-                "scripts:",
-                "  foo:",
-                "    - sh: pwd",
-                "hosts:",
-                "  foo: you@localhost",
-                "roles:",
-                "  doit:",
-                "    hosts:",
-                "    - ${{hostname}}",
-                "    setup-scripts:",
-                "    - foo",
-                "states:",
-                "  hostname: me@localhost"
-        )));
+        builder.loadYaml(parser.loadFile("first",
+                """
+                scripts:
+                  foo:
+                    - sh: pwd
+                hosts:
+                  foo: you@localhost
+                roles:
+                  doit:
+                    hosts:
+                    - ${{hostname}}
+                    setup-scripts:
+                    - foo
+                states:
+                  hostname: me@localhost
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
@@ -183,21 +193,23 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void role_hosts_pattern_in_list_new_host_array(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("first",stream(""+
-                        "scripts:",
-                "  foo:",
-                "    - sh: pwd",
-                "hosts:",
-                "  foo: you@localhost",
-                "roles:",
-                "  doit:",
-                "    hosts:",
-                "    - ${{hostname}}",
-                "    setup-scripts:",
-                "    - foo",
-                "states:",
-                "  hostname: ['me@localhost','he@localhost','she@localhost']"
-        )));
+        builder.loadYaml(parser.loadFile("first",
+                """
+                scripts:
+                  foo:
+                    - sh: pwd
+                hosts:
+                  foo: you@localhost
+                roles:
+                  doit:
+                    hosts:
+                    - ${{hostname}}
+                    setup-scripts:
+                    - foo
+                states:
+                  hostname: ['me@localhost','he@localhost','she@localhost']
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertEquals("expect 2 roles because of ALL",2,config.getRoles().size());
@@ -216,14 +228,18 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void multiple_yaml_override_state(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("first",stream(""+
-            "states:",
-            "  foo: bar"
-        )));
-        builder.loadYaml(parser.loadFile("first",stream(""+
-            "states:",
-            "  foo: biz"
-        )));
+        builder.loadYaml(parser.loadFile("first",
+            """
+            states:
+              foo: bar
+            """
+        ));
+        builder.loadYaml(parser.loadFile("first",
+            """
+            states:
+              foo: biz
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertEquals("second should not change state\n"+config.getState().toJson().toString(2),"bar",config.getState().get("foo"));
@@ -233,20 +249,22 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void error_missing_signal_value() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("error", stream("" +
-            "scripts:",
-            "  foo:",
-            "  - signal: ${{BAR}}",
-            "hosts:",
-            "  local: "+getHost(),
-            "roles:",
-            "  doit:",
-            "    hosts: [local]",
-            "    setup-scripts: [foo]",
-            "states:",
-            "  BAR: ${{BIZ}}",
-            "  BIZx: "
-        )));
+        builder.loadYaml(parser.loadFile("error",
+            """
+            scripts:
+              foo:
+              - signal: ${{BAR}}
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                setup-scripts: [foo]
+            states:
+              BAR: ${{BIZ}}
+              BIZx:
+            """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertTrue("config errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         assertEquals("expect 1 error:\n"+ config.getErrorStrings().stream().collect(Collectors.joining("\n")),1,config.getErrors().size());
@@ -256,22 +274,24 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void error_missing_referenced_state_value() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("ctrlC", stream("" +
-                "scripts:",
-                "  foo:",
-                "    - sh: echo HI",
-                "      then:",
-                "      - sh: echo ${{BAR}}",
-                "hosts:",
-                "  local: "+getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    setup-scripts: [foo]",
-                "states:",
-                "  BAR: ${{BIZ}}",
-                "  BIZx: "
-        )));
+        builder.loadYaml(parser.loadFile("ctrlC",
+                """
+                scripts:
+                  foo:
+                    - sh: echo HI
+                      then:
+                      - sh: echo ${{BAR}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    setup-scripts: [foo]
+                states:
+                  BAR: ${{BIZ}}
+                  BIZx:
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertTrue("config errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         assertEquals("expect 1 error:\n"+ config.getErrorStrings().stream().collect(Collectors.joining("\n")),1,config.getErrors().size());
@@ -281,22 +301,24 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void error_missing_state_has_default() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("ctrlC", stream("" +
-            "scripts:",
-            "  foo:",
-            "    - sh: echo HI",
-            "      then:",
-            "      - sh: echo ${{BAR}}",
-            "hosts:",
-            "  local: "+getHost(),
-            "roles:",
-            "  doit:",
-            "    hosts: [local]",
-            "    setup-scripts: [foo]",
-            "states:",
-            "  BAR: ${{BIZ:}}",
-            "  BIZx: "
-        )));
+        builder.loadYaml(parser.loadFile("ctrlC",
+            """
+            scripts:
+              foo:
+                - sh: echo HI
+                  then:
+                  - sh: echo ${{BAR}}
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                setup-scripts: [foo]
+            states:
+              BAR: ${{BIZ:}}
+              BIZx:
+            """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
     }
@@ -305,24 +327,26 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void error_invalid_top_level_entry() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("error_invalid_top_level_entry", stream("" +
-                "scripts:",
-                "  foo:",
-                "    - sh: echo HI",
-                "      then:",
-                "      - sh: |",
-                "          echo ${{BAR}}",
-                "state-scan: false",
-                "hosts:",
-                "  local: "+getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    setup-scripts: [foo]",
-                "states:",
-                "  BAR: ${{BIZ:}}",
-                "  BIZx: "
-        )));
+        builder.loadYaml(parser.loadFile("error_invalid_top_level_entry",
+                """                        
+                scripts:
+                  foo:
+                    - sh: echo HI
+                      then:
+                      - sh: |
+                          echo ${{BAR}}
+                state-scan: false
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    setup-scripts: [foo]
+                states:
+                  BAR: ${{BIZ:}}
+                  BIZx:
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertTrue("expected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
     }
@@ -330,24 +354,26 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void error_invalid_statescan_indentation() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("error_invalid_statescan_indentation", stream("" +
-                "scripts:",
-                "  foo:",
-                "    - sh: echo HI",
-                "      then:",
-                "      - sh: |",
-                "          echo ${{BAR}}",
-                "       state-scan: false",
-                "hosts:",
-                "  local: "+getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    setup-scripts: [foo]",
-                "states:",
-                "  BAR: ${{BIZ:}}",
-                "  BIZx: "
-        )));
+        builder.loadYaml(parser.loadFile("error_invalid_statescan_indentation",
+                """
+                scripts:
+                  foo:
+                    - sh: echo HI
+                      then:
+                      - sh: |
+                          echo ${{BAR}}
+                       state-scan: false
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    setup-scripts: [foo]
+                states:
+                  BAR: ${{BIZ:}}
+                  BIZx:
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertTrue("expected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
     }
@@ -357,17 +383,19 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testScriptWithCtrlC(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("ctrlC",stream(""+
-            "scripts:",
-            "  foo:",
-            "    - ctrlC",
-            "    - sh: tail -f bar.txt",
-            "      watch:",
-            "      - regex: bar",
-            "        then:",
-            "        - ctrlC",
-            "    - sh: echo 'yay'"
-        )));
+        builder.loadYaml(parser.loadFile("ctrlC",
+            """
+            scripts:
+              foo:
+                - ctrlC
+                - sh: tail -f bar.txt
+                  watch:
+                  - regex: bar
+                    then:
+                    - ctrlC
+                - sh: echo 'yay'
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertFalse("runConfig errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
@@ -393,23 +421,25 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testRolesWithState(){
         RunConfigBuilder builder = getBuilder();
         Parser parser = Parser.getInstance();
-        builder.loadYaml(parser.loadFile("with",stream("",
-            "scripts:",
-            "  build-agroal:",
-            "  - echo",
-            "  setup-wildfly:",
-            "  - echo",
-            "hosts:",
-            "  local : me@localhost",
-            "roles:",
-            "  wildfly:",
-            "    hosts: [local]",
-            "    setup-scripts:",
-            "    - build-agroal:",
-            "        with:",
-            "          GIT_COMMIT : ${{AGROAL_TAG}}",
-            "    - setup-wildfly"
-        )));
+        builder.loadYaml(parser.loadFile("with",
+            """
+            scripts:
+              build-agroal:
+              - echo
+              setup-wildfly:
+              - echo
+            hosts:
+              local : me@localhost
+            roles:
+              wildfly:
+                hosts: [local]
+                setup-scripts:
+                - build-agroal:
+                    with:
+                      GIT_COMMIT : ${{AGROAL_TAG}}
+                - setup-wildfly
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 
@@ -424,25 +454,27 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testVariableScriptWithWaitFor(){
         RunConfigBuilder builder = getBuilder();
         Parser parser = Parser.getInstance();
-        builder.loadYaml(parser.loadFile("waitfor",stream("",
-            "scripts:",
-            "  signal:",
-            "  - signal: SERVER_READY",
-            "  waiter:",
-            "  - wait-for: SERVER_READY",
-            "hosts:",
-            "  local: me@localhost",
-            "  server: me@serverHostName",
-            "roles:",
-            "  test:",
-            "    hosts: [local, server]",
-            "    run-scripts:",
-            "    - ${{SCRIPT_NAME}}",
-            "    - ${{WAIT_NAME}}",
-            "states:",
-            "  SCRIPT_NAME : signal",
-            "  WAIT_NAME : waiter"
-        )));
+        builder.loadYaml(parser.loadFile("waitfor",
+            """
+            scripts:
+              signal:
+              - signal: SERVER_READY
+              waiter:
+              - wait-for: SERVER_READY
+            hosts:
+              local: me@localhost
+              server: me@serverHostName
+            roles:
+              test:
+                hosts: [local, server]
+                run-scripts:
+                - ${{SCRIPT_NAME}}
+                - ${{WAIT_NAME}}
+            states:
+              SCRIPT_NAME : signal
+              WAIT_NAME : waiter
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 
@@ -461,12 +493,14 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testImplicitRunState(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("implicitState",stream("",
-           "states:",
-           "  foo : foo",
-           "  host :",
-           "    foo : bar"
-        )));
+        builder.loadYaml(parser.loadFile("implicitState",
+           """
+           states:
+             foo : foo
+             host :
+               foo : bar
+           """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 
@@ -493,17 +527,21 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testSameStateName(){
         RunConfigBuilder builder = getBuilder();
         Parser parser = Parser.getInstance();
-        builder.loadYaml(parser.loadFile("firstDef",stream("",
-            "states:",
-            "  run:",
-            "    FOO : FOO"
-        )));
-        builder.loadYaml(parser.loadFile("secondDef",stream("",
-            "states:",
-            "  run:",
-            "    FOO : BAR",
-            "    BAR : BAR"
-        )));
+        builder.loadYaml(parser.loadFile("firstDef",
+            """
+            states:
+              run:
+                FOO : FOO
+            """
+        ));
+        builder.loadYaml(parser.loadFile("secondDef",
+            """
+            states:
+              run:
+                FOO : BAR
+                BAR : BAR
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 
@@ -522,19 +560,22 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testSameScriptName(){
         RunConfigBuilder builder = getBuilder();
         Parser parser = Parser.getInstance();
-        builder.loadYaml(parser.loadFile("firstDef",stream("",
-            "scripts:",
-            "  first:",
-            "  - sh: echo FOO",
-            "hosts:",
-            "  local : fakeUser@localhost"
-        )));
-        builder.loadYaml(parser.loadFile("secondDef",stream("",
-            "scripts:",
-            "  first:",
-            "    - sh: echo BAR",
-            ""
-        )));
+        builder.loadYaml(parser.loadFile("firstDef",
+            """
+            scripts:
+              first:
+              - sh: echo FOO
+            hosts:
+              local : fakeUser@localhost
+            """
+        ));
+        builder.loadYaml(parser.loadFile("secondDef",
+            """
+            scripts:
+              first:
+                - sh: echo BAR
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 
@@ -550,13 +591,15 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testSh_echoEnvironmentVariable(){
         RunConfigBuilder builder = getBuilder();
         Parser parser = Parser.getInstance();
-        builder.loadYaml(parser.loadFile("echo",stream("",
-            "scripts:",
-            "  foo:",
-            "  - sh: export FOO=$(ps -ef | grep jboss)",
-            "    then:",
-            "    - sh: echo ${FOO}"
-        )));
+        builder.loadYaml(parser.loadFile("echo",
+            """
+            scripts:
+              foo:
+              - sh: export FOO=$(ps -ef | grep jboss)
+                then:
+                - sh: echo ${FOO}
+            """
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -578,17 +621,19 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testSilentWithWatcher(){
         RunConfigBuilder builder = getBuilder();
         Parser parser = Parser.getInstance();
-        builder.loadYaml(parser.loadFile("silentWithWatcher",stream("",
-            "scripts:",
-            "  first:",
-            "    - sh: ",
-            "        silent: true",
-            "        command: tail -f ./standalone/server.log",
-            "      watch:",
-            "      - regex: .*FATAL.*",
-            "        then:",
-            "        - abort: fatal"
-        )));
+        builder.loadYaml(parser.loadFile("silentWithWatcher",
+            """
+            scripts:
+              first:
+                - sh:
+                    silent: true
+                    command: tail -f ./standalone/server.log
+                  watch:
+                  - regex: .*FATAL.*
+                    then:
+                    - abort: fatal
+            """
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -611,15 +656,17 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testCmdTimer(){
         RunConfigBuilder builder = getBuilder();
         Parser parser = Parser.getInstance();
-        builder.loadYaml(parser.loadFile("cmdTimer",stream("",
-            "scripts:",
-            "  first:",
-            "    - sh: long running command",
-            "      timer:",
-            "        30s:",
-            "        - signal: 30_seconds_later",
-            "        - abort: not good"
-        )));
+        builder.loadYaml(parser.loadFile("cmdTimer",
+            """
+            scripts:
+              first:
+                - sh: long running command
+                  timer:
+                    30s:
+                    - signal: 30_seconds_later
+                    - abort: not good
+            """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertFalse("RunConfig should not contain errors but saw\n:"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
@@ -653,26 +700,30 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void test_merge_role_across_waml(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("scriptDef",stream(""+
-          "scripts:",
-           "  first:",
-           "    - sh: ls",
-           "    - sh: pwd",
-           "  second:",
-           "    - sh: whoami",
-           "    - sh: echo ${PWD}",
-           "roles:",
-           "  role:",
-           "    setup-scripts: [first]",
-           "    run-scripts: [second]"
-        )));
-        builder.loadYaml(parser.loadFile("hostDef",stream(""+
-           "hosts:",
-           "  local: fakeUser@localhost",
-           "roles:",
-           "  role:",
-           "    hosts: [local]"
-        )));
+        builder.loadYaml(parser.loadFile("scriptDef",
+           """
+           scripts:
+             first:
+               - sh: ls
+               - sh: pwd
+             second:
+               - sh: whoami
+               - sh: echo ${PWD}
+           roles:
+             role:
+               setup-scripts: [first]
+               run-scripts: [second]
+           """
+        ));
+        builder.loadYaml(parser.loadFile("hostDef",
+           """
+           hosts:
+             local: fakeUser@localhost
+           roles:
+             role:
+               hosts: [local]
+           """
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
         assertTrue("run has role",config.getRoleNames().contains("role"));
@@ -694,30 +745,31 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testRoleExpession(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("roleExpression",stream(""+
-           "hosts:",
-           "  foo : user@foo",
-           "  bar : user@bar",
-           "  biz : user@biz",
-           "  buz : user@buz",
-           "roles:",
-           "  buzzer:",
-           "    hosts: [buz]",
-           "    run-scripts: [BuzScript]",
-           "  foo:",
-           "    hosts: [foo]",
-           "    run-scripts: [FooRunScript]",
-           "  foobarbiz",
-           "    hosts: [foo, bar, biz]",
-           "    run-scripts: [AllRunScript]",
-           "  NotFoo",
-           "    hosts: = foobarbiz - foo",
-           "    run-scripts: [NotFooRunScript]",
-           "  AllNotBar:",
-           "    hosts: = all - foobarbiz",
-           "    run-scripts: [AllNotBarScript]",
-           ""
-        )));
+        builder.loadYaml(parser.loadFile("roleExpression",
+           """
+           hosts:
+             foo : user@foo
+             bar : user@bar
+             biz : user@biz
+             buz : user@buz
+           roles:
+             buzzer:
+               hosts: [buz]
+               run-scripts: [BuzScript]
+             foo:
+               hosts: [foo]
+               run-scripts: [FooRunScript]
+             foobarbiz
+               hosts: [foo, bar, biz]
+               run-scripts: [AllRunScript]
+             NotFoo
+               hosts: = foobarbiz - foo
+               run-scripts: [NotFooRunScript]
+             AllNotBar:
+               hosts: = all - foobarbiz
+               run-scripts: [AllNotBarScript]
+           """
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -749,16 +801,17 @@ public class RunConfigBuilderTest extends SshTestBase {
     public void testOldNestSyntax(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("oldSyntax",stream("",
-           "name: oldSyntax",
-           "scripts:",
-           "  firstScript: #comment",
-           "  - sh: do smomething",
-           "    watch:",
-           "    - regex: .*",
-           "      then:",
-           "      - abort: message true"
-           )
+        builder.loadYaml(parser.loadFile("oldSyntax",
+           """
+           name: oldSyntax
+           scripts:
+             firstScript: #comment
+             - sh: do smomething
+               watch:
+               - regex: .*
+                 then:
+                 - abort: message true
+           """
         ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());

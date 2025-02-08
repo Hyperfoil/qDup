@@ -35,41 +35,46 @@ public class QueueDownloadTest extends SshTestBase {
         parser.setAbortOnExitCode(true);
         RunConfigBuilder builder = getBuilder();
 
-        builder.loadYaml(parser.loadFile("pwd", stream("" +
-                "scripts:",
-                "  foo:",
-                "   - sh: ls -al /root/.ssh",
-                "   - sh: mkdir -p /tmp/foo/folder-one",
-                "   - sh: mkdir -p /tmp/foo/folder-two",
-                "   - sh: echo 'uno' >> /tmp/foo/folder-one/uno.txt",
-                "   - sh: echo 'dos' >> /tmp/foo/folder-two/dos.txt",
-                "   - queue-download: /tmp/foo/folder-one/uno.txt",
-                "hosts:",
-                "  local:",
-                "    username: "+getHost().getUserName(),
-                "    hostname: "+getHost().getHostName(),
-//                "    password: password",
-                "    port: "+getHost().getPort(),
-                "    identity: "+getHost().getIdentity(),
-                "    download:",
-                "    - scp",
-                "    - \"-q\"",
-                "    - \"-i\"",
-                "    - "+getPath("keys/qdup").toFile().getPath().toString(),
-                "    - \"-o\"",
-                "    - StrictHostKeyChecking=no",
-                "    - \"-o\"",
-                "    - UserKnownHostsFile=/dev/null",
-                "    - \"-P\"",
-                "    - ${{host.port}}",
-                "    - \"-r\"",
-                "    - ${{host.username}}@${{host.hostname}}:${{source}}",
-                "    - ${{destination}}",
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("pwd",
+                """
+                scripts:
+                  foo:
+                   - sh: ls -al /root/.ssh
+                   - sh: mkdir -p /tmp/foo/folder-one
+                   - sh: mkdir -p /tmp/foo/folder-two
+                   - sh: echo 'uno' >> /tmp/foo/folder-one/uno.txt
+                   - sh: echo 'dos' >> /tmp/foo/folder-two/dos.txt
+                   - queue-download: /tmp/foo/folder-one/uno.txt
+                hosts:
+                  local:
+                    username: HOST_USERNAME
+                    hostname: HOST_HOSTNAME
+                    port: HOST_PORT
+                    identity: HOST_IDENTITY
+                    download:
+                    - scp
+                    - "-q"
+                    - "-i"
+                    - KEY_PATH
+                    - "-o"
+                    - StrictHostKeyChecking=no
+                    - "-o"
+                    - UserKnownHostsFile=/dev/null
+                    - "-P"
+                    - ${{host.port}}
+                    - "-r"
+                    - ${{host.username}}@${{host.hostname}}:${{source}}
+                    - ${{destination}}
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("KEY_PATH",getPath("keys/qdup").toFile().getPath())
+                        .replaceAll("HOST_USERNAME", getHost().getUserName())
+                        .replaceAll("HOST_HOSTNAME",getHost().getHostName())
+                        .replaceAll("HOST_PORT",""+getHost().getPort())
+                        .replaceAll("HOST_IDENTITY",getHost().getIdentity())
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         Host h = config.getAllHostsInRoles().iterator().next();
@@ -93,21 +98,23 @@ public class QueueDownloadTest extends SshTestBase {
         parser.setAbortOnExitCode(true);
         RunConfigBuilder builder = getBuilder();
 
-        builder.loadYaml(parser.loadFile("pwd", stream("" +
-                "scripts:",
-                "  foo:",
-                "   - sh: mkdir -p /tmp/foo/folder-one",
-                "   - sh: mkdir -p /tmp/foo/folder-two",
-                "   - sh: echo 'uno' >> /tmp/foo/folder-one/uno.txt",
-                "   - sh: echo 'dos' >> /tmp/foo/folder-two/dos.txt",
-                "   - queue-download: /tmp/foo/folder-*/*.txt",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("pwd",
+                """
+                scripts:
+                  foo:
+                   - sh: mkdir -p /tmp/foo/folder-one
+                   - sh: mkdir -p /tmp/foo/folder-two
+                   - sh: echo 'uno' >> /tmp/foo/folder-one/uno.txt
+                   - sh: echo 'dos' >> /tmp/foo/folder-two/dos.txt
+                   - queue-download: /tmp/foo/folder-*/*.txt
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
@@ -129,21 +136,23 @@ public class QueueDownloadTest extends SshTestBase {
         parser.setAbortOnExitCode(true);
         RunConfigBuilder builder = getBuilder();
 
-        builder.loadYaml(parser.loadFile("pwd", stream("" +
-                "scripts:",
-                "  foo:",
-                "   - sh: mkdir -p /tmp/foo/one",
-                "   - sh: mkdir -p /tmp/foo/two",
-                "   - sh: echo 'uno' >> /tmp/foo/one/uno.txt",
-                "   - sh: echo 'dos' >> /tmp/foo/two/dos.txt",
-                "   - queue-download: /tmp/foo/*",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("pwd",
+                """
+                scripts:
+                  foo:
+                   - sh: mkdir -p /tmp/foo/one
+                   - sh: mkdir -p /tmp/foo/two
+                   - sh: echo 'uno' >> /tmp/foo/one/uno.txt
+                   - sh: echo 'dos' >> /tmp/foo/two/dos.txt
+                   - queue-download: /tmp/foo/*
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
@@ -281,24 +290,26 @@ public class QueueDownloadTest extends SshTestBase {
         parser.setAbortOnExitCode(true);
         RunConfigBuilder builder = getBuilder();
 
-        builder.loadYaml(parser.loadFile("pwd", stream("" +
-                        "scripts:",
-                "  foo:",
-                "   - sh: mkdir -p /tmp/foo/one",
-                "   - sh: mkdir -p /tmp/foo/two",
-                "   - sh: echo 'uno' >> /tmp/foo/one/uno.txt",
-                "   - sh: echo 'dos' >> /tmp/foo/two/dos.txt",
-                "   - sh: cd /tmp/foo",
-                "   - queue-download: ./one/uno.txt",
-                "   - sh: cd /tmp/foo/two",
-                "   - queue-download: ./dos.txt",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("pwd",
+                """
+                scripts:
+                  foo:
+                   - sh: mkdir -p /tmp/foo/one
+                   - sh: mkdir -p /tmp/foo/two
+                   - sh: echo 'uno' >> /tmp/foo/one/uno.txt
+                   - sh: echo 'dos' >> /tmp/foo/two/dos.txt
+                   - sh: cd /tmp/foo
+                   - queue-download: ./one/uno.txt
+                   - sh: cd /tmp/foo/two
+                   - queue-download: ./dos.txt
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
@@ -322,36 +333,38 @@ public class QueueDownloadTest extends SshTestBase {
         parser.setAbortOnExitCode(true);
         RunConfigBuilder builder = getBuilder();
 
-        builder.loadYaml(parser.loadFile("pwd", stream("" +
-                "scripts:",
-                "  bar:",
-                "   - sleep: 2s",
-                "   - sh: cd /tmp/foo",
-                "   - sh: tail -f list.txt",
-                "     watch:",
-                "     - regex: done",
-                "       then:",
-                "       - ctrlC",
-                "     - regex: (?<path>.*txt)",
-                "       then:",
-                "       - queue-download: ${{path}}",
-                "  foo:",
-                "   - sh: mkdir -p /tmp/foo/one",
-                "   - sh: mkdir -p /tmp/foo/two",
-                "   - sh: echo '' > /tmp/foo/list.txt",
-                "   - sh: echo 'uno' >> /tmp/foo/one/uno.txt",
-                "   - sh: echo 'dos' >> /tmp/foo/two/dos.txt",
-                "   - sleep: 2s",
-                "   - sh: echo 'one/uno.txt' >> /tmp/foo/list.txt",
-                "   - sh: echo './two/dos.txt' >> /tmp/foo/list.txt",
-                "   - sh: echo 'done' >> /tmp/foo/list.txt",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo, bar]"
-        )));
+        builder.loadYaml(parser.loadFile("pwd",
+                """
+                scripts:
+                  bar:
+                   - sleep: 2s
+                   - sh: cd /tmp/foo
+                   - sh: tail -f list.txt
+                     watch:
+                     - regex: done
+                       then:
+                       - ctrlC
+                     - regex: (?<path>.*txt)
+                       then:
+                       - queue-download: ${{path}}
+                  foo:
+                   - sh: mkdir -p /tmp/foo/one
+                   - sh: mkdir -p /tmp/foo/two
+                   - sh: echo '' > /tmp/foo/list.txt
+                   - sh: echo 'uno' >> /tmp/foo/one/uno.txt
+                   - sh: echo 'dos' >> /tmp/foo/two/dos.txt
+                   - sleep: 2s
+                   - sh: echo 'one/uno.txt' >> /tmp/foo/list.txt
+                   - sh: echo './two/dos.txt' >> /tmp/foo/list.txt
+                   - sh: echo 'done' >> /tmp/foo/list.txt
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo, bar]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();

@@ -20,30 +20,32 @@ public class AbortTest extends SshTestBase {
     public void abort_finishes_cleanup(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-                "scripts:",
-                "  foo:",
-                "  - log: running foo",
-                "  - abort: foo",
-                "  - set-state: RUN.foo true",
-                "  bar:",
-                "  - log: running bar",
-                "  - sleep: 10s", //to make sure foo calls abort before we progress
-                "  - log: ran bar",
-                "  - set-state: RUN.bar true",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "      - foo",
-                "    cleanup-scripts:",
-                "      - bar",
-                "states:",
-                "  bar: false",
-                "  foo: false"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - log: running foo
+                  - abort: foo
+                  - set-state: RUN.foo true
+                  bar:
+                  - log: running bar
+                  - sleep: 10s #to make sure foo calls abort before we progress
+                  - log: ran bar
+                  - set-state: RUN.bar true
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts:
+                      - foo
+                    cleanup-scripts:
+                      - bar
+                states:
+                  bar: false
+                  foo: false
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -64,35 +66,35 @@ public class AbortTest extends SshTestBase {
     public void abort_run_and_cleanup(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-                "scripts:",
-                "  foo:",
-                "  - log: running foo",
-                "  - abort: foo",
-                "  - set-state: RUN.foo true",
-                "  bar:",
-                "  - log: running bar",
-                "  - sleep: 10s", //to make sure foo calls abort before we progress
-                "  - log: ran bar",
-                "  - set-state: RUN.bar true",
-                "  - abort: bar",
-                "  - set-state: RUN.barbar true",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "      - foo",
-                "    cleanup-scripts:",
-                "      - bar",
-                "states:",
-                "  bar: false",
-                "  barbar: false",
-                "  foo: false"
-
-
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - log: running foo
+                  - abort: foo
+                  - set-state: RUN.foo true"
+                  bar:
+                  - log: running bar
+                  - sleep: 10s #to make sure foo calls abort before we progress
+                  - log: ran bar
+                  - set-state: RUN.bar true
+                  - abort: bar
+                  - set-state: RUN.barbar true
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts:
+                      - foo
+                    cleanup-scripts:
+                      - bar
+                states:
+                  bar: false
+                  barbar: false
+                  foo: false
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
 
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());

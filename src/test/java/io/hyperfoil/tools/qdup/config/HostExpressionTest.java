@@ -17,26 +17,28 @@ public class HostExpressionTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("json", stream("" +
-            "scripts:",
-         "  foo:",
-         "  - echo: FOO",
-         "hosts:",
-         "  alpha: user@alpha",
-         "  bravo: user@bravo",
-         "  charlie: user@charlie",
-         "  delta: user@delta",
-         "roles:",
-         "  ant:",
-         "    hosts: [alpha]",
-         "    run-scripts: [foo]",
-         "  bat:",
-         "    hosts: [bravo]",
-         "    run-scripts: [foo]",
-         "  cat:",
-         "    hosts: [charlie]",
-         "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("json",
+         """
+         scripts:
+           foo:
+           - echo: FOO
+         hosts:
+           alpha: user@alpha
+           bravo: user@bravo
+           charlie: user@charlie
+           delta: user@delta
+         roles:
+           ant:
+             hosts: [alpha]
+             run-scripts: [foo]
+           bat:
+             hosts: [bravo]
+             run-scripts: [foo]
+           cat:
+             hosts: [charlie]
+             run-scripts: [foo]
+         """
+      ));
       RunConfig config = builder.buildConfig(parser);
 
       HostExpression hostExpression = new HostExpression("= ant + bat + cat");
@@ -52,26 +54,28 @@ public class HostExpressionTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("json", stream("" +
-            "scripts:",
-         "  foo:",
-         "  - echo: FOO",
-         "hosts:",
-         "  alpha: user@alpha",
-         "  bravo: user@bravo",
-         "  charlie: user@charlie",
-         "  delta: user@delta",
-         "roles:",
-         "  ant:",
-         "    hosts: [alpha]",
-         "    run-scripts: [foo]",
-         "  bat:",
-         "    hosts: [bravo]",
-         "    run-scripts: [foo]",
-         "  cat:",
-         "    hosts: [charlie]",
-         "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("json",
+         """
+         scripts:
+           foo:
+           - echo: FOO
+         hosts:
+           alpha: user@alpha
+           bravo: user@bravo
+           charlie: user@charlie
+           delta: user@delta
+         roles:
+           ant:
+             hosts: [alpha]
+             run-scripts: [foo]
+           bat:
+             hosts: [bravo]
+             run-scripts: [foo]
+           cat:
+             hosts: [charlie]
+             run-scripts: [foo]
+         """
+      ));
       RunConfig config = builder.buildConfig(parser);
 
       HostExpression hostExpression = new HostExpression("= "+RunConfigBuilder.ALL_ROLE+" - cat");

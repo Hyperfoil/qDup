@@ -67,24 +67,26 @@ public class StateTest extends SshTestBase{
     public void set_state_contains(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-                "scripts:",
-                "  buz:",
-                "  - set-state: RUN.found ${{response.items[?(@.name contains \"uno\" && @.name contains \"o-u\")]}}",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    setup-scripts: [buz]",
-                "states:",
-                "  response:",
-                "    items:",
-                "    - key: one",
-                "      name: uno-uno",
-                "    - key: two",
-                "      name: dos-dos"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  buz:
+                  - set-state: RUN.found ${{response.items[?(@.name contains "uno" && @.name contains "o-u")]}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    setup-scripts: [buz]
+                states:
+                  response:
+                    items:
+                    - key: one
+                      name: uno-uno
+                    - key: two
+                      name: dos-dos
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
@@ -101,22 +103,24 @@ public class StateTest extends SshTestBase{
     public void run_read_in_cleanup_from_host_insetup(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-            "scripts:",
-            "  buz:",
-            "  - read-state: ${{key}}",
-            "    then:",
-            "    - set-state: RUN.found true",
-            "  biz:",
-            "  - set-state: HOST.key value",
-            "hosts:",
-            "  local: " + getHost(),
-            "roles:",
-            "  doit:",
-            "    hosts: [local]",
-            "    setup-scripts: [biz]",
-            "    cleanup-scripts: [buz]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+            """
+            scripts:
+              buz:
+              - read-state: ${{key}}
+                then:
+                - set-state: RUN.found true
+              biz:
+              - set-state: HOST.key value
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                setup-scripts: [biz]
+                cleanup-scripts: [buz]
+            """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
@@ -129,10 +133,12 @@ public class StateTest extends SshTestBase{
     public void states_declared_string(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-                "states:",
-                "  foo: \"0.200\""
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """                        
+                states:
+                  foo: "0.200"
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         State state = config.getState();
         assertEquals("state should remain a string","0.200",state.get("foo"));
@@ -162,22 +168,24 @@ public class StateTest extends SshTestBase{
     public void populateStateVariables_object_spread(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-              "scripts:",
-           "  foo:",
-           "  - sh: pwd",
-           "hosts:",
-           "  local: " + getHost(),
-           "roles:",
-           "  doit:",
-           "    hosts: [local]",
-           "    run-scripts: [foo]",
-           "states:",
-           "  inline: {one : { name : 'uno'}, two : { name : 'dos' } }",
-           "  multi:",
-           "   - one",
-           "   - two"
-        )));
+        builder.loadYaml(parser.loadFile("",
+           """
+           scripts:
+             foo:
+             - sh: pwd
+           hosts:
+             local: TARGET_HOST
+           roles:
+             doit:
+               hosts: [local]
+               run-scripts: [foo]
+           states:
+             inline: {one : { name : 'uno'}, two : { name : 'dos' } }
+             multi:
+              - one
+              - two
+           """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         String one = Cmd.populateStateVariables("${{inline.one}}",null,config.getState(),null,null);
@@ -190,22 +198,24 @@ public class StateTest extends SshTestBase{
     public void array_object_reference(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-              "scripts:",
-           "  foo:",
-           "  - sh: pwd",
-           "hosts:",
-           "  local: " + getHost(),
-           "roles:",
-           "  doit:",
-           "    hosts: [local]",
-           "    run-scripts: [foo]",
-           "states:",
-           "  inline: [{name: 'jvm'},{name: 'native'}]",
-           "  multi:",
-           "   - one",
-           "   - two"
-        )));
+        builder.loadYaml(parser.loadFile("",
+           """
+           scripts:
+             foo:
+             - sh: pwd
+           hosts:
+             local: TARGET_HOST
+           roles:
+             doit:
+               hosts: [local]
+               run-scripts: [foo]
+           states:
+             inline: [{name: 'jvm'},{name: 'native'}]
+             multi:
+              - one
+              - two
+           """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
 
@@ -217,31 +227,33 @@ public class StateTest extends SshTestBase{
     public void array_spread_with_quote_in_value(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-                "scripts:",
-                "  foo:",
-                "  - for-each: query ${{bar}}",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts:",
-                "    - foo:",
-                "        with:",
-                "          bar: ${{= [ ...${{multi}}, ${{also}} ]}}",
-                "states:",
-                "  inline: [{name: 'jvm'},{name: 'native'}]",
-                "  multi:",
-                "  - istio_request_bytes_sum",
-                "  - tgi_queue_size",
-                "  - avg_over_time(tgi_queue_size[1m])",
-                "  also:",
-                "  - container_cpu_usage_seconds_total{container!=\"POD\",container!=\"\"}",
-                "  - container_memory_usage_bytes{container!=\"POD\",container!=\"\"}",
-                "  - pod:container_cpu_usage:sum",
-                "  - pod:container_memory_usage_bytes:sum"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each: query ${{bar}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts:
+                    - foo:
+                        with:
+                          bar: ${{= [ ...${{multi}}, ${{also}} ]}}
+                states:
+                  inline: [{name: 'jvm'},{name: 'native'}]
+                  multi:
+                  - istio_request_bytes_sum
+                  - tgi_queue_size
+                  - avg_over_time(tgi_queue_size[1m])
+                  also:
+                  - container_cpu_usage_seconds_total{container!="POD",container!=""}
+                  - container_memory_usage_bytes{container!="POD",container!=""}
+                  - pod:container_cpu_usage:sum
+                  - pod:container_memory_usage_bytes:sum
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         String populated = Cmd.populateStateVariables("${{=[...${{multi}}, ...${{also}}]}}",null,config.getState(),null,null);
@@ -251,22 +263,24 @@ public class StateTest extends SshTestBase{
     public void array_index_reference(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-              "scripts:",
-           "  foo:",
-           "  - sh: pwd",
-           "hosts:",
-           "  local: " + getHost(),
-           "roles:",
-           "  doit:",
-           "    hosts: [local]",
-           "    run-scripts: [foo]",
-           "states:",
-           "  inline: ['one','two']",
-           "  multi:",
-           "   - one",
-           "   - two"
-        )));
+        builder.loadYaml(parser.loadFile("",
+           """
+           scripts:
+             foo:
+             - sh: pwd
+           hosts:
+             local: TARGET_HOST
+           roles:
+             doit:
+               hosts: [local]
+               run-scripts: [foo]
+           states:
+             inline: ['one','two']
+             multi:
+              - one
+              - two
+           """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
 
@@ -278,22 +292,24 @@ public class StateTest extends SshTestBase{
     public void array_state_in_yaml(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-           "scripts:",
-           "  foo:",
-           "  - sh: pwd",
-           "hosts:",
-           "  local: " + getHost(),
-           "roles:",
-           "  doit:",
-           "    hosts: [local]",
-           "    run-scripts: [foo]",
-           "states:",
-           "  inline: ['one','two']",
-           "  multi:",
-           "   - one",
-           "   - two"
-        )));
+        builder.loadYaml(parser.loadFile("",
+           """
+           scripts:
+             foo:
+             - sh: pwd
+           hosts:
+             local: TARGET_HOST
+           roles:
+             doit:
+               hosts: [local]
+               run-scripts: [foo]
+           states:
+             inline: ['one','two']
+             multi:
+              - one
+              - two
+           """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
 

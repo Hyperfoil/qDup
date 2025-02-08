@@ -9,6 +9,7 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.util.Iterator;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -114,26 +115,29 @@ public class SecretFilterTest extends SshTestBase {
    public void check_log_for_secret_from_with_setState_states(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-         "scripts:",
-         "  secrets:",
-         "  - set-state: \""+SecretFilter.SECRET_NAME_PREFIX+"foo BAR\"",
-         "  - sh: echo ${{foo}}__${{biz}}",
-         "    with:",
-         "      "+SecretFilter.SECRET_NAME_PREFIX+"biz: BAR",
-         "  - set-state: RUN.output",
-         "  - regex: (?<"+SecretFilter.SECRET_NAME_PREFIX+"RUN.match>.*)",
-         "    then:",
-         "    - sh: echo ${{match}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    setup-scripts: [secrets]",
-         "states:",
-         "  "+SecretFilter.SECRET_NAME_PREFIX+"FOO: BAR"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           secrets:
+           - set-state: "SECRET_NAME_PREFIXfoo BAR"
+           - sh: echo ${{foo}}__${{biz}}
+             with:
+               SECRET_NAME_PREFIXbiz: BAR
+           - set-state: RUN.output
+           - regex: (?<SECRET_NAME_PREFIXRUN.match>.*)
+             then:
+             - sh: echo ${{match}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             setup-scripts: [secrets]
+         states:
+           SECRET_NAME_PREFIXFOO: BAR
+         """.replaceAll("TARGET_HOST",getHost().toString())
+                 .replaceAll("SECRET_NAME_PREFIX",SecretFilter.SECRET_NAME_PREFIX)
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 
@@ -164,24 +168,28 @@ public class SecretFilterTest extends SshTestBase {
       try {
          File yamlFile = File.createTempFile("qdup","yaml",tmpDir.getPath().toFile());
          FileOutputStream fileOutputStream = new FileOutputStream(yamlFile);
-         Files.copy(stream(""+
-                 "scripts:",
-                 "  secrets:",
-                 "  - sh: sleep 10s",
-                 "    timer:",
-                 "      1s:",
-                 "      - send-text: ${{foo}}",
-                 "      4s:",
-                 "      - ctrlC",
-                 "hosts:",
-                 "  local: " + getHost(),
-                 "roles:",
-                 "  doit:",
-                 "    hosts: [local]",
-                 "    setup-scripts: [secrets]",
-                 "states:",
-                 "  foo: blank"
-         ),yamlFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+         Files.copy(
+                 new ByteArrayInputStream(
+                 """
+                 scripts:
+                   secrets:
+                   - sh: sleep 10s
+                     timer:
+                       1s:
+                       - send-text: ${{foo}}
+                       4s:
+                       - ctrlC
+                 hosts:
+                   local: TARGET_HOST
+                 roles:
+                   doit:
+                     hosts: [local]
+                     setup-scripts: [secrets]
+                 states:
+                   foo: blank
+                 """.replaceAll("TARGET_HOST",getHost().toString()).getBytes())
+         ,yamlFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
          String[] args = {"-S","_foo=bar","-i", getIdentity(), "-B", tmpDir.toString(), yamlFile.getPath()};
          QDup qDup = new QDup(args);
@@ -204,24 +212,27 @@ public class SecretFilterTest extends SshTestBase {
    public void check_log_for_sendText_from_states(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-              "scripts:",
-              "  secrets:",
-              "  - sh: sleep 10s",
-              "    timer:",
-              "      1s:",
-              "      - send-text: ${{foo}}",
-              "      4s:",
-              "      - ctrlC",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    setup-scripts: [secrets]",
-              "states:",
-              "  "+SecretFilter.SECRET_NAME_PREFIX+"foo: bar"
-      )));
+      builder.loadYaml(parser.loadFile("",
+              """
+              scripts:
+                secrets:
+                - sh: sleep 10s
+                  timer:
+                    1s:
+                    - send-text: ${{foo}}
+                    4s:
+                    - ctrlC
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  setup-scripts: [secrets]
+              states:
+                SECRET_NAME_PREFIXfoo: bar
+              """.replaceAll("TARGET_HOST",getHost().toString())
+                      .replaceAll("SECRET_NAME_PREFIX",SecretFilter.SECRET_NAME_PREFIX)
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
 

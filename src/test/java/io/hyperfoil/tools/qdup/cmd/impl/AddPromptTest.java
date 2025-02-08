@@ -20,19 +20,21 @@ public class AddPromptTest extends SshTestBase {
    public void export_PS1(){
          Parser parser = Parser.getInstance();
          RunConfigBuilder builder = getBuilder();
-         builder.loadYaml(parser.loadFile("",stream(""+
-               "scripts:",
-            "  foo:",
-            "  - add-prompt: FOO",
-            "  - sh: export PS1='FOO'",
-            "  - sh: echo \"PS1=[${PS1}]\"",
-            "hosts:",
-            "  local: " + getHost(),
-            "roles:",
-            "  doit:",
-            "    hosts: [local]",
-            "    run-scripts: [foo]"
-         )));
+         builder.loadYaml(parser.loadFile("",
+            """
+            scripts:
+              foo:
+              - add-prompt: FOO
+              - sh: export PS1='FOO'
+              - sh: echo "PS1=[${PS1}]"
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                run-scripts: [foo]
+            """.replaceAll("TARGET_HOST",getHost().toString())
+         ));
 
          RunConfig config = builder.buildConfig(parser);
          Cmd foo = config.getScript("foo");

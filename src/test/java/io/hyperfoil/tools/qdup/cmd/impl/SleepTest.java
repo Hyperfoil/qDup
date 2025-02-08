@@ -35,22 +35,25 @@ public class SleepTest extends SshTestBase {
         String sleep = "10s";
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-           "scripts:",
-           "  foo:",
-           "  - sleep: "+sleep,
-           "  - set-state: RUN.FOO worked",
-           "hosts:",
-           "  local: " + getHost(),
-           "roles:",
-           "  doit:",
-           "    hosts: [local]",
-           "    run-scripts: [foo]",
-           "states:",
-           "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-           "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-           "  charlie: {name: \"cat\"}"
-        )));
+        builder.loadYaml(parser.loadFile("",
+           """
+           scripts:
+             foo:
+             - sleep: SLEEP_DURATION
+             - set-state: RUN.FOO worked
+           hosts:
+             local: TARGET_HOST
+           roles:
+             doit:
+               hosts: [local]
+               run-scripts: [foo]
+           states:
+             alpha: [ {name: "ant"}, {name: "apple"} ]
+             bravo: [ {name: "bear"}, {name: "bull"} ]
+             charlie: {name: "cat"}
+           """.replaceAll("TARGET_HOST",getHost().toString())
+                   .replaceAll("SLEEP_DURATION",sleep)
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();

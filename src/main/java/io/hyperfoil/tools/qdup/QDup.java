@@ -382,29 +382,28 @@ public class QDup {
 //            }
 //            StatusPrinter.printInCaseOfErrorsOrWarnings(context);
 //        }
-        if ( commandLine != null ){
-            knownHosts = commandLine.getOptionValue("knownHosts", RunConfigBuilder.DEFAULT_KNOWN_HOSTS);
-            identity = commandLine.getOptionValue("identity", RunConfigBuilder.DEFAULT_IDENTITY);
-            passphrase = commandLine.getOptionValue("passphrase", RunConfigBuilder.DEFAULT_PASSPHRASE);
-            timeout = Integer.parseInt(commandLine.getOptionValue("timeout", "" + RunConfigBuilder.DEFAULT_SSH_TIMEOUT));
-            commandThreads = Integer.parseInt(commandLine.getOptionValue("commandPool", "24"));
-            scheduledThreads = Integer.parseInt(commandLine.getOptionValue("scheduledPool", "24"));
-            yamlPaths = commandLine.getArgList();
-            stateProps = commandLine.getOptionProperties("S");
-            removeStateProperties = commandLine.getOptionProperties("SX");
-            test = commandLine.hasOption("test");
-            yaml = commandLine.hasOption("yaml");
-            breakpoints = commandLine.hasOption("breakpoint") ? Arrays.asList(commandLine.getOptionValues("breakpoint")) : Collections.EMPTY_LIST;
-            colorTerminal = commandLine.hasOption("colorTerminal");
-            jsonPort = Integer.parseInt(commandLine.getOptionValue("jsonport", "" + JsonServer.DEFAULT_PORT));
+            knownHosts = getOpt(commandLine, "knownHosts", RunConfigBuilder.DEFAULT_KNOWN_HOSTS);
+            identity = getOpt(commandLine, "identity", RunConfigBuilder.DEFAULT_IDENTITY);
+            passphrase = getOpt(commandLine, "passphrase", RunConfigBuilder.DEFAULT_PASSPHRASE);
+            timeout = Integer.parseInt(getOpt(commandLine, "timeout", "" + RunConfigBuilder.DEFAULT_SSH_TIMEOUT));
+            commandThreads = Integer.parseInt(getOpt(commandLine, "commandPool", "24"));
+            scheduledThreads = Integer.parseInt(getOpt(commandLine, "scheduledPool", "24"));
+            yamlPaths = commandLine!=null ? commandLine.getArgList() : Collections.emptyList();
+            stateProps = commandLine!=null ? commandLine.getOptionProperties("S") : new Properties();
+            removeStateProperties = commandLine!=null ? commandLine.getOptionProperties("SX") : new Properties();
+            test = commandLine != null && commandLine.hasOption("test");
+            yaml = commandLine != null && commandLine.hasOption("yaml");
+            breakpoints = commandLine!=null && commandLine.hasOption("breakpoint") ? Arrays.asList(commandLine.getOptionValues("breakpoint")) : Collections.EMPTY_LIST;
+            colorTerminal = commandLine!=null && commandLine.hasOption("colorTerminal");
+            jsonPort = Integer.parseInt(getOpt(commandLine, "jsonport", "" + JsonServer.DEFAULT_PORT));
 
-            exitCode = !commandLine.hasOption("ignore-exit-code");
+            exitCode = commandLine!=null && !commandLine.hasOption("ignore-exit-code");
 
             outputPath = null;
             DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
             String uid = dt.format(LocalDateTime.now());
 
-            trace = commandLine.getOptionValue("trace", "");
+            trace = getOpt(commandLine, "trace", "");
             traceName = commandLine.getOptionValue("traceName",""+uid);
 
             skipStages = commandLine.hasOption("skip-stages") ? Arrays.asList(commandLine.getOptionValues("skip-stages")).stream().map(str->StringUtil.getEnum(str,Stage.class,Stage.Invalid)).collect(Collectors.toList()) : Collections.EMPTY_LIST;
@@ -442,8 +441,9 @@ public class QDup {
                 formatter.printHelp(cmdLineSyntax, options);
             }
             yamlParser = Parser.getInstance();
-        }
-
+    }
+    private static String getOpt(CommandLine commandLine, String name, String defaultValue){
+        return commandLine!=null ? commandLine.getOptionValue(name,defaultValue) : defaultValue;
     }
 
     private static void disableLoggerShutdownHook(){

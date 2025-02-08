@@ -64,26 +64,28 @@ public class RegexTest extends SshTestBase {
     public void else_count() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                "scripts:",
-                "  foo:",
-                "  - regex: \"Red Hat Enterprise Linux CoreOS\"",
-                "    then:",
-                "    - log: connected to ${{host.ip}}",
-                "    - signal: ${{host.name}}-connected",
-                "    - sh: exit #exit the ssh to the worker",
-                "    else:",
-                "    - log: failed to connect to ${{host.ip}}",
-                "    - sleep: 2m #only sleep if we didn't match",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  data: \"miss\""
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - regex: "Red Hat Enterprise Linux CoreOS"
+                    then:
+                    - log: connected to ${{host.ip}}
+                    - signal: ${{host.name}}-connected
+                    - sh: exit #exit the ssh to the worker
+                    else:
+                    - log: failed to connect to ${{host.ip}}
+                    - sleep: 2m #only sleep if we didn't match
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  data: "miss"
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
 
@@ -112,24 +114,26 @@ public class RegexTest extends SshTestBase {
     public void case_insensitive_match_true_or_yes() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                "scripts:",
-                "  foo:",
-                "  - read-state: ${{data}}",
-                "  - regex: \"(?i)true|yes\"",
-                "    then:",
-                "    - set-state: RUN.regex MATCHED",
-                "    else:",
-                "    - set-state: RUN.regex MISS",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  data: \"True\""
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - read-state: ${{data}}
+                  - regex: "(?i)true|yes"
+                    then:
+                    - set-state: RUN.regex MATCHED
+                    else:
+                    - set-state: RUN.regex MISS
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  data: "True"
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
 
@@ -152,24 +156,26 @@ public class RegexTest extends SshTestBase {
     public void docs_howto_secrets_regex_capture() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                "scripts:",
-                "  foo:",
-                "  - sh: echo password",
-                "  - regex: \"(?<_my-secret>.*)\"",
-                "    then:",
-                "    - set-state: RUN.regex ${{my-secret}}",
-                "    else:",
-                "    - set-state: RUN.regex MISS",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  data: \"True\""
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - sh: echo password
+                  - regex: "(?<_my-secret>.*)"
+                    then:
+                    - set-state: RUN.regex ${{my-secret}}
+                    else:
+                    - set-state: RUN.regex MISS
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  data: "True"
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
 
@@ -192,24 +198,26 @@ public class RegexTest extends SshTestBase {
     public void timer_resolve_with_reference() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - read-state: ${{data}}",
-                "  - regex: match",
-                "    then:",
-                "    - set-state: RUN.regex MATCHED",
-                "    else:",
-                "    - set-state: RUN.regex MISS",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  data: \"miss\""
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - read-state: ${{data}}
+                  - regex: match
+                    then:
+                    - set-state: RUN.regex MATCHED
+                    else:
+                    - set-state: RUN.regex MISS
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  data: "miss"
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
 
@@ -232,24 +240,26 @@ public class RegexTest extends SshTestBase {
     public void override_foreach_with_regex_state() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                "scripts:",
-                "  foo:",
-                "  - for-each: foo [\"uno/one\"]",
-                "    then:",
-                "    - set-state: RUN.before ${{foo}}",
-                "    - regex: \"uno/(?<foo>.*)\"",
-                "      then:",
-                "      - set-state: RUN.during ${{foo}}",//
-                "    - set-state: RUN.after ${{foo}}",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each: foo ["uno/one"]
+                    then:
+                    - set-state: RUN.before ${{foo}}
+                    - regex: "uno/(?<foo>.*)"
+                      then:
+                      - set-state: RUN.during ${{foo}}
+                    - set-state: RUN.after ${{foo}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
@@ -270,23 +280,25 @@ public class RegexTest extends SshTestBase {
     public void debug_alternatives() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                "scripts:",
-                "  foo:",
-                "  - sh: alternatives --display java",
-                "  - regex: \" link currently points to (?<RUN.java_home>/.*?)(?:/jre)?/bin/java\"",
-                "    then:",
-                "    - set-state: RUN.found true",
-                "    else:",
-                "    - set-state: RUN.found false",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - sh: alternatives --display java
+                  - regex: " link currently points to (?<RUN.java_home>/.*?)(?:/jre)?/bin/java"
+                    then:
+                    - set-state: RUN.found true
+                    else:
+                    - set-state: RUN.found false
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
 
@@ -394,19 +406,21 @@ public class RegexTest extends SshTestBase {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
         StringBuilder sb = new StringBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - sh: sudo systemctl status docker",
-                "    - regex: \"\\s*Active: (?<active>\\w+) \\(.*\" #Test to see if docker is running",
-                "      - log: active=${{active}}",
-                "hosts:",
-                "  local: root@benchclient1.perf.lab.eng.rdu2.redhat.com:22",//+getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - sh: sudo systemctl status docker
+                    - regex: "\\s*Active: (?<active>\\w+) \\(.*" #Test to see if docker is running
+                      - log: active=${{active}}
+                hosts:
+                  local: root@benchclient1.perf.lab.eng.rdu2.redhat.com:22"
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """
+        ));
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
 
@@ -493,11 +507,13 @@ public class RegexTest extends SshTestBase {
 
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("regex", stream(
-                "scripts:",
-                "  foo:",
-                "  - regex: \".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\\\d+)ms.*\""
-        )));
+        builder.loadYaml(parser.loadFile("regex",
+                """
+                scripts:
+                  foo:
+                  - regex: ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\\\d+)ms.*"
+                """
+        ));
 
         Script foo = builder.buildConfig(parser).getScript("foo");
 
@@ -523,26 +539,28 @@ public class RegexTest extends SshTestBase {
 
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - sh: \"echo 'Please open the following file: /tmp/perf-test/build/reports/gatling/quarkussimulation-20210307110018725/index.html'\"",
-                "    then: ",
-                "    - regex: ",
-                "        pattern: \"Please open the following file: /tmp/perf-test/build/reports/gatling/(?<framework>.*)-(?<timestamp>\\\\d*)/index.html\" ",
-                "        autoConvert: false",
-                "      then: ",
-                "      - set-state: ",
-                "          key: RUN.TIMESTAMP ",
-                "          value: ${{timestamp}} ",
-                "          autoConvert: false",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - sh: "echo 'Please open the following file: /tmp/perf-test/build/reports/gatling/quarkussimulation-20210307110018725/index.html'"
+                    then:
+                    - regex:
+                        pattern: "Please open the following file: /tmp/perf-test/build/reports/gatling/(?<framework>.*)-(?<timestamp>\\\\d*)/index.html"
+                        autoConvert: false
+                      then:
+                      - set-state:
+                          key: RUN.TIMESTAMP
+                          value: ${{timestamp}}
+                          autoConvert: false
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
 

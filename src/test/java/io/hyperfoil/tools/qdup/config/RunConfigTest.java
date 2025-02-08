@@ -17,27 +17,29 @@ public class RunConfigTest extends SshTestBase {
    public void host_with_download_preserves_variables(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream(
-        "" +
-              "scripts:",
-              "  foo:",
-              "    - signal: ${{signal:}}",
-              "hosts:",
-              "  local: ",
-              "    username: "+getHost().getUserName(),
-              "    hostname: "+getHost().getHostName(),
-              "    download: ",
-              "    - ${{host.username}}",
-              "    - ${{source}}",
-              "    - ${{destination}}",
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts:",
-              "    - bar:",
-              "states:",
-              "  MASTER: [\"one\",\"two\",\"three\"]"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - signal: ${{signal:}}
+              hosts:
+                local:
+                  username: HOST_USERNAME
+                  hostname: HOST_HOSTNAME
+                  download:
+                  - ${{host.username}}
+                  - ${{source}}
+                  - ${{destination}}
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts:
+                  - bar:
+              states:
+                MASTER: ["one","two","three"]
+              """.replaceAll("HOST_USERNAME",getHost().getUserName())
+             .replaceAll("HOST_HOSTNAME",getHost().getHostName())
+      ));
       RunConfig config = builder.buildConfig(parser);
       Set<Host> hosts = config.getAllHostsInRoles();
 
@@ -56,35 +58,36 @@ public class RunConfigTest extends SshTestBase {
    public void signal_variable_in_script_with(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream(
-         "" +
-            "scripts:",
-         "  foo:",
-         "    - signal: ${{signal:}}",
-         "  bar:",
-         "  - set-signal:",
-         "      name: master-ready",
-         "      count: 3",
-         "  - for-each:",
-         "      name: host",
-         "      input: ${{MASTER}}",
-         "    then:",
-         "    - script:",
-         "        name: foo",
-         "        async: true",
-         "      with:",
-         "        signal: master-ready",
-         "    - wait-for: master-ready",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts:",
-         "    - bar:",
-         "states:",
-         "  MASTER: [\"one\",\"two\",\"three\"]"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+         """
+         scripts:
+           foo:
+             - signal: ${{signal:}}
+           bar:
+           - set-signal:
+               name: master-ready
+               count: 3
+           - for-each:
+               name: host
+               input: ${{MASTER}}
+             then:
+             - script:
+                 name: foo
+                 async: true
+               with:
+                 signal: master-ready
+             - wait-for: master-ready
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts:
+             - bar:
+         states:
+           MASTER: ["one","two","three"]
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       long signalCount = config.getSignalCounts().count("master-ready");
 

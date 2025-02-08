@@ -67,22 +67,24 @@ public class SetSignalTest extends SshTestBase {
     public void run_set_signal_zero_in_waitfor_timer(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("",stream(""+
-                "scripts:",
-                "  foo:",
-                "  - set-signal: FOO 1",
-                "  - wait-for: FOO",
-                "    timer:",
-                "      10s:",
-                "      - set-signal: FOO 0", //should trigger the wait-for to end
-                "  - set-state: RUN.worked true",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - set-signal: FOO 1
+                  - wait-for: FOO
+                    timer:
+                      10s:
+                      - set-signal: FOO 0 #should trigger the wait-for to end
+                  - set-state: RUN.worked true
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());

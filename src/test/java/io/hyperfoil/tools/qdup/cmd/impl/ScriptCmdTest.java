@@ -28,30 +28,32 @@ public class ScriptCmdTest extends SshTestBase {
    public void async_using_with_on_phase(){
          Parser parser = Parser.getInstance();
          RunConfigBuilder builder = getBuilder();
-         builder.loadYaml(parser.loadFile("", stream("" +
-            "scripts:",
-            "  update:",
-            "  - sleep: 2s",
-            "  - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg}}",
-            "  foo:",
-            "  - script: ",
-            "      name: update",
-            "      async: true",
-            "  - set-state: RUN.FOO ${{RUN.FOO:}}-SET",
-            "hosts:",
-            "  local: " + getHost(),
-            "roles:",
-            "  doit:",
-            "    hosts: [local]",
-            "    run-scripts:",
-            "      - foo:",
-            "          with:",
-            "            arg: phase",
-            "states:",
-            "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-            "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-            "  charlie: {name: \"cat\"}"
-         )));
+         builder.loadYaml(parser.loadFile("",
+            """
+            scripts:
+              update:
+              - sleep: 2s
+              - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg}}
+              foo:
+              - script:
+                  name: update
+                  async: true
+              - set-state: RUN.FOO ${{RUN.FOO:}}-SET
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                run-scripts:
+                  - foo:
+                      with:
+                        arg: phase
+            states:
+              alpha: [ {name: "ant"}, {name: "apple"} ]
+              bravo: [ {name: "bear"}, {name: "bull"} ]
+              charlie: {name: "cat"}
+            """.replaceAll("TARGET_HOST",getHost().toString())
+         ));
 
          RunConfig config = builder.buildConfig(parser);
          assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -69,30 +71,32 @@ public class ScriptCmdTest extends SshTestBase {
    public void async_using_with_referencing_script_state_on_script(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-              "scripts:",
-              "  update:",
-              "  - sleep: 2s",
-              "  - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg}}",
-              "  foo:",
-              "  - set-state: BIZ BUZ",
-              "  - script: ",
-              "      name: update",
-              "      async: true",
-              "    with:",
-              "      arg: ${{BIZ}}",
-              "  - set-state: RUN.FOO ${{RUN.FOO:}}-SET",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]",
-              "states:",
-              "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-              "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-              "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+              """
+              scripts:
+                update:
+                - sleep: 2s
+                - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg}}
+                foo:
+                - set-state: BIZ BUZ
+                - script:
+                    name: update
+                    async: true
+                  with:
+                    arg: ${{BIZ}}
+                - set-state: RUN.FOO ${{RUN.FOO:}}-SET
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              states:
+                alpha: [ {name: \"ant\"}, {name: \"apple\"} ]
+                bravo: [ {name: \"bear\"}, {name: \"bull\"} ]
+                charlie: {name: \"cat\"}
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
@@ -110,29 +114,31 @@ public class ScriptCmdTest extends SshTestBase {
    public void async_using_with_on_script(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-            "scripts:",
-         "  update:",
-         "  - sleep: 2s",
-         "  - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg}}",
-         "  foo:",
-         "  - script: ",
-         "      name: update",
-         "      async: true",
-         "    with:",
-         "      arg: script",
-         "  - set-state: RUN.FOO ${{RUN.FOO:}}-SET",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]",
-         "states:",
-         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-         "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           update:
+           - sleep: 2s
+           - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg}}
+           foo:
+           - script:
+               name: update
+               async: true
+             with:
+               arg: script
+           - set-state: RUN.FOO ${{RUN.FOO:}}-SET
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         states:
+           alpha: [ {name: \"ant\"}, {name: \"apple\"} ]
+           bravo: [ {name: \"bear\"}, {name: \"bull\"} ]
+           charlie: {name: \"cat\"}
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
@@ -148,39 +154,41 @@ public class ScriptCmdTest extends SshTestBase {
    public void async_in_regex_in_watch(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-           "scripts:",
-           "  doit:",
-           "  - sh: date",
-           "    then:",
-           "    - set-state: RUN.date",
-           "  update:",
-           "  - sh: echo 'uno' >> /tmp/foo.txt",
-           "  - sleep: 2s",
-           "  - sh: echo 'dos' >> /tmp/foo.txt",
-           "  - sleep: 2s",
-           "  - sh: echo 'tres' >> /tmp/foo.txt",
-           "  - set-state: RUN.update true",
-           "  foo:",
-           "  - sleep: 15s",
-           "  - sh: tail -f /tmp/foo.txt",
-           "    watch:",
-           "    - regex: dos",
-           "      then:",
-           "      - script:",
-           "          name: doit",
-           "          async: true",
-           "    - regex: tres",
-           "      then:",
-           "      - ctrlC",
-           "  - set-state: RUN.foo true",
-           "hosts:",
-           "  local: " + getHost(),
-           "roles:",
-           "  doit:",
-           "    hosts: [local]",
-           "    run-scripts: [update,foo]"
-      )));
+      builder.loadYaml(parser.loadFile("",
+           """
+           scripts:
+             doit:
+             - sh: date
+               then:
+               - set-state: RUN.date
+             update:
+             - sh: echo 'uno' >> /tmp/foo.txt
+             - sleep: 2s
+             - sh: echo 'dos' >> /tmp/foo.txt
+             - sleep: 2s
+             - sh: echo 'tres' >> /tmp/foo.txt
+             - set-state: RUN.update true
+             foo:
+             - sleep: 15s
+             - sh: tail -f /tmp/foo.txt
+               watch:
+               - regex: dos
+                 then:
+                 - script:
+                     name: doit
+                     async: true
+               - regex: tres
+                 then:
+                 - ctrlC
+             - set-state: RUN.foo true
+           hosts:
+             local: TARGET_HOST
+           roles:
+             doit:
+               hosts: [local]
+               run-scripts: [update,foo]
+           """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
       Cmd foo = config.getScript("foo");
@@ -199,27 +207,29 @@ public class ScriptCmdTest extends SshTestBase {
 
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-         "scripts:",
-         "  update:",
-         "  - sleep: 2s",
-         "  - set-state: RUN.FOO ${{RUN.FOO:}}-UPDATED",
-         "  foo:",
-         "  - script: ",
-         "      name: update",
-         "      async: true",
-         "  - set-state: RUN.FOO ${{RUN.FOO:}}-SET",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]",
-         "states:",
-         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-         "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           update:
+           - sleep: 2s
+           - set-state: RUN.FOO ${{RUN.FOO:}}-UPDATED
+           foo:
+           - script:
+               name: update
+               async: true
+           - set-state: RUN.FOO ${{RUN.FOO:}}-SET
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         states:
+           alpha: [ {name: "ant"}, {name: "apple"} ]
+           bravo: [ {name: "bear"}, {name: "bull"} ]
+           charlie: {name: "cat"}
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
@@ -240,34 +250,36 @@ public class ScriptCmdTest extends SshTestBase {
          c++;
          Parser parser = Parser.getInstance();
          RunConfigBuilder builder = getBuilder();
-         builder.loadYaml(parser.loadFile("",stream(""+
-               "scripts:",
-            "  update:",
-            "  - set-state: RUN.FOO ${{RUN.FOO:}}-<${{BAR}}>",
-            "  foo:",
-            "  - for-each:",
-            "      name: arg1",
-            "      input: [\"one\",\"two\"]",
-            "    then:",
-            "    - for-each:",
-            "        name: arg2",
-            "        input: [\"uno\",\"dos\"]",
-            "      then:",
-            "      - script: update",
-            "        with:",
-            "          BAR: ${{arg1}}+${{arg2}}",
-            "hosts:",
-            "  local: " + getHost(),
-            "roles:",
-            "  doit:",
-            "    hosts: [local]",
-            "    run-scripts: [foo]",
-            "states:",
-            "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-            "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-            "  charlie: {name: \"cat\"}",
-            "  BAR: def"
-         )));
+         builder.loadYaml(parser.loadFile("",
+            """
+            scripts:
+              update:
+              - set-state: RUN.FOO ${{RUN.FOO:}}-<${{BAR}}>
+              foo:
+              - for-each:
+                  name: arg1
+                  input: ["one","two"]
+                then:
+                - for-each:
+                    name: arg2
+                    input: ["uno","dos"]
+                  then:
+                  - script: update
+                    with:
+                      BAR: ${{arg1}}+${{arg2}}
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                run-scripts: [foo]
+            states:
+              alpha: [ {name: "ant"}, {name: "apple"} ]
+              bravo: [ {name: "bear"}, {name: "bull"} ]
+              charlie: {name: "cat"}
+              BAR: def
+            """.replaceAll("TARGET_HOST",getHost().toString())
+         ));
 
          RunConfig config = builder.buildConfig(parser);
          Dispatcher dispatcher = new Dispatcher();
@@ -284,28 +296,30 @@ public class ScriptCmdTest extends SshTestBase {
    public void javascript_array_spread(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-         "scripts:",
-         "  update:",
-         "  - log: ${{arg}}",
-         "  - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg:}}",
-         "  foo:",
-         "  - for-each:",
-         "      name: arg",
-         "      input: [\"one\",\"two\",\"three\",\"four\"]",
-         "    then:",
-         "    - script: update",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]",
-         "states:",
-         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-         "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           update:
+           - log: ${{arg}}
+           - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg:}}
+           foo:
+           - for-each:
+               name: arg
+               input: ["one","two","three","four"]
+             then:
+             - script: update
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         states:
+           alpha: [ {name: "ant"}, {name: "apple"} ]
+           bravo: [ {name: "bear"}, {name: "bull"} ]
+           charlie: {name: "cat"}
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       Dispatcher dispatcher = new Dispatcher();
@@ -320,20 +334,22 @@ public class ScriptCmdTest extends SshTestBase {
    public void script_input(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-         "scripts:",
-         "  echo:",
-         "  - set-state: RUN.scriptInput",
-         "  foo:",
-         "   - sh: echo \"foo\"",
-         "   - script: echo",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           echo:
+           - set-state: RUN.scriptInput
+           foo:
+            - sh: echo "foo"
+            - script: echo
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
 
@@ -366,20 +382,22 @@ public class ScriptCmdTest extends SshTestBase {
    public void script_then(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-              "scripts:",
-              "  echo:",
-              "  - sh: echo \"foo\"",
-              "  - set-state: RUN.foo",
-              "  foo:",
-              "   - script: echo",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("",
+              """
+              scripts:
+                echo:
+                - sh: echo "foo"
+                - set-state: RUN.foo
+                foo:
+                 - script: echo
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
 

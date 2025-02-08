@@ -20,24 +20,26 @@ public class ExecTest extends SshTestBase {
    public void async_next_sibling_invoke_count_and_order() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("signal", stream("" +
-            "scripts:",
-         "  foo:",
-         "    - sh: pwd",
-         "    - exec:",
-         "        command: date '+%s'",
-         "        async: true",
-         "      then:",
-         "      - set-state: RUN.BAR",
-         "    - set-state: RUN.PWD",
-         "    - set-state: RUN.FOO ${{=${{RUN.FOO:0}}+1}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("signal",
+         """
+         scripts:
+           foo:
+             - sh: pwd
+             - exec:
+                 command: date '+%s'
+                 async: true
+               then:
+               - set-state: RUN.BAR
+             - set-state: RUN.PWD
+             - set-state: RUN.FOO ${{=${{RUN.FOO:0}}+1}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -54,35 +56,37 @@ public class ExecTest extends SshTestBase {
    public void async_invoke_count() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("signal", stream("" +
-            "scripts:",
-         "  foo:",
-         "    - sh: pwd",
-         "    - exec:",
-         "        command: echo 'alpha'",
-         "        async: true",
-         "      then:",
-         "      - set-state: RUN.A",
-         "      - set-state: RUN.FOO ${{=${{RUN.FOO:0}}+1}}",
-         "    - exec:",
-         "        command: echo 'bravo'",
-         "        async: true",
-         "      then:",
-         "      - set-state: RUN.B",
-         "      - set-state: RUN.FOO ${{=${{RUN.FOO:0}}+1}}",
-         "    - exec:",
-         "        command: echo 'charlie'",
-         "        async: true",
-         "      then:",
-         "      - set-state: RUN.C",
-         "      - set-state: RUN.FOO ${{=${{RUN.FOO:0}}+1}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("signal",
+         """
+         scripts:
+           foo:
+             - sh: pwd
+             - exec:
+                 command: echo 'alpha'
+                 async: true
+               then:
+               - set-state: RUN.A
+               - set-state: RUN.FOO ${{=${{RUN.FOO:0}}+1}}
+             - exec:
+                 command: echo 'bravo'
+                 async: true
+               then:
+               - set-state: RUN.B
+               - set-state: RUN.FOO ${{=${{RUN.FOO:0}}+1}}
+             - exec:
+                 command: echo 'charlie'
+                 async: true
+               then:
+               - set-state: RUN.C
+               - set-state: RUN.FOO ${{=${{RUN.FOO:0}}+1}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();

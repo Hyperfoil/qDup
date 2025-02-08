@@ -17,28 +17,30 @@ public class RunSummaryTest extends SshTestBase {
     public void self_referencing_two_scripts(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("signal",stream(""+
-            "scripts:",
-            "  foo:",
-            "  - script: bar",
-            "  biz:",
-            "  - sh: dosomething.sh",
-            "  bar:",
-            "    - script: biz",
-            "    - script: biz",
-            "    - sh: pwd",
-            "      then:",
-            "      - script: ",
-            "          name: foo",
-            "          async: true",
-            "hosts:",
-            "  test: "+getHost(),
-            "roles:",
-            "  role:",
-            "    hosts: [test]",
-            "    run-scripts:",
-            "    - bar"
-        )));
+        builder.loadYaml(parser.loadFile("signal",
+            """
+            scripts:
+              foo:
+              - script: bar
+              biz:
+              - sh: dosomething.sh
+              bar:
+                - script: biz
+                - script: biz
+                - sh: pwd
+                  then:
+                  - script:
+                      name: foo
+                      async: true
+            hosts:
+              test: TARGET_HOST
+            roles:
+              role:
+                hosts: [test]
+                run-scripts:
+                - bar
+            """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 

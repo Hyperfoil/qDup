@@ -62,46 +62,29 @@ public class RunTest extends SshTestBase {
 //    @Rule
 //    public final TestServer testServer = new TestServer();
 
-   private static final InputStream testScript = stream(""+
-                   "scripts:",
-           "  hello-world:",
-           "    - sh: echo hello world!",
-           "hosts:",
-           "  test: "+getHost(),
-           "roles:",
-           "  role:",
-           "    hosts: [test]",
-           "    run-scripts:",
-           "    - hello-world"
-   );
-
    @Test
    public void test_stuck_fedora40(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("signal",stream(
+      builder.loadYaml(parser.loadFile("signal",
               """
                scripts:
                  start-script:
                    - log: "Running script"
                    - sh: echo "Hello World!"
                    - log: "Finished script"
-               
                hosts:
-                 target-host: ${{HOST}}
-               
+                 target-host: HOST
                roles:
                  db:
                    hosts:
                      - target-host
                    setup-scripts:
                      - start-script
-               
                states:
                  HOST: LOCAL
-               """
-
-      )));
+               """.replaceAll("HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
@@ -116,26 +99,28 @@ public class RunTest extends SshTestBase {
    public void waitfor_never_signaled(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("signal",stream(""+
-             "scripts:",
-              "  sig:",
-              "  - sh: pwd",
-              "    then:",
-              "    - regex: NOPE",
-              "      then:",
-              "      - signal: sig",
-              "  foo:",
-              "    - wait-for: sig",
-              "    - set-state: RUN.fizz fail",
-              "hosts:",
-              "  test: "+getHost(),
-              "roles:",
-              "  role:",
-              "    hosts: [test]",
-              "    run-scripts:",
-              "    - foo",
-              "    - sig"
-      )));
+      builder.loadYaml(parser.loadFile("signal",
+           """
+           scripts:
+             sig:
+             - sh: pwd
+               then:
+               - regex: NOPE
+                 then:
+                 - signal: sig
+             foo:
+               - wait-for: sig
+               - set-state: RUN.fizz fail
+           hosts:
+             test: TARGET_HOST
+           roles:
+             role:
+               hosts: [test]
+               run-scripts:
+               - foo
+               - sig
+           """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
@@ -151,24 +136,27 @@ public class RunTest extends SshTestBase {
    public void script_with_at_runtime(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("signal",stream(""+ "scripts:",
-              "  set:",
-              "    - set-state: RUN.bar buz",
-              "    - set-state: RUN.buz.biz biz",
-              "  sig:",
-              "    - set-state: RUN.sig ${{foo}}",
-              "hosts:",
-              "  test: "+getHost(),
-              "roles:",
-              "  role:",
-              "    hosts: [test]",
-              "    setup-scripts:",
-              "    - set",
-              "    run-scripts:",
-              "    - sig:",
-              "        with:",
-              "          foo: ${{buz.biz}}"
-      )));
+      builder.loadYaml(parser.loadFile("signal",
+              """
+              scripts:
+                set:
+                  - set-state: RUN.bar buz
+                  - set-state: RUN.buz.biz biz
+                sig:
+                 - set-state: RUN.sig ${{foo}}
+              hosts:
+                test: TARGET_HOST
+              roles:
+                role:
+                  hosts: [test]
+                  setup-scripts:
+                  - set
+                  run-scripts:
+                  - sig:
+                      with:
+                        foo: ${{buz.biz}}
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
@@ -185,25 +173,27 @@ public class RunTest extends SshTestBase {
    public void signal_in_timer_on_waitfor(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("signal",stream(""+
-           "scripts:",
-           "  sig:",
-           "    - sh: pwd",
-           "    - wait-for: sig",
-           "      timer:",
-           "        5s:",
-           "        - set-state: RUN.bizz bizz",
-           "        - signal: sig",
-           "        - set-state: RUN.buzz buzz",
-           "    - set-state: RUN.fizz fuzz",
-           "hosts:",
-           "  test: "+getHost(),
-           "roles:",
-           "  role:",
-           "    hosts: [test]",
-           "    run-scripts:",
-           "    - sig"
-      )));
+      builder.loadYaml(parser.loadFile("signal",
+           """
+           scripts:
+             sig:
+               - sh: pwd
+               - wait-for: sig
+                 timer:
+                   5s:
+                   - set-state: RUN.bizz bizz
+                   - signal: sig
+                   - set-state: RUN.buzz buzz
+               - set-state: RUN.fizz fuzz
+           hosts:
+             test: TARGET_HOST
+           roles:
+            role:
+               hosts: [test]
+               run-scripts:
+               - sig
+           """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
@@ -221,26 +211,28 @@ public class RunTest extends SshTestBase {
    public void skipStage_setup(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-           "scripts:",
-           "  foo:",
-           "    - set-state: RUN.foo true",
-           "  bar:",
-           "    - set-state: RUN.bar true",
-           "  biz:",
-           "    - set-state: RUN.biz true",
-           "hosts:",
-           "  local: " + getHost(),
-           "roles:",
-           "  doit:",
-           "    hosts: [local]",
-           "    setup-scripts:",
-           "    - foo",
-           "    run-scripts:",
-           "    - bar",
-           "    cleanup-scripts:",
-           "    - biz"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+           """
+           scripts:
+             foo:
+               - set-state: RUN.foo true
+             bar:
+               - set-state: RUN.bar true
+             biz:
+               - set-state: RUN.biz true
+           hosts:
+             local: TARGET_HOST
+           roles:
+            doit:
+               hosts: [local]
+               setup-scripts:
+               - foo
+               run-scripts:
+               - bar
+               cleanup-scripts:
+               - biz
+           """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       builder.addSkipStage(Stage.Setup);
       RunConfig config = builder.buildConfig(parser);
 
@@ -260,26 +252,28 @@ public class RunTest extends SshTestBase {
    public void skipStage_run(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-           "scripts:",
-           "  foo:",
-           "    - set-state: RUN.foo true",
-           "  bar:",
-           "    - set-state: RUN.bar true",
-           "  biz:",
-           "    - set-state: RUN.biz true",
-           "hosts:",
-           "  local: " + getHost(),
-           "roles:",
-           "  doit:",
-           "    hosts: [local]",
-           "    setup-scripts:",
-           "    - foo",
-           "    run-scripts:",
-           "    - bar",
-           "    cleanup-scripts:",
-           "    - biz"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+           """
+           scripts:
+             foo:
+               - set-state: RUN.foo true
+             bar:
+               - set-state: RUN.bar true
+             biz:
+               - set-state: RUN.biz true
+           hosts:
+             local: TARGET_HOST
+           roles:
+             doit:
+               hosts: [local]
+               setup-scripts:
+               - foo
+               run-scripts:
+               - bar
+               cleanup-scripts:
+               - biz
+           """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       builder.addSkipStage(Stage.Run);
       RunConfig config = builder.buildConfig(parser);
 
@@ -298,26 +292,28 @@ public class RunTest extends SshTestBase {
    public void skipStage_cleanup(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-                      "scripts:",
-              "  foo:",
-              "    - set-state: RUN.foo true",
-              "  bar:",
-              "    - set-state: RUN.bar true",
-              "  biz:",
-              "    - set-state: RUN.biz true",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    setup-scripts:",
-              "    - foo",
-              "    run-scripts:",
-              "    - bar",
-              "    cleanup-scripts:",
-              "    - biz"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - set-state: RUN.foo true
+                bar:
+                  - set-state: RUN.bar true
+                biz:
+                  - set-state: RUN.biz true
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  setup-scripts:
+                  - foo
+                  run-scripts:
+                  - bar
+                  cleanup-scripts:
+                  - biz
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       builder.addSkipStage(Stage.Cleanup);
       RunConfig config = builder.buildConfig(parser);
 
@@ -414,18 +410,20 @@ public class RunTest extends SshTestBase {
    public void pwd_in_dollar() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-         "scripts:",
-         "  foo:",
-         "    - sh: echo \"pwd is:$(pwd)\"",
-         "    - echo:",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+         """
+         scripts:
+           foo:
+             - sh: echo "pwd is:$(pwd)"
+             - echo:
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -439,17 +437,19 @@ public class RunTest extends SshTestBase {
    public void too_much_output() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-              "scripts:",
-              "  foo:",
-              "    - sh: \"while :; do echo 'Hit CTRL+C'; done\"",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - sh: "while :; do echo 'Hit CTRL+C'; done"
+              hosts:",
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -464,26 +464,28 @@ public class RunTest extends SshTestBase {
    public void duplicate_script_different_with(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-        "scripts:",
-        "  foo:",
-        "    - log: value=${{value}}",
-        "    - set-state: RUN.foo ${{= [ ...${{RUN.foo:[]}} ,  '${{value:missing}}' ] }}",
-        "hosts:",
-        "  local: " + getHost(),
-        "roles:",
-        "  doit:",
-        "    hosts: [local]",
-        "    run-scripts:",
-        "    - foo:",
-        "        with:",
-        "           value: 'one'",
-        "    - foo:",
-        "        with:",
-        "           value: 'two'",
-        "states:",
-        "  foo: []"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+           """
+           scripts:
+             foo:
+               - log: value=${{value}}
+               - set-state: RUN.foo ${{= [ ...${{RUN.foo:[]}} ,  '${{value:missing}}' ] }}
+           hosts:
+             local: TARGET_HOST
+           roles:
+             doit:
+               hosts: [local]
+               run-scripts:
+               - foo:
+                   with:
+                      value: 'one'
+               - foo:
+                   with:
+                      value: 'two'
+           states:
+             foo: []
+           """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -505,23 +507,25 @@ public class RunTest extends SshTestBase {
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-              "scripts:",
-              "  foo:",
-              "  - sh: whoami; (exit 42);",
-              "  - set-state: RUN.doesnotexist true",
-              "  bar:",
-              "  - set-state: RUN.clean true",
-              "hosts:",
-              "  self: " + getHost()+"",
-              "roles:",
-              "  doit:",
-              "    hosts: [self]",
-              "    run-scripts: [foo]",
-              "    cleanup-scripts: [bar]",
-              "states:",
-              "  clean: false"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                - sh: whoami; (exit 42);
+                - set-state: RUN.doesnotexist true
+                bar:
+                - set-state: RUN.clean true
+              hosts:
+                self: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [self]
+                  run-scripts: [foo]
+                  cleanup-scripts: [bar]
+              states:
+                clean: false
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -539,23 +543,25 @@ public class RunTest extends SshTestBase {
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-              "scripts:",
-              "  foo:",
-              "  - sh: whoami; (exit 42);",
-              "  - set-state: RUN.doesnotexist true",
-              "  bar:",
-              "  - sleep: 4s",
-              "  - set-state: RUN.bad true",
-              "hosts:",
-              "  self: " + getHost()+"",
-              "roles:",
-              "  doit:",
-              "    hosts: [self]",
-              "    run-scripts: [foo, bar]",
-              "states:",
-              "  bad: false"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                - sh: whoami; (exit 42);
+                - set-state: RUN.doesnotexist true
+                bar:
+                - sleep: 4s
+                - set-state: RUN.bad true
+              hosts:
+                self: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [self]
+                  run-scripts: [foo, bar]
+              states:
+                bad: false
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -573,28 +579,30 @@ public class RunTest extends SshTestBase {
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-              "scripts:",
-              "  foo:",
-              "    - sh: ls /tmp; (exit 42);",
-              "    - sh: echo $?",
-              "    - sh: doesnotexist",
-              "    - set-state: RUN.doesnotexist true",
-              "    - sh: echo $?",
-              "    - sh: pwd",
-              "    - sh: history",
-              "  bar:",
-              "  - set-state: RUN.clean true",
-              "hosts:",
-              "  self: " + getHost()+"",
-              "roles:",
-              "  doit:",
-              "    hosts: [self]",
-              "    run-scripts: [foo]",
-              "    cleanup-scripts: [bar]",
-              "states:",
-              "  clean: false"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - sh: ls /tmp; (exit 42);
+                  - sh: echo $?
+                  - sh: doesnotexist
+                  - set-state: RUN.doesnotexist true
+                  - sh: echo $?
+                  - sh: pwd
+                  - sh: history
+                bar:
+                - set-state: RUN.clean true
+              hosts:
+                self: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [self]
+                  run-scripts: [foo]
+                  cleanup-scripts: [bar]
+              states:
+                clean: false
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -614,22 +622,24 @@ public class RunTest extends SshTestBase {
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-              "scripts:",
-              "  foo:",
-              "   - sh: history",
-              "  bar:",
-              "   - set-state: RUN.foo bar",
-              "   - abort: give up",
-              "   - set-state: RUN.foo biz",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]",
-              "    cleanup-scripts: [bar]"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                 - sh: history
+                bar:
+                 - set-state: RUN.foo bar
+                 - abort: give up
+                 - set-state: RUN.foo biz
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+                  cleanup-scripts: [bar]
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -647,30 +657,34 @@ public class RunTest extends SshTestBase {
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-              "scripts:",
-              "  foo:",
-              "    - sh: ls /tmp; (exit 42);",
-              "    - sh: echo $?",
-              "    - sh: doesnotexist",
-              "    - set-state: RUN.doesnotexist true",
-              "    - sh: echo $?",
-              "    - sh: pwd",
-              "    - sh: history",
-              "  bar:",
-              "    - read-state: ${{"+QDUP_GLOBAL+"."+QDUP_GLOBAL_ABORTED+"}}",
-              "      then:",
-              "      - set-state: RUN.found true",
-              "      else:",
-              "      - set-state: RUN.found false",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]",
-              "    cleanup-scripts: [bar]"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - sh: ls /tmp; (exit 42);
+                  - sh: echo $?
+                  - sh: doesnotexist
+                  - set-state: RUN.doesnotexist true
+                  - sh: echo $?
+                  - sh: pwd
+                  - sh: history
+                bar:
+                  - read-state: ${{QDUP_GLOBAL.QDUP_ABORTED}}
+                    then:
+                    - set-state: RUN.found true
+                    else:
+                    - set-state: RUN.found false
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+                  cleanup-scripts: [bar]
+              """.replaceAll("TARGET_HOST",getHost().toString())
+                      .replaceAll("QDUP_GLOBAL",QDUP_GLOBAL)
+                      .replaceAll("QDUP_ABORTED",QDUP_GLOBAL_ABORTED)
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -689,28 +703,30 @@ public class RunTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-             "scripts:",
-              "  foo:",
-              "    - sh: ls /tmp; (exit 01);",
-              "    - sh: echo $?",
-              "      then:",
-              "      - regex: \"^0$\"",
-              "        then:",
-              "        - set-state: RUN.error false",
-              "        else:",
-              "        - set-state: RUN.error true",
-              "    - sh: doesnotexist",
-              "    - sh: echo $?",
-              "    - sh: pwd",
-              "    - sh: history",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - sh: ls /tmp; (exit 01);
+                  - sh: echo $?
+                    then:
+                    - regex: "^0$"
+                      then:
+                      - set-state: RUN.error false
+                      else:
+                      - set-state: RUN.error true
+                  - sh: doesnotexist
+                  - sh: echo $?
+                  - sh: pwd
+                  - sh: history
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -728,22 +744,24 @@ public class RunTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-             "scripts:",
-              "  foo:",
-              "    - sh: ls /tmp; (exit 42);",
-              "    - sh: echo $?",
-              "    - sh: doesnotexist",
-              "    - sh: echo $?",
-              "    - sh: pwd",
-              "    - sh: history",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - sh: ls /tmp; (exit 42);
+                  - sh: echo $?
+                  - sh: doesnotexist
+                  - sh: echo $?
+                  - sh: pwd
+                  - sh: history
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -756,22 +774,24 @@ public class RunTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-             "scripts:",
-              "  foo:",
-              "    - sh: ",
-              "        command: \"ls /tmp; (exit 42);\"",
-              "        ignore-exit-code: true",
-              "    - set-state: RUN.ran true",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]",
-              "states:",
-              "  ran: false"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - sh:
+                      command: "ls /tmp; (exit 42);"
+                      ignore-exit-code: true
+                  - set-state: RUN.ran true
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              states:
+                ran: false
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -782,27 +802,63 @@ public class RunTest extends SshTestBase {
       assertEquals("set-state should run","true",s.get("ran"));
    }
    @Test
+   public void test_ignore_exit_code_calls_then(){
+      Parser parser = Parser.getInstance();
+      parser.setAbortOnExitCode(true);
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - sh:
+                      command: "ls /tmp; (exit 42);"
+                      ignore-exit-code: true
+                    then:
+                    - set-state: RUN.ran true
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              states:
+                ran: false
+            """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State s = config.getState();
+      assertEquals("set-state should run","true",s.get("ran"));
+   }
+
+   @Test
    public void test_ignore_exit_code_from_pattern(){
       Parser parser = Parser.getInstance();
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-             "scripts:",
-              "  foo:",
-              "    - sh: ",
-              "        command: \"ls /tmp; (exit 42);\"",
-              "        ignore-exit-code: ${{ignore-it}}",
-              "    - set-state: RUN.ran true",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]",
-              "states:",
-              "  ran: false",
-              "  ignore-it: true"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - sh:
+                      command: "ls /tmp; (exit 42);"
+                      ignore-exit-code: ${{ignore-it}}
+                  - set-state: RUN.ran true
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              states:
+                ran: false
+                ignore-it: true
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -817,23 +873,25 @@ public class RunTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       parser.setAbortOnExitCode(true);
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-             "scripts:",
-              "  foo:",
-              "    - sh: ",
-              "        command: \"ls /tmp; (exit 42);\"",
-              "        ignore-exit-code: ${{ignore-it}}",
-              "    - set-state: RUN.ran true",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]",
-              "states:",
-              "  ran: false",
-              "  ignore-it: false"
-      )));
+      builder.loadYaml(parser.loadFile("pwd",
+             """
+             scripts:
+               foo:
+                 - sh:
+                     command: "ls /tmp; (exit 42);"
+                     ignore-exit-code: ${{ignore-it}}
+                 - set-state: RUN.ran true
+             hosts:
+               local: TARGET_HOST
+             roles:
+               doit:
+                 hosts: [local]
+                 run-scripts: [foo]
+             states:
+               ran: false
+               ignore-it: false
+             """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -996,77 +1054,37 @@ public class RunTest extends SshTestBase {
       }
    }
 
-   //TODO run test when connected to the internet (or valid registry)
-   //removed because disabling ENV.TMP_DIR
-   @Test @Ignore
-   public void tmp_env_dir() {
-      Parser parser = Parser.getInstance();
-      RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("pwd", stream("" +
-         "scripts:",
-         "  foo:",
-         "    - set-state: RUN.dir ${{"+RunConfigBuilder.TEMP_DIR+"}}",
-         "    - sh: echo 'bar' > ${{"+RunConfigBuilder.TEMP_DIR+"}}/bar.txt",
-         "    - sh: cat ${{"+RunConfigBuilder.TEMP_DIR+"}}/bar.txt",
-         "    - set-state: RUN.bar",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]"
-      )));
-      RunConfig config = builder.buildConfig(parser);
-      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
-      Dispatcher dispatcher = new Dispatcher();
-      Run doit = new Run(tmpDir.toString(), config, dispatcher);
-
-      doit.run();
-
-      State state = config.getState();
-
-      Object bar = state.get("bar");
-      Object dir = state.get("dir");
-
-      assertNotNull("bar should exist in state\n"+state.tree(),bar);
-      assertEquals("bar should be the content of the file","bar",bar);
-
-      assertNotNull("dir should exist in state\n"+state.tree(),dir);
-      assertFalse("dir should not exist in the container after a run",exists(dir.toString()));
-
-
-   }
-
-
    @Test
    public void invoke_with_state_script_name() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       StringBuilder sb = new StringBuilder();
 
-      builder.loadYaml(parser.loadFile("test", stream("" +
-         "scripts:",
-         "  foo:",
-         "  - sh: echo ${{NAME}}",
-         "  - script: ${{NAME}}",
-         "  bar:",
-         "  - sh: echo ${{NAME}}",
-         "  - script: foo",
-         "    with:",
-         "      NAME: biz",
-         "  fail:",
-         "  - sh: pwd",
-         "  biz:",
-         "  - sh: echo ${{NAME}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [bar]",
-         "states:",
-         "  NAME: fail"
-      )));
+      builder.loadYaml(parser.loadFile("test",
+         """
+         scripts:
+           foo:
+           - sh: echo ${{NAME}}
+           - script: ${{NAME}}
+           bar:
+           - sh: echo ${{NAME}}
+           - script: foo
+             with:
+               NAME: biz
+           fail:
+           - sh: pwd
+           biz:
+           - sh: echo ${{NAME}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [bar]
+         states:
+           NAME: fail
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       Cmd bar = config.getScript("bar");
       assertNotNull("missing bar script", bar);
@@ -1090,21 +1108,23 @@ public class RunTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("json", stream("" +
-         "scripts:",
-         "  foo:",
-         "  - for-each: FOO ${{BAR}}",
-         "    then:",
-         "    - read-state: ${{FOO.biz.buz}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]",
-         "states:",
-         "  BAR: [{biz: {buz: 'one'}},{biz: {buz: 'two'}},{biz: {buz: 'three'}}]"
-      )));
+      builder.loadYaml(parser.loadFile("json",
+         """
+         scripts:
+           foo:
+           - for-each: FOO ${{BAR}}
+             then:
+             - read-state: ${{FOO.biz.buz}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         states:
+           BAR: [{biz: {buz: 'one'}},{biz: {buz: 'two'}},{biz: {buz: 'three'}}]
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
@@ -1137,33 +1157,35 @@ public class RunTest extends SshTestBase {
    public void signal_in_watch() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("signal", stream("" +
-            "scripts:",
-         "  foo:",
-         "    - sh: doSomething",
-         "      watch:",
-         "        - regex: seeSomething",
-         "          then:",
-         "            - signal: ${{NAME}}-FOO",
-         "      on-signal:",
-         "        ${{FAKE}}-FOO:",
-         "          - ctrlC:",
-         "  bar:",
-         "    - wait-for: ${{NAME}}-FOO",
-         "    - sh: echo bar > /tmp/bar.txt",
-         "    - signal: BAR",
-         "  biz:",
-         "    - wait-for: BAR",
-         "    - sh: echo biz > /tmp/biz.txt",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo,bar]",
-         "states:",
-         "  NAME: signalName"
-      )));
+      builder.loadYaml(parser.loadFile("signal",
+         """
+         scripts:
+           foo:
+             - sh: doSomething
+               watch:
+                 - regex: seeSomething
+                   then:
+                     - signal: ${{NAME}}-FOO
+               on-signal:
+                 ${{FAKE}}-FOO:
+                   - ctrlC:
+           bar:
+             - wait-for: ${{NAME}}-FOO
+             - sh: echo bar > /tmp/bar.txt
+             - signal: BAR
+           biz:
+             - wait-for: BAR
+             - sh: echo biz > /tmp/biz.txt
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo,bar]
+         states:
+           NAME: signalName
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
    }
@@ -1172,38 +1194,40 @@ public class RunTest extends SshTestBase {
    public void array_state_with_watch_in_yaml(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-              "scripts:",
-              "  setSignals:",
-              "  - for-each: OBJ ${{OBJS}}",
-              "    then:",
-              "    - set-signal: ${{OBJ.name}}-started 1",
-              "  foo:",
-              "  - sh: echo 'Starting!'",
-              "  - for-each: OBJ ${{OBJS}}",
-              "    then:",
-              "      - sh: echo ${{OBJ.name}}-started",
-              "        watch:",
-              "          - regex: started",
-              "            then:",
-              "             - signal: ${{OBJ.name}}-started",
-              "      - sleep: 2s",
-              "  - sh: echo 'End!'",
-              "  bar:",
-              "  - for-each: OBJ ${{OBJS}}",
-              "    then:",
-              "    - wait-for: ${{OBJ.name}}-started",
-              "    - sh: 'echo ${{OBJ.name}}-started has started!'",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    setup-scripts: [setSignals]",
-              "    run-scripts: [foo, bar]",
-              "states:",
-              "  OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]"
-      )));
+      builder.loadYaml(parser.loadFile("",
+              """
+              scripts:
+                setSignals:
+                - for-each: OBJ ${{OBJS}}
+                  then:
+                  - set-signal: ${{OBJ.name}}-started 1
+                foo:
+                - sh: echo 'Starting!'
+                - for-each: OBJ ${{OBJS}}
+                  then:
+                    - sh: echo ${{OBJ.name}}-started
+                      watch:
+                        - regex: started
+                          then:
+                           - signal: ${{OBJ.name}}-started
+                    - sleep: 2s
+                - sh: echo 'End!'
+                bar:
+                - for-each: OBJ ${{OBJS}}
+                  then:
+                  - wait-for: ${{OBJ.name}}-started
+                  - sh: 'echo ${{OBJ.name}}-started has started!'
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  setup-scripts: [setSignals]
+                  run-scripts: [foo, bar]
+              states:
+                OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
 
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -1218,13 +1242,10 @@ public class RunTest extends SshTestBase {
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
 
-
       String logContents = readLocalFile(tmpDir.getPath().resolve("run.log"));
       assertTrue("run log is empty\n"+logContents+"\n"+logContents.length(), logContents.length() > 0);
       Boolean containsUnsubstituted = logContents.contains("signal: ${{OBJ.name}}-started");
       assertTrue("File contains ${{OBJ.name}}-started", !containsUnsubstituted);
-
-
 
    }
 
@@ -1232,28 +1253,30 @@ public class RunTest extends SshTestBase {
    public void suppress_state_logging(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-                      "scripts:",
-              "  setStates:",
-              "  - for-each: OBJ ${{OBJS}}",
-              "    then:",
-              "    - set-state: ${{OBJ.name}}-started 1",
-              "  foo:",
-              "  - sh: echo 'Starting!'",
-              "  - for-each: OBJ ${{OBJS}}",
-              "    then:",
-              "      - sh: echo state ${{OBJ.name}}-started ${{${{OBJ.name}}-started}}",
-              "  - sh: echo 'End!'",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    setup-scripts: [setStates]",
-              "    run-scripts: [foo]",
-              "states:",
-              "  OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]"
-      )));
+      builder.loadYaml(parser.loadFile("",
+              """
+              scripts:
+                setStates:
+                - for-each: OBJ ${{OBJS}}
+                  then:
+                  - set-state: ${{OBJ.name}}-started 1
+                foo:
+                - sh: echo 'Starting!'
+                - for-each: OBJ ${{OBJS}}
+                  then:
+                    - sh: echo state ${{OBJ.name}}-started ${{${{OBJ.name}}-started}}
+                - sh: echo 'End!'
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  setup-scripts: [setStates]
+                  run-scripts: [foo]
+              states:
+                OBJS: [{'name': 'one', 'value':'foo'}, {'name': 'two', 'value':'bar'}, {'name': 'three', 'value':'biz'}]
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
 //      Logger root = (Logger) LoggerFactory.getLogger(Run.STATE_LOGGER_NAME);
       //set log level to INFO to disable STATE logger
@@ -1291,33 +1314,35 @@ public class RunTest extends SshTestBase {
       Json hostJson = getHost().toJson();
       hostJson.set("container","quay.io/fedora/fedora");
       hostJson.set("platform","docker");
-      builder.loadYaml(parser.loadFile("signal", stream("" +
-              "scripts:",
-              "  foo:",
-              "    - sh: echo foo > /tmp/foo.txt",
-              "    - sh: ls /tmp",
-              "    - signal: FOO",
-              "  bar:",
-              "    - wait-for: FOO",
-              "    - sh: echo bar > /tmp/bar.txt",
-              "    - sh: ls /tmp",
-              "    - signal: BAR",
-              "  biz:",
-              "    - wait-for: BAR",
-              "    - sh: echo biz > /tmp/biz.txt",
-              "    - sh: ls /tmp",
-              "    - queue-download: /tmp/foo.txt",
-              "    - queue-download: /tmp/bar.txt",
-              "    - queue-download: /tmp/biz.txt",
-              "hosts:",
-              "  local: " + hostJson.toString(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    setup-scripts: [foo]",
-              "    run-scripts: [bar]",
-              "    cleanup-scripts: [biz]"
-      )));
+      builder.loadYaml(parser.loadFile("signal",
+              """
+              scripts:
+                foo:
+                  - sh: echo foo > /tmp/foo.txt
+                  - sh: ls /tmp
+                  - signal: FOO
+                bar:
+                  - wait-for: FOO
+                  - sh: echo bar > /tmp/bar.txt
+                  - sh: ls /tmp
+                  - signal: BAR
+                biz:
+                  - wait-for: BAR
+                  - sh: echo biz > /tmp/biz.txt
+                  - sh: ls /tmp
+                  - queue-download: /tmp/foo.txt
+                  - queue-download: /tmp/bar.txt
+                  - queue-download: /tmp/biz.txt
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  setup-scripts: [foo]
+                  run-scripts: [bar]
+                  cleanup-scripts: [biz]
+              """.replaceAll("TARGET_HOST",hostJson.toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       
       config.getScript("foo").then(Cmd.code((input,state)->{
@@ -1376,26 +1401,28 @@ public class RunTest extends SshTestBase {
    public void signal_in_previous_stage() {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("signal", stream("" +
-            "scripts:",
-         "  foo:",
-         "    - signal: FOO",
-         "  bar:",
-         "    - wait-for: FOO",
-         "    - sh: echo bar > /tmp/bar.txt",
-         "    - signal: BAR",
-         "  biz:",
-         "    - wait-for: BAR",
-         "    - sh: echo biz > /tmp/biz.txt",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    setup-scripts: [foo]",
-         "    run-scripts: [bar]",
-         "    cleanup-scripts: [biz]"
-      )));
+      builder.loadYaml(parser.loadFile("signal",
+         """
+         scripts:
+           foo:
+             - signal: FOO
+           bar:
+             - wait-for: FOO
+             - sh: echo bar > /tmp/bar.txt
+             - signal: BAR
+           biz:
+             - wait-for: BAR
+             - sh: echo biz > /tmp/biz.txt
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             setup-scripts: [foo]
+             run-scripts: [bar]
+             cleanup-scripts: [biz]
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
@@ -1628,20 +1655,22 @@ public class RunTest extends SshTestBase {
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
 
-      builder.loadYaml(parser.loadFile("json", stream("" +
-              "scripts:",
-              "  foo:",
-              "  - sh: sleep 120s",
-              "    timer:",
-              "      10s:",
-              "      - abort: too long",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]"
-      )));
+      builder.loadYaml(parser.loadFile("json",
+              """
+              scripts:
+                foo:
+                - sh: sleep 120s
+                  timer:
+                    10s:
+                    - abort: too long
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
@@ -1759,35 +1788,37 @@ public class RunTest extends SshTestBase {
    public void watch_only_ctrlC_if_active(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-         "scripts:",
-         "  foo:",
-         "  - sleep: 1s",
-         "  - sh: ",
-         "      command: top",
-         "      silent: false",
-         "    watch:",
-         "    - regex: Task",
-         "      then:",
-         "      - ctrlC",
-         "      - sleep: 3s", //we need this to give the cmd time to end, otherwise the second ctrlC still occurs
-         "      - ctrlC",
-         "      - set-state: RUN.FOO ${{RUN.FOO:}}-worked",
-         "    - regex: PID",
-         "      then:",
-         "      - set-state: RUN.PID ${{RUN.PID:}}-found",
-         "  - sleep: 5s",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]",
-         "states:",
-         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-         "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           foo:
+           - sleep: 1s
+           - sh:
+               command: top
+               silent: false
+             watch:
+             - regex: Task
+               then:
+               - ctrlC
+               - sleep: 3s #we need this to give the cmd time to end, otherwise the second ctrlC still occurs
+               - ctrlC
+               - set-state: RUN.FOO ${{RUN.FOO:}}-worked
+             - regex: PID
+               then:
+               - set-state: RUN.PID ${{RUN.PID:}}-found
+           - sleep: 5s
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         states:
+           alpha: [ {name: "ant"}, {name: "apple"} ]
+           bravo: [ {name: "bear"}, {name: "bull"} ]
+           charlie: {name: "cat"}
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -1820,39 +1851,40 @@ public class RunTest extends SshTestBase {
    public void watch_ctrlC_multiple_lines_match_quickly(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-              "scripts:",
-              "  biz:",
-              "  - wait-for: created",
-              "  - sleep: 2s",
-              "  - sh: echo -e 'biz\\nbiz\\nbiz\\nbiz' >> /tmp/test.log",
-              "  - sleep: 1s",
-              "  - sh: echo -e 'fin'",
-//              "  - done",
-              "  foo:",
-              "  - sleep: 1s",
-              "  - sh: touch /tmp/test.log",
-              "  - signal: created",
-              "  - sh: ",
-              "      command: tail -f /tmp/test.log",
-              "      silent: false",
-              "    watch:",
-              "    - regex: biz",
-              "      then:",
-              "      - ctrlC",
-              "  - sh: pwd",
-              "  - set-state: RUN.reached true",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo, biz]",
-              "states:",
-              "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-              "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-              "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+              """
+              scripts:
+                biz:
+                - wait-for: created
+                - sleep: 2s
+                - sh: echo -e 'biz\nbiz\nbiz\nbiz' >> /tmp/test.log
+                - sleep: 1s
+                - sh: echo -e 'fin'
+                foo:
+                - sleep: 1s
+                - sh: touch /tmp/test.log
+                - signal: created
+                - sh:
+                    command: tail -f /tmp/test.log
+                    silent: false
+                  watch:
+                  - regex: biz
+                    then:
+                    - ctrlC
+                - sh: pwd
+                - set-state: RUN.reached true
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo, biz]
+              states:
+                alpha: [ {name: "ant"}, {name: "apple"} ]
+                bravo: [ {name: "bear"}, {name: "bull"} ]
+               charlie: {name: "cat"}
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -2121,26 +2153,28 @@ public class RunTest extends SshTestBase {
    public void timer_resolve_with_reference(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-         "scripts:",
-         "  foo:",
-         "  - sh: sleep 10s",
-         "    with:",
-         "      data:  ${{alpha[0]}}",
-         "    timer:",
-         "      2s:",
-         "      - set-state: RUN.timer ${{data.name}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]",
-         "states:",
-         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-         "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           foo:
+           - sh: sleep 10s
+             with:
+               data:  ${{alpha[0]}}
+             timer:
+               2s:
+               - set-state: RUN.timer ${{data.name}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         states:
+           alpha: [ {name: \"ant\"}, {name: \"apple\"} ]
+           bravo: [ {name: \"bear\"}, {name: \"bull\"} ]
+           charlie: {name: \"cat\"}
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
 
@@ -2165,21 +2199,23 @@ public class RunTest extends SshTestBase {
    public void host_with_password(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-             "scripts:",
-              "  foo:",
-              "  - set-state: RUN.worked true",
-              "hosts:",
-              "  local: " + getPasswordHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts: [foo]",
-              "states:",
-              "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-              "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-              "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+              """
+              scripts:
+                foo:
+                - set-state: RUN.worked true
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts: [foo]
+              states:
+                alpha: [ {name: \"ant\"}, {name: \"apple\"} ]
+                bravo: [ {name: \"bear\"}, {name: \"bull\"} ]
+                charlie: {name: \"cat\"}
+              """.replaceAll("TARGET_HOST",getPasswordHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
@@ -2203,26 +2239,28 @@ public class RunTest extends SshTestBase {
    public void timer_resolve_with(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-            "scripts:",
-         "  foo:",
-         "  - sh: sleep 10s",
-         "    with:",
-         "      data:  {name: \"ant\"}",
-         "    timer:",
-         "      2s:",
-         "      - set-state: RUN.timer ${{data.name}}",
-         "hosts:",
-         "  local: " + getHost(),
-         "roles:",
-         "  doit:",
-         "    hosts: [local]",
-         "    run-scripts: [foo]",
-         "states:",
-         "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-         "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-         "  charlie: {name: \"cat\"}"
-      )));
+      builder.loadYaml(parser.loadFile("",
+         """
+         scripts:
+           foo:
+           - sh: sleep 10s
+             with:
+               data:  {name: "ant"}
+             timer:
+               2s:
+               - set-state: RUN.timer ${{data.name}}
+         hosts:
+           local: TARGET_HOST
+         roles:
+           doit:
+             hosts: [local]
+             run-scripts: [foo]
+         states:
+           alpha: [ {name: "ant"}, {name: "apple"} ]
+           bravo: [ {name: "bear"}, {name: "bull"} ]
+           charlie: {name: "cat"}
+         """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
 
       RunConfig config = builder.buildConfig(parser);
 
@@ -2323,22 +2361,24 @@ public class RunTest extends SshTestBase {
    public void dynamic_script_name_populated(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("",stream(""+
-                      "scripts:",
-              "  foo:",
-              "  - log: running foo",
-              "  bar:",
-              "  - log: running bar",
-              "hosts:",
-              "  local: " + getHost(),
-              "roles:",
-              "  doit:",
-              "    hosts: [local]",
-              "    run-scripts:",
-              "      - ${{DYNAMIC_SCRIPT}}",
-              "states:",
-              "  DYNAMIC_SCRIPT: foo"
-      )));
+      builder.loadYaml(parser.loadFile("",
+              """
+              scripts:
+                foo:
+                - log: running foo
+                bar:
+                - log: running bar
+              hosts:
+                local: TARGET_HOST
+              roles:
+                doit:
+                  hosts: [local]
+                  run-scripts:
+                    - ${{DYNAMIC_SCRIPT}}
+              states:
+                DYNAMIC_SCRIPT: foo
+              """.replaceAll("TARGET_HOST",getHost().toString())
+      ));
       RunConfig config = builder.buildConfig(parser);
 
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -2360,7 +2400,19 @@ public class RunTest extends SshTestBase {
    public void test_multiple_logger_creation(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
-      builder.loadYaml(parser.loadFile("signal",testScript));
+      builder.loadYaml(parser.loadFile("signal",
+            """
+            scripts:
+              hello-world:
+                - sh: echo hello world!
+            hosts:
+              test: TARGET_HOST
+            roles:
+              role:
+                hosts: [test]
+                run-scripts:
+                - hello-world
+            """.replaceAll("TARGET_HOST",getHost().toString())));
       RunConfig config = builder.buildConfig(parser);
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 

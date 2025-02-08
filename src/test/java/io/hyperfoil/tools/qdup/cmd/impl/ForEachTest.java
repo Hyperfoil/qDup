@@ -51,25 +51,27 @@ public class ForEachTest extends SshTestBase {
     public void array_of_integers() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                "scripts:",
-                "  foo:",
-                "  - for-each:",
-                "      name: index",
-                "      input: ${{=[...Array(${{iterations:1}}).keys()]}}",
-                "    then:",
-                "    - set-state: bar ${{=(${{index}}).toString().padStart(3,\"0\")}}",
-                "    - set-state:",
-                "        key: RUN.results",
-                "        value: ${{=[...${{RUN.results_[]}},${{bar}}]}}",
-                "        separator: _",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each:
+                      name: index
+                      input: ${{=[...Array(${{iterations:1}}).keys()]}}
+                    then:
+                    - set-state: bar ${{=(${{index}}).toString().padStart(3,"0")}}
+                    - set-state:
+                        key: RUN.results
+                        value: ${{=[...${{RUN.results_[]}},${{bar}}]}}
+                        separator: _
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
@@ -90,23 +92,25 @@ public class ForEachTest extends SshTestBase {
     public void empty_array_of_integers() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - for-each:",
-                "      name: index",
-                "      input: ${{=[...Array(${{iterations:0}}).keys()]}}",
-                "    then:",
-                "    - set-state:",
-                "        key: RUN.ran",
-                "        value: true",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each:
+                      name: index
+                      input: ${{=[...Array(${{iterations:0}}).keys()]}}
+                    then:
+                    - set-state:
+                        key: RUN.ran
+                        value: true
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
@@ -126,27 +130,30 @@ public class ForEachTest extends SshTestBase {
         String mac = "00:11:22:33:44:0b";
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                "scripts:",
-                "  foo:",
-                "  - script: bar",
-                "    with:",
-                "      host: ${{TEST}}",
-                "  bar:",
-                "  - set-state:",
-                "      key: RUN.key",
-                "      value: ${{= \"${{host.mac}}\".replace(/\\:/g,'-')}}",
-                "    separator: _",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  TEST: ",
-                "    mac: \"" + mac + "\""
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - script: bar
+                    with:
+                      host: ${{TEST}}
+                  bar:
+                  - set-state:
+                      key: RUN.key
+                      value: ${{= "${{host.mac}}".replace(/\\:/g,'-')}}
+                    separator: _
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  TEST:
+                    mac: "MAC_ADDRESS"
+                """.replaceAll("TARGET_HOST",getHost().toString())
+                .replaceAll("MAC_ADDRESS",mac)
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
@@ -167,26 +174,27 @@ public class ForEachTest extends SshTestBase {
     public void javascript_array_spread() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - for-each:",
-                "      name: arg",
-                "      input: ${{ [${{charlie}}, ...${{alpha}}, ...${{bravo}} ] }}",
-                "    then:",
-                "    - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg.name}}",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  alpha: [ {name: \"ant\"}, {name: \"apple\"} ]",
-                "  bravo: [ {name: \"bear\"}, {name: \"bull\"} ]",
-                "  charlie: {name: \"cat\"}"
-        )));
-
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each:
+                      name: arg
+                      input: ${{ [${{charlie}}, ...${{alpha}}, ...${{bravo}} ] }}
+                    then:
+                    - set-state: RUN.FOO ${{RUN.FOO:}}-${{arg.name}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  alpha: [ {name: "ant"}, {name: "apple"} ]
+                  bravo: [ {name: "bear"}, {name: "bull"} ]
+                  charlie: {name: "cat"}
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
 
@@ -202,21 +210,23 @@ public class ForEachTest extends SshTestBase {
     public void foreach_input_entry_asMap() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - for-each:",
-                "      name: FOO",
-                "      input: [{ name: \"hibernate\", pattern: \"hibernate-core*jar\" }, { name: \"logging\", pattern: \"jboss-logging*jar\" }]",
-                "    then:",
-                "    - set-state: RUN.BAR ${{RUN.BAR:}}-${{FOO.name}}",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each:
+                      name: FOO
+                      input: [{ name: "hibernate", pattern: "hibernate-core*jar" }, { name: "logging", pattern: "jboss-logging*jar" }]
+                    then:
+                    - set-state: RUN.BAR ${{RUN.BAR:}}-${{FOO.name}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n" + config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")), config.hasErrors());
@@ -237,23 +247,25 @@ public class ForEachTest extends SshTestBase {
     public void nested_loop_objects_from_state() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - for-each: FOO ${{DATA}}",
-                "    then:",
-                "    - for-each: BAR ${{FOO.bar}}",
-                "      then:",
-                "      - set-state: RUN.LOG ${{LOG:}} ${{FOO.name:}}=${{BAR:}}",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  DATA: [{name: \"one\",bar: [1, 2, 3]},{name: \"two\",bar: [2,4,6]},{name: 'three' ,bar: [3,6,9]}]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each: FOO ${{DATA}}
+                    then:
+                    - for-each: BAR ${{FOO.bar}}
+                      then:
+                      - set-state: RUN.LOG ${{LOG:}} ${{FOO.name:}}=${{BAR:}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  DATA: [{name: "one",bar: [1, 2, 3]},{name: "two",bar: [2,4,6]},{name: 'three' ,bar: [3,6,9]}]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         Cmd foo = config.getScript("foo");
@@ -269,24 +281,26 @@ public class ForEachTest extends SshTestBase {
     public void nested_loop_count() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - for-each: ARG1 ${{FIRST}}",
-                "    then:",
-                "    - for-each: ARG2 ${{SECOND}}",
-                "      then:",
-                "      - set-state: RUN.LOG ${{LOG:}}-${{ARG1:}}.${{ARG2:}}",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  FIRST: [1, 2, 3]",
-                "  SECOND: [1, 2, 3]"
-        )));
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each: ARG1 ${{FIRST}}
+                    then:
+                    - for-each: ARG2 ${{SECOND}}
+                      then:
+                      - set-state: RUN.LOG ${{LOG:}}-${{ARG1:}}.${{ARG2:}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  FIRST: [1, 2, 3]
+                  SECOND: [1, 2, 3]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         Cmd foo = config.getScript("foo");
@@ -305,34 +319,32 @@ public class ForEachTest extends SshTestBase {
     public void definedLoopCount() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - for-each: ARG1 ${{FIRST}}",
-                "    then:",
-                "    - for-each: ARG2 ${{SECOND}}",
-                "      then:",
-                "      - for-each: ARG3 ${{THIRD}}",
-                "        then:",
-                "        - set-state: RUN.LOG ${{LOG:}}-${{ARG1:}}.${{ARG2:}}.${{ARG3:}}",
-                "  - sh: echo ${{LOG}}",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  FIRST: [1, 2]",
-                "  SECOND: [1, 2]",
-                "  THIRD: [1, 2]"
-        )));
-
-
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each: ARG1 ${{FIRST}}
+                    then:
+                    - for-each: ARG2 ${{SECOND}}
+                      then:
+                      - for-each: ARG3 ${{THIRD}}
+                        then:
+                        - set-state: RUN.LOG ${{LOG:}}-${{ARG1:}}.${{ARG2:}}.${{ARG3:}}
+                  - sh: echo ${{LOG}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  FIRST: [1, 2]
+                  SECOND: [1, 2]
+                  THIRD: [1, 2]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
-
         Cmd foo = config.getScript("foo");
-
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
@@ -1190,23 +1202,25 @@ public class ForEachTest extends SshTestBase {
     public void state_from_with() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("foreach", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - log: FOO=${{FOO}}",
-                "  - for-each: SERVICE ${{FOO}}",
-                "    then:",
-                "    - read-state: SERVICE",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: ",
-                "    - foo: ",
-                "        with:",
-                "          FOO : server1,server2,server3"
-        )));
+        builder.loadYaml(parser.loadFile("foreach",
+            """
+            scripts:
+              foo:
+              - log: FOO=${{FOO}}
+              - for-each: SERVICE ${{FOO}}
+                then:
+                - read-state: SERVICE
+            hosts:
+              local: TARGET_HOST
+            roles:
+              doit:
+                hosts: [local]
+                run-scripts:
+                - foo:
+                    with:
+                      FOO : server1,server2,server3
+            """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
 
         RunConfig config = builder.buildConfig(parser);
         assertFalse("unexpected errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -1237,21 +1251,23 @@ public class ForEachTest extends SshTestBase {
     public void yaml_state_quoted() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("foreach", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - for-each: SERVICE ${{FOO}}",
-                "    then:",
-                "    - read-state: ${{SERVICE}}",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  FOO: \"'server1,server2,server3'\""
-        )));
+        builder.loadYaml(parser.loadFile("foreach",
+                """
+                scripts:
+                  foo:
+                  - for-each: SERVICE ${{FOO}}
+                    then:
+                    - read-state: ${{SERVICE}}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  FOO: "'server1,server2,server3'"
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         Cmd target = config.getScript("foo");
         while (target.getNext() != null && !(target instanceof ForEach)) {
@@ -1274,21 +1290,23 @@ public class ForEachTest extends SshTestBase {
     public void yaml_state() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("foreach", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - for-each: SERVICE ${{FOO}}",
-                "    then:",
-                "    - read-state: SERVICE",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]",
-                "states:",
-                "  FOO: server1,server2,server3"
-        )));
+        builder.loadYaml(parser.loadFile("foreach",
+                """
+                scripts:
+                  foo:
+                  - for-each: SERVICE ${{FOO}}
+                    then:
+                    - read-state: SERVICE
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  FOO: server1,server2,server3
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         Cmd target = config.getScript("foo");
         while (target.getNext() != null && !(target instanceof ForEach)) {
@@ -1313,19 +1331,21 @@ public class ForEachTest extends SshTestBase {
     public void yaml_declared() {
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
-        builder.loadYaml(parser.loadFile("foreach", stream("" +
-                        "scripts:",
-                "  foo:",
-                "  - for-each: SERVICE 'service1, service2, service3'",
-                "    then:",
-                "    - read-state: SERVICE",
-                "hosts:",
-                "  local: " + getHost(),
-                "roles:",
-                "  doit:",
-                "    hosts: [local]",
-                "    run-scripts: [foo]"
-        )));
+        builder.loadYaml(parser.loadFile("foreach",
+                """
+                scripts:
+                  foo:
+                  - for-each: SERVICE 'service1, service2, service3'
+                    then:
+                    - read-state: SERVICE
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
         RunConfig config = builder.buildConfig(parser);
         Cmd target = config.getScript("foo");
         while (target.getNext() != null && !(target instanceof ForEach)) {
