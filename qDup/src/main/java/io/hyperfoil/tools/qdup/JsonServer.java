@@ -563,7 +563,7 @@ public class JsonServer implements RunObserver, ContextObserver {
         } catch (UnknownHostException e) {
 
         }
-        logger.info("json server listening at {}:{}", hostname, port);
+        logger.infof("json server listening at %s:%s", hostname, port);
 
         server = vertx.createHttpServer();
         server.requestHandler(router).listen(port/*, InetAddress.getLocalHost().getHostName()*/);

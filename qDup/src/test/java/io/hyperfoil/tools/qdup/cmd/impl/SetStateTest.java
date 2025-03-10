@@ -20,6 +20,18 @@ import static org.junit.Assert.*;
 
 public class SetStateTest extends SshTestBase {
 
+   @Test
+   public void return_set(){
+      SpyContext spyContext = new SpyContext();
+      spyContext.getState().set("FOO",Json.fromString("{\"key\":\"value\"}"));
+      spyContext.getState().set("VERSION","1.1.0");
+
+      SetState setState = new SetState("test","${{=new Set([1,2])}}");
+      setState.run("",spyContext);
+      Object obj = spyContext.getState().get("test");
+      System.out.println(obj);
+      System.out.println(obj.getClass());
+   }
 
    @Test
    public void quote_key(){

@@ -112,7 +112,7 @@ public class ScriptCmd extends Cmd {
         Script toCall = context.getScript(populatedName,this);
         Cmd originalNext = getNext();
         if(toCall == null){
-            logger.warn("could not find script: {}",populatedName);
+            logger.warnf("could not find script: %s",populatedName);
         }else {
             Cmd copyCmd = toCall.deepCopy();
             if(isAsync()){

@@ -76,7 +76,7 @@ public class ContainerShell extends AbstractShell{
         shell.setName(getName()+"-sub-shell");
         boolean connected = shell.connect();
         if(!connected){
-            logger.error("failed to connect {} shell for container to {}",getHost().isLocal() ? "local" : "remote", getHost().getSafeString());
+            logger.errorf("failed to connect %s shell for container to %s",getHost().isLocal() ? "local" : "remote", getHost().getSafeString());
             return null;
         }
         boolean connectSetContainerId=false;
@@ -98,7 +98,7 @@ public class ContainerShell extends AbstractShell{
                     containerId = shell.shSync(populatedCommand,null,connectTimeoutSeconds);
                     if(containerId.contains("Error:") || containerId.contains("command not found")){
                         //there was an error reported from container runtime
-                        logger.error("error starting {} container {} : {}",getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), containerId);
+                        logger.errorf("error starting %s container %s : %s",getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), containerId);
                         return null;
                     } else if(containerId.contains("\n") || containerId.isBlank()){
                         //assume the container started connected
@@ -205,7 +205,7 @@ public class ContainerShell extends AbstractShell{
                         //getHost().setContainerId(Host.NO_CONTAINER);
                     }else{
                         if(!getHost().hasStartConnectedContainer()) {
-                            logger.error("failed to connect to container shell for {}\n{}", getHost(), shell.getSessionStreams().currentOutput());
+                            logger.errorf("failed to connect to container shell for %s\n%s", getHost(), shell.getSessionStreams().currentOutput());
                         }
                     }
                 }else {
@@ -232,7 +232,7 @@ public class ContainerShell extends AbstractShell{
             }
             if(output.contains("Error:") || output.isBlank() || output.contains("command not found")){
                 //there was an error reported from container runtime
-                logger.error("error starting {} container {} : {}",getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), output);
+                logger.errorf("error starting %s container %s : %s",getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), output);
                 rtrn = null;
             }
         }

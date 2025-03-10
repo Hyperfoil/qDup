@@ -35,12 +35,12 @@ public class Reboot extends Cmd {
         if(target!=null && !target.isEmpty()){
 
             //TODO check if reboot is not necessary?
-            logger.info("{} reboot to {}",session.getHost().getHostName(),target);
+            logger.infof("%s reboot to %s",session.getHost().getHostName(),target);
 
             //requires root...
             String whoami = session.shSync("whoami");
             if(!"root".equals(whoami)){
-                logger.info("{} su ",session.getHost().getHostName());
+                logger.infof("%s su ",session.getHost().getHostName());
                 Map<String,String> prompts = new HashMap<>();
                 prompts.put("Password: ",password);
                 session.shSync("su",prompts);
@@ -49,7 +49,7 @@ public class Reboot extends Cmd {
             String grubFile = session.shSync("ls /etc/grub*.cfg");//get the grub cfg file
             String kernelString = session.shSync("awk -F\\' '$1==\"menuentry \" {print $2}' "+grubFile);
             List<String> kernels = Arrays.asList(kernelString.trim().split("\r?\n"));
-            logger.info("{} kernels:\n  {}",session.getHost().getHostName(),
+            logger.infof("%s kernels:\n  %s",session.getHost().getHostName(),
                     IntStream.range(0,kernels.size()).mapToObj(i->{
                         return i+" : "+kernels.get(i);
                     }).collect(Collectors.joining("\n  "))
@@ -57,10 +57,10 @@ public class Reboot extends Cmd {
             int targetIndex=-1;
 
             if(target.matches("\\d+")){
-                logger.info("{} target kernel index",session.getHost().getHostName());
+                logger.infof("%s target kernel index",session.getHost().getHostName());
                 int index = Integer.parseInt(target);
                 if(index>=kernels.size()){
-                    logger.error("{} Reboot found {} kernel(s), target = {}",session.getHost().getHostName(),kernels.size(),targetIndex);
+                    logger.errorf("%s Reboot found %s kernel(s), target = %s",session.getHost().getHostName(),kernels.size(),targetIndex);
                     //TODO invoke the next command or abort?
                     context.abort(false);
                 }else{
@@ -74,10 +74,10 @@ public class Reboot extends Cmd {
                         return kernels.get(i).contains(this.target);
                     }).findFirst().orElse(-1);
 
-                logger.info("{} kernel {} at index={}",session.getHost().getHostName(),this.target,index);
+                logger.infof("%s kernel %s at index=%s",session.getHost().getHostName(),this.target,index);
 
                 if(index<0){
-                    logger.error("{} failed to find kernel = {}",session.getHost().getHostName(),this.target);
+                    logger.errorf("%s failed to find kernel = {}",session.getHost().getHostName(),this.target);
                     context.abort(false);
                 }else{
                     targetIndex = index;
@@ -85,13 +85,13 @@ public class Reboot extends Cmd {
             }
 
             if(targetIndex>=0){
-                logger.info("{} grub2-reboot {}",session.getHost().getHostName(),targetIndex);
+                logger.infof("%s grub2-reboot %s",session.getHost().getHostName(),targetIndex);
                 session.sh("grub2-reboot "+targetIndex);
             }else{
                 //should not be able to get here
             }
         }//end of setting the target
-        logger.info("{} reboot",session.getHost().getHostName());
+        logger.infof("%s reboot",session.getHost().getHostName());
         session.reboot();
 
         long startMillis = System.currentTimeMillis();
@@ -103,16 +103,16 @@ public class Reboot extends Cmd {
             } catch (InterruptedException e) {
                 //e.printStackTrace(); //TODO what to do with interrupted Reboot?
             }
-            logger.info("{} retry @ {} for {}", Instant.now().toString(),interval);
+            logger.infof("%s retry @ %s for %s", Instant.now().toString(),interval);
             session.connect();
             //session.connect(interval,"",false);//TODO setupEnv
             currentMillis = System.currentTimeMillis();
         } while (!session.isOpen() && currentMillis - startMillis < this.timeout);
         if(!session.isOpen()){
-            logger.error("{} failed to reconnect after reboot",session.getHost().getHostName());
+            logger.errorf("%s failed to reconnect after reboot",session.getHost().getHostName());
             context.abort(false);
         }else {
-            logger.info("{} reconnected",session.getHost().getHostName());
+            logger.infof("%s reconnected",session.getHost().getHostName());
             //TODO context.setStartEnv();
         }
         context.next(input);

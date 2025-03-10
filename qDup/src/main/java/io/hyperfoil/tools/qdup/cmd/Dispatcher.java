@@ -429,6 +429,11 @@ public class Dispatcher {
             scheduler.shutdown();
         }
     }
+    public void stopSystemTimers(){
+        contextById.forEach((name,context)->{
+            context.getContextTimer().stop();
+        });
+    }
     public void stop() {
         stop(true);
     }

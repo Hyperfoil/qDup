@@ -86,7 +86,7 @@ public class Download extends Cmd {
             Long remoteFileSize = local.remoteFileSize(remotePath,host);
             if(remoteFileSize > maxSize){
                 canDownload = false;
-                logger.warn("Download File: `{}`; is larger {} than max size: {} bytes", remotePath, remoteFileSize, maxSize);
+                logger.warnf("Download File: `%s`; is larger %s than max size: %s bytes", remotePath, remoteFileSize, maxSize);
             }
         }
         if(canDownload) {

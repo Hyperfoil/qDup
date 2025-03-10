@@ -27,7 +27,7 @@ public class WaitFor extends Cmd {
                     int intialLatches = Integer.parseInt(populatedInitial);
                     context.getCoordinator().setSignal(populatedName,intialLatches);
                 }catch(NumberFormatException e){
-                    logger.error("wait-for: {} could not setSignal {} due to NumberFormatException",populatedName,populatedInitial);
+                    logger.errorf("wait-for: %s could not setSignal %s due to NumberFormatException",populatedName,populatedInitial);
                 }
 
             }

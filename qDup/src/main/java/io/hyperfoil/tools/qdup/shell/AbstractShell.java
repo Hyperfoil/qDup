@@ -33,7 +33,7 @@ public abstract class AbstractShell {
     public static final int RECONNECT_RETRY_DELAY = 10_000;
     public static final int MAX_RECONNECT_ATTEMPTS = 10;
 
-    private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    protected final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
     final static AtomicReferenceFieldUpdater<AbstractShell, Status> statusUpdater = AtomicReferenceFieldUpdater.newUpdater(AbstractShell.class, Status.class,"status");
     final static AtomicReferenceFieldUpdater<AbstractShell, ShAction> actionUpdater = AtomicReferenceFieldUpdater.newUpdater(AbstractShell.class, ShAction.class,"currentAction");
@@ -177,12 +177,12 @@ public abstract class AbstractShell {
             return true;
         }
         statusUpdater.set(this, Status.Connecting);
-        logger.trace("{} connecting",this.getName());
+        logger.tracef("%s connecting",this.getName());
         boolean rtrn = false;
 
         try {
             if (Status.Disconnected.equals(previousStates)) {
-                logger.trace("{} connect was disconnected, stopping previous client and shell", this.getName());
+                logger.tracef("%s connect was disconnected, stopping previous client and shell", this.getName());
                 close(false);
             }
 
@@ -221,7 +221,7 @@ public abstract class AbstractShell {
             sessionStreams.addPromptCallback(this.semaphoreCallback);
             commandStream = connectShell();
             if(commandStream == null){
-                logger.error("{} failed to connect to {}",getName(),getHost().getSafeString());
+                logger.errorf("%s failed to connect to %s",getName(),getHost().getSafeString());
                 return false;
             }
             if(getHost().isShell()){
@@ -245,23 +245,23 @@ public abstract class AbstractShell {
                     }
                 }
             } catch (InterruptedException e) {
-                logger.warn("{} interrupted while waiting for initial PROMPT", host.getSafeString());
+                logger.warnf("%s interrupted while waiting for initial PROMPT", host.getSafeString());
                 Thread.interrupted();
             }
             if (sessionStreams != null) { //sessionStreams can be null if an exception was thrown trying to connect
                 //allow session to be fully setup before adding watcher support to lineEmittingStream
                 sessionStreams.addLineConsumer(this::lineConsumers);
             } else {
-                logger.error("failed to setup terminal streams for {}", host);
+                logger.errorf("failed to setup terminal streams for %s", host);
             }
             statusUpdater.compareAndSet(this, Status.Connecting, Status.Ready);
             sessionStreams.flush(); //to remove any motd that may be in the stream
             sessionStreams.reset(); //to remove any motd that may be in the stream
 
         } catch (IOException e) {
-            logger.debug("Exception while connecting to {}@{} \n{}", host.getUserName(), host.getHostName(), e.getMessage(), e);
+            logger.debugf("Exception while connecting to %s@%s \n%s", host.getUserName(), host.getHostName(), e.getMessage(), e);
         } finally {
-            logger.trace("{} shell.isOpen={}",getName(),isOpen());
+            logger.tracef("%s shell.isOpen=%s",getName(),isOpen());
             rtrn = isOpen();
         }
         if(rtrn){
@@ -302,7 +302,7 @@ public abstract class AbstractShell {
         blockingResponse.setLength(0);//clear the blockingConsumer
         addShObserver(SH_BLOCK_CALLBACK, blockingConsumer);
         if (blockingSemaphore.availablePermits() != 0 ){
-            logger.error("ERROR: blockingSemaphorePermits = {}\n  command = {}",blockingSemaphore.availablePermits(),command);
+            logger.errorf("ERROR: blockingSemaphorePermits = %s\n  command = %s",blockingSemaphore.availablePermits(),command);
         }
         sh(command, prompt);
         boolean acquired = false;
@@ -355,7 +355,7 @@ public abstract class AbstractShell {
     }
     void sh(String command, boolean acquireLock, BiConsumer<String,String> callback, Map<String, String> prompt) {
         command = command.replaceAll("[\r\n]+$", ""); //replace trailing newlines
-        logger.trace("{} sh: {}, lock: {}", getHost(), command, acquireLock);
+        logger.tracef("%s sh: %s, lock: %s", getHost(), command, acquireLock);
         ShAction newAction = new ShAction(command,acquireLock,callback,prompt);
         lastCommand = command;
         if (command == null || commandStream == null) {
@@ -682,7 +682,7 @@ public abstract class AbstractShell {
             if(wait){
                 try {
                     if (shellLock.availablePermits() <= 0) {
-                        logger.info("{} closing but shell still locked {}", getHost(), getFilter().filter(lastCommand));
+                        logger.infof("%s closing but shell still locked %s", getHost(), getFilter().filter(lastCommand));
                     }
                     shellLock.acquire();
                     if (permits() != 0) {

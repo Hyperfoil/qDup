@@ -114,7 +114,7 @@ public class Regex extends CmdWithElse {
             context.log(logOutput);
             context.next(input);
          } else {
-            logger.trace("{} NOT match {} ", this, input);
+            logger.tracef("%s NOT match %s ", this, input);
 
             if (hasElse()) {
                String logOutput = getLogOutput(input, context);

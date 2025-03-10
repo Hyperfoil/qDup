@@ -13,6 +13,19 @@
     "allPublicFields" : true
   },
   {
+    "name" : "io.hyperfoil.tools.yaup.json.graaljs.JsFetch",
+    "queryAllDeclaredConstructors" : true,
+    "queryAllPublicConstructors" : true,
+    "queryAllDeclaredMethods" : true,
+    "queryAllPublicMethods" : true,
+    "allDeclaredConstructors" : true,
+    "allPublicConstructors" : true,
+    "allDeclaredMethods" : true,
+    "allPublicMethods" : true,
+    "allDeclaredFields" : true,
+    "allPublicFields" : true
+  },
+  {
     "name" : "io.hyperfoil.tools.yaup.xml.pojo.Xml",
     "queryAllDeclaredConstructors" : true,
     "queryAllPublicConstructors" : true,

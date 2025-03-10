@@ -84,7 +84,15 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web</artifactId>
-            <version>${version.vertx}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx</artifactId>
+            <version>${version.quarkus}</version>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
@@ -104,24 +112,24 @@
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>graal-sdk</artifactId>
-            <version>${graalvm.version}</version>
+            <version>${version.graalvm}</version>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>polyglot</artifactId>
-            <version>${graalvm.version}</version>
+            <version>${version.graalvm}</version>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>js-community</artifactId>
-            <version>${graalvm.version}</version>
+            <version>${version.graalvm}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
         <dependency>
             <groupId>org.graalvm.regex</groupId>
             <artifactId>regex</artifactId>
-            <version>${graalvm.version}</version>
+            <version>${version.graalvm}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

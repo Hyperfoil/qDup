@@ -24,7 +24,7 @@ public class ReadStateIT extends SshTestBase {
             scripts:
               sig:
               - read-state: ${{VARIABLE}}
-                regex: true
+              - regex: true
                 then:
                 - set-state: RUN.FOUND true
                 else:

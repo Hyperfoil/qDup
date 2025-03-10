@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -34,12 +34,6 @@
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
-    <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
 
     <developers>
         <developer>
@@ -89,12 +83,12 @@
         <version.log4j>2.17.2</version.log4j>
         <version.slf4j>1.7.36</version.slf4j>
 
-        <graalvm.version>24.0.1</graalvm.version>
-        <jackson.version>2.12.7</jackson.version>
-        <quarkus.version>3.9.1</quarkus.version>
+        <version.graalvm>24.0.1</version.graalvm>
+        <version.jackson>2.12.7</version.jackson>
+        <version.quarkus>3.9.1</version.quarkus>
 
-        <surefire-plugin.version>3.2.5</surefire-plugin.version>
-        <failsafe-plugin.version>3.2.5</failsafe-plugin.version>
+        <version.surefire-plugin>3.2.5</version.surefire-plugin>
+        <version.failsafe-plugin>3.2.5</version.failsafe-plugin>
 
         <version.vertx>4.3.3</version.vertx>
         <version.yaup>0.9.4</version.yaup>
@@ -106,7 +100,7 @@
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                <version>${quarkus.version}</version>
+                <version>${version.quarkus}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -174,10 +168,15 @@
                 <version>1.4</version>
             </dependency>
             <dependency>
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-core</artifactId>
-                <version>${version.vertx}</version>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-vertx</artifactId>
+                <version>${version.quarkus}</version>
             </dependency>
+<!--            <dependency>-->
+<!--                <groupId>io.vertx</groupId>-->
+<!--                <artifactId>vertx-core</artifactId>-->
+<!--                <version>${version.vertx}</version>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-web</artifactId>
@@ -186,7 +185,7 @@
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-json-schema</artifactId>
-                <version>${version.vertx}</version>
+<!--                <version>${version.vertx}</version>-->
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
@@ -201,27 +200,32 @@
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
                 <artifactId>graal-sdk</artifactId>
-                <version>${graalvm.version}</version>
+                <version>${version.graalvm}</version>
             </dependency>
             <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>polyglot</artifactId>
-            <version>${graalvm.version}</version>
+            <version>${version.graalvm}</version>
             </dependency>
             <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>js-community</artifactId>
-            <version>${graalvm.version}</version>
+            <version>${version.graalvm}</version>
             <type>pom</type>
             <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.regex</groupId>
                 <artifactId>regex</artifactId>
-                <version>${graalvm.version}</version>
+                <version>${version.graalvm}</version>
             </dependency>
 
-
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-junit5</artifactId>
+                <version>${version.quarkus}</version>
+                <scope>test</scope>
+            </dependency>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
@@ -230,13 +234,19 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http</artifactId>
+        </dependency>
+    </dependencies>
     <build>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>io.quarkus.platform</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus.version}</version>
+                    <version>${version.quarkus}</version>
                     <extensions>true</extensions>
                     <executions>
                         <execution>
@@ -265,7 +275,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${surefire-plugin.version}</version>
+                    <version>${version.surefire-plugin}</version>
                     <configuration>
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -276,7 +286,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${failsafe-plugin.version}</version>
+                    <version>${version.failsafe-plugin}</version>
                     <executions>
                         <execution>
                             <goals>
@@ -296,7 +306,7 @@
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>${surefire-plugin.version}</version>
+                    <version>${version.surefire-plugin}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

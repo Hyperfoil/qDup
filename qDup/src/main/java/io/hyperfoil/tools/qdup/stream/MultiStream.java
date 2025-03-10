@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  */
 public class MultiStream extends OutputStream{
 
-    private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    protected final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
     public static String printByteCharacters(String input){
         return printByteCharacters(input.getBytes(),0,input.getBytes().length);

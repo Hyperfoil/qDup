@@ -856,9 +856,9 @@ public class Parser {
         try {
             loaded = yaml.loadAs(content, YamlFile.class);
         } catch (YAMLException e) {
-            logger.error("Failed to load {} as yaml\n{}", path, e.getMessage());
+            logger.errorf("Failed to load %s as yaml\n%s", path, e.getMessage());
         } catch (RuntimeException e) {
-            logger.error("Failed to load {}\n{}", path, e.getMessage());
+            logger.errorf("Failed to load %s\n%s", path, e.getMessage());
         }
         if (loaded != null) {
             loaded.setPath(path);

@@ -224,14 +224,14 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         if(!ok){
             return 1;
         }
-        if(!stateParameters.isEmpty()){
+        if(stateParameters!=null && !stateParameters.isEmpty()){
             stateParameters.forEach((k,v)->{
                 if (v != null && !v.toString().trim().isEmpty()) {
                     runConfigBuilder.forceRunState(k.toString(), v.toString());
                 }
             });
         }
-        if( !removeStateParameters.isEmpty()){
+        if(removeStateParameters!=null && !removeStateParameters.isEmpty()){
             removeStateParameters.forEach((k)->{
                 if (k != null) {
                     runConfigBuilder.forceRunState(k, "");
@@ -250,7 +250,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         if(!RunConfigBuilder.DEFAULT_KNOWN_HOSTS.equals(knownHosts)){
             runConfigBuilder.setKnownHosts(knownHosts);
         }
-        skipStages.forEach(runConfigBuilder::addSkipStage);
+        if(skipStages!=null){ skipStages.forEach(runConfigBuilder::addSkipStage); }
         runConfigBuilder.setStreamLogging(streamLogging);
 
         RunConfig config = runConfigBuilder.buildConfig(yamlParser);
@@ -335,7 +335,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         JsonServer jsonServer = null;
         if (startJsonServer) {
             jsonServer = new JsonServer(run, jsonPort);
-            breakPoints.forEach(jsonServer::addBreakpoint);
+            if(breakPoints!=null){ breakPoints.forEach(jsonServer::addBreakpoint);}
             jsonServer.start();
         }
 

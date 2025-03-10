@@ -33,7 +33,7 @@ public class SetSignal extends Cmd {
          int intialLatches = Integer.parseInt(populatedInitial);
          context.getCoordinator().setSignal(populatedName,intialLatches,reset);
       }catch(NumberFormatException e){
-         logger.error("set-signal: {} could not setSignal {} due to NumberFormatException",populatedName,populatedInitial);
+         logger.errorf("set-signal: %s could not setSignal %s due to NumberFormatException",populatedName,populatedInitial);
       }
       context.next(input);
    }

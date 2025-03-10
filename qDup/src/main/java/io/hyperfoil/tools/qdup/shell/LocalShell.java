@@ -82,7 +82,7 @@ public class LocalShell extends AbstractShell{
                     } catch (IOException e) {
                         logger.error(getName()+" error reading from shell stream",e);
                     }
-                    logger.debug("{} local reader thread is stopping len={} connectCounter={} count={}",getName(),len,connectCounter.get(),count);
+                    logger.debugf("%s local reader thread is stopping len=%d connectCounter=%d count=%d",getName(),len,connectCounter.get(),count);
                 });
                 readerThread.setDaemon(false);
                 readerThread.start();
@@ -112,7 +112,7 @@ public class LocalShell extends AbstractShell{
                 } catch (IOException e) {
                     logger.error(getName()+" error reading from shell stream",e);
                 }
-                logger.debug("{} reader thread is stopping",getName());
+                logger.debugf("%s reader thread is stopping",getName());
             });
             t.setDaemon(false);
             t.start();

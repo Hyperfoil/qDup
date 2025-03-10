@@ -164,7 +164,7 @@ public class SshShell extends AbstractShell{
             return commandStream;
         }
         statusUpdater.set(this,Status.Connecting);
-        logger.trace("{} connecting",getName());
+        logger.tracef("%s connecting",getName());
         boolean rtrn = false;
         try {
             if(sshClient != null && sshClient.isStarted()){
@@ -182,22 +182,22 @@ public class SshShell extends AbstractShell{
             sshClient.addSessionListener(new SessionListener() {
                 @Override
                 public void sessionEstablished(Session session) {
-                    logger.debug("{} client established",getName());
+                    logger.debugf("%s client established",getName());
                 }
 
                 @Override
                 public void sessionCreated(Session session) {
-                    logger.debug("{} client created",getName());
+                    logger.debugf("%s client created",getName());
                 }
 
                 @Override
                 public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
-                    logger.debug("{} client disconnected",getName());
+                    logger.debugf("%s client disconnected",getName());
                 }
 
                 @Override
                 public void sessionClosed(Session session) {
-                    logger.debug("{} client disconnected",getName());
+                    logger.debugf("%s client disconnected",getName());
                 }
             });
             CoreModuleProperties.IDLE_TIMEOUT.set(sshClient, Duration.ofSeconds(7*24*3600));
@@ -207,21 +207,21 @@ public class SshShell extends AbstractShell{
             //        sshConfig = new Properties();
             //        sshConfig.put("StrictHostKeyChecking", "no");
             sshClient.setServerKeyVerifier((clientSession1, remoteAddress, serverKey) -> {
-                logger.trace("{} accept server key for {}",getName(),remoteAddress);
+                logger.tracef("%s accept server key for %s",getName(),remoteAddress);
                 return true;
             });
             if(getHost().hasPassword()){
-                logger.trace("{} setting client password provider {}",getName());
+                logger.tracef("%s setting client password provider %s",getName());
                 sshClient.setPasswordIdentityProvider((sc) -> Arrays.asList(getHost().getPassword()));
             }
             if(getHost().hasPassphrase()){
-                logger.trace("{} setting client passphrase",getName());
+                logger.tracef("%s setting client passphrase",getName());
                 sshClient.setFilePasswordProvider((SessionContext sessionContext, NamedResource namedResource, int i)->{
                     return getHost().getPassphrase();
                 });
             }
             if(getHost().hasIdentity()){
-                logger.trace("{} setting client identity {}",getName(),getHost().getIdentity());
+                logger.tracef("%s setting client identity %s",getName(),getHost().getIdentity());
                 try {
                     URLResource urlResource = new URLResource(Paths.get(getHost().getIdentity()).toUri().toURL());
                     try (InputStream inputStream = urlResource.openInputStream()) {
@@ -234,9 +234,9 @@ public class SshShell extends AbstractShell{
                         KeyPair keyPair = GenericUtils.head(keyPairs);
                         if (keyPair == null) {
                             if (!getHost().hasPassphrase()) {
-                                logger.error("{} cannot set client identity {} without a passphrase", getName(), getHost().getIdentity());
+                                logger.errorf("%s cannot set client identity %s without a passphrase", getName(), getHost().getIdentity());
                             } else {
-                                logger.error("{} cannot set client identity {} using the provided passphrase", getName(), getHost().getIdentity());
+                                logger.errorf("%s cannot set client identity %s using the provided passphrase", getName(), getHost().getIdentity());
                             }
                             return null; // we failed to connect
                         }
@@ -244,12 +244,12 @@ public class SshShell extends AbstractShell{
                             return keyPairs;
                         }));
                     } catch (IOException | GeneralSecurityException e) {
-                        logger.error("{} client failed to connect before timeout", getHost().getHostName(), e);
+                        logger.errorf("%s client failed to connect before timeout", getHost().getHostName(), e);
                         return null;
                     }
                 } catch (MalformedURLException e) {
                     //due to bad identity?
-                    logger.error("{} client failed to connect before timeout", getHost().getHostName());
+                    logger.errorf("%s client failed to connect before timeout", getHost().getHostName());
                     return null;
                 }
             }
@@ -257,40 +257,40 @@ public class SshShell extends AbstractShell{
             ConnectFuture future = sshClient.connect(getHost().getUserName(), getHost().getHostName(), getHost().getPort());
             future.await(10, TimeUnit.SECONDS);
             if(!future.isConnected()){
-                logger.error("{} client failed to connect before timeout",getHost().getHostName());
+                logger.errorf("%s client failed to connect before timeout",getHost().getHostName());
                 return null;
             }
             future = future.verify(timeout);
             future.await(10, TimeUnit.SECONDS);
             if(!future.isConnected()){
-                logger.error("{} client failed to verify connection before timeout",getName());
+                logger.errorf("%s client failed to verify connection before timeout",getName());
                 return null;
             }
             clientSession = future.getSession();
             clientSession.addSessionListener(new SessionListener() {
                 @Override
                 public void sessionEstablished(Session session) {
-                    logger.trace("{} session established",getName());
+                    logger.tracef("%s session established",getName());
                 }
 
                 @Override
                 public void sessionCreated(Session session) {
-                    logger.trace("{} session created",getName());
+                    logger.tracef("%s session created",getName());
                 }
 
                 @Override
                 public void sessionPeerIdentificationReceived(Session session, String version, List<String> extraLines) {
-                    logger.trace("{} session identification received",getName());
+                    logger.tracef("%s session identification received",getName());
                 }
 
                 @Override
                 public void sessionNegotiationStart(Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal) {
-                    logger.trace("{} session negotiation start",getName());
+                    logger.tracef("%s session negotiation start",getName());
                 }
 
                 @Override
                 public void sessionNegotiationEnd(Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal, Map<KexProposalOption, String> negotiatedOptions, Throwable reason) {
-                    logger.trace("{} session negotiation end",getName());
+                    logger.tracef("%s session negotiation end",getName());
                 }
 
                 @Override
@@ -300,24 +300,24 @@ public class SshShell extends AbstractShell{
 
                 @Override
                 public void sessionException(Session session, Throwable t) {
-                    logger.trace("{} session exception: {}",getName(),t.getMessage());
+                    logger.tracef("%s session exception: %s",getName(),t.getMessage());
                 }
 
                 @Override
                 public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
-                    logger.trace("{} session disconnect",getName());
+                    logger.tracef("%s session disconnect",getName());
                 }
 
                 @Override
                 public void sessionClosed(Session session) {
-                    logger.trace("{} session closed",getName());
+                    logger.tracef("%s session closed",getName());
                 }
             });
 
             if(!getHost().hasPassphrase()){
-                logger.trace("{} using {} identity without passphrase",getName(),getHost().getIdentity());
+                logger.tracef("%s using %s identity without passphrase",getName(),getHost().getIdentity());
             }else{
-                logger.trace("{} using {} identity with a passphrase",getName(),getHost().getIdentity());
+                logger.tracef("%s using %s identity with a passphrase",getName(),getHost().getIdentity());
             }
             URLResource urlResource = new URLResource(Paths.get(getHost().getIdentity()).toUri().toURL());
             try (InputStream inputStream = urlResource.openInputStream()) {
@@ -330,25 +330,25 @@ public class SshShell extends AbstractShell{
                 KeyPair keyPair = GenericUtils.head(keyPairs);
                 if(keyPair == null){
                     if(!getHost().hasPassphrase()){
-                        logger.error("cannot connect {} using {} without a passphrase",getName(),getHost().getIdentity());
+                        logger.errorf("cannot connect %s using %s without a passphrase",getName(),getHost().getIdentity());
                     }else{
-                        logger.error("cannot connect {} using {} using the provided passphrase",getName(),getHost().getIdentity());
+                        logger.errorf("cannot connect %s using %s using the provided passphrase",getName(),getHost().getIdentity());
                     }
                     return null; // we failed to connect
                 }
                 clientSession.addPublicKeyIdentity(keyPair);
             } catch (GeneralSecurityException e) {
-                logger.error("{} failed to load identity {}\n{}",getName(),getHost().getIdentity(),e.getMessage());
+                logger.errorf("%s failed to load identity %s\n%s",getName(),getHost().getIdentity(),e.getMessage());
                 return null;
             }
             if (getHost().hasPassword()) {
-                logger.trace("{} adding password-identity",getName());
+                logger.tracef("%s adding password-identity",getName());
                 clientSession.addPasswordIdentity(getHost().getPassword());
             }
 
-            logger.trace("{} authenticating client session",getName());
+            logger.tracef("%s authenticating client session",getName());
             boolean sessionResponse = clientSession.auth().verify().await(timeout * 1_000);
-            logger.trace("{} waiting for authentication",getName());
+            logger.tracef("%s waiting for authentication",getName());
             clientSession.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.AUTHED), 0L);
 
             channelShell = clientSession.createShellChannel();
@@ -367,12 +367,12 @@ public class SshShell extends AbstractShell{
             long timeoutMillis = 5;
 
             if (timeoutMillis > 0) {
-                logger.trace("{} opening and verifying channel shell with {} timeout",getName(),timeoutMillis);
+                logger.tracef("%s opening and verifying channel shell with %s timeout",getName(),timeoutMillis);
                 boolean response = channelShell.open().verify().await(timeoutMillis);
                 //channelShell.open().verify(timeoutMillis).isOpened();
 
             } else {
-                logger.trace("{} opening and verifying channel shell",getName());
+                logger.tracef("%s opening and verifying channel shell",getName());
                 channelShell.open().verify().isOpened();
             }
 
@@ -380,7 +380,7 @@ public class SshShell extends AbstractShell{
 
         } catch (IOException e) {//sshClient.connect or future.await
             //throw new RuntimeException(e);
-            logger.error("{} failed to connect client to {} {}",getName(),getHost().getSafeString(),e.getMessage());
+            logger.errorf("%s failed to connect client to %s %s",getName(),getHost().getSafeString(),e.getMessage());
         }
         return null;
     }
@@ -402,7 +402,7 @@ public class SshShell extends AbstractShell{
                 }
                 channelExec.open().verify(9L, TimeUnit.SECONDS);
             } catch (IOException e) {
-                logger.error("{} failed to connect client to {} {}",getName(),getHost().getSafeString(),e.getMessage());
+                logger.errorf("%s failed to connect client to {} {}",getName(),getHost().getSafeString(),e.getMessage());
 
             }
         }
@@ -439,7 +439,7 @@ public class SshShell extends AbstractShell{
                 sshClient.stop();
             }
         } catch (IOException e) {
-            logger.error("{} error while closing {}",getName(),e.getMessage(),e);
+            logger.errorf("%s error while closing %s",getName(),e.getMessage(),e);
         }
 
     }

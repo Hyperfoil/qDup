@@ -179,12 +179,10 @@ public class Sh extends Cmd {
                             }
                             cmd = cmd.getParent();
                         }
-
                         context.error("aborting run due to exit code "+response+"\n  host: "+context.getShell().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
                         context.abort(false);
                     }
             }
-
         }else{
             //duplicate getting toLog to avoid the overhead if not needed
             String toLog = getLogOutput(output,context);
@@ -203,7 +201,6 @@ public class Sh extends Cmd {
                 boolean ignore = Boolean.parseBoolean(populated);
                 return !ignore;
             }
-
         }
         return context.checkExitCode();
     }

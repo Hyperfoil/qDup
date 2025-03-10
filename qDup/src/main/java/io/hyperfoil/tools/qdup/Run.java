@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -182,6 +183,7 @@ public class Run implements Runnable, DispatchObserver {
                     PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} %c %-5p %m%n");
                     fileHandler.setFormatter(formatter);
                     org.jboss.logmanager.Logger internalRunLogger = org.jboss.logmanager.Logger.getLogger(getLoggerName());
+                    internalRunLogger.setLevel(Level.INFO);
                     //internalRunLogger.setParent(org.jboss.logmanager.Logger.getGlobal());
                     org.jboss.logmanager.Logger internalStateLogger = org.jboss.logmanager.Logger.getLogger(internalRunLogger.getName() + ".state");
                     //internalStateLogger.setParent(org.jboss.logmanager.Logger.getGlobal());
@@ -456,6 +458,7 @@ public class Run implements Runnable, DispatchObserver {
         }else{
             logger.info("abort called when already aborted");
             dispatcher.stop(false);
+            dispatcher.stopSystemTimers();
         }
         return false;
     }
@@ -504,6 +507,7 @@ public class Run implements Runnable, DispatchObserver {
                 try {
                     runLatch.await();
                 } catch (InterruptedException e) {
+
                     //e.printStackTrace();
                 } finally{
                     timestamps.put("stop",System.currentTimeMillis());
@@ -511,7 +515,6 @@ public class Run implements Runnable, DispatchObserver {
 
             }else{
                 //TODO failed to start
-
             }
             //moved to here because abort would avoid the cleanup in postRun()
             //will need to move if runLatch becomes optional

@@ -1,0 +1,13 @@
+scripts:
+  hello-world:
+    - sh: echo hello world!
+hosts:
+  test: ${{HOST}}
+roles:
+  role:
+    hosts: [test]
+    run-scripts:
+    - hello-world
+
+states:
+  HOST:
