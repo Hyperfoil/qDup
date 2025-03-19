@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.qdup.config.yaml;
 
-import io.hyperfoil.tools.parse.ParseCommand;
 import io.hyperfoil.tools.qdup.Globals;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.JsSnippet;
@@ -739,7 +738,7 @@ public class Parser {
         });
         abortOnExitCode = false;
 
-        try (InputStreamReader fileStream = new InputStreamReader(ParseCommand.class.getClassLoader().getResourceAsStream("schema.json"));
+        try (InputStreamReader fileStream = new InputStreamReader(io.hyperfoil.tools.parse.Parser.class.getClassLoader().getResourceAsStream("schema.json"));
              BufferedReader reader = new BufferedReader(fileStream))
         {
             String content = reader.lines().collect(Collectors.joining("\n"));

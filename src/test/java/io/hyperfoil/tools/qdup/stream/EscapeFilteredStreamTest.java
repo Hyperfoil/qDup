@@ -70,6 +70,17 @@ public class EscapeFilteredStreamTest {
     }
 
     @Test
+    public void issue_remove_shift_in(){
+        String output = filterPerCharacter(Character.toString(15)+"o"+Character.toString(15)+"ne"+Character.toString(15),true);
+        assertEquals("leading, trailing, and injected shift in should be removed", "one",output);
+    }
+    @Test
+    public void issue_remove_shift_out(){
+        String output = filterPerCharacter(Character.toString(14)+"o"+Character.toString(14)+"ne"+Character.toString(14),true);
+        assertEquals("leading, trailing, and injected shift in should be removed", "one",output);
+    }
+
+    @Test
     public void issue31_duplicate_buffer(){
         //was seeing [[[[INFOOO]   - insead of [INFO] - because of escape sequences being split across buffer writes and flushes
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

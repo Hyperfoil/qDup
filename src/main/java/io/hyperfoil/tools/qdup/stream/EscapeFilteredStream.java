@@ -20,6 +20,8 @@ public class EscapeFilteredStream extends MultiStream {
     private static final int CR = 13;  //\u000d
     private static final int ESC = 27; //\u001b
     private static final int NULL = 0; //\u0000
+    private static final int SHIFT_IN = 15;
+    private static final int SHIFT_OUT = 14;
 
     private static final Set<Character> CONTROL_SUFFIX = Sets.of(
             'A',//cursor up
@@ -150,7 +152,7 @@ public class EscapeFilteredStream extends MultiStream {
     //basically just makes sure we have \u001b[...m
     public boolean isEscaped(byte b[],int off,int len){
         boolean rtrn =
-            len ==1 && b[off] == CR ||
+                (len ==1 && (b[off] == CR || b[off] == SHIFT_IN || b[off] == SHIFT_OUT)) ||
             (
                 b[off]==ESC
                 && ((
@@ -231,6 +233,8 @@ public class EscapeFilteredStream extends MultiStream {
                     rtrn = 0;
                 }
             }
+        }else if (b[off] == SHIFT_IN || b[off] == SHIFT_OUT){
+            rtrn = 1;
         }/*else if ( b[off] == CR ){ //doing this breaks things
             rtrn = 1;
         }*/else{
