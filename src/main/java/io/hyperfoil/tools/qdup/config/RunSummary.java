@@ -38,7 +38,15 @@ public class RunSummary implements RunRule{
         roles.forEach(role -> {
             role.getDeclaredHosts().forEach(host -> {
                 role.getSetup().forEach(scriptCmd -> this.private_walk(new CmdLocation(role.getName(),Stage.Setup,scriptCmd.getName(),host.toString(), CmdLocation.Position.Child),scriptCmd,configBuilder,new Cmd.Ref(scriptCmd)));
+            });
+        });
+        roles.forEach(role -> {
+            role.getDeclaredHosts().forEach(host -> {
                 role.getRun().forEach(scriptCmd -> this.private_walk(new CmdLocation(role.getName(),Stage.Run,scriptCmd.getName(),host.toString(), CmdLocation.Position.Child),scriptCmd,configBuilder,new Cmd.Ref(scriptCmd)));
+            });
+        });
+        roles.forEach(role -> {
+            role.getDeclaredHosts().forEach(host -> {
                 role.getCleanup().forEach(scriptCmd -> this.private_walk(new CmdLocation(role.getName(),Stage.Cleanup,scriptCmd.getName(),host.toString(), CmdLocation.Position.Child),scriptCmd,configBuilder,new Cmd.Ref(scriptCmd)));
             });
         });

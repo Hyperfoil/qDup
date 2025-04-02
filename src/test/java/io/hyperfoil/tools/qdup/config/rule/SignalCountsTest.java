@@ -14,6 +14,7 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
@@ -397,6 +398,40 @@ public class SignalCountsTest extends SshTestBase {
                     hosts: [local]
                     run-scripts:
                     - test:
+                """
+        ));
+        RunConfig config = builder.buildConfig(parser);
+
+        RunSummary summary = new RunSummary();
+        SignalCounts signalCounts = new SignalCounts();
+        summary.addRule("signals",signalCounts);
+        summary.scan(config.getRolesValues(),builder);
+        assertTrue("expect errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+        assertEquals("expected number of errors",1,summary.getErrors().size());
+        assertEquals("signal count for FOO",1,signalCounts.getSignalCount("FOO"));
+    }
+    @Test
+    public void error_signal_after_waitfor_different_role_different_phase(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  wait:
+                    - wait-for: FOO
+                  signal:
+                    - signal: FOO
+                hosts:
+                  local: me@localhost
+                roles:
+                  waiter:
+                    hosts: [local]
+                    setup-scripts:
+                    - wait
+                  signaler:
+                    hosts: [local]
+                    run-scripts:
+                    - signal
                 """
         ));
         RunConfig config = builder.buildConfig(parser);
@@ -943,5 +978,4 @@ public class SignalCountsTest extends SshTestBase {
         assertTrue("state should have key",state.has("counter"));
         assertEquals(3l,state.get("counter"));
     }
-
 }
