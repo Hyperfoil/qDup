@@ -36,8 +36,9 @@ public class Upload extends Cmd {
         if(!worked){
             context.error("failed to upload "+populatedPath+" to "+populatedDestination);
             context.abort(false);
+        } else {
+            context.next(populatedDestination);
         }
-        context.next(path);
     }
 
     @Override

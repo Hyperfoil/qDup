@@ -37,9 +37,12 @@ public class Download extends Cmd {
     @Override
     public void run(String input, Context context) {
 
-        execute(context, () -> context.getLocal(), () -> context.getHost());
-
-        context.next(path);
+        String populatedDestination = execute(context, context::getLocal, context::getHost);
+        if (populatedDestination != null) {
+            context.next(populatedDestination);
+        } else {
+            context.skip(path);
+        }
     }
 
     @Override
@@ -63,7 +66,8 @@ public class Download extends Cmd {
         return toString().hashCode();
     }
 
-    public void execute(Context context, Supplier<Local> localProvider, Supplier<Host> hostSupplier){
+
+    public String execute(Context context, Supplier<Local> localProvider, Supplier<Host> hostSupplier){
         Local local = localProvider.get();
         Host host = hostSupplier.get();
 
@@ -92,8 +96,15 @@ public class Download extends Cmd {
                     context.error("failed to download " + remotePath + " to " + destinationPath);
                     context.abort(false);
                 }
+                return null;
             }
+
         }
+        return canDownload ?
+                destinationPath.endsWith(File.separator) ?
+                        destinationPath + (new File(remotePath)).getName() :
+                        destinationPath + File.separator + (new File(remotePath)).getName()
+                : null;
     }
 
 }
