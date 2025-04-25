@@ -47,7 +47,24 @@
           "properties":{
             "username":{"type":"string"},
             "hostname":{"type":"string"},
-            "port":{"type":"integer"}
+            "port":{"type":"integer"},
+            "password":{"type":"string"},
+            "local":{"type": "boolean"},
+            "prompt":{"type":"string"},
+            "platform": {"type": "string"},
+            "container": {"type": "string"},
+            "check-container-id":{"type":"string"},
+            "check-container-name": {"type":"string"},
+            "start-container": {"type":"string"},
+            "start-connected-container": {"type":"string"},
+            "stop-container": {"type":"string"},
+            "connect-shell": {"type":"string"},
+            "platform-login": {"type":"string"},
+            "exec": {"type":"string"},
+            "identity": {"type":"string"},
+            "upload": {"type":"string"},
+            "download": {"type":"string"},
+            "is-shell": {"type":"boolean"}
           },
           "required": ["username","hostname"],
           "additionalProperties": false
