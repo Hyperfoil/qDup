@@ -446,6 +446,39 @@ public class SignalCountsTest extends SshTestBase {
     }
 
     @Test
+    public void signal_and_waitfor_separate_roles(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = new RunConfigBuilder();
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                scripts:
+                  wait:
+                    - wait-for: FOO
+                  signal:
+                    - signal: FOO
+                hosts:
+                  local: me@localhost
+                roles:
+                  waiter:
+                    hosts: [local]
+                    run-scripts:
+                    - wait
+                  signaler:
+                    hosts: [local]
+                    setup-scripts:
+                    - signal
+                """
+        ));
+        RunConfig config = builder.buildConfig(parser);
+
+        RunSummary summary = new RunSummary();
+        SignalCounts signalCounts = new SignalCounts();
+        summary.addRule("signals",signalCounts);
+        summary.scan(config.getRolesValues(),builder);
+        assertFalse("expect errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
+    }
+
+    @Test
     public void error_missing_signal(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = new RunConfigBuilder();
