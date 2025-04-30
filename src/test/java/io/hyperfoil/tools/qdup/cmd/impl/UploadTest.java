@@ -1,23 +1,27 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.qdup.cmd.Dispatcher;
-import io.hyperfoil.tools.qdup.cmd.Script;
+import io.hyperfoil.tools.qdup.SecretFilter;
+import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
+import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class UploadTest extends SshTestBase {
 
@@ -49,7 +53,6 @@ public class UploadTest extends SshTestBase {
 
             assertFalse("unexpected errors:\n"+config.getErrorStrings().stream().collect(Collectors.joining("\n")),config.hasErrors());
 
-
             Dispatcher dispatcher = new Dispatcher();
             Run run = new Run(tmpDir.toString(),config,dispatcher);
             run.run();
@@ -62,4 +65,87 @@ public class UploadTest extends SshTestBase {
             e.printStackTrace();
         }
     }
+
+    @Test
+    public void return_remote_path_new_name() throws IOException {
+        String wrote = "bizbuz";
+        File source = Files.createTempFile("qdup","upload.txt").toFile();
+        Files.write(source.toPath(),wrote.getBytes());
+        File runFolder = Files.createTempDirectory("qdup").toFile();
+
+        Upload upload = new Upload(source.getPath(),"/tmp/found.txt");
+
+        AbstractShell shell = AbstractShell.getShell(
+                Host.parse(Host.LOCAL),
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+        );
+        Run run = new Run(runFolder.getPath(),new RunConfigBuilder().buildConfig(),new Dispatcher());
+        ScriptContext scriptContext = new ScriptContext(shell,run.getConfig().getState(),run,new SystemTimer("download"),upload,true);
+        SpyContext spyContext = new SpyContext(scriptContext,run.getConfig().getState(), run.getCoordinator());
+        upload.run("",spyContext);
+
+        assertNotNull("upload should call next",spyContext.getNext());
+        String response = spyContext.getNext();
+        assertEquals("response should match the destination","/tmp/found.txt",response);
+        String readContent = Files.readString(Paths.get(response));
+        assertEquals(wrote,readContent);
+    }
+
+    @Test
+    public void return_remote_path_target_folder() throws IOException {
+        String wrote = "bizbuz";
+        File source = Files.createTempFile("qdup.",".upload.txt").toFile();
+        Files.write(source.toPath(),wrote.getBytes());
+        File runFolder = Files.createTempDirectory("qdup_").toFile();
+
+        File tempFolder = Files.createTempDirectory("qdup_").toFile();
+        //tempFolder.mkdirs();
+        Upload upload = new Upload(source.getPath(),tempFolder.getAbsolutePath()+File.separator);
+
+        AbstractShell shell = AbstractShell.getShell(
+            Host.parse(Host.LOCAL),
+            new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
+            false
+        );
+        Run run = new Run(runFolder.getPath(),new RunConfigBuilder().buildConfig(),new Dispatcher());
+        ScriptContext scriptContext = new ScriptContext(shell,run.getConfig().getState(),run,new SystemTimer("download"),upload,true);
+        SpyContext spyContext = new SpyContext(scriptContext,run.getConfig().getState(), run.getCoordinator());
+        upload.run("",spyContext);
+
+        assertNotNull("upload should call next",spyContext.getNext());
+        String response = spyContext.getNext();
+        assertTrue("response should end with source name",response.endsWith(source.getName()));
+        String readContent = Files.readString(Paths.get(response));
+        assertEquals(wrote,readContent);
+    }
+
+    @Test
+    public void return_remote_path_target_file() throws IOException {
+        String wrote = "bizbuz";
+        File source = Files.createTempFile("qdup.",".upload.txt").toFile();
+        Files.write(source.toPath(),wrote.getBytes());
+        File runFolder = Files.createTempDirectory("qdup_").toFile();
+
+        Upload upload = new Upload(source.getPath(),"/tmp/renamed.txt");
+        AbstractShell shell = AbstractShell.getShell(
+            Host.parse(Host.LOCAL),
+            new ScheduledThreadPoolExecutor(2),
+            new SecretFilter(),
+            false
+        );
+        Run run = new Run(runFolder.getPath(),new RunConfigBuilder().buildConfig(),new Dispatcher());
+        ScriptContext scriptContext = new ScriptContext(shell,run.getConfig().getState(),run,new SystemTimer("download"),upload,true);
+        SpyContext spyContext = new SpyContext(scriptContext,run.getConfig().getState(), run.getCoordinator());
+        upload.run("",spyContext);
+
+        assertNotNull("upload should call next",spyContext.getNext());
+        String response = spyContext.getNext();
+        assertEquals("response should be the specified path","/tmp/renamed.txt",response);
+        String readContent = Files.readString(Paths.get(response));
+        assertEquals(wrote,readContent);
+    }
+
 }

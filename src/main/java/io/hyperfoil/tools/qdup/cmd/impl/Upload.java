@@ -3,6 +3,8 @@ package io.hyperfoil.tools.qdup.cmd.impl;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 
+import java.io.File;
+
 public class Upload extends Cmd {
     private String path;
     private String destination;
@@ -19,15 +21,14 @@ public class Upload extends Cmd {
     public String getDestination(){return destination;}
     @Override
     public void run(String input, Context context) {
-
         populatedPath = populateStateVariables(path,this, context);
         populatedDestination =  populateStateVariables(destination ,this, context);
 
         //create remote directory
         if(populatedDestination.endsWith("/")) {
-            context.getShell().sh("mkdir -p " + populatedDestination);
+            context.getShell().shSync("mkdir -p " + populatedDestination);
+            populatedDestination+=(new File(populatedPath)).getName();
         }
-        
         boolean worked = context.getLocal().upload(
             populatedPath,
             populatedDestination,
@@ -37,6 +38,9 @@ public class Upload extends Cmd {
             context.error("failed to upload "+populatedPath+" to "+populatedDestination);
             context.abort(false);
         } else {
+            if(context.getHost().isShell()){
+
+            }
             context.next(populatedDestination);
         }
     }
