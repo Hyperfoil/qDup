@@ -6,3 +6,5 @@ target/
 
 .gradle
 .idea
+
+**/*.versionsBackup
