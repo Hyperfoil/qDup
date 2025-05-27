@@ -1,9 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd;
 
-import io.hyperfoil.tools.qdup.Coordinator;
-import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.Local;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.*;
 
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -50,6 +47,6 @@ public interface Context {
     void setHomeDir(String dir);
     String getHomeDir();
 
-
+    Globals getGlobals();
 
 }

@@ -256,7 +256,7 @@ public class CmdTest extends SshTestBase {
       state.set("BAR", "'1m'");
 
       String response = Cmd.populateStateVariables("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", null, state, new Coordinator(new Globals(getJsSnippets())), null);
-      assertEquals("expected value with seconds()", "140", response);
+      assertEquals("expected value with seconds", "140", response);
    }
 
    @Test

@@ -1,10 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd;
 
-import io.hyperfoil.tools.qdup.Coordinator;
-import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.Local;
-import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.cmd.impl.CtrlSignal;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -58,6 +54,9 @@ public class SyncContext implements Context, Runnable{
             return cwd;
         }
     }
+
+    @Override
+    public Globals getGlobals(){return run.getConfig().getGlobals();}
 
     @Override
     public void setHomeDir(String dir) {

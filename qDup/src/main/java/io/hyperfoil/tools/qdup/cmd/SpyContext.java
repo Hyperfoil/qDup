@@ -24,6 +24,7 @@ public class SpyContext implements Context {
     private Coordinator coordinator;
 
     private Context context;
+    private Globals globals;
 
     private String cwd="";
     private String homeDir="";
@@ -40,6 +41,7 @@ public class SpyContext implements Context {
         error = new ArrayList<>();
         this.state = state;
         this.coordinator = coordinator;
+        this.globals = context!=null ? context.getGlobals() : new Globals();
     }
 
     public void clear(){
@@ -47,6 +49,9 @@ public class SpyContext implements Context {
         skip=null;
         updates.clear();
     }
+
+    @Override
+    public Globals getGlobals(){return globals;}
 
     @Override
     public Json getTimestamps(){

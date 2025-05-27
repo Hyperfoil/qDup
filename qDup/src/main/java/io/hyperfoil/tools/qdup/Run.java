@@ -123,7 +123,7 @@ public class Run implements Runnable, DispatchObserver {
 
         this.timestamps = new LinkedHashMap<>();
         this.profiles = new Profiles();
-        this.coordinator = new Coordinator(new Globals(config.getJsFunctions()));
+        this.coordinator = new Coordinator(config.getGlobals());
         this.local = new Local(config);
         this.skipStages = config.getSkipStages();
 
@@ -137,14 +137,8 @@ public class Run implements Runnable, DispatchObserver {
         });
         this.pendingDownloads = new HashedSets<>();
         this.pendingDeletes = new HashedSets<>();
-        updateCoordinatedSettings();
     }
 
-    private void updateCoordinatedSettings(){
-        if(config.isStreamLogging()){
-            coordinator.setSetting(Globals.STREAM_LOGGING,true);
-        }
-    }
 
     private boolean removeLogger(){
         if(fileHandler!=null){
@@ -570,7 +564,7 @@ public class Run implements Runnable, DispatchObserver {
     private Script createTempDirectory(){
         Script script = new Script("create-qdup-temp");
         script.then(
-           Cmd.sh(this.config.getSetting(RunConfig.MAKE_TEMP_KEY,RunConfigBuilder.MAKE_TEMP_CMD).toString())
+           Cmd.sh(this.config.getGlobals().getSetting(RunConfig.MAKE_TEMP_KEY,RunConfigBuilder.MAKE_TEMP_CMD).toString())
            .then(Cmd.setState(State.HOST_PREFIX+RunConfigBuilder.TEMP_DIR))
         );
 
@@ -580,7 +574,7 @@ public class Run implements Runnable, DispatchObserver {
         Script script = new Script("remove-qdup-temp");
         script.then(
            Cmd.sh(
-              this.config.getSetting(RunConfig.REMOVE_TEMP_KEY,RunConfigBuilder.REMOVE_TEMP_CMD) +
+              this.config.getGlobals().getSetting(RunConfig.REMOVE_TEMP_KEY,RunConfigBuilder.REMOVE_TEMP_CMD) +
               " " +
               StringUtil.PATTERN_PREFIX+RunConfigBuilder.TEMP_DIR+StringUtil.PATTERN_SUFFIX)
         );
@@ -596,8 +590,8 @@ public class Run implements Runnable, DispatchObserver {
         config.getAllHostsInRoles().forEach(host->{
             connectSessions.add(()->{
                 String name = "post-cleanup@"+host.getShortHostName();
-                if(config.getSettings().has(RunConfig.TRACE_NAME)){
-                    name = name+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
+                if(config.getGlobals().getSettings().has(RunConfig.TRACE_NAME)){
+                    name = name+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                 }
                 AbstractShell shell = AbstractShell.getShell(
                         host,
@@ -627,7 +621,7 @@ public class Run implements Runnable, DispatchObserver {
                         this,
                         profiles.get(name),
                         setup,
-                            (Boolean)config.getSetting("check-exit-code",false)
+                            (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                     );
                     getDispatcher().addScriptContext(scriptContext);
                     return shell.isOpen();
@@ -660,7 +654,7 @@ public class Run implements Runnable, DispatchObserver {
         Script setup = createTempDirectory();
         config.getAllHostsInRoles().forEach(host->{
             connectSessions.add(()->{
-                String name = "pre-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
+                String name = "pre-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                 AbstractShell shell = AbstractShell.getShell(
                         host,
                         "",
@@ -678,7 +672,7 @@ public class Run implements Runnable, DispatchObserver {
                         this,
                         profiles.get(name),
                         setup,
-                            (Boolean)config.getSetting("check-exit-code",false)
+                            (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                     );
                     getDispatcher().addScriptContext(scriptContext);
                     return shell.isOpen();
@@ -731,7 +725,7 @@ public class Run implements Runnable, DispatchObserver {
 
                role.getHosts(config).forEach(host->{
                    connectSessions.add(()->{
-                       String name = roleName+"-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
+                       String name = roleName+"-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                        AbstractShell shell =  AbstractShell.getShell(
                                host,
                                "",
@@ -749,7 +743,7 @@ public class Run implements Runnable, DispatchObserver {
                                    this,
                                    profiles.get(name),
                                    setup,
-                                   (Boolean)config.getSetting("check-exit-code",false)
+                                   (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                            );
                            if(config.isStreamLogging()){
                                shell.addLineObserver("stream",(line)->{
@@ -804,7 +798,7 @@ public class Run implements Runnable, DispatchObserver {
                         }
                         String setupCommand = env.getDiff().getCommand();
                         connectSessions.add(() -> {
-                            String name = script.getName()+":"+script.getUid()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
+                            String name = script.getName()+":"+script.getUid()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                             timer.start("connect:" + host.toString());
                             AbstractShell shell = AbstractShell.getShell(
                                     host,
@@ -824,7 +818,7 @@ public class Run implements Runnable, DispatchObserver {
                                         this,
                                         timer,
                                         script,
-                                        (Boolean)config.getSetting("check-exit-code",false)
+                                        (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                                 );
                                 if(config.isStreamLogging()){
                                     shell.addLineObserver("stream",(line)->{
@@ -902,7 +896,7 @@ public class Run implements Runnable, DispatchObserver {
                 role.getHosts(config).forEach(host->{
                     String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
                     connectSessions.add(()->{
-                        String name = roleName + "-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
+                        String name = roleName + "-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                         AbstractShell shell = AbstractShell.getShell(
                                 host,
                                 "",
@@ -920,7 +914,7 @@ public class Run implements Runnable, DispatchObserver {
                                     this,
                                     profiles.get(roleName + "-cleanup@" + host.getShortHostName()),
                                     cleanup,
-                                    (Boolean)config.getSetting("check-exit-code",false)
+                                    (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                             );
                             if(config.isStreamLogging()){
                                 shell.addLineObserver("stream",(line)->{

@@ -30,7 +30,9 @@ public class Globals {
     }
 
     public void addAllSnippets(List<JsSnippet> snippetList) {
-        snippetList.forEach( jsSnippet -> addSnippet(jsSnippet));
+        if(snippetList!=null) {
+            snippetList.forEach(jsSnippet -> addSnippet(jsSnippet));
+        }
     }
 
     public void addSnippet(JsSnippet snippet) {

@@ -99,6 +99,50 @@ public class RunTest extends SshTestBase {
       State state = config.getState();
    }
 
+   @Test
+   public void test_state_push(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("signal",
+              """
+               scripts:
+                 push:
+                 - js: |
+                     (input,state)=>{
+                       state["items"].push("tres")
+                       return "tres"
+                     }
+                 - set-state: RUN.pushed ${{items}}
+                 read:
+                 - set-state: RUN.read ${{items}}
+               hosts:
+                 target-host: HOST
+               roles:
+                 db:
+                   hosts:
+                   - target-host
+                   setup-scripts:
+                   - push
+                   run-scripts:
+                   - read
+               states:
+                 items:
+                 - uno
+                 - dos
+               """.replaceAll("HOST",getHost().toString())
+      ));
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State state = config.getState();
+
+      System.out.println(state.tree());
+   }
+
    @Test(timeout = 40_000)
    public void waitfor_never_signaled(){
       Parser parser = Parser.getInstance();

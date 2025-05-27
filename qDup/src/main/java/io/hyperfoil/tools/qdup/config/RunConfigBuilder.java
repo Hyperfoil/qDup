@@ -1,9 +1,6 @@
 package io.hyperfoil.tools.qdup.config;
 
-import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.JsSnippet;
-import io.hyperfoil.tools.qdup.Stage;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
@@ -78,8 +75,7 @@ public class RunConfigBuilder {
    private HashMap<String, String> roleHostExpression;
    private HashMap<String, HostDefinition> hostDefinitions;
    private Set<String> traceTargets;
-   private Json settings;
-   private List<JsSnippet> jsSnippets;
+   private Globals globals;
    private List<String> errors;
    private List<Stage> skipStages;
    private boolean streamLogging = false;
@@ -101,9 +97,8 @@ public class RunConfigBuilder {
       hostDefinitions = new HashMap<>();
       traceTargets = new HashSet<>();
       errors = new LinkedList<>();
-      settings = new Json(false);
       skipStages = new ArrayList<>();
-      jsSnippets = new ArrayList<>();
+      globals = new Globals();
    }
 
 
@@ -176,13 +171,13 @@ public class RunConfigBuilder {
          });
       });
       yamlFile.getGlobals().getSettings().forEach((k, v) -> {
-         if (settings.has(k)) {
+         if (globals.hasSetting(k.toString())) {
             //TODO alert settings are already set?
          } else {
-            settings.set(k, v);
+            globals.addSetting(k.toString(),v);
          }
       });
-      jsSnippets.addAll(yamlFile.getGlobals().getJsSnippets());
+      globals.addAllSnippets(yamlFile.getGlobals().getJsSnippets());
 
       return errors.isEmpty();
    }
@@ -205,8 +200,9 @@ public class RunConfigBuilder {
    public State getState() {
       return state;
    }
-   public Json getSettings(){
-      return settings;
+
+   public Globals getGlobals(){
+      return globals;
    }
 
    public String getName() {
@@ -245,8 +241,7 @@ public class RunConfigBuilder {
          }
       });
       rtrn.getState().merge(getState());
-      rtrn.getGlobals().addAllSnippets(jsSnippets);
-      rtrn.getGlobals().getSettings().merge(getSettings());
+      rtrn.getGlobals().merge(globals);
       return rtrn;
    }
 
@@ -625,7 +620,7 @@ public class RunConfigBuilder {
       RunSummary summary = new RunSummary();
       SignalCounts signalCounts = new SignalCounts();
       summary.addRule("signals",signalCounts);
-      summary.addRule("variables",new UndefinedStateVariables(yamlParser, this.jsSnippets));
+      summary.addRule("variables",new UndefinedStateVariables(yamlParser, globals.getJsSnippets()));
       summary.addRule("observers",new NonObservingCommands());
       summary.scan(roles.values(),this);
 
@@ -647,12 +642,11 @@ public class RunConfigBuilder {
          timeout,
          getTracePatterns(),
          skipStages,
-         settings,
-         jsSnippets,
+         globals,
          streamLogging
       );
       if(yamlParser.isAbortOnExitCode()){
-         rtrn.getSettings().set("check-exit-code",true);
+         rtrn.getGlobals().getSettings().set("check-exit-code",true);
       }
       return rtrn;
    }

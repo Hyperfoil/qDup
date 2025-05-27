@@ -115,7 +115,7 @@ public class Parser {
                     }
                 },
                 (json) -> new Countdown(json.getString("name"), (int) json.getLong("initial")),
-                "path","initial"
+                "name","initial"
 
         );
 

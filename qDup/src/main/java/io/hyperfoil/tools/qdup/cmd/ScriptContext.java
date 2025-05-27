@@ -1,10 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd;
 
-import io.hyperfoil.tools.qdup.Coordinator;
-import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.Local;
-import io.hyperfoil.tools.qdup.Run;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.cmd.impl.ScriptCmd;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
@@ -200,6 +196,8 @@ public class ScriptContext implements Context, Runnable{
         return shell;
     }
 
+    @Override
+    public Globals getGlobals(){return run.getConfig().getGlobals();}
 
     @Override
     public Json getTimestamps(){

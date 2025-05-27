@@ -96,7 +96,7 @@ public class Sh extends Cmd {
                     populated
             );
             //log the command if using stream logging
-            if(context.getCoordinator().getSetting(Globals.STREAM_LOGGING,false)){
+            if(context.getCoordinator().getGlobals().getSetting(Globals.STREAM_LOGGING,false)){
                 context.log(populatedCommand);
             }
         }
@@ -154,7 +154,7 @@ public class Sh extends Cmd {
                 context.getShell().flushAndResetBuffer();
             }
             //log the output if not using stream logging
-            if(!context.getCoordinator().getSetting(Globals.STREAM_LOGGING,false)){
+            if(!context.getCoordinator().getGlobals().getSetting(Globals.STREAM_LOGGING,false)){
                 String toLog = getLogOutput(output,context);
                 if (toLog != null && !toLog.isBlank()) {
                     if ("0".equals(response)) {

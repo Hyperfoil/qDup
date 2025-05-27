@@ -1,9 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd;
 
-import io.hyperfoil.tools.qdup.Coordinator;
-import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.Stage;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.parse.JsFunction;
+import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.cmd.impl.*;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunSummary;
@@ -584,7 +582,11 @@ public abstract class Cmd {
       }else {
          PatternValuesMap map = new PatternValuesMap(cmd, state, coordinator, timestamps, ref);
          try {
-            Collection<String> jsSnippets = (coordinator != null && coordinator.getJsSnippetContents() != null) ? coordinator.getJsSnippetContents() : new ArrayList<>();
+            List<String> jsSnippets = ((coordinator != null && coordinator.getGlobals().getJsSnippets() != null) ? coordinator.getGlobals().getJsSnippets() : new ArrayList<>())
+                    .stream()
+                    .map(v->(JsSnippet)v)
+                    .map(JsSnippet::getFunction)
+                    .toList();
             if (cmd != null) {
                rtrn = StringUtil.populatePattern(command, map, jsSnippets, cmd.getPatternPrefix(), cmd.getPatternSeparator(), cmd.getPatternSuffix(), cmd.getPatternJavascriptPrefix());
             } else {

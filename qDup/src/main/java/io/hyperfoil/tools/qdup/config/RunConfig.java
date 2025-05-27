@@ -1,9 +1,6 @@
 package io.hyperfoil.tools.qdup.config;
 
-import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.JsSnippet;
-import io.hyperfoil.tools.qdup.Stage;
-import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.*;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
@@ -70,8 +67,6 @@ public class RunConfig {
 
     private Map<String,Role> roles;
 
-    private List<JsSnippet> snippets;
-
     private Counters<String> signalCounts;
 
     private Boolean colorTerminal = false;
@@ -79,12 +74,11 @@ public class RunConfig {
 
     private List<Stage> skipStages;
 
-    private Json settings;
-
     private Set<String> tracePatterns;
 
     private int timeout = 10;
     private boolean streamLogging;
+    private Globals globals;
 
     protected RunConfig(
             String name,
@@ -99,8 +93,7 @@ public class RunConfig {
             Integer timeout,
             Set<String> tracePatterns,
             List<Stage> skipStages,
-            Json settings,
-            List<JsSnippet> jsSnippets,
+            Globals globals,
             boolean streamLogging){
         this.name = name;
         this.errors = errors;
@@ -116,10 +109,7 @@ public class RunConfig {
         }
         this.tracePatterns = new HashSet<>(tracePatterns);
         this.skipStages = skipStages;
-        this.settings = new Json(false);
-        this.settings.merge(settings);
-
-        this.snippets = jsSnippets;
+        this.globals = globals;
         this.streamLogging = streamLogging;
     }
 
@@ -128,14 +118,7 @@ public class RunConfig {
     public List<Stage> getSkipStages(){return skipStages;}
 
     public Counters<String> getSignalCounts(){return signalCounts;}
-    public boolean hasSetting(String key){
-        return settings.has(key);
-    }
-    public Object getSetting(String key,Object defaultValue){
-        return hasSetting(key) ? settings.get(key) : defaultValue;
-    }
-    public Json getSettings(){return settings;}
-    public List<JsSnippet> getJsFunctions() { return  this.snippets;}
+    public Globals getGlobals(){return globals;}
 
     public Set<String> getTracePatterns(){return tracePatterns;}
     public Set<String> getRoleNames(){return roles.keySet();}
@@ -263,8 +246,8 @@ public class RunConfig {
     public Json toJson(){
         Json rtrn = Json.fromString("{\"roles\":{}}");
         Parser p = Parser.getInstance();
-        if(!getSettings().isEmpty()){
-            rtrn.set("globals",getSettings());
+        if(!getGlobals().getSettings().isEmpty()){
+            rtrn.set("globals",getGlobals().getSettings());
         }
         getRoleNames().forEach(roleName->{
             Json roleJson = new Json();

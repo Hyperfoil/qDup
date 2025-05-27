@@ -277,7 +277,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         }
 
         if(!tracePattern.isEmpty()){
-            config.getSettings().set(RunConfig.TRACE_NAME, traceNamePattern);
+            config.getGlobals().addSetting(RunConfig.TRACE_NAME, traceNamePattern);
         }
 
         final AtomicInteger factoryCounter = new AtomicInteger(0);
@@ -307,7 +307,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
             logger.info("running with detached console");
         }
 
-        config.getSettings().set("check-exit-code", !ignoreExitCode);
+        config.getGlobals().addSetting("check-exit-code", !ignoreExitCode);
         final Run run = new Run(outputPath, config, dispatcher);
         run.getRunLogger().infof("Running qDup version %s @ %s", version, hash);
         logger.info("output path = " + run.getOutputPath());

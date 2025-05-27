@@ -621,7 +621,7 @@ public class QDup {
                 return false;
             }else{
                 if(hasTrace()){
-                    config.getSettings().set(RunConfig.TRACE_NAME, traceName);
+                    config.getGlobals().addSetting(RunConfig.TRACE_NAME, traceName);
                 }
 
                 final AtomicInteger factoryCounter = new AtomicInteger(0);
@@ -650,7 +650,7 @@ public class QDup {
                     logger.info("running with detached console");
                 }
 
-                config.getSettings().set("check-exit-code", checkExitCode());
+                config.getGlobals().addSetting("check-exit-code", checkExitCode());
 
                 final Run run = new Run(getOutputPath(), config, dispatcher);
                 run.getRunLogger().infof("Running qDup version %s @ %s", getVersion(), getHash());
