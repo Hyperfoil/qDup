@@ -692,6 +692,7 @@ public class QDup {
                 dispatcher.shutdown();
                 executor.shutdownNow();
                 scheduled.shutdownNow();
+                callback.shutdownNow();
                 if(run.isAborted()){
                     ok = false;
                 }
