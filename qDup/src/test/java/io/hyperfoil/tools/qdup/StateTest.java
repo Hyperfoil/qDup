@@ -8,6 +8,9 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Test;
 import io.hyperfoil.tools.yaup.json.Json;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.Assert.*;
 
 public class StateTest extends SshTestBase{
@@ -98,6 +101,52 @@ public class StateTest extends SshTestBase{
         Json json = (Json)found;
     }
 
+    @Test
+    public void set_state_same_script_different_alias(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  buz:
+                  - sh: mktemp -d
+                    then:
+                    - set-state: temp
+                  - sleep: 1s
+                  - set-state: RUN.found ${{= [ ...${{RUN.found:[]}} , "${{temp}}" ] }}
+                hosts:
+                  foo: TARGET_HOST
+                  bar: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [foo, bar]
+                    setup-scripts: [buz]
+                states:
+                    found: []
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+        doit.getRunLogger().info("bizbuzfizfuz");
+        System.out.println(doit.getOutputPath()+"/run.log");
+        doit.run();
+
+        Object found = doit.getConfig().getState().get("found");
+        assertNotNull(found);
+        assertTrue(found instanceof Json);
+        Json json = (Json)found;
+        assertTrue(json.isArray());
+        Set<String> unique = new HashSet<>();
+        for (Object o : json.values()) {
+            unique.add(o.toString());
+        }
+        assertEquals(unique.toString(),2,unique.size());
+        dispatcher.shutdown();
+        System.out.println(doit.getConfig().getState().tree());
+
+    }
 
     @Test
     public void run_read_in_cleanup_from_host_insetup(){
