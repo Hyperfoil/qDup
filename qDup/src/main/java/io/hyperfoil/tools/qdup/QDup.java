@@ -3,13 +3,7 @@ package io.hyperfoil.tools.qdup;
 import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunError;
-import io.hyperfoil.tools.qdup.config.log4j.QdupConfigurationFactory;
 import org.apache.commons.cli.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.config.ConfigurationFactory;
-import org.apache.logging.log4j.core.impl.Log4jContextFactory;
-import org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry;
-import org.apache.logging.log4j.spi.LoggerContextFactory;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
@@ -446,11 +440,12 @@ public class QDup {
     }
 
     private static void disableLoggerShutdownHook(){
-        final LoggerContextFactory factory = LogManager.getFactory();
-        if (factory instanceof Log4jContextFactory) {
-            Log4jContextFactory contextFactory = (Log4jContextFactory) factory;
-            ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
-        }
+//TODO disable this in jboss logging as well
+        //        final LoggerContextFactory factory = LogManager.getFactory();
+//        if (factory instanceof Log4jContextFactory) {
+//            Log4jContextFactory contextFactory = (Log4jContextFactory) factory;
+//            ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
+//        }
     }
 
     public static void main(String[] args) {
@@ -461,7 +456,7 @@ public class QDup {
         QDup toRun = new QDup(args);
         try {
             boolean ok = toRun.run();
-            LogManager.shutdown();
+//            LogManager.shutdown();
             if (!ok) {
                 System.exit(1);//something went wrong
             }
@@ -653,6 +648,7 @@ public class QDup {
                 config.getGlobals().addSetting("check-exit-code", checkExitCode());
 
                 final Run run = new Run(getOutputPath(), config, dispatcher);
+
                 run.getRunLogger().infof("Running qDup version %s @ %s", getVersion(), getHash());
                 logger.info("output path = " + run.getOutputPath());
                 if(checkExitCode()){
