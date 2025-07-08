@@ -16,6 +16,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
 
 import java.io.File;
@@ -103,6 +104,9 @@ public class Run implements Runnable, DispatchObserver {
     Logger runLogger;// = XLoggerFactory.getXLogger(RUN_LOGGER_NAME);
     Logger stateLogger;// = XLoggerFactory.getXLogger(STATE_LOGGER_NAME);
 
+    org.jboss.logmanager.Logger internalRunLogger;
+    org.jboss.logmanager.Logger internalStateLogger;
+
     private List<Stage> skipStages;
 
 
@@ -173,25 +177,38 @@ public class Run implements Runnable, DispatchObserver {
 
                     }
                     fileHandler.setAppend(false);
-                    fileHandler.setAutoFlush(false);
+                    fileHandler.setAutoFlush(true);//was false
                     PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} %c %-5p %m%n");
                     fileHandler.setFormatter(formatter);
-                    org.jboss.logmanager.Logger internalRunLogger = org.jboss.logmanager.Logger.getLogger(getLoggerName());
+                    internalRunLogger = org.jboss.logmanager.Logger.getLogger(getLoggerName());
+
                     internalRunLogger.setLevel(Level.INFO);
-                    //internalRunLogger.setParent(org.jboss.logmanager.Logger.getGlobal());
-                    org.jboss.logmanager.Logger internalStateLogger = org.jboss.logmanager.Logger.getLogger(internalRunLogger.getName() + ".state");
-                    //internalStateLogger.setParent(org.jboss.logmanager.Logger.getGlobal());
+                    //internalRunLogger.setParent(org.jboss.logmanager.Logger.getGlobal());//was commented out //disallowed
+                    internalStateLogger = org.jboss.logmanager.Logger.getLogger(internalRunLogger.getName() + ".state");
+                    //internalStateLogger.setParent(org.jboss.logmanager.Logger.getGlobal());//was commented out //disallowed
+
 
                     internalRunLogger.addHandler(fileHandler);
-
+                    fileHandler.setEnabled(true);
                     runLogger = Logger.getLogger(internalRunLogger.getName());
                     stateLogger = Logger.getLogger(internalStateLogger.getName());
+
+
                     assert runLogger!=null;
                     assert stateLogger!=null;
                 }
             }
         }
         return fileHandler != null;
+    }
+
+    public void ensureConsoleLogging(){
+        ensureLogger();
+        if(internalRunLogger!=null){
+            ConsoleHandler consoleHandler = new ConsoleHandler(fileHandler.getFormatter());
+            consoleHandler.setLevel(Level.INFO);
+            internalRunLogger.addHandler(consoleHandler);
+        }
     }
 
 
@@ -217,7 +234,7 @@ public class Run implements Runnable, DispatchObserver {
     }
     @Override
     public void postStop(){
-        ensureLogger();
+        //ensureLogger();//this was overriding the previous file :(
         timestamps.put(stage.getName()+"Stop",System.currentTimeMillis());
         boolean started = nextStage();
         if(!started){
@@ -737,9 +754,13 @@ public class Run implements Runnable, DispatchObserver {
                        if ( shell.isReady() ) {
                            //TODO configure session delay
                            //session.setDelay(SuffixStream.NO_DELAY);
+                           Cmd setupCopy = setup.deepCopy();
+                           State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
+                           State scriptState = hostState.getChild(setup.getName()).getChild("id=" + setupCopy.getUid());
+
                            ScriptContext scriptContext = new ScriptContext(
                                    shell,
-                                   config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
+                                   scriptState,
                                    this,
                                    profiles.get(name),
                                    setup,
@@ -906,11 +927,14 @@ public class Run implements Runnable, DispatchObserver {
                         );
                         shell.setName(name);
                         if ( shell.isReady() ) {
+                            Cmd cleanupCopy = cleanup.deepCopy();
+                            State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
+                            State scriptState = hostState.getChild(cleanup.getName()).getChild("id=" + cleanupCopy.getUid());
 
                             //session.setDelay(SuffixStream.NO_DELAY);
                             ScriptContext scriptContext = new ScriptContext(
                                     shell,
-                                    config.getState().getChild(host.getHostName(), State.HOST_PREFIX),
+                                    scriptState,
                                     this,
                                     profiles.get(roleName + "-cleanup@" + host.getShortHostName()),
                                     cleanup,
