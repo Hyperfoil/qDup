@@ -758,6 +758,7 @@ public class Run implements Runnable, DispatchObserver {
                            profiles.getProperties(name).set("host",host.getSafeString());
                            profiles.getProperties(name).set("role",role.getName());
                            profiles.getProperties(name).set("script",setup.getName());
+                           profiles.getProperties(name).set("scriptId",setupCopy.getUid());
                            ScriptContext scriptContext = new ScriptContext(
                                    shell,
                                    scriptState,
