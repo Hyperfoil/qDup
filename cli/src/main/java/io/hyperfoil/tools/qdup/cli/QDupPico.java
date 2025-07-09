@@ -24,6 +24,8 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -65,11 +67,11 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
     Map<String,String> stateParameters;
     @CommandLine.Option(names = {"SX"}, description = "remove a state parameter")
     Set<String> removeStateParameters;
-    @CommandLine.Option(names = {"-k","--knownHosts"}, description = "path to known hosts file", defaultValue = "~/.ssh/known_hosts")
+    @CommandLine.Option(names = {"-k","--knownHosts"}, description = "path to known hosts file", defaultValue = "~/.ssh/known_hosts", converter = PathConverter.class)
     String knownHosts;
     @CommandLine.Option(names = {"-p","--passphrase"}, description = "passphrase for identify file", defaultValue = CommandLine.Option.NULL_VALUE)
     String identityPassphrase;
-    @CommandLine.Option(names = {"-i","--identity"}, description = "path to identity private key", defaultValue = "~/.ssh/id_rsa")
+    @CommandLine.Option(names = {"-i","--identity"}, description = "path to identity private key", defaultValue = "~/.ssh/id_rsa", converter = PathConverter.class)
     String identityPath;
     @CommandLine.Option(names = {"-j","--jsonport"}, description = "preferred port for json server", defaultValue = "31337")
     int jsonPort;
@@ -254,7 +256,6 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         runConfigBuilder.setStreamLogging(streamLogging);
 
         RunConfig config = runConfigBuilder.buildConfig(yamlParser);
-
         if(outputModeGroup.testMode){
             System.out.printf("%s", config.debug(true));
             return config.hasErrors() ? 1 : 0;
@@ -309,6 +310,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
 
         config.getGlobals().addSetting("check-exit-code", !ignoreExitCode);
         final Run run = new Run(outputPath, config, dispatcher);
+        run.ensureConsoleLogging();
         run.getRunLogger().infof("Running qDup version %s @ %s", version, hash);
         logger.info("output path = " + run.getOutputPath());
         if(!ignoreExitCode){
