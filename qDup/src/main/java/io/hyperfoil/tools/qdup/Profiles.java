@@ -12,19 +12,26 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Profiles {
 
     private ConcurrentHashMap<String,SystemTimer> names;
-
+    private ConcurrentHashMap<String,Json> properties;
     public Profiles(){
         names = new ConcurrentHashMap<>();
+        properties = new ConcurrentHashMap<>();
     }
+
+    public Json getProperties(String name) { return properties.computeIfAbsent(name,(v)->new Json(false));}
 
     public SystemTimer get(String name){
         return names.computeIfAbsent(name,(v)-> new SystemTimer(v));
     }
 
     public Json getJson(){
-        Json rtrn = new Json();
+        Json rtrn = new Json(true);
         names.forEach((name,timer)->{
-            rtrn.set(name,timer.getJson());
+            Json newEntry = new Json();
+            newEntry.set("name",name);
+            getProperties(name).forEach(newEntry::set);
+            newEntry.set("timer",timer.getJson());
+            rtrn.add(name);
         });
         return rtrn;
     }

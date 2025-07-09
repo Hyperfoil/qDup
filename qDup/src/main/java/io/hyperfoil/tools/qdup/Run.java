@@ -25,9 +25,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -413,7 +410,7 @@ public class Run implements Runnable, DispatchObserver {
         try (FileOutputStream out = new FileOutputStream(this.outputPath+File.separator+"run.json")) {
 
             Json toWrite = new Json();
-
+            toWrite.set("version","0.0.1");
             toWrite.set("state",this.getConfig().getState().toJson());
 
             Json latches = new Json();
@@ -758,6 +755,9 @@ public class Run implements Runnable, DispatchObserver {
                            State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
                            State scriptState = hostState.getChild(setup.getName()).getChild("id=" + setupCopy.getUid());
 
+                           profiles.getProperties(name).set("host",host.getSafeString());
+                           profiles.getProperties(name).set("role",role.getName());
+                           profiles.getProperties(name).set("script",setup.getName());
                            ScriptContext scriptContext = new ScriptContext(
                                    shell,
                                    scriptState,
@@ -812,7 +812,12 @@ public class Run implements Runnable, DispatchObserver {
                     for (Host host : role.getHosts(config)) {
                         State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
                         State scriptState = hostState.getChild(script.getName()).getChild("id=" + script.getUid());
-                        SystemTimer timer = profiles.get(script.getName() + "-" + script.getUid() + "@" + host);
+                        String profileName = script.getName() + "-" + script.getUid() + "@" + host;
+                        SystemTimer timer = profiles.get(profileName);
+                        profiles.getProperties(profileName).set("host",host.getSafeString());
+                        profiles.getProperties(profileName).set("role",role.getName());
+                        profiles.getProperties(profileName).set("script",script.getName());
+                        profiles.getProperties(profileName).set("scriptId",script.getUid());
                         Env env = role.hasEnvironment(host) ? role.getEnv(host) : new Env();
                         if(!role.getName().equals(RunConfigBuilder.ALL_ROLE) && allRole!=null && allRole.hasEnvironment(host)){
                             env.merge(allRole.getEnv(host));
@@ -931,12 +936,17 @@ public class Run implements Runnable, DispatchObserver {
                             State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
                             State scriptState = hostState.getChild(cleanup.getName()).getChild("id=" + cleanupCopy.getUid());
 
+                            String profileName = roleName + "-cleanup@" + host.getShortHostName();
+                            profiles.getProperties(profileName).set("role",role.getName());
+                            profiles.getProperties(profileName).set("host",host.getSafeString());
+                            profiles.getProperties(profileName).set("script",cleanup.getName());
+                            profiles.getProperties(profileName).set("scriptId",cleanupCopy.getUid());
                             //session.setDelay(SuffixStream.NO_DELAY);
                             ScriptContext scriptContext = new ScriptContext(
                                     shell,
                                     scriptState,
                                     this,
-                                    profiles.get(roleName + "-cleanup@" + host.getShortHostName()),
+                                    profiles.get(profileName),
                                     cleanup,
                                     (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                             );
