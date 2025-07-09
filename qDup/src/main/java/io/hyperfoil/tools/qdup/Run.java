@@ -175,7 +175,7 @@ public class Run implements Runnable, DispatchObserver {
                     }
                     fileHandler.setAppend(false);
                     fileHandler.setAutoFlush(true);//was false
-                    PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} %c %-5p %m%n");
+                    PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} %X{role} %X{host} %X{script}%X{scriptId} %c %-5p %m%n");
                     fileHandler.setFormatter(formatter);
                     internalRunLogger = org.jboss.logmanager.Logger.getLogger(getLoggerName());
 
@@ -730,7 +730,8 @@ public class Run implements Runnable, DispatchObserver {
         config.getRoleNames().stream().forEach(roleName->{
             final Role role = config.getRole(roleName);
             if(!role.getSetup().isEmpty()){
-               final Script setup = new Script(roleName+"-setup");
+               //final Script setup = new Script(roleName+"-setup");
+                final Script setup = new Script("setup");
                setup.then(new RoleEnv(role,true));
                role.getSetup().forEach(cmd->{
                    setup.then(cmd);
@@ -755,7 +756,7 @@ public class Run implements Runnable, DispatchObserver {
                            State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
                            State scriptState = hostState.getChild(setup.getName()).getChild("id=" + setupCopy.getUid());
 
-                           profiles.getProperties(name).set("host",host.getSafeString());
+                           profiles.getProperties(name).set("host",host.getShortHostName());
                            profiles.getProperties(name).set("role",role.getName());
                            profiles.getProperties(name).set("script",setup.getName());
                            profiles.getProperties(name).set("scriptId",setupCopy.getUid());
@@ -767,6 +768,7 @@ public class Run implements Runnable, DispatchObserver {
                                    setup,
                                    (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                            );
+                           scriptContext.setRoleName(role.getName());
                            if(config.isStreamLogging()){
                                shell.addLineObserver("stream",(line)->{
                                    ensureLogger();
@@ -815,7 +817,7 @@ public class Run implements Runnable, DispatchObserver {
                         State scriptState = hostState.getChild(script.getName()).getChild("id=" + script.getUid());
                         String profileName = script.getName() + "-" + script.getUid() + "@" + host;
                         SystemTimer timer = profiles.get(profileName);
-                        profiles.getProperties(profileName).set("host",host.getSafeString());
+                        profiles.getProperties(profileName).set("host",host.getShortHostName());
                         profiles.getProperties(profileName).set("role",role.getName());
                         profiles.getProperties(profileName).set("script",script.getName());
                         profiles.getProperties(profileName).set("scriptId",script.getUid());
@@ -847,6 +849,7 @@ public class Run implements Runnable, DispatchObserver {
                                         script,
                                         (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                                 );
+                                scriptContext.setRoleName(role.getName());
                                 if(config.isStreamLogging()){
                                     shell.addLineObserver("stream",(line)->{
                                         ensureLogger();
@@ -916,7 +919,8 @@ public class Run implements Runnable, DispatchObserver {
         config.getRoleNames().forEach(roleName->{
             Role role = config.getRole(roleName);
             if(!role.getCleanup().isEmpty()){
-                final Script cleanup = new Script(roleName+"-cleanup");
+                //final Script cleanup = new Script(roleName+"-cleanup");
+                Script cleanup = new Script("cleanup");
                 role.getCleanup().forEach(cmd->{
                     cleanup.then(cmd);
                 });
@@ -939,7 +943,7 @@ public class Run implements Runnable, DispatchObserver {
 
                             String profileName = roleName + "-cleanup@" + host.getShortHostName();
                             profiles.getProperties(profileName).set("role",role.getName());
-                            profiles.getProperties(profileName).set("host",host.getSafeString());
+                            profiles.getProperties(profileName).set("host",host.getShortHostName());
                             profiles.getProperties(profileName).set("script",cleanup.getName());
                             profiles.getProperties(profileName).set("scriptId",cleanupCopy.getUid());
                             //session.setDelay(SuffixStream.NO_DELAY);
@@ -951,6 +955,7 @@ public class Run implements Runnable, DispatchObserver {
                                     cleanup,
                                     (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                             );
+                            scriptContext.setRoleName(role.getName());
                             if(config.isStreamLogging()){
                                 shell.addLineObserver("stream",(line)->{
                                     ensureLogger();

@@ -10,6 +10,7 @@ import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -97,6 +98,7 @@ public class ScriptContext implements Context, Runnable{
     long startTime = -1;
     long updateTime = -1;
 
+    private String roleName="";
     private String cwd="";
     private String homeDir="";
     private boolean isAborted=false;
@@ -158,6 +160,11 @@ public class ScriptContext implements Context, Runnable{
         this.lineQueue = new LinkedBlockingQueue<>();
         this.timeouts = new LinkedList<>();
     }
+    public String getRoleName(){return roleName;}
+    public void setRoleName(String roleName){
+        this.roleName = roleName;
+    }
+
     private void clearTimers(){
         timeouts.forEach(timeout->timeout.cancel(true));
     }
@@ -300,7 +307,12 @@ public class ScriptContext implements Context, Runnable{
             rootString = rootCmd.toString();
         }
         String filteredMessage = state.getSecretFilter().filter(message);
-        getRunLogger().infof("%s:%s@%s: %s",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
+        MDC.put("host",getHost().getShortHostName());
+        MDC.put("script",rootString);
+        MDC.put("scriptId",rootCmd.getUid());
+        MDC.put("role",getRoleName());
+        //getRunLogger().infof("%s:%s@%s: %s",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
+        getRunLogger().info(filteredMessage);
     }
     public void error(String message){
         String rootString;
@@ -312,10 +324,18 @@ public class ScriptContext implements Context, Runnable{
             rootString = rootCmd.toString();
         }
         String filteredMessage = state.getSecretFilter().filter(message);
+
+        MDC.put("host",getHost().getShortHostName());
+        MDC.put("script",rootString);
+        MDC.put("scriptId",rootCmd.getUid());
+        MDC.put("role",getRoleName());
+
         if(isColorTerminal()){
-            getRunLogger().errorf(AsciiArt.ANSI_RED+"%s:%s@%s: %s"+AsciiArt.ANSI_RESET,rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
+            //getRunLogger().errorf(AsciiArt.ANSI_RED+"%s:%s@%s: %s"+AsciiArt.ANSI_RESET,rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
+            getRunLogger().errorf(AsciiArt.ANSI_RED+filteredMessage+AsciiArt.ANSI_RESET);
         }else{
-            getRunLogger().errorf("%s:%s@%s: %s",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
+            //getRunLogger().errorf("%s:%s@%s: %s",rootString,rootCmd.getUid(),getHost().getShortHostName(),filteredMessage);
+            getRunLogger().error(filteredMessage);
         }
     }
 
