@@ -431,6 +431,7 @@ public class RunConfigBuilder {
          if(host == null){
             addError("failed to create host from "+definition);
          }else {
+            host.setAlias(alias);
             if(hasIdentity()){
                host.setIdentity(getIdentity());
             }

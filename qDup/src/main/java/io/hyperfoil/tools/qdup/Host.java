@@ -168,6 +168,7 @@ public class Host {
     }
     public static final int DEFAULT_PORT = 22;
 
+    private String alias;
     private String hostName;
     private String password;
     private String userName;
@@ -305,6 +306,11 @@ public class Host {
             this.removeContainer=Collections.EMPTY_LIST;
             this.exec=Collections.EMPTY_LIST;//uses the ssh exec channel
         }
+    }
+
+    public String getAlias(){return alias;}
+    public void setAlias(String alias){
+        this.alias = alias;
     }
     private boolean addError(List<String> errors, String message){
         if(errors!=null && message!=null ){
@@ -506,8 +512,10 @@ public class Host {
     public boolean hasHostName(){return hostName!=null && !LOCAL.equals(hostName) && !hostName.isBlank();}
     public String getHostName(){return hostName;}
     public String getShortHostName(){
-        if(hostName!=null && hostName.indexOf(".")>-1){
-            return hostName.substring(0,hostName.indexOf("."));
+        if(alias!=null){
+            return alias;
+        }else if(hostName!=null && hostName.indexOf(".")>-1){
+            return hostName.substring(0,hostName.indexOf(".")-1);
         }else{
             return hostName;
         }
