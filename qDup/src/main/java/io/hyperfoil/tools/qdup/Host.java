@@ -308,6 +308,7 @@ public class Host {
         }
     }
 
+    public boolean hasAlias(){return alias!=null && !alias.isBlank();}
     public String getAlias(){return alias;}
     public void setAlias(String alias){
         this.alias = alias;
@@ -600,6 +601,9 @@ public class Host {
                 rtrn.set("container",container);
             }
             //TODO add any custom container commands
+        }
+        if(hasAlias()){
+            rtrn.set("alias",getAlias());
         }
         return rtrn;
     }
