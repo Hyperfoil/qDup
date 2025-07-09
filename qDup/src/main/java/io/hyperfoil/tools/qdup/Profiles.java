@@ -31,7 +31,7 @@ public class Profiles {
             newEntry.set("name",name);
             getProperties(name).forEach(newEntry::set);
             newEntry.set("timer",timer.getJson());
-            rtrn.add(name);
+            rtrn.add(newEntry);
         });
         return rtrn;
     }
