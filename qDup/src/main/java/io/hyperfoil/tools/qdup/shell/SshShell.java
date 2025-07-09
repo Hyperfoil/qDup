@@ -244,12 +244,12 @@ public class SshShell extends AbstractShell{
                             return keyPairs;
                         }));
                     } catch (IOException | GeneralSecurityException e) {
-                        logger.errorf("%s client failed to connect before timeout", getHost().getHostName(), e);
+                        logger.errorf("%s client failed to connect with custom identity before timeout", getHost().getHostName(), e);
                         return null;
                     }
                 } catch (MalformedURLException e) {
                     //due to bad identity?
-                    logger.errorf("%s client failed to connect before timeout", getHost().getHostName());
+                    logger.errorf("%s client failed to access custom identity", getHost().getHostName());
                     return null;
                 }
             }
@@ -257,7 +257,7 @@ public class SshShell extends AbstractShell{
             ConnectFuture future = sshClient.connect(getHost().getUserName(), getHost().getHostName(), getHost().getPort());
             future.await(10, TimeUnit.SECONDS);
             if(!future.isConnected()){
-                logger.errorf("%s client failed to connect before timeout",getHost().getHostName());
+                logger.errorf("%s client failed to connect before 10s timeout",getHost().getHostName());
                 return null;
             }
             future = future.verify(timeout);
