@@ -516,7 +516,7 @@ public class Host {
         if(alias!=null){
             return alias;
         }else if(hostName!=null && hostName.indexOf(".")>-1){
-            return hostName.substring(0,hostName.indexOf(".")-1);
+            return hostName.substring(0,hostName.indexOf("."));
         }else{
             return hostName;
         }
