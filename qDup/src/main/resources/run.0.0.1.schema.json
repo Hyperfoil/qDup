@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "profile": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "timer": {"$ref": "#/definitions/timer"},
+        "role":  {"type": "string"},
+        "script":  {"type": "string"},
+        "scriptId": {"type": "integer"},
+        "host": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "timer": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "start": {"type": "integer"},
+        "stop": {"type": "integer"},
+        "nanos": {"type": "integer"},
+        "millis": {"type": "integer"},
+        "data": {"type": "object"},
+        "timers": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/timer"}
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "version": {"type": "string"},
+    "state": {
+      "type": "object"
+    },
+    "timestamps": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$" : {
+          "type": "integer"
+        },
+        "aditionalProperties": false
+      }
+    },
+    "latches": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$" : {
+          "type": "integer"
+        },
+        "aditionalProperties": false
+      }
+    },
+    "counters": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$" : {
+          "type": "integer"
+        },
+        "aditionalProperties": false
+      }
+    },
+    "profiles": {
+      "type": "array",
+      "items": {"$ref":"#/definitions/profile"}
+    }
+
+  },
+  "additionalProperties": false
+}
