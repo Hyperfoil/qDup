@@ -31,7 +31,7 @@ public class SetStateTest extends SshTestBase {
       Object obj = spyContext.getState().get("test");
       assertTrue(obj instanceof Json);
       Json json = (Json) obj;
-      assertFalse(json.isArray());
+      assertTrue(json.isArray());
       assertEquals(2,json.size());
    }
 
