@@ -376,32 +376,6 @@ public class RunTest extends SshTestBase {
       assertTrue("state should have bar",state.has("bar"));
       assertFalse("state should not have biz",state.has("biz"));
    }
-   @Test
-   public void logger_removal(){
-      FileHandler fileHandler = new org.jboss.logmanager.handlers.FileHandler();
-      File outputDir = new File("/tmp");
-      if (!outputDir.exists()) {
-         outputDir.mkdirs();
-      }
-      try {
-         fileHandler.setFile(new File(outputDir, "run.log"));
-      } catch (FileNotFoundException e) {
-
-      }
-      fileHandler.setAppend(false);
-      fileHandler.setAutoFlush(false);
-      PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} %c %-5p %m%n");
-      fileHandler.setFormatter(formatter);
-      org.jboss.logmanager.Logger internalRunLogger = org.jboss.logmanager.Logger.getLogger("foo");
-//      internalRunLogger.setParent(org.jboss.logmanager.Logger.getGlobal());
-
-      internalRunLogger.addHandler(fileHandler);
-
-      Logger runLogger = Logger.getLogger(internalRunLogger.getName());
-
-      System.out.println(runLogger);
-
-   }
 
    @Test(timeout = 20_000)
    public void watch_signal() {

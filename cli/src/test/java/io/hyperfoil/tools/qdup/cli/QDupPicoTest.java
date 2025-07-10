@@ -31,7 +31,6 @@ class QDupPicoTest {
 
     @BeforeAll
     public static void createContainer() {
-        System.out.println("creating container");
         try {
             setup(getPath("keys/qdup.pub"));
         } catch (IOException e) {

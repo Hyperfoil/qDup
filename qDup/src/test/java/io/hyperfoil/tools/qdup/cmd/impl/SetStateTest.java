@@ -29,8 +29,10 @@ public class SetStateTest extends SshTestBase {
       SetState setState = new SetState("test","${{=new Set([1,2])}}");
       setState.run("",spyContext);
       Object obj = spyContext.getState().get("test");
-      System.out.println(obj);
-      System.out.println(obj.getClass());
+      assertTrue(obj instanceof Json);
+      Json json = (Json) obj;
+      assertFalse(json.isArray());
+      assertEquals(2,json.size());
    }
 
    @Test
