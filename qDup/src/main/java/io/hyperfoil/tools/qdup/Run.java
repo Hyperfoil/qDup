@@ -173,9 +173,24 @@ public class Run implements Runnable, DispatchObserver {
                     } catch (FileNotFoundException e) {
 
                     }
-                    fileHandler.setAppend(false);
+
+                    //this means we can have two appenders to the same file :)
+                    //one for context and one for run :)
+
+//                    org.jboss.logmanager.handlers.FileHandler rootFile = new org.jboss.logmanager.handlers.FileHandler();
+//                    rootFile.setAppend(true);
+//                    rootFile.setAutoFlush(true);
+//                    rootFile.setFormatter(new PatternFormatter("%d{HH:mm:ss,SSS} %m%n"));
+//                    rootFile.setEnabled(true);
+//
+//                    ConsoleHandler consoleHandler = new ConsoleHandler(rootFile.getFormatter());
+//
+//                    org.jboss.logmanager.Logger.getLogger("io.hyperfoil.tools.qdup").addHandler(rootFile);
+//                    org.jboss.logmanager.Logger.getLogger("io.hyperfoil.tools.qdup").addHandler(consoleHandler);
+
+                    fileHandler.setAppend(true);//changed from false to avoid overriding
                     fileHandler.setAutoFlush(true);//was false
-                    PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} %X{role} %X{host} %X{script}%X{scriptId} %c %-5p %m%n");
+                    PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} [%X{role}:%X{script}:%X{scriptId}@%X{host}] %c %-5p %m%n");
                     fileHandler.setFormatter(formatter);
                     internalRunLogger = org.jboss.logmanager.Logger.getLogger(getLoggerName());
 
@@ -183,7 +198,6 @@ public class Run implements Runnable, DispatchObserver {
                     //internalRunLogger.setParent(org.jboss.logmanager.Logger.getGlobal());//was commented out //disallowed
                     internalStateLogger = org.jboss.logmanager.Logger.getLogger(internalRunLogger.getName() + ".state");
                     //internalStateLogger.setParent(org.jboss.logmanager.Logger.getGlobal());//was commented out //disallowed
-
 
                     internalRunLogger.addHandler(fileHandler);
                     fileHandler.setEnabled(true);
@@ -765,7 +779,7 @@ public class Run implements Runnable, DispatchObserver {
                                    scriptState,
                                    this,
                                    profiles.get(name),
-                                   setup,
+                                   setupCopy,
                                    (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                            );
                            scriptContext.setRoleName(role.getName());
@@ -813,21 +827,23 @@ public class Run implements Runnable, DispatchObserver {
             if (!role.getRun().isEmpty()) {
                 for (ScriptCmd script : role.getRun()) {
                     for (Host host : role.getHosts(config)) {
+                        ScriptCmd scriptCopy = (ScriptCmd) script.deepCopy();
                         State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
-                        State scriptState = hostState.getChild(script.getName()).getChild("id=" + script.getUid());
-                        String profileName = script.getName() + "-" + script.getUid() + "@" + host;
+                        State scriptState = hostState.getChild(scriptCopy.getName()).getChild("id=" + scriptCopy.getUid());
+                        String profileName = scriptCopy.getName() + "-" + scriptCopy.getUid() + "@" + host;
                         SystemTimer timer = profiles.get(profileName);
                         profiles.getProperties(profileName).set("host",host.getShortHostName());
                         profiles.getProperties(profileName).set("role",role.getName());
-                        profiles.getProperties(profileName).set("script",script.getName());
-                        profiles.getProperties(profileName).set("scriptId",script.getUid());
+                        profiles.getProperties(profileName).set("script",scriptCopy.getName());
+                        profiles.getProperties(profileName).set("scriptId",scriptCopy.getUid());
                         Env env = role.hasEnvironment(host) ? role.getEnv(host) : new Env();
                         if(!role.getName().equals(RunConfigBuilder.ALL_ROLE) && allRole!=null && allRole.hasEnvironment(host)){
                             env.merge(allRole.getEnv(host));
                         }
                         String setupCommand = env.getDiff().getCommand();
                         connectSessions.add(() -> {
-                            String name = script.getName()+":"+script.getUid()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
+
+                            String name = scriptCopy.getName()+":"+scriptCopy.getUid()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                             timer.start("connect:" + host.toString());
                             AbstractShell shell = AbstractShell.getShell(
                                     host,
@@ -846,7 +862,7 @@ public class Run implements Runnable, DispatchObserver {
                                         scriptState,
                                         this,
                                         timer,
-                                        script,
+                                        scriptCopy,
                                         (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                                 );
                                 scriptContext.setRoleName(role.getName());
@@ -937,14 +953,14 @@ public class Run implements Runnable, DispatchObserver {
                         );
                         shell.setName(name);
                         if ( shell.isReady() ) {
-                            Cmd cleanupCopy = cleanup.deepCopy();
+                            Script cleanupCopy = (Script)cleanup.deepCopy();
                             State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
-                            State scriptState = hostState.getChild(cleanup.getName()).getChild("id=" + cleanupCopy.getUid());
+                            State scriptState = hostState.getChild(cleanupCopy.getName()).getChild("id=" + cleanupCopy.getUid());
 
                             String profileName = roleName + "-cleanup@" + host.getShortHostName();
                             profiles.getProperties(profileName).set("role",role.getName());
                             profiles.getProperties(profileName).set("host",host.getShortHostName());
-                            profiles.getProperties(profileName).set("script",cleanup.getName());
+                            profiles.getProperties(profileName).set("script",cleanupCopy.getName());
                             profiles.getProperties(profileName).set("scriptId",cleanupCopy.getUid());
                             //session.setDelay(SuffixStream.NO_DELAY);
                             ScriptContext scriptContext = new ScriptContext(
@@ -952,7 +968,7 @@ public class Run implements Runnable, DispatchObserver {
                                     scriptState,
                                     this,
                                     profiles.get(profileName),
-                                    cleanup,
+                                    cleanupCopy,
                                     (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                             );
                             scriptContext.setRoleName(role.getName());

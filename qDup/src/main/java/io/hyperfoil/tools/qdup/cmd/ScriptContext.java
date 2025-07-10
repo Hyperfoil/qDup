@@ -135,7 +135,7 @@ public class ScriptContext implements Context, Runnable{
     }
 
     public ScriptContext(AbstractShell session, State state, Run run, SystemTimer timer, Cmd rootCmd, boolean checkExitCode){
-        this(session,state,run,timer,rootCmd.deepCopy(),null,checkExitCode);
+        this(session,state,run,timer,rootCmd,null,checkExitCode);
     }
     private ScriptContext(AbstractShell shell, State state, Run run, SystemTimer timer, Cmd rootCmd,Cmd setCurrentCmd, boolean checkExitCode){
         this.shell = shell;
