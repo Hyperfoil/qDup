@@ -22,6 +22,7 @@ public class EscapeFilteredStream extends MultiStream {
     private static final int SHIFT_IN = 15;
     private static final int SHIFT_OUT = 14;
 
+    //https://en.wikipedia.org/wiki/ANSI_escape_code
     private static final Set<Character> CONTROL_SUFFIX = Sets.of(
             'A',//cursor up
             'B',//cursor down
@@ -42,7 +43,9 @@ public class EscapeFilteredStream extends MultiStream {
             's',//save cursor position
             'u', //restore cursor position
             'h',//seen in git output, switches screen?
-            'l'//same as 'h', seen in git and supposedly changes screens?
+            'l',//same as 'h', seen in git and supposedly changes screens?
+            (char)7, //BEL
+            (char)156 //ST
             );
 
     private byte[] buffered;
@@ -154,28 +157,38 @@ public class EscapeFilteredStream extends MultiStream {
                 (len ==1 && (b[off] == CR || b[off] == SHIFT_IN || b[off] == SHIFT_OUT)) ||
             (
                 b[off]==ESC
-                && ((
-                    ( len>=3 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]))
-                    || (len == 2 && b[off+1]=='=')
-                    || (len == 2 && b[off+1]=='>')
-                ) || (
-                    ( len>=15
-                            && b[off+ 1]==']'
-                            && b[off+ 2]=='7'
-                            && b[off+ 3]=='7'
-                            && b[off+ 4]=='7'
-                            && b[off+ 5]==';'
-                            && b[off+ 6]=='p'
-                            && b[off+ 7]=='r'
-                            && b[off+ 8]=='e'
-                            && b[off+ 9]=='e'
-                            && b[off+10]=='x'
-                            && b[off+11]=='e'
-                            && b[off+12]=='c'
-                            && b[off+13]==ESC
-                            && b[off+14]=='\\')
-                ))
+                &&
+                (
+                    (
+                        ( len>=3 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]))
+                        || (len == 2 && b[off+1]=='=')
+                        || (len == 2 && b[off+1]=='>')
+                    ) || (
+                        len>=15
+                        && b[off+ 1]==']'
+                        && b[off+ 2]=='7'
+                        && b[off+ 3]=='7'
+                        && b[off+ 4]=='7'
+                        && b[off+ 5]==';'
+                        && b[off+ 6]=='p'
+                        && b[off+ 7]=='r'
+                        && b[off+ 8]=='e'
+                        && b[off+ 9]=='e'
+                        && b[off+10]=='x'
+                        && b[off+11]=='e'
+                        && b[off+12]=='c'
+                        && b[off+13]==ESC
+                        && b[off+14]=='\\'
+                    )
+                )
             );
+        if(!rtrn && len >=5 && b[off]==ESC && b[off+1]==']' && b[off+2]=='0' && b[off+3]==';'){
+            int i=0;
+            while(off + i < len && b[off + i] != (char)7){
+                i++;
+            }
+            rtrn = off + i < len && b[off + i] == (char) 7;
+        }
         return rtrn;
     }
     //return length of match up to len or 0 if match failed
@@ -209,9 +222,10 @@ public class EscapeFilteredStream extends MultiStream {
                             matching = false;//stop the match at end of len
                         }
                     }
-                } else if (b[off + 1] == ']') {//VTE preexec
+                } else if (b[off + 1] == ']') {
                     rtrn = 2;
                     int i=0;
+                    //VTE preexec
                     byte tofind[] = new byte[]{'7','7','7',';','p','r','e','e','x','e','c',ESC,'\\'};
                     while(rtrn+i < len && i < tofind.length && matching ) {
                         matching = tofind[i]==b[off+rtrn+i];
@@ -223,6 +237,20 @@ public class EscapeFilteredStream extends MultiStream {
                         }
                     }
                     rtrn += i;
+                    if(i == 0){//did not match VTE
+                        if(len > 2 && b[off + 2] == '0'){
+                            rtrn = 2;
+                        }
+                        if(rtrn == 2 && len > 3 && b[off + 3] == ';'){
+                            while(rtrn+i < len && b[off+rtrn+i] != (char)7){
+                                i++;
+                            }
+                            rtrn = rtrn + i;
+                            if(off+rtrn < len && b[off+rtrn] == (char)7){
+                                rtrn++;
+                            }
+                        }
+                    }
 
                 } else if (b[off + 1] == '=') {
                     rtrn = 2; //^[= is from DEC VT100s application mode

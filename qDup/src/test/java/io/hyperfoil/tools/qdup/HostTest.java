@@ -6,6 +6,13 @@ import static org.junit.Assert.*;
 
 public class HostTest {
 
+   @Test
+   public void pase_local_container(){
+      Host h = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"redhat/ubi10");
+      assertTrue(h.isLocal());
+      assertTrue(h.isContainer());
+      assertEquals("redhat/ubi10",h.getDefinedContainer());
+   }
 
    @Test
    public void parse_windows_domain_username_password_hostname_port(){

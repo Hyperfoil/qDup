@@ -451,6 +451,7 @@ public class RunConfigBuilder {
       //build map of all known hosts
       roleHosts.forEach((roleName, hostSet) -> {
          for (String hostShortname : hostSet) {
+
             Host resolvedHost = hostAliases.get(hostShortname);
             if (resolvedHost != null) {
                seenHosts.putIfAbsent(hostShortname, resolvedHost);

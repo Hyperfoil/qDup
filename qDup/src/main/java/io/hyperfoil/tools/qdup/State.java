@@ -452,7 +452,7 @@ public class State {
         return clone(false);
     }
     public State clone(boolean deep){
-        State rtrn = new State(this.parent,this.prefix);
+        State rtrn = this.parent==null ? new State(this.prefix) :  new State(this.parent,this.prefix);
         //break abstraction to avoid prefix checks
         this.json.forEach((k,v)->{
             rtrn.json.set(k,v);

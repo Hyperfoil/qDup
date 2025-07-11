@@ -155,6 +155,7 @@ public class LocalShell extends AbstractShell{
         }
         if(readerThread!=null && readerThread.isAlive()){
             connectCounter.incrementAndGet();//tells the thread to stop
+
         }
     }
 }

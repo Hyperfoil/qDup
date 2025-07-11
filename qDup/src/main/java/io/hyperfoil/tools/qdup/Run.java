@@ -193,7 +193,7 @@ public class Run implements Runnable, DispatchObserver {
                     PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} [%X{role}:%X{script}:%X{scriptId}@%X{host}] %c %-5p %m%n");
                     fileHandler.setFormatter(formatter);
                     internalRunLogger = org.jboss.logmanager.Logger.getLogger(getLoggerName());
-
+                    internalRunLogger.setUseParentHandlers(false);//to disable double console
                     internalRunLogger.setLevel(Level.INFO);
                     //internalRunLogger.setParent(org.jboss.logmanager.Logger.getGlobal());//was commented out //disallowed
                     internalStateLogger = org.jboss.logmanager.Logger.getLogger(internalRunLogger.getName() + ".state");
@@ -878,10 +878,11 @@ public class Run implements Runnable, DispatchObserver {
                                 return rtrn;
                             } else {
                                 logger.error("run failed to connect "+host.getSafeString()
+                                        +(host.hasContainerId() ? " "+host.getContainerId() : "")
                                         +(host.hasPassword() ?
                                             ", verify ssh works with the provided username and password" :
                                             ", verify password-less ssh works with the selected keys"
-                                        )
+                                        +"\n"+shell.peekOutput())
                                 );
                                 shell.close();
                                 return false;
@@ -896,7 +897,7 @@ public class Run implements Runnable, DispatchObserver {
         if(!connectSessions.isEmpty()) {
             ok = false; // it better be set by dispatcher then
             try {
-                ok = getDispatcher().invokeAll(connectSessions).stream().map((f)->{
+                List<Boolean> oks = getDispatcher().invokeAll(connectSessions).stream().map((f)->{
                     boolean rtrn = false;
                     try{
                         rtrn = f.get();
@@ -906,7 +907,13 @@ public class Run implements Runnable, DispatchObserver {
                         e.printStackTrace();
                     }
                     return rtrn;
-                }).collect(Collectors.reducing(Boolean::logicalAnd)).get();
+                }).toList();
+                if(oks.size()!=connectSessions.size()){
+                    System.out.println(AsciiArt.ANSI_RED+"!!! Missing ok results expect "+connectSessions.size()+" got "+oks.size());
+                }
+                System.out.println(AsciiArt.ANSI_LIGHT_MAGENTA+"Oks = "+oks.stream().filter(v->v).count()+" not-ok = "+oks.stream().filter(v->!v).count()+AsciiArt.ANSI_RESET);
+                ok = oks.stream().reduce(Boolean::logicalAnd).orElse(false);
+                        //;.collect(Collectors.reducing(Boolean::logicalAnd)).get();
             } catch (InterruptedException e){
 
             }
@@ -993,9 +1000,30 @@ public class Run implements Runnable, DispatchObserver {
         });
         boolean ok = true;
         if(!connectSessions.isEmpty()){
-            ok = connectAll(connectSessions,60);
+            ok = false; // it better be set by dispatcher then
+            try {
+                List<Boolean> oks = getDispatcher().invokeAll(connectSessions).stream().map((f)->{
+                    boolean rtrn = false;
+                    try{
+                        rtrn = f.get();
+                    } catch (InterruptedException e){
+                        e.printStackTrace();
+                    } catch (Exception e ){
+                        e.printStackTrace();
+                    }
+                    return rtrn;
+                }).toList();
+                if(oks.size()!=connectSessions.size()){
+                    System.out.println(AsciiArt.ANSI_RED+"!!! Missing ok results expect "+connectSessions.size()+" got "+oks.size());
+                }
+                System.out.println(AsciiArt.ANSI_LIGHT_MAGENTA+"Cleanup Oks = "+oks.stream().filter(v->v).count()+" not-ok = "+oks.stream().filter(v->!v).count()+AsciiArt.ANSI_RESET);
+                ok = oks.stream().reduce(Boolean::logicalAnd).orElse(false);
+                //;.collect(Collectors.reducing(Boolean::logicalAnd)).get();
+            } catch (InterruptedException e){
+
+            }
             if(!ok){
-                getRunLogger().error("failed to connect all ssh sessions for cleanup");
+                getRunLogger().error("failed to connect all ssh sessions for run");
                 abort(false);
             }
 

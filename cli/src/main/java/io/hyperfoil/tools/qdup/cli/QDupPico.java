@@ -95,7 +95,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
     @Override
     public int run(String... args) throws Exception {
         //characters for brail spinner
-        //System.out.println("\u2807\u280B\u2819\u2838\u2834\u2826");
+        //sout("\u2807\u280B\u2819\u2838\u2834\u2826");
 
         System.setProperty("polyglotimpl.DisableClassPathIsolation", "true");
         CommandLine cmd = new CommandLine(new QDupPico());
@@ -352,7 +352,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         dispatcher.shutdown();
         executor.shutdownNow();
         scheduled.shutdownNow();
-
+        callback.shutdownNow();
         return run.isAborted() ? 1 : 0;
     }
 

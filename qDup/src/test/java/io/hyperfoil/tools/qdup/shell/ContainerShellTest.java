@@ -1,13 +1,19 @@
 package io.hyperfoil.tools.qdup.shell;
 
-import io.hyperfoil.tools.qdup.Host;
-import io.hyperfoil.tools.qdup.SecretFilter;
-import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.*;
+import io.hyperfoil.tools.qdup.cmd.Dispatcher;
+import io.hyperfoil.tools.qdup.config.RunConfig;
+import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -57,6 +63,52 @@ public class ContainerShellTest extends SshTestBase {
             shell.stopContainerIfStarted();
         }    
     }
+
+    @Test
+    public void local_shell_quick_test(){
+        AbstractShell shell = AbstractShell.getShell(Host.parse(Host.LOCAL),new ScheduledThreadPoolExecutor(2),new SecretFilter(),false);
+        String output = shell.shSync("podman run --detach redhat/ubi10",null,10).output();
+        System.out.println("output: "+ output);
+    }
+
+    @Test
+    public void failure_missing_image_registry(){
+        Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"redhat/ubi10");
+        host.setStartConnectedContainer(Collections.EMPTY_LIST);
+        host.setCreateConnectedContainer(Collections.EMPTY_LIST);
+        ContainerShell shell = new ContainerShell(
+                host,
+                "",
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+        );
+        shell.connect();
+        assertFalse("should see an error connecting to image without registry",shell.isReady());
+
+        String hostname = shell.shSync("hostname");
+        assertEquals("shSync should return empty string for a shell that is not ready","",hostname);
+        shell.stopContainerIfStarted();
+    }
+    @Test
+    public void failure_missing_image_registry_credentials(){
+        Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/redhat/ubi10");
+        host.setStartConnectedContainer(Collections.EMPTY_LIST);
+        host.setCreateConnectedContainer(Collections.EMPTY_LIST);
+        ContainerShell shell = new ContainerShell(
+                host,
+                "",
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                false
+        );
+        shell.connect();
+        assertFalse("should see an error connecting to password protected container",shell.isReady());
+
+        String hostname = shell.shSync("hostname");
+        assertEquals("shSync should return empty string for a shell that is not ready","",hostname);
+        shell.stopContainerIfStarted();
+    }
     @Test
     public void container_start_also_connects(){
         Host host = Host.parse("quay.io/fedora/fedora");
@@ -89,6 +141,7 @@ public class ContainerShellTest extends SshTestBase {
                 new SecretFilter(),
                 false
         );
+        remoteShell.setName("remote_container_connect");
         boolean remoteConnected = remoteShell.connect();
         assertTrue("remote shell should be connected",remoteConnected);
         String remoteHostname = remoteShell.shSync("uname -a");
@@ -273,5 +326,111 @@ public class ContainerShellTest extends SshTestBase {
         }finally{
             shell.stopContainerIfStarted();
         }
+    }
+
+    @Test
+    public void local_container_start_connected_uses_same_image_all_stages(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("signal",
+            """
+             scripts:
+               captureName:
+               - sh: uname -a
+                 then:
+                 - regex: Linux (?<hash>[a-z0-9]{12})
+                   then:
+                   - set-state: RUN.found ${{= [ ...${{RUN.found:[]}}, "${{hash}}" ] }}
+             hosts:
+               uno: TARGET_HOST
+               dos: TARGET_HOST
+             roles:
+               one:
+                 hosts:
+                   - uno
+                 setup-scripts:
+                   - captureName
+                 run-scripts:
+                   - captureName
+                 cleanup-scripts:
+                   - captureName
+               two:
+                 hosts:
+                   - dos
+                 setup-scripts:
+                   - captureName
+                 run-scripts:
+                   - captureName
+                 cleanup-scripts:
+                   - captureName
+             states:
+               found: []
+             """.replaceAll("TARGET_HOST",Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora")
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+        doit.run();
+
+        State state = config.getState();
+        System.out.println(state.tree());
+        Object found = state.get("found");
+        assertTrue(found instanceof Json);
+        Json json = (Json)found;
+        assertTrue(json.isArray());
+        assertEquals(6,json.size());
+        Set<Object> unique = new HashSet<>(json.values());
+        assertEquals(2,unique.size());
+    }
+
+    @Test
+    public void local_container_single_start_connected_uses_same_image_all_stages(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                 scripts:
+                   captureName:
+                   - sh: uname -a
+                     then:
+                     - regex: Linux (?<hash>[a-z0-9]{12})
+                       then:
+                       - set-state: RUN.found ${{= [ ...${{RUN.found:[]}}, "${{hash}}" ] }}
+                 hosts:
+                   uno: TARGET_HOST
+                 roles:
+                   one:
+                     hosts:
+                       - uno
+                     setup-scripts:
+                       - captureName
+                     run-scripts:
+                       - captureName
+                     cleanup-scripts:
+                       - captureName
+                 states:
+                   found: []
+                 """.replaceAll("TARGET_HOST",Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora")
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+        doit.run();
+
+        State state = config.getState();
+        System.out.println(state.tree());
+        Object found = state.get("found");
+        assertTrue(found instanceof Json);
+        Json json = (Json)found;
+        assertTrue(json.isArray());
+        assertEquals(3,json.size());
+        Set<Object> unique = new HashSet<>(json.values());
+        assertEquals(1,unique.size());
     }
 }

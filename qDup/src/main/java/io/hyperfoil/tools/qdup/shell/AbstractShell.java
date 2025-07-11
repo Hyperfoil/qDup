@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.shell;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import org.apache.sshd.common.session.Session;
 import org.jboss.logging.Logger;
 
@@ -105,7 +106,6 @@ public abstract class AbstractShell {
     Semaphore shellLock;
     private SessionStreams sessionStreams;
     private Map<String,Boolean> isPromptShell;
-
 
     private SecretFilter filter;
 
@@ -221,7 +221,11 @@ public abstract class AbstractShell {
             sessionStreams.addPromptCallback(this.semaphoreCallback);
             commandStream = connectShell();
             if(commandStream == null){
-                logger.errorf("%s failed to connect to %s",getName(),getHost().getSafeString());
+                if(getHost().hasAlias()){
+                    logger.errorf("%s failed to connect to %s %s",getName(),getHost().getAlias(),getHost().getSafeString());
+                }else {
+                    logger.errorf("%s failed to connect to %s", getName(), getHost().getSafeString());
+                }
                 return false;
             }
             if(getHost().isShell()){
@@ -293,11 +297,13 @@ public abstract class AbstractShell {
     }
 
     public String shSync(String command, Map<String, String> prompt) {
-        return shSync(command,prompt,0);
+        return shSync(command,prompt,0).output();
     }
-    public String shSync(String command, Map<String, String> prompt,int seconds) {
+    public static record SyncResponse(String output,boolean timedOut){};
+    public SyncResponse shSync(String command, Map<String, String> prompt,int seconds) {
+        System.out.println(AsciiArt.ANSI_LIGHT_GREEN+"Shell["+getName()+"].shSync "+command+AsciiArt.ANSI_RESET);
         if(commandStream==null || Status.Closing.equals(status)){
-            return "";
+            return new SyncResponse("",false);
         }
         blockingResponse.setLength(0);//clear the blockingConsumer
         addShObserver(SH_BLOCK_CALLBACK, blockingConsumer);
@@ -325,7 +331,15 @@ public abstract class AbstractShell {
             removeShObserver(SH_BLOCK_CALLBACK);
         }
         assert blockingSemaphore.availablePermits() == 0;
-        return blockingResponse.toString();
+        if(!acquired){
+            //does this break anything elsewhere in the connection logic?
+            System.out.println(AsciiArt.ANSI_RED+"shSync timeout "+getName()+"\n"+getSessionStreams().currentOutput()+AsciiArt.ANSI_RESET);
+            //blockingResponse.append(getSessionStreams().currentOutput());
+        }
+
+        System.out.println(AsciiArt.ANSI_YELLOW+blockingResponse.toString()+AsciiArt.ANSI_RESET);
+
+        return new SyncResponse(blockingResponse.toString(),!acquired);
     }
     public void sh(String command) {
         sh(command, true,  (BiConsumer)null, null);
@@ -443,18 +457,52 @@ public abstract class AbstractShell {
         }
     }
     public String execSync(String command){
+        return execSync(command,0).output();
+    }
+    public SyncResponse execSync(String command,int seconds){
         Semaphore semaphore = new Semaphore(0);
         StringBuilder sb = new StringBuilder();
         exec(command, (output) -> {
             sb.append(output);
             semaphore.release();
         });
+        /*
+        boolean acquired = false;
+        try {
+            if(seconds > 0){
+              acquired = blockingSemaphore.tryAcquire(seconds,TimeUnit.SECONDS);
+
+            } else {
+                blockingSemaphore.acquire();//released in the observer
+                acquired = true;
+            }
+        } catch (InterruptedException e) {
+            if(isReady()) {
+                logger.error("Interrupted waiting for shSync " + command, e);
+            }else{
+                //this is expected
+            }
+            Thread.currentThread().interrupt();
+        } finally {
+            removeShObserver(SH_BLOCK_CALLBACK);
+        }
+                                     */
+        boolean acquired = false;
         try {
             assert semaphore.availablePermits() == 0;
-            semaphore.acquire();
+            if( seconds > 0){
+                acquired = semaphore.tryAcquire(seconds, TimeUnit.SECONDS);
+            }else{
+                semaphore.acquire();
+                acquired = true;
+            }
         } catch (InterruptedException e) {
+            if(isReady()){
+                logger.error("Interrupted waiting for execSync "+ command, e);
+            }
+            Thread.currentThread().interrupt();
         }
-        return sb.toString();
+        return  new SyncResponse(sb.toString(),!acquired);
     }
     public void exec(String command) {
         exec(command, null);

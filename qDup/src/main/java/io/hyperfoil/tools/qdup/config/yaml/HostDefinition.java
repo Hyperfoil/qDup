@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 public class HostDefinition {
 
+    public static final String QDUP_PROMPT_VARIABLE = "QDUP_PROMPT";
     public static final String USERNAME = "username";
     public static final String HOSTNAME = "hostname";
     public static final String PASSWORD = "password";
@@ -21,7 +22,9 @@ public class HostDefinition {
     public static final String CONTAINER_ID = "containerId";
     public static final String CHECK_CONTAINER_ID = "check-container-id";
     public static final String CHECK_CONTAINER_NAME = "check-container-name";
+    public static final String CHECK_CONTAINER_STATUS = "check-container-status";
     public static final String START_CONTAINER = "start-container";
+    public static final String CREATE_CONNECTED_CONTAINER = "create-connected-container";
     public static final String START_CONNECTED_CONTAINER = "start-connected-container";
     public static final String STOP_CONTAINER = "stop-container";
     public static final String CONNECT_SHELL = "connect-shell";
@@ -36,7 +39,7 @@ public class HostDefinition {
 
     public static final List<String> KEYS = Arrays.asList(
             USERNAME,HOSTNAME,PASSWORD,PORT,PROMPT,LOCAL,PLATFORM,CONTAINER,CHECK_CONTAINER_ID,CHECK_CONTAINER_NAME,
-            START_CONTAINER,START_CONNECTED_CONTAINER,STOP_CONTAINER,CONNECT_SHELL,PLATFORM_LOGIN,EXEC,UPLOAD,DOWNLOAD, IS_SHELL,IDENTITY
+            START_CONTAINER,CREATE_CONNECTED_CONTAINER,START_CONNECTED_CONTAINER,STOP_CONTAINER,CONNECT_SHELL,PLATFORM_LOGIN,EXEC,UPLOAD,DOWNLOAD, IS_SHELL,IDENTITY
     );
 
     public static List<String> unknownKeys(Collection<String> keys){
@@ -104,11 +107,18 @@ public class HostDefinition {
             if(mapping.has(CHECK_CONTAINER_NAME)){
                 rtrn.setCheckContainerName(toList(mapping.get(CHECK_CONTAINER_NAME)));
             }
+            if(mapping.has(CHECK_CONTAINER_STATUS)){
+                rtrn.setCheckContainerStatus(toList(mapping.get(CHECK_CONTAINER_STATUS)));
+            }
+
             if(mapping.has(START_CONTAINER)){
                 rtrn.setStartContainer(toList(mapping.get(START_CONTAINER)));
             }
             if(mapping.has(START_CONNECTED_CONTAINER)){
                 rtrn.setStartConnectedContainer(toList(mapping.get(START_CONNECTED_CONTAINER)));
+            }
+            if(mapping.has(CREATE_CONNECTED_CONTAINER)){
+                rtrn.setCreateConnectedContainer(toList(mapping.get(CREATE_CONNECTED_CONTAINER)));
             }
             if(mapping.has(STOP_CONTAINER)){
                 rtrn.setStopContainer(toList(mapping.get(STOP_CONTAINER)));
@@ -131,6 +141,7 @@ public class HostDefinition {
             if(mapping.has(IDENTITY)){
                 rtrn.setIdentity(mapping.get(IDENTITY).toString());
             }
+
 
 
         }

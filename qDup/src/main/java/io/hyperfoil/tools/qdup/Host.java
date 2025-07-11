@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.net.InetAddress;
@@ -20,16 +21,21 @@ public class Host {
 
     public static final List<String> PODMAN_LOGIN = Arrays.asList("podman login -u ${{host.username}} -p ${{host.password}} ${{target}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> DOCKER_LOGIN = Arrays.asList("docker login -u ${{host.username}} -p ${{host.password}} ${{target}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> PODMAN_START_CONTAINER = Arrays.asList("podman run --detach ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> DOCKER_START_CONTAINER = Arrays.asList("docker run --detach ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> PODMAN_CREATE_CONNECTED_CONTAINER = Arrays.asList("podman run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> DOCKER_CREATE_CONNECTED_CONTAINER = Arrays.asList("docker run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> PODMAN_CHECK_STATUS = Arrays.asList("podman inspect --format=\"{{.State.Status}}\" ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).toList();
+    public static final List<String> DOCKER_CHECK_STATUS = Arrays.asList("docker inspect --format=\"{{.State.Status}}\" ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).toList();
+    public static final List<String> PODMAN_START_CONTAINER = Arrays.asList("podman run --detach --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_START_CONTAINER = Arrays.asList("docker run --detach --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    //adding prompt to
+    public static final List<String> PODMAN_CREATE_CONNECTED_CONTAINER = Arrays.asList("podman run --interactive --tty --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    //without prompt injection
+    //public static final List<String> PODMAN_CREATE_CONNECTED_CONTAINER = Arrays.asList("podman run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_CREATE_CONNECTED_CONTAINER = Arrays.asList("docker run --interactive --tty --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_STOP_CONTAINER = Arrays.asList("podman stop ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> DOCKER_STOP_CONTAINER = Arrays.asList("docker stop ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_REMOVE_CONTAINER = Arrays.asList("podman rm ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> DOCKER_REMOVE_CONTAINER = Arrays.asList("docker rm ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> PODMAN_CONNECT_SHELL = Arrays.asList("podman exec --interactive --tty ${{container}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> DOCKER_CONNECT_SHELL = Arrays.asList("docker exec --interactive --tty ${{container}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> PODMAN_CONNECT_SHELL = Arrays.asList("podman exec --interactive --tty --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{container}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_CONNECT_SHELL = Arrays.asList("docker exec --interactive --tty --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{container}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_START_CONNECTED_CONTAINER = Arrays.asList("podman start --interactive --attach ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> DOCKER_START_CONNECTED_CONTAINER = Arrays.asList("docker start --interactive --attach ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> DOCKER_OLD_START_CONNECTED_CONTAINER = Arrays.asList("docker run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
@@ -37,8 +43,8 @@ public class Host {
     public static final List<String> DOCKER_EXEC = Arrays.asList("docker exec ${{container}} ${{command}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_CHECK_CONTAINER_ID = Arrays.asList("podman ps --filter id=${{container}} --format=\"{{.ID}}\"");
     public static final List<String> DOCKER_CHECK_CONTAINER_ID = Arrays.asList("docker ps --filter id=${{container}} --format=\"{{.ID}}\"");
-    public static final List<String> PODMAN_CHECK_CONTAINER_NAME = Arrays.asList("podman ps --filter name=${{container}} --format=\"{{.Names}}\"");
-    public static final List<String> DOCKER_CHECK_CONTAINER_NAME = Arrays.asList("docker ps --filter name=${{container}} --format=\"{{.Names}}\"");
+    public static final List<String> PODMAN_CHECK_CONTAINER_NAME = Arrays.asList("podman inspect ${{container}} --format=\"{{.Id}}\"");
+    public static final List<String> DOCKER_CHECK_CONTAINER_NAME = Arrays.asList("docker inspect ${{container}} --format=\"{{.Id}}\"");
     public static final List<String> PODMAN_UPLOAD = Arrays.asList("podman","cp","${{source}}","${{container}}:${{destination}}");
     public static final List<String> DOCKER_UPLOAD = Arrays.asList("docker","cp","${{source}}","${{container}}:${{destination}}");
     public static final List<String> PODMAN_DOWNLOAD = Arrays.asList("podman","cp","${{container}}:${{source}}","${{destination}}");
@@ -166,6 +172,21 @@ public class Host {
         }
         return rtrn;
     }
+    public static  boolean isImageName(String container){
+        return container!=null && !container.isBlank() && container.contains("/");
+    }
+    public static boolean isContainerName(String container){
+        return container!=null && !isImageName(container) && container.matches("[a-z]+_[a-z]+"); // adj_noun names from docker / podman
+    }
+    public static boolean isContainerId(String container){
+        return container!=null &&
+            !container.isBlank() && (
+                container.matches("[0-9a-f]{64}") || //full containerId from docker / podman
+                container.matches("[0-9a-f]{12}") //short containerId from docker / podman
+
+            );
+    }
+
     public static final int DEFAULT_PORT = 22;
 
     private String alias;
@@ -192,6 +213,7 @@ public class Host {
 
     private List<String> checkContainerId;
     private List<String> checkContainerName;
+    private List<String> checkContainerStatus;
     private List<String> createConnectedContainer;
     private List<String> startContainer;
     private List<String> startConnectedContainer;
@@ -240,6 +262,7 @@ public class Host {
                     this.download=PODMAN_DOWNLOAD;
                     this.checkContainerId=PODMAN_CHECK_CONTAINER_ID;
                     this.checkContainerName=PODMAN_CHECK_CONTAINER_NAME;
+                    this.checkContainerStatus =PODMAN_CHECK_STATUS;
                     this.createConnectedContainer=PODMAN_CREATE_CONNECTED_CONTAINER;
                     this.startContainer=PODMAN_START_CONTAINER;
                     this.startConnectedContainer=PODMAN_START_CONNECTED_CONTAINER;
@@ -254,6 +277,7 @@ public class Host {
                     this.download=DOCKER_DOWNLOAD;
                     this.checkContainerId=DOCKER_CHECK_CONTAINER_ID;
                     this.checkContainerName=DOCKER_CHECK_CONTAINER_NAME;
+                    this.checkContainerStatus =DOCKER_CHECK_STATUS;
                     this.createConnectedContainer=DOCKER_CREATE_CONNECTED_CONTAINER;
                     this.startContainer=DOCKER_START_CONTAINER;
                     this.startConnectedContainer=DOCKER_START_CONNECTED_CONTAINER;
@@ -268,6 +292,7 @@ public class Host {
                     this.download=Collections.EMPTY_LIST;
                     this.checkContainerId=Collections.EMPTY_LIST;
                     this.checkContainerName=Collections.EMPTY_LIST;
+                    this.checkContainerStatus =Collections.EMPTY_LIST;
                     this.startContainer=Collections.EMPTY_LIST;
                     this.startConnectedContainer=Collections.EMPTY_LIST;
                     this.stopContainer=Collections.EMPTY_LIST;
@@ -282,6 +307,7 @@ public class Host {
             this.download= LOCAL_LINUX_DOWNLOAD;
             this.checkContainerId=Collections.EMPTY_LIST;
             this.checkContainerName=Collections.EMPTY_LIST;
+            this.checkContainerStatus =Collections.EMPTY_LIST;
             this.createConnectedContainer=Collections.EMPTY_LIST;
             this.startContainer=Collections.EMPTY_LIST;
             this.startConnectedContainer=Collections.EMPTY_LIST;
@@ -299,6 +325,7 @@ public class Host {
             this.download= SSH_DOWNLOAD;
             this.checkContainerId=Collections.EMPTY_LIST;
             this.checkContainerName=Collections.EMPTY_LIST;
+            this.checkContainerStatus =Collections.EMPTY_LIST;
             this.createConnectedContainer=Collections.EMPTY_LIST;
             this.startContainer=Collections.EMPTY_LIST;
             this.stopContainer=Collections.EMPTY_LIST;
@@ -324,14 +351,16 @@ public class Host {
         json.remove(HostDefinition.CONTAINER);
         json.remove(HostDefinition.CONTAINER_ID);
         HostDefinition definition = new HostDefinition(json);
-        return definition.toHost(null);
+        Host rtrn =definition.toHost(null);
+        if(hasAlias()){
+            rtrn.setAlias(getAlias());
+        }
+        return rtrn;
     }
     public boolean isValid(){
         return isValid(null);
     }
-    private boolean isImageId(String container){
-        return container!=null && !container.isBlank() && container.contains("/");
-    }
+
     public boolean isValid(List<String> errors){
         boolean rtrn = true;
         if(!isLocal()){
@@ -347,14 +376,14 @@ public class Host {
         }
         if(isContainer()){
             if(!hasCheckContainerId() && !hasCheckContainerName()){
-                rtrn = addError(errors,"containerized host needs either checkContainerId or checkContainerName");
+                rtrn = addError(errors,"containerized host needs either "+HostDefinition.CHECK_CONTAINER_ID+" or "+HostDefinition.CHECK_CONTAINER_NAME);
             }
-            if(isImageId(getDefinedContainer()) && !hasStartContainer()){
-                rtrn = addError(errors,"containerized host of image "+getDefinedContainer()+" needs a startContainer command");
+            if(Host.isImageName(getDefinedContainer()) && !(hasStartContainer() || hasStartConnectedContainer())){
+                rtrn = addError(errors,"containerized host of image "+getDefinedContainer()+" needs a "+HostDefinition.START_CONTAINER+" or "+HostDefinition.START_CONNECTED_CONTAINER+" command");
             }
         }
-        if((isContainer() || isLocal()) &&  !hasConnectShell()){
-            rtrn = addError(errors,"host cannot connect without a connectShell command "+this);
+        if((isContainer() || isLocal()) &&  ! (hasConnectShell() || hasStartConnectedContainer())){
+            rtrn = addError(errors,"host cannot connect without a "+HostDefinition.CONNECT_SHELL+" or "+HostDefinition.START_CONNECTED_CONTAINER+"command "+this);
         }
 
 
@@ -406,6 +435,11 @@ public class Host {
     }
     public void setCheckContainerName(List<String> checkContainerName) {
         this.checkContainerName = checkContainerName;
+    }
+    public boolean hasCheckContainerStatus(){return hasProcessArgs(checkContainerStatus);}
+    public List<String> getCheckContainerStatus(){return checkContainerStatus;}
+    public void setCheckContainerStatus(List<String> checkContainerStatus){
+        this.checkContainerStatus = checkContainerStatus;
     }
     public boolean hasStartContainer(){return hasProcessArgs(startContainer);}
     public List<String> getStartContainer() {
@@ -493,6 +527,7 @@ public class Host {
     }
     public String getDefinedContainer(){return container;}
 
+
     /**
      * Returns true if the host has a containerId that is different than what was defined as the container
      * This is used to determine if the container should be stopped after the run.
@@ -531,6 +566,9 @@ public class Host {
         return input == null ? null : Cmd.populateStateVariables(input,null,state,null,null);
     }
     public void populate(State state){
+
+        state.clone(true);
+        state.set(HostDefinition.QDUP_PROMPT_VARIABLE,AbstractShell.PROMPT);
         hostName = nullOrPopulate(hostName,state);
         password = nullOrPopulate(password,state);
         userName = nullOrPopulate(userName,state);
@@ -544,10 +582,12 @@ public class Host {
         download = populateList(state,download);
         checkContainerId = populateList(state,checkContainerId);
         checkContainerName = populateList(state,checkContainerName);
+        checkContainerStatus = populateList(state,checkContainerStatus);
         startContainer = populateList(state,startContainer);
         stopContainer = populateList(state,stopContainer);
         connectShell = populateList(state,connectShell);
         removeContainer = populateList(state,removeContainer);
+        startConnectedContainer = populateList(state,startConnectedContainer);
         exec = populateList(state,exec);
     }
 

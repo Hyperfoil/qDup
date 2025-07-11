@@ -244,6 +244,7 @@ public class EscapeFilteredStreamTest {
         EscapeFilteredStream fs = new EscapeFilteredStream();
 
         String input;
+
         input = "bar";
         assertEquals("no escape found",0,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[";
@@ -267,8 +268,18 @@ public class EscapeFilteredStreamTest {
         assertEquals("no match",0,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[0x";
         assertEquals("no match",0,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
-        input = "\u001b[0;x";
-        assertEquals("no match",0,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
+
+//        input = "\u001b[0;x";//this was wrong, it is actually a full partial match to title setting
+//        assertEquals("no match",0,fs.escapeLength(input.getBytes(),0,input.getBytes().length));
+
+        //Xterm terminal title
+        byte[] bytes = new byte[]{  27, 93, 48, 59, 64, 50,100,101, 56, 52, 98, 50, 99, 50, 48, 51, 53, 58, 47,  7};
+        assertEquals("full match",bytes.length,fs.escapeLength(bytes,0,bytes.length));
+        bytes = new byte[]{  27, 93, 48, 59, 64, 50,100,101, 56, 52, 98, 50, 99, 50, 48, 51, 53, 58, 47,  7, 69};
+        assertEquals("match all but last character",bytes.length-1,fs.escapeLength(bytes,0,bytes.length));
+        bytes = new byte[]{  27, 93, 48, 59, 64, 50,100,101, 56, 52, 98, 50, 99, 50, 48, 51, 53, 58, 47};
+        assertEquals("full match",bytes.length,fs.escapeLength(bytes,0,bytes.length));
+
     }
 
     @Test
@@ -289,6 +300,12 @@ public class EscapeFilteredStreamTest {
         assertTrue("escaped",fs.isEscaped(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[0;1m";
         assertTrue("escaped",fs.isEscaped(input.getBytes(),0,input.getBytes().length));
+        byte[] bytes = new byte[]{  27, 93, 48, 59, 64, 50,100,101, 56, 52, 98, 50, 99, 50, 48, 51, 53, 58, 47,  7};
+        assertTrue("escaped",fs.isEscaped(bytes,0,bytes.length));
+        bytes = new byte[]{  27, 93, 48, 59, 64, 50,100,101, 56, 52, 98, 50, 99, 50, 48, 51, 53, 58, 47,  7, 69};
+        assertTrue("escaped",fs.isEscaped(bytes,0,bytes.length));
+        bytes = new byte[]{  27, 93, 48, 59, 64, 50,100,101, 56, 52, 98, 50, 99, 50, 48, 51, 53, 58, 47};
+        assertFalse("not escaped",fs.isEscaped(bytes,0,bytes.length));
     }
 
 
