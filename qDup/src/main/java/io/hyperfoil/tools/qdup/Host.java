@@ -583,6 +583,7 @@ public class Host {
         checkContainerId = populateList(state,checkContainerId);
         checkContainerName = populateList(state,checkContainerName);
         checkContainerStatus = populateList(state,checkContainerStatus);
+        createConnectedContainer = populateList(state,createConnectedContainer);
         startContainer = populateList(state,startContainer);
         stopContainer = populateList(state,stopContainer);
         connectShell = populateList(state,connectShell);
