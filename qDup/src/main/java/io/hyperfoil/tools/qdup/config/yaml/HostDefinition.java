@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup.config.yaml;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.*;

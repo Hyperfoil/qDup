@@ -328,6 +328,7 @@ public class Host {
             this.checkContainerStatus =Collections.EMPTY_LIST;
             this.createConnectedContainer=Collections.EMPTY_LIST;
             this.startContainer=Collections.EMPTY_LIST;
+            this.startConnectedContainer=Collections.EMPTY_LIST;
             this.stopContainer=Collections.EMPTY_LIST;
             this.connectShell=Collections.EMPTY_LIST;//uses ssh and accepts the default shell
             this.removeContainer=Collections.EMPTY_LIST;
@@ -567,29 +568,29 @@ public class Host {
     }
     public void populate(State state){
 
-        state.clone(true);
-        state.set(HostDefinition.QDUP_PROMPT_VARIABLE,AbstractShell.PROMPT);
-        hostName = nullOrPopulate(hostName,state);
-        password = nullOrPopulate(password,state);
-        userName = nullOrPopulate(userName,state);
-        prompt = nullOrPopulate(prompt,state);
-        identity = nullOrPopulate(identity,state);
-        passphrase = nullOrPopulate(passphrase,state);
-        platform = nullOrPopulate(platform,state);
-        container = nullOrPopulate(container,state);
-        getFileSize = populateList(state,getFileSize);
-        upload = populateList(state,upload);
-        download = populateList(state,download);
-        checkContainerId = populateList(state,checkContainerId);
-        checkContainerName = populateList(state,checkContainerName);
-        checkContainerStatus = populateList(state,checkContainerStatus);
-        createConnectedContainer = populateList(state,createConnectedContainer);
-        startContainer = populateList(state,startContainer);
-        stopContainer = populateList(state,stopContainer);
-        connectShell = populateList(state,connectShell);
-        removeContainer = populateList(state,removeContainer);
-        startConnectedContainer = populateList(state,startConnectedContainer);
-        exec = populateList(state,exec);
+        State toUse = state.clone(true);
+        toUse.set(HostDefinition.QDUP_PROMPT_VARIABLE,AbstractShell.PROMPT);
+        hostName = nullOrPopulate(hostName,toUse);
+        password = nullOrPopulate(password,toUse);
+        userName = nullOrPopulate(userName,toUse);
+        prompt = nullOrPopulate(prompt,toUse);
+        identity = nullOrPopulate(identity,toUse);
+        passphrase = nullOrPopulate(passphrase,toUse);
+        platform = nullOrPopulate(platform,toUse);
+        container = nullOrPopulate(container,toUse);
+        getFileSize = populateList(toUse,getFileSize);
+        upload = populateList(toUse,upload);
+        download = populateList(toUse,download);
+        checkContainerId = populateList(toUse,checkContainerId);
+        checkContainerName = populateList(toUse,checkContainerName);
+        checkContainerStatus = populateList(toUse,checkContainerStatus);
+        createConnectedContainer = populateList(toUse,createConnectedContainer);
+        startContainer = populateList(toUse,startContainer);
+        stopContainer = populateList(toUse,stopContainer);
+        connectShell = populateList(toUse,connectShell);
+        removeContainer = populateList(toUse,removeContainer);
+        startConnectedContainer = populateList(toUse,startConnectedContainer);
+        exec = populateList(toUse,exec);
     }
 
     @Override

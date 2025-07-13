@@ -65,13 +65,6 @@ public class ContainerShellTest extends SshTestBase {
     }
 
     @Test
-    public void local_shell_quick_test(){
-        AbstractShell shell = AbstractShell.getShell(Host.parse(Host.LOCAL),new ScheduledThreadPoolExecutor(2),new SecretFilter(),false);
-        String output = shell.shSync("podman run --detach redhat/ubi10",null,10).output();
-        System.out.println("output: "+ output);
-    }
-
-    @Test
     public void failure_missing_image_registry(){
         Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"redhat/ubi10");
         host.setStartConnectedContainer(Collections.EMPTY_LIST);
@@ -376,7 +369,6 @@ public class ContainerShellTest extends SshTestBase {
         doit.run();
 
         State state = config.getState();
-        System.out.println(state.tree());
         Object found = state.get("found");
         assertTrue(found instanceof Json);
         Json json = (Json)found;
@@ -424,7 +416,6 @@ public class ContainerShellTest extends SshTestBase {
         doit.run();
 
         State state = config.getState();
-        System.out.println(state.tree());
         Object found = state.get("found");
         assertTrue(found instanceof Json);
         Json json = (Json)found;
@@ -432,5 +423,43 @@ public class ContainerShellTest extends SshTestBase {
         assertEquals(3,json.size());
         Set<Object> unique = new HashSet<>(json.values());
         assertEquals(1,unique.size());
+    }
+
+    @Test
+    public void local_container_state_in_create_connected(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                 scripts:
+                   captureName:
+                   - sh: uname -a
+                     then:
+                     - regex: Linux (?<RUN.hash>[a-z0-9]{12})
+                 hosts:
+                    uno:
+                        local: true
+                        platform: podman
+                        container: quay.io/fedora/fedora
+                        create-connected-container: podman run --cpus=${{cpuCount}} --interactive --tty ${{image}} /bin/bash
+                 roles:
+                   one:
+                     hosts:
+                       - uno
+                     setup-scripts:
+                       - captureName
+                 states:
+                   cpuCount: 2
+                 """
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+        doit.run();
+
+        State state = config.getState();
+        assertTrue(state.has("hash"));
     }
 }

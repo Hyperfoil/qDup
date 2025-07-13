@@ -139,8 +139,12 @@ public class RunTest extends SshTestBase {
       doit.run();
 
       State state = config.getState();
-
-      System.out.println(state.tree());
+      Object items = state.get("items");
+      Object read = state.get("read");
+      assertTrue(items instanceof Json);
+      assertTrue(read instanceof Json);
+      assertEquals(3,((Json)items).size());
+      assertEquals(3,((Json)read).size());
    }
 
    @Test(timeout = 40_000)

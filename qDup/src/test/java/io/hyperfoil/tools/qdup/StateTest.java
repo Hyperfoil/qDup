@@ -130,7 +130,6 @@ public class StateTest extends SshTestBase{
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.ensureConsoleLogging();
         doit.getRunLogger().info("bizbuzfizfuz");
-        System.out.println(doit.getOutputPath()+"/run.log");
         doit.run();
 
         Object found = doit.getConfig().getState().get("found");
@@ -144,8 +143,6 @@ public class StateTest extends SshTestBase{
         }
         assertEquals(unique.toString(),2,unique.size());
         dispatcher.shutdown();
-        System.out.println(doit.getConfig().getState().tree());
-
     }
 
     @Test

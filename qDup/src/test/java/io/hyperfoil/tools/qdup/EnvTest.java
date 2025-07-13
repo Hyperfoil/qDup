@@ -48,7 +48,10 @@ public class EnvTest {
         into.merge(from);
         Env.Diff diff = into.getDiff();
 
-        System.out.println(diff.debug());
+        assertTrue(diff.keys().contains("FOO"));
+        assertEquals("bar",diff.get("FOO"));
+        assertFalse(diff.hasUnset());
+
     }
 
     @Test

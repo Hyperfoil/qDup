@@ -137,7 +137,6 @@ public abstract class AbstractShell {
         shellLock = new Semaphore(1);
         lineObservers = new ConcurrentHashMap<>();
         shObservers = new ConcurrentHashMap<>();
-
         //for shSync
         blockingSemaphore = new Semaphore(0);
         blockingResponse = new StringBuffer();
@@ -301,7 +300,6 @@ public abstract class AbstractShell {
     }
     public static record SyncResponse(String output,boolean timedOut){};
     public SyncResponse shSync(String command, Map<String, String> prompt,int seconds) {
-        System.out.println(AsciiArt.ANSI_LIGHT_GREEN+"Shell["+getName()+"].shSync "+command+AsciiArt.ANSI_RESET);
         if(commandStream==null || Status.Closing.equals(status)){
             return new SyncResponse("",false);
         }
@@ -331,14 +329,6 @@ public abstract class AbstractShell {
             removeShObserver(SH_BLOCK_CALLBACK);
         }
         assert blockingSemaphore.availablePermits() == 0;
-        if(!acquired){
-            //does this break anything elsewhere in the connection logic?
-            System.out.println(AsciiArt.ANSI_RED+"shSync timeout "+getName()+"\n"+getSessionStreams().currentOutput()+AsciiArt.ANSI_RESET);
-            //blockingResponse.append(getSessionStreams().currentOutput());
-        }
-
-        System.out.println(AsciiArt.ANSI_YELLOW+blockingResponse.toString()+AsciiArt.ANSI_RESET);
-
         return new SyncResponse(blockingResponse.toString(),!acquired);
     }
     public void sh(String command) {

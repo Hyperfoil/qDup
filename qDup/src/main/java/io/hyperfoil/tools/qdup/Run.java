@@ -190,7 +190,7 @@ public class Run implements Runnable, DispatchObserver {
 
                     fileHandler.setAppend(true);//changed from false to avoid overriding
                     fileHandler.setAutoFlush(true);//was false
-                    PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} [%X{role}:%X{script}:%X{scriptId}@%X{host}] %c %-5p %m%n");
+                    PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} [%X{role}:%X{script}:%X{scriptId}@%X{host}] %m%n");//%c %-5p
                     fileHandler.setFormatter(formatter);
                     internalRunLogger = org.jboss.logmanager.Logger.getLogger(getLoggerName());
                     internalRunLogger.setUseParentHandlers(false);//to disable double console
@@ -908,10 +908,6 @@ public class Run implements Runnable, DispatchObserver {
                     }
                     return rtrn;
                 }).toList();
-                if(oks.size()!=connectSessions.size()){
-                    System.out.println(AsciiArt.ANSI_RED+"!!! Missing ok results expect "+connectSessions.size()+" got "+oks.size());
-                }
-                System.out.println(AsciiArt.ANSI_LIGHT_MAGENTA+"Oks = "+oks.stream().filter(v->v).count()+" not-ok = "+oks.stream().filter(v->!v).count()+AsciiArt.ANSI_RESET);
                 ok = oks.stream().reduce(Boolean::logicalAnd).orElse(false);
                         //;.collect(Collectors.reducing(Boolean::logicalAnd)).get();
             } catch (InterruptedException e){
@@ -1013,10 +1009,6 @@ public class Run implements Runnable, DispatchObserver {
                     }
                     return rtrn;
                 }).toList();
-                if(oks.size()!=connectSessions.size()){
-                    System.out.println(AsciiArt.ANSI_RED+"!!! Missing ok results expect "+connectSessions.size()+" got "+oks.size());
-                }
-                System.out.println(AsciiArt.ANSI_LIGHT_MAGENTA+"Cleanup Oks = "+oks.stream().filter(v->v).count()+" not-ok = "+oks.stream().filter(v->!v).count()+AsciiArt.ANSI_RESET);
                 ok = oks.stream().reduce(Boolean::logicalAnd).orElse(false);
                 //;.collect(Collectors.reducing(Boolean::logicalAnd)).get();
             } catch (InterruptedException e){
