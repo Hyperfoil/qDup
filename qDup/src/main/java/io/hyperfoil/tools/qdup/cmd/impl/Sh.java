@@ -5,6 +5,7 @@ import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Context;
 import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.rule.CmdLocation;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 
 import java.util.*;
@@ -114,9 +115,6 @@ public class Sh extends Cmd {
 
     @Override
     public void postRun(String output,Context context){
-
-
-
         //if the remove shell has exit codes and the response came from the base shell
         if(context.getShell()!=null &&
             context.getShell().isOpen() &&
@@ -157,7 +155,7 @@ public class Sh extends Cmd {
             if(!context.getCoordinator().getGlobals().getSetting(Globals.STREAM_LOGGING,false)){
                 String toLog = getLogOutput(output,context);
                 if (toLog != null && !toLog.isBlank()) {
-                    if ("0".equals(response)) {
+                    if ("0".equals(response) || !shouldCheckExit(context)) {
                         context.log(toLog);
                     } else {
                         context.error(toLog);
@@ -166,22 +164,23 @@ public class Sh extends Cmd {
             }
             //abort on non-zero exit if needed
             if(!"0".equals(response) && shouldCheckExit(context)){
-                    boolean couldBeCtrlC = walk(CmdLocation.createTmp(), (cmd) -> {
-                        return cmd instanceof CtrlC;
-                    }).stream().anyMatch(Boolean::booleanValue);
-                    if( !couldBeCtrlC) {
-                        Cmd cmd = this;
-                        StringBuilder stack = new StringBuilder();
-                        while(cmd!=null){
-                            if( !(cmd instanceof ScriptCmd) ){
-                                stack.append(System.lineSeparator());
-                                stack.append((cmd instanceof Script ? "script: ":"") + cmd.toString());
-                            }
-                            cmd = cmd.getParent();
+                boolean couldBeCtrlC = walk(CmdLocation.createTmp(), (cmd) -> {
+                    return cmd instanceof CtrlC;
+                }).stream().anyMatch(Boolean::booleanValue);
+
+                if( !couldBeCtrlC) {
+                    Cmd cmd = this;
+                    StringBuilder stack = new StringBuilder();
+                    while(cmd!=null){
+                        if( !(cmd instanceof ScriptCmd) ){
+                            stack.append(System.lineSeparator());
+                            stack.append((cmd instanceof Script ? "script: ":"") + cmd.toString());
                         }
-                        context.error("aborting run due to exit code "+response+"\n  host: "+context.getShell().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
-                        context.abort(false);
+                        cmd = cmd.getParent();
                     }
+                    context.error("aborting run due to exit code "+response+"\n  host: "+context.getShell().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
+                    context.abort(false);
+                }
             }
         }else{
             //duplicate getting toLog to avoid the overhead if not needed
