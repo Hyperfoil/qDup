@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.stream;
 
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.ByteArrayOutputStream;
@@ -242,6 +243,9 @@ public class SessionStreams extends MultiStream {
    }
 
    public void sharePrompts(SessionStreams otherStreams){
+      if(otherStreams==null){
+         return;
+      }
       suffixStream.getSuffixes().forEach((name)->{
          otherStreams.addPrompt(name,suffixStream.getSuffix(name), suffixStream.getReplacement(name));
       });

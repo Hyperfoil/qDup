@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.stream;
 
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import org.junit.Test;
 
 import java.io.IOException;

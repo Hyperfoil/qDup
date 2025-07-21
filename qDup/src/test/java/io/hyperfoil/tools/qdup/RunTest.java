@@ -94,6 +94,7 @@ public class RunTest extends SshTestBase {
 
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.ensureConsoleLogging();
       doit.run();
 
       State state = config.getState();
@@ -1062,6 +1063,7 @@ public class RunTest extends SshTestBase {
       ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(4, runnable -> new Thread(runnable, "scheduled"));
       RunConfigBuilder builder = getBuilder();
       AbstractShell shell = AbstractShell.getShell(
+              "test_exit_code",
               getHost(),
               scheduled,
               state.getSecretFilter(),

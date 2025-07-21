@@ -212,6 +212,7 @@ public class JsonServer implements RunObserver, ContextObserver {
             rtrn.set("GET /session","list of active ssh terminal sessions");
             rtrn.set("POST /session/:sessionId","send text to the ssh terminal session. ^C sends ctrl+C, ^next forces next command, ^skip forces skip command");
             rtrn.set("POST /session/:sessionId/regex","test regex on the current output of session ssh buffer");
+            rtrn.set("GET /session/:sessionId/buffer","the content of the sessions buffers to the remote host");
             rtrn.set("GET /signal","get the signal and their remaining signal counts");
             rtrn.set("POST /signal/:name","set the remaining signal count for the target signal");
             rtrn.set("GET /timer","get the current command times");

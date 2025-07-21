@@ -111,24 +111,25 @@ public abstract class AbstractShell {
 
     private Host host;
 
-    public static final AbstractShell getShell(Host host,ScheduledThreadPoolExecutor executor,SecretFilter filter, boolean trace){
-        return getShell(host,"",executor,filter,trace);
+    public static final AbstractShell getShell(String name, Host host,ScheduledThreadPoolExecutor executor,SecretFilter filter, boolean trace){
+        return getShell(name,host,"",executor,filter,trace);
     }
-    public static final AbstractShell getShell(Host host,String setupCommand, ScheduledThreadPoolExecutor executor,SecretFilter filter, boolean trace){
+    public static final AbstractShell getShell(String name, Host host,String setupCommand, ScheduledThreadPoolExecutor executor,SecretFilter filter, boolean trace){
         AbstractShell shell = null;
         if(host.isContainer()){
-            shell = new ContainerShell(host,setupCommand,executor,filter,trace);
+            shell = new ContainerShell(name,host,setupCommand,executor,filter,trace);
         }else if (host.isLocal()){
-            shell = new LocalShell(host,setupCommand,executor,filter,trace);
+            shell = new LocalShell(name,host,setupCommand,executor,filter,trace);
         }else {
-            shell = new SshShell(host,setupCommand,executor,filter,trace);
+            shell = new SshShell(name,host,setupCommand,executor,filter,trace);
         }
         //should this conect the shell or just create the correct shell?
         boolean connected = shell.connect();
         return shell;
     }
 
-    public AbstractShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace){
+    public AbstractShell(String name,Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace){
+        this.name = name;
         this.host = host;
         this.setupCommand = setupCommand;
         this.executor = executor;
@@ -158,8 +159,10 @@ public abstract class AbstractShell {
         this.sessionStreams = sessionStreams;
         updateSessionStream(sessionStreams);
         //trying fix shSync after setSessionStreams is called
-        sessionStreams.addPromptCallback(this.semaphoreCallback);
-        sessionStreams.addLineConsumer(this::lineConsumers);
+        if(this.sessionStreams!=null) {
+            this.sessionStreams.addPromptCallback(this.semaphoreCallback);
+            this.sessionStreams.addLineConsumer(this::lineConsumers);
+        }
 
 
     }
@@ -202,10 +205,10 @@ public abstract class AbstractShell {
                             sessionStreams.getTrace().write("RELEASE".getBytes());
                         } catch (IOException e) {
                         }
-                    } else {
-                        //this should only happen if reconnected
-                        logger.debug("skipping release, suspect reconnect");
                     }
+                } else {
+                    //this should only happen if reconnected
+                    logger.debug("skipping release, suspect reconnect "+permits());
                 }
                 shObservers(output,name);
                 if(permits() > 1){
@@ -268,7 +271,11 @@ public abstract class AbstractShell {
             rtrn = isOpen();
         }
         if(rtrn){
-            postConnect();
+            rtrn = postConnect();
+        }
+        if(!rtrn){//something went wrong in post connect, this shell is no good
+            //statusUpdater.set(this,Status.Closing);
+            commandStream = null;//appears to break things
         }
         return rtrn;
     }
@@ -285,11 +292,12 @@ public abstract class AbstractShell {
         try{
             semaphore.acquire();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.warn("interrupted waiting for response to: "+command);
+            Thread.currentThread().interrupt();
         }
     }
 
-    public void postConnect(){}
+    public boolean postConnect(){return true;}
 
     public String shSync(String command) {
         return shSync(command, null);
@@ -555,7 +563,7 @@ public abstract class AbstractShell {
         return isOpen();
     }
     public boolean waitForReady(){
-        while(!Status.Ready.equals(status)){
+        while(!Status.Ready.equals(status) && Status.Connecting.equals(status)){
             logger.debug("getting connecting semaphore with status: "+status);
             long lock = connectingLock.readLock();
             connectingLock.unlockRead(lock);
@@ -597,24 +605,28 @@ public abstract class AbstractShell {
         statusUpdater.set(this, Status.Closing);
     }
     public boolean usesDelay() {
-        return sessionStreams.getDelay() > 0;
+        return sessionStreams!=null && sessionStreams.getDelay() > 0;
     }
     public int getDelay() {
-        return sessionStreams.getDelay();
+        return sessionStreams==null ? 0 : sessionStreams.getDelay();
     }
     public void setDelay(int delay) {
-        sessionStreams.setDelay(delay);
+        if(sessionStreams!=null) {
+            sessionStreams.setDelay(delay);
+        }
     }
     public boolean isReady() {
         return Status.Ready.equals(status);
     }
 
     public void flushAndResetBuffer(){
-        try {
-            sessionStreams.flush(); //to remove any motd that may be in the stream
-            sessionStreams.reset(); //to remove any motd that may be in the stream
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(sessionStreams!=null) {
+            try {
+                sessionStreams.flush(); //to remove any motd that may be in the stream
+                sessionStreams.reset(); //to remove any motd that may be in the stream
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -696,10 +708,12 @@ public abstract class AbstractShell {
     }
 
     public String bufferJson(){
-        return sessionStreams.jsonBuffers();
+
+        return sessionStreams==null ? "{}" : sessionStreams.jsonBuffers();
     }
     public String peekOutput() {
-        return sessionStreams.currentOutput();
+
+        return sessionStreams==null ? "" : sessionStreams.currentOutput();
     }
 
     public String peekOutputTail() {

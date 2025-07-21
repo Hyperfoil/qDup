@@ -189,6 +189,7 @@ public class LocalTest extends SshTestBase{
         File toSend = null;
         //first we need to create the container
         AbstractShell shell = AbstractShell.getShell(
+                "remote_container_upload_file",
                 host,
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
@@ -211,6 +212,7 @@ public class LocalTest extends SshTestBase{
                 toSend.delete();
             }
             ContainerShell containerShell = new ContainerShell(
+                    "remote_container_upload_file-container",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -261,6 +263,7 @@ public class LocalTest extends SshTestBase{
         File toSend = null;
         //first we need to create the container
         AbstractShell shell = AbstractShell.getShell(
+                "local_container_upload_file",
                 host,
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
@@ -283,6 +286,7 @@ public class LocalTest extends SshTestBase{
                 toSend.delete();
             }
             ContainerShell containerShell = new ContainerShell(
+                    "local_container_upload_file-container",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -329,6 +333,7 @@ public class LocalTest extends SshTestBase{
     public void local_container_download_file(){
         Host host = Host.parse("quay.io/fedora/fedora");
         AbstractShell shell = AbstractShell.getShell(
+            "local_container_download_file",
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -352,6 +357,7 @@ public class LocalTest extends SshTestBase{
             fail(e.getMessage());
         } finally {
             ContainerShell containerShell = new ContainerShell(
+                "local_container_download_file-container",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -370,6 +376,7 @@ public class LocalTest extends SshTestBase{
         HostDefinition hostDefinition = new HostDefinition(hostJson);
         Host host = hostDefinition.toHost(new State(""));
         AbstractShell shell = AbstractShell.getShell(
+                "remote_container_download_file",
                 host,
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
@@ -402,6 +409,7 @@ public class LocalTest extends SshTestBase{
         HostDefinition hostDefinition = new HostDefinition(hostJson);
         Host host = hostDefinition.toHost(new State(""));
         AbstractShell shell = AbstractShell.getShell(
+                "remote_container_download_folder",
                 host,
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),

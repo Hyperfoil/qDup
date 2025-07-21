@@ -17,6 +17,7 @@ public class LocalShellTest extends SshTestBase {
     public void sh_without_connect(){
         Host host = new Host();
         AbstractShell shell = new LocalShell(
+            "sh_without_connect",
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -33,6 +34,7 @@ public class LocalShellTest extends SshTestBase {
     public void shSync_rsync(){
         Host host = new Host();
         AbstractShell shell = new LocalShell(
+                "shSync_rsync",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -53,6 +55,7 @@ public class LocalShellTest extends SshTestBase {
     public void shSync_podman(){
         Host host = new Host();
         AbstractShell shell = new LocalShell(
+                "shSync_podman",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -73,6 +76,7 @@ public class LocalShellTest extends SshTestBase {
     public void sh_createFile(){
         Host host = new Host();
         AbstractShell shell = new LocalShell(
+                "sh_createFile",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -101,6 +105,7 @@ public class LocalShellTest extends SshTestBase {
     public void exec(){
         Host host = new Host();
         AbstractShell shell = new LocalShell(
+                "exec",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -123,6 +128,7 @@ public class LocalShellTest extends SshTestBase {
     public void exec_during_sh(){
         Host host = new Host();
         AbstractShell shell = new LocalShell(
+                "exec_during_sh",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),

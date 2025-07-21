@@ -55,7 +55,7 @@ public class SshTestBase {
     }
     private static GenericContainer container;
 
-    private static final ScheduledThreadPoolExecutor SCHEDULED_THREAD_POOL_EXECUTOR = new ScheduledThreadPoolExecutor(2);
+    private static final ScheduledThreadPoolExecutor SCHEDULED_THREAD_POOL_EXECUTOR = new ScheduledThreadPoolExecutor(4);
 
     //added to simplify exchanging files with test container that uses identity
     public Local getLocal(){
@@ -280,6 +280,7 @@ public class SshTestBase {
         String currentDir = System.getProperty("user.dir");
         String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
         AbstractShell shell = AbstractShell.getShell(
+                Thread.currentThread().getStackTrace()[1].getMethodName(),
                 getHost(),
                 executor,
                 new SecretFilter(),

@@ -149,8 +149,8 @@ public class SshShell extends AbstractShell{
     }
 
 
-    public SshShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace) {
-        super(host, setupCommand, executor, filter, trace);
+    public SshShell(String name,Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace) {
+        super(name,host, setupCommand, executor, filter, trace);
     }
 
     @Override
@@ -417,6 +417,7 @@ public class SshShell extends AbstractShell{
     @Override
     public AbstractShell copy() {
         return new SshShell(
+                getName(),
                 getHost(),
                 setupCommand,
                 executor,

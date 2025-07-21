@@ -107,6 +107,7 @@ public class Local {
          Host remoteHost = host.withoutContainer();
          ScheduledThreadPoolExecutor stpe = new ScheduledThreadPoolExecutor(1);
          AbstractShell shell = AbstractShell.getShell(
+            remoteHost.getShortHostName()+"-upload",
             remoteHost, 
             "",
             stpe,
@@ -253,6 +254,7 @@ public class Local {
          Host remoteHost = host.withoutContainer();
          ScheduledThreadPoolExecutor stpe = new ScheduledThreadPoolExecutor(1);
          AbstractShell downloadShell = AbstractShell.getShell(
+            remoteHost.getShortHostName()+"-download",
             remoteHost, 
             "",
             stpe,

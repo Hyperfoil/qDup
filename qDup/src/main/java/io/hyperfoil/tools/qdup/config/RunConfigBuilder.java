@@ -58,6 +58,8 @@ public class RunConfigBuilder {
    private static final String HOST_EXPRESSION_PREFIX = "=";
    private static final String HOST_EXPRESSING_INCLUDE = "+";
    private static final String HOST_EXPRESSION_EXCLUDE = "-";
+   public static final String DEFAULT_RUN_CONSOLE_FORMAT = "%d{HH:mm:ss,SSS} [ %X{role}:%X{script}-%X{scriptId} @ %X{host} ] %-5p %m%n";
+
    private String identity = DEFAULT_IDENTITY;
    private String knownHosts = DEFAULT_KNOWN_HOSTS;
    private String passphrase = DEFAULT_PASSPHRASE;
@@ -79,7 +81,9 @@ public class RunConfigBuilder {
    private List<String> errors;
    private List<Stage> skipStages;
    private boolean streamLogging = false;
+   private String consoleFormatPattern;
    private boolean isValid = false;
+
 
    public RunConfigBuilder() {
       this("run-" + System.currentTimeMillis());
@@ -99,8 +103,13 @@ public class RunConfigBuilder {
       errors = new LinkedList<>();
       skipStages = new ArrayList<>();
       globals = new Globals();
+      consoleFormatPattern = DEFAULT_RUN_CONSOLE_FORMAT;
    }
 
+   public String getConsoleFormatPattern(){return consoleFormatPattern;}
+   public void setConsoleFormatPattern(String consoleFormatPattern){
+      this.consoleFormatPattern = consoleFormatPattern;
+   }
 
    public void trace(String pattern) {
       traceTargets.add(pattern);
@@ -645,7 +654,8 @@ public class RunConfigBuilder {
          getTracePatterns(),
          skipStages,
          globals,
-         streamLogging
+         streamLogging,
+         consoleFormatPattern
       );
       if(yamlParser.isAbortOnExitCode()){
          rtrn.getGlobals().getSettings().set("check-exit-code",true);

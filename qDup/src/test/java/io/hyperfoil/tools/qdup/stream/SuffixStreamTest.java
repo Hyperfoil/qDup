@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.stream;
 
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -10,8 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 public class SuffixStreamTest {
 

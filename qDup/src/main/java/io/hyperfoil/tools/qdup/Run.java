@@ -15,6 +15,7 @@ import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
@@ -106,7 +107,6 @@ public class Run implements Runnable, DispatchObserver {
 
     private List<Stage> skipStages;
 
-
     public Run(String outputPath,RunConfig config,Dispatcher dispatcher){
         if(config==null || dispatcher==null){
             throw new NullPointerException("Run config and dispatcher cannot be null");
@@ -173,24 +173,9 @@ public class Run implements Runnable, DispatchObserver {
                     } catch (FileNotFoundException e) {
 
                     }
-
-                    //this means we can have two appenders to the same file :)
-                    //one for context and one for run :)
-
-//                    org.jboss.logmanager.handlers.FileHandler rootFile = new org.jboss.logmanager.handlers.FileHandler();
-//                    rootFile.setAppend(true);
-//                    rootFile.setAutoFlush(true);
-//                    rootFile.setFormatter(new PatternFormatter("%d{HH:mm:ss,SSS} %m%n"));
-//                    rootFile.setEnabled(true);
-//
-//                    ConsoleHandler consoleHandler = new ConsoleHandler(rootFile.getFormatter());
-//
-//                    org.jboss.logmanager.Logger.getLogger("io.hyperfoil.tools.qdup").addHandler(rootFile);
-//                    org.jboss.logmanager.Logger.getLogger("io.hyperfoil.tools.qdup").addHandler(consoleHandler);
-
                     fileHandler.setAppend(true);//changed from false to avoid overriding
                     fileHandler.setAutoFlush(true);//was false
-                    PatternFormatter formatter = new PatternFormatter("%d{HH:mm:ss,SSS} [%X{role}:%X{script}:%X{scriptId}@%X{host}] %m%n");//%c %-5p
+                    PatternFormatter formatter = new PatternFormatter(config.getConsoleFormatPattern());
                     fileHandler.setFormatter(formatter);
                     internalRunLogger = org.jboss.logmanager.Logger.getLogger(getLoggerName());
                     internalRunLogger.setUseParentHandlers(false);//to disable double console
@@ -216,8 +201,10 @@ public class Run implements Runnable, DispatchObserver {
     public void ensureConsoleLogging(){
         ensureLogger();
         if(internalRunLogger!=null){
-            ConsoleHandler consoleHandler = new ConsoleHandler(fileHandler.getFormatter());
-            consoleHandler.setLevel(Level.INFO);
+
+            PatternFormatter formatter = getConfig().isColorTerminal() ? new ColorPatternFormatter(config.getConsoleFormatPattern()) : new PatternFormatter(config.getConsoleFormatPattern());
+            ConsoleHandler consoleHandler = new ConsoleHandler(formatter);
+            consoleHandler.setLevel(Level.ALL);
             internalRunLogger.addHandler(consoleHandler);
         }
     }
@@ -365,6 +352,7 @@ public class Run implements Runnable, DispatchObserver {
         if(!pendingDeletes.isEmpty()){
             for(Host host : pendingDeletes.keys()){
                 AbstractShell shell = AbstractShell.getShell(
+                    host.getShortHostName()+"-pendingDelete",
                     host,
                     "",
                     getDispatcher().getCallback(),
@@ -529,7 +517,8 @@ public class Run implements Runnable, DispatchObserver {
                 try {
                     runLatch.await();
                 } catch (InterruptedException e) {
-
+                    logger.warn("interrupted while waiting for run to complete");
+                    Thread.currentThread().interrupt();
                     //e.printStackTrace();
                 } finally{
                     timestamps.put("stop",System.currentTimeMillis());
@@ -622,6 +611,7 @@ public class Run implements Runnable, DispatchObserver {
                     name = name+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                 }
                 AbstractShell shell = AbstractShell.getShell(
+                        name,
                         host,
                         "",
                         getDispatcher().getCallback(),
@@ -684,6 +674,7 @@ public class Run implements Runnable, DispatchObserver {
             connectSessions.add(()->{
                 String name = "pre-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                 AbstractShell shell = AbstractShell.getShell(
+                        name,
                         host,
                         "",
                         getDispatcher().getCallback(),
@@ -756,6 +747,7 @@ public class Run implements Runnable, DispatchObserver {
                    connectSessions.add(()->{
                        String name = roleName+"-setup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                        AbstractShell shell =  AbstractShell.getShell(
+                               name,
                                host,
                                "",
                                getDispatcher().getCallback(),
@@ -808,7 +800,7 @@ public class Run implements Runnable, DispatchObserver {
             ok = connectAll(connectSessions, 60);
             if (!ok) {
                 getRunLogger().error("failed to connect all ssh sessions for setup");
-                abort(false);
+                abort(true);
             }
 
         }else{
@@ -846,6 +838,7 @@ public class Run implements Runnable, DispatchObserver {
                             String name = scriptCopy.getName()+":"+scriptCopy.getUid()+"@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                             timer.start("connect:" + host.toString());
                             AbstractShell shell = AbstractShell.getShell(
+                                    name,
                                     host,
                                     setupCommand,
                                     getDispatcher().getCallback(),
@@ -915,7 +908,7 @@ public class Run implements Runnable, DispatchObserver {
             }
             if(!ok){
                 getRunLogger().error("failed to connect all ssh sessions for run");
-                abort(false);
+                abort(true);
             }
         }else{
 
@@ -929,9 +922,6 @@ public class Run implements Runnable, DispatchObserver {
     }
 
     private boolean queueCleanupScripts(){
-        //run before cleanup
-        logger.debugf("%s.cleanup",this);
-
         //Observer to set the Env.Diffs
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
@@ -948,6 +938,7 @@ public class Run implements Runnable, DispatchObserver {
                     connectSessions.add(()->{
                         String name = roleName + "-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                         AbstractShell shell = AbstractShell.getShell(
+                                name,
                                 host,
                                 "",
                                 getDispatcher().getCallback(),
@@ -1015,8 +1006,8 @@ public class Run implements Runnable, DispatchObserver {
 
             }
             if(!ok){
-                getRunLogger().error("failed to connect all ssh sessions for run");
-                abort(false);
+                getRunLogger().error("failed to connect all ssh sessions for cleanup");
+                abort(true);
             }
 
         }else{
@@ -1030,6 +1021,7 @@ public class Run implements Runnable, DispatchObserver {
             if(host.isContainer() && host.needStopContainer() && host.startedContainer()){
                 if(host.hasStopContainer()){
                     ContainerShell containerShell = new ContainerShell(
+                        host.getShortHostName()+"-container-stop",
                         host, 
                         "",
                         dispatcher.getScheduler(), 

@@ -10,7 +10,13 @@ import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.formatters.ColorPatternFormatter;
+import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.handlers.ConsoleHandler;
 import picocli.AutoComplete;
 import picocli.CommandLine;
 import sun.misc.Signal;
@@ -31,6 +37,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 
 @QuarkusMain
 @CommandLine.Command(name="qdup", description = "performance test automation", mixinStandardHelpOptions = true, subcommands={CommandLine.HelpCommand.class, AutoComplete.GenerateCompletion.class})
@@ -92,11 +99,15 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
     @CommandLine.Parameters(description = "qdup automation configuration source(s)")
     List<String> yamlPaths;
 
+
+    @Inject
+    @ConfigProperty(name = "qdup.console.format")
+    String consoleFormat;
+
     @Override
     public int run(String... args) throws Exception {
         //characters for brail spinner
         //sout("\u2807\u280B\u2819\u2838\u2834\u2826");
-
         System.setProperty("polyglotimpl.DisableClassPathIsolation", "true");
         CommandLine cmd = new CommandLine(new QDupPico());
         CommandLine gen = cmd.getSubcommands().get("generate-completion");
@@ -107,7 +118,6 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
 
     @Override
     public Integer call() throws Exception {
-
         DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
         String uid = dt.format(LocalDateTime.now());
 
@@ -255,6 +265,9 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         if(skipStages!=null){ skipStages.forEach(runConfigBuilder::addSkipStage); }
         runConfigBuilder.setStreamLogging(streamLogging);
 
+        String runConsoleFormat = ConfigProvider.getConfig().getOptionalValue("qdup.run.console.format",String.class).orElse(RunConfigBuilder.DEFAULT_RUN_CONSOLE_FORMAT);
+        runConfigBuilder.setConsoleFormatPattern(runConsoleFormat);
+
         RunConfig config = runConfigBuilder.buildConfig(yamlParser);
         if(outputModeGroup.testMode){
             System.out.printf("%s", config.debug(true));
@@ -269,7 +282,22 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         if(!outputFile.exists()){
             outputFile.mkdirs();
         }
+
+        //colorTerminal = colorTerminal && ConfigProvider.getConfig().getValue("quarkus.console.color",Boolean.class);
+        String qDupFormat = ConfigProvider.getConfig().getOptionalValue("qdup.console.format",String.class).orElse("%d{HH:mm:ss.SSS} %-5p %m%n");
+        String qDupLevel = ConfigProvider.getConfig().getOptionalValue("qdup.console.format",String.class).orElse("INFO");
+        org.jboss.logmanager.Logger qdupLogger = org.jboss.logmanager.Logger.getLogger("io.hyperfoil.tools.qdup");
+        //qdupLogger.setUseParentHandlers(false);//to disable double console
+        PatternFormatter formatter = colorTerminal ? new ColorPatternFormatter(qDupFormat) : new PatternFormatter(qDupFormat);
+        ConsoleHandler consoleHandler = new ConsoleHandler(formatter);
+        //consoleHandler.setLevel(Level.ALL);
+        //consoleHandler.setLevel(Level.ALL);
         config.setColorTerminal(colorTerminal);
+        qdupLogger.addHandler(consoleHandler);
+
+        //qdupLogger.setLevel(Level.ALL);
+
+
         if(config.hasErrors()){
             config.getErrors().stream().map(RunError::toString).forEach(error -> {
                 System.out.printf("%s%n", error);
@@ -311,7 +339,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         config.getGlobals().addSetting("check-exit-code", !ignoreExitCode);
         final Run run = new Run(outputPath, config, dispatcher);
         run.ensureConsoleLogging();
-        run.getRunLogger().infof("Running qDup version %s @ %s", version, hash);
+        logger.infof("Running qDup version %s @ %s", version, hash);
         logger.info("output path = " + run.getOutputPath());
         if(!ignoreExitCode){
             logger.info("shell exit code checks enabled");
@@ -333,7 +361,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         });
 
         //TODO this should NOT be a system property
-        Boolean startJsonServer = !Boolean.parseBoolean(System.getProperty("disableRestApi", "false"));
+        boolean startJsonServer = !Boolean.parseBoolean(System.getProperty("disableRestApi", "false"));
         JsonServer jsonServer = null;
         if (startJsonServer) {
             jsonServer = new JsonServer(run, jsonPort);

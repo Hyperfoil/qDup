@@ -16,6 +16,7 @@ public class SshShellTest extends SshTestBase {
     public void sh_without_connect(){
         Host host = getHost();
         AbstractShell shell = new SshShell(
+                "sh_without_connect",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),

@@ -25,8 +25,8 @@ public class HostDefinition {
     public static final String CHECK_CONTAINER_NAME = "check-container-name";
     public static final String CHECK_CONTAINER_STATUS = "check-container-status";
     public static final String START_CONTAINER = "start-container";
-    public static final String CREATE_CONNECTED_CONTAINER = "create-connected-container";
-    public static final String START_CONNECTED_CONTAINER = "start-connected-container";
+    public static final String CREATE_CONNECTED_CONTAINER = "create-connected-container";//TODO drop and start-container must start connected
+    public static final String START_CONNECTED_CONTAINER = "start-connected-container";//TODO rename restart-container
     public static final String STOP_CONTAINER = "stop-container";
     public static final String CONNECT_SHELL = "connect-shell";
     public static final String PLATFORM_LOGIN = "platform-login";

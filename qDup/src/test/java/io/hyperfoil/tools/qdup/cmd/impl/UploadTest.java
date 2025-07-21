@@ -76,6 +76,7 @@ public class UploadTest extends SshTestBase {
         Upload upload = new Upload(source.getPath(),"/tmp/found.txt");
 
         AbstractShell shell = AbstractShell.getShell(
+                "return_remote_path_new_name",
                 Host.parse(Host.LOCAL),
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
@@ -105,6 +106,7 @@ public class UploadTest extends SshTestBase {
         Upload upload = new Upload(source.getPath(),tempFolder.getAbsolutePath()+File.separator);
 
         AbstractShell shell = AbstractShell.getShell(
+            "return_remote_path_target_folder",
             Host.parse(Host.LOCAL),
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
@@ -131,6 +133,7 @@ public class UploadTest extends SshTestBase {
 
         Upload upload = new Upload(source.getPath(),"/tmp/renamed.txt");
         AbstractShell shell = AbstractShell.getShell(
+                "return_remote_path_target_file",
             Host.parse(Host.LOCAL),
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),

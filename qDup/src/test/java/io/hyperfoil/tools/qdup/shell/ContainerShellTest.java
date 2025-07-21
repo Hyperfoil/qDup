@@ -26,6 +26,7 @@ public class ContainerShellTest extends SshTestBase {
     public void failure_cannot_connect_remote(){
         Host host = new Host("idk","doesnotexist.localhost",null,22,null,false,"podman","quay.io/wreicher/omb");
         ContainerShell shell = new ContainerShell(
+            "failure_cannot_connect_remote",
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -47,6 +48,7 @@ public class ContainerShellTest extends SshTestBase {
         host.setStartConnectedContainer(Collections.EMPTY_LIST);
         host.setCreateConnectedContainer(Collections.EMPTY_LIST);
         ContainerShell shell = new ContainerShell(
+            "failure_container_stops_before_connect",
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -70,6 +72,7 @@ public class ContainerShellTest extends SshTestBase {
         host.setStartConnectedContainer(Collections.EMPTY_LIST);
         host.setCreateConnectedContainer(Collections.EMPTY_LIST);
         ContainerShell shell = new ContainerShell(
+                "failure_missing_image_registry",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -89,6 +92,7 @@ public class ContainerShellTest extends SshTestBase {
         host.setStartConnectedContainer(Collections.EMPTY_LIST);
         host.setCreateConnectedContainer(Collections.EMPTY_LIST);
         ContainerShell shell = new ContainerShell(
+                "failure_missing_image_registry_credentials",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -107,6 +111,7 @@ public class ContainerShellTest extends SshTestBase {
         Host host = Host.parse("quay.io/fedora/fedora");
         host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
         ContainerShell shell = new ContainerShell(
+                "container_start_also_connects",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -128,6 +133,7 @@ public class ContainerShellTest extends SshTestBase {
     @Test
     public void remote_container_connect(){
         AbstractShell remoteShell = AbstractShell.getShell(
+                "remote_container_connect",
                 getHost(),
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -152,6 +158,7 @@ public class ContainerShellTest extends SshTestBase {
         //why were we setting start connected for docker?
         //host.setStartContainer(Host.DOCKER_START_CONNECTED_CONTAINER);
         ContainerShell shell = new ContainerShell(
+            "remote_container_connect",
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -173,6 +180,7 @@ public class ContainerShellTest extends SshTestBase {
         Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
         host.setConnectShell(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
         ContainerShell shell = new ContainerShell(
+                "container_connect_also_performs_start",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -196,6 +204,7 @@ public class ContainerShellTest extends SshTestBase {
     public void container_stops_before_connect_then_starts_connected(){
         Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
         ContainerShell shell = new ContainerShell(
+                "container_stops_before_connect_then_starts_connected",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -220,6 +229,7 @@ public class ContainerShellTest extends SshTestBase {
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
         
         ContainerShell shell = new ContainerShell(
+                "connect_to_containerId_after_first_connect",
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -233,6 +243,7 @@ public class ContainerShellTest extends SshTestBase {
             String containerId = host.getContainerId();
             shell.close();
             shell = new ContainerShell(
+                    "connect_to_containerId_after_first_connect",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -256,6 +267,7 @@ public class ContainerShellTest extends SshTestBase {
     public void connect_sets_containerId(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
         ContainerShell shell = new ContainerShell(
+                "connect_sets_containerId",
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -278,6 +290,7 @@ public class ContainerShellTest extends SshTestBase {
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
         host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
         ContainerShell shell = new ContainerShell(
+                "start_that_connects_still_sets_containerId",
                 host,
                 "",
                 new ScheduledThreadPoolExecutor(2),
@@ -300,6 +313,7 @@ public class ContainerShellTest extends SshTestBase {
     public void connect_replaces_sub_shell(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
         ContainerShell shell = new ContainerShell(
+                "start_that_connects_still_sets_containerId",
             host,
             "",
             new ScheduledThreadPoolExecutor(2),
@@ -319,6 +333,119 @@ public class ContainerShellTest extends SshTestBase {
         }finally{
             shell.stopContainerIfStarted();
         }
+    }
+
+    @Test
+    public void local_container_multiple_scripts_same_host(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                 scripts:
+                   captureName:
+                   - sh: uname -a
+                     then:
+                     - regex: Linux (?<hash>[a-z0-9]{12})
+                       then:
+                       - set-state: RUN.found ${{= [ ...${{RUN.found:[]}}, "${{hash}}" ] }}
+                 hosts:
+                   uno: TARGET_HOST
+                   dos: TARGET_HOST
+                 roles:
+                   one:
+                     hosts:
+                       - uno
+                     setup-scripts:
+                       - captureName
+                     run-scripts:
+                       - captureName
+                       - captureName
+                       - captureName
+                     cleanup-scripts:
+                       - captureName
+                 states:
+                   found: []
+                 """.replaceAll("TARGET_HOST",Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora")
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher(10,10,10);
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+
+        JsonServer jsonServer = new JsonServer(doit,31337);
+        jsonServer.start();
+
+        doit.run();
+
+        jsonServer.stop();
+
+        State state = config.getState();
+        Object found = state.get("found");
+        assertTrue(found instanceof Json);
+        Json json = (Json)found;
+        assertTrue(json.isArray());
+        //assertEquals(6,json.size());
+        Set<Object> unique = new HashSet<>(json.values());
+        assertEquals(1,unique.size());
+    }
+
+    @Test
+    public void local_container_two_roles_same_host(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("signal",
+                """
+                 scripts:
+                   captureName:
+                   - sh: uname -a
+                     then:
+                     - regex: Linux (?<hash>[a-z0-9]{12})
+                       then:
+                       - set-state: RUN.found ${{= [ ...${{RUN.found:[]}}, "${{hash}}" ] }}
+                 hosts:
+                   uno: TARGET_HOST
+                   dos: TARGET_HOST
+                 roles:
+                   one:
+                     hosts:
+                       - uno
+                     setup-scripts:
+                       - captureName
+                     run-scripts:
+                       - captureName
+                     cleanup-scripts:
+                       - captureName
+                   two:
+                     hosts:
+                       - uno
+                     setup-scripts:
+                       - captureName
+                     run-scripts:
+                       - captureName
+                     cleanup-scripts:
+                       - captureName
+                 states:
+                   found: []
+                 """.replaceAll("TARGET_HOST",Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora")
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+        doit.run();
+
+        State state = config.getState();
+        Object found = state.get("found");
+        assertTrue(found instanceof Json);
+        Json json = (Json)found;
+        assertTrue(json.isArray());
+        assertEquals(6,json.size());
+        Set<Object> unique = new HashSet<>(json.values());
+        assertEquals(1,unique.size());
     }
 
     @Test

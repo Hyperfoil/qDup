@@ -33,8 +33,8 @@ public class LocalShell extends AbstractShell{
 
     private final AtomicInteger connectCounter = new AtomicInteger(0);
 
-    public LocalShell(Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace) {
-        super(host, setupCommand, executor, filter, trace);
+    public LocalShell(String name,Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace) {
+        super(name,host, setupCommand, executor, filter, trace);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class LocalShell extends AbstractShell{
                 } catch (IOException e) {
                     logger.error(getName()+" error reading from shell stream",e);
                 }
-                logger.debugf("%s reader thread is stopping",getName());
+                logger.debugf("%s exec reader thread is stopping",getName());
             });
             t.setDaemon(false);
             t.start();
@@ -131,6 +131,7 @@ public class LocalShell extends AbstractShell{
     @Override
     public AbstractShell copy() {
         return new LocalShell(
+                getName(),
                 getHost(),
                 setupCommand,
                 executor,

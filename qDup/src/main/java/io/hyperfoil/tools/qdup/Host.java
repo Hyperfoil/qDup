@@ -11,6 +11,7 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 /**
@@ -223,6 +224,8 @@ public class Host {
     private List<String> platformLogin;
     private List<String> exec;
 
+    private Semaphore containerLock = new Semaphore(1);
+
     /**
      * creates a new local host reference
      */
@@ -391,6 +394,9 @@ public class Host {
         return rtrn;
     }
 
+    public Semaphore getContainerLock(){
+        return containerLock;
+    }
     private boolean hasProcessArgs(List<String> args){
         return args!=null && !args.isEmpty() && args.stream().anyMatch(v->{
             return v!=null && !v.isBlank();

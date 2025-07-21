@@ -29,6 +29,7 @@ public class DownloadTest {
         Download d = new Download(source.getPath());
 
         AbstractShell localShell = AbstractShell.getShell(
+                "return_local_file_path_when_defined_without_destination",
                 Host.parse(Host.LOCAL),
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),

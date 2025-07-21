@@ -1,9 +1,9 @@
 package io.hyperfoil.tools.qdup.cmd;
 
-import io.hyperfoil.tools.qdup.SshSession;
 import io.hyperfoil.tools.qdup.cmd.impl.RepeatUntilSignal;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.cmd.impl.WaitFor;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.jboss.logging.Logger;
@@ -278,7 +278,7 @@ public class Dispatcher {
                 if(command.hasIdleTimer() &&  timestamp - lastUpdate > command.getIdleTimer(context.getState())){
                     if(command instanceof Sh){
                         String output = context.getShell().peekOutput();
-                        boolean hasPrompt = output.contains(SshSession.PROMPT);
+                        boolean hasPrompt = output.contains(AbstractShell.PROMPT);
                         boolean moreInput = output.endsWith("> ");
                         String parentName = null;
                         if (command.getParent() instanceof Script)
