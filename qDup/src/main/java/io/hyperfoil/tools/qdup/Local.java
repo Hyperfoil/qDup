@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.apache.http.client.utils.URIBuilder;
@@ -18,10 +19,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -464,6 +462,7 @@ public class Local {
 
    }
 
+   //splits input based on the pipeline | character (igno
    public static void pipelineSplit(String input,List<List<String>> list){
       if(list.isEmpty()){
          list.add(new ArrayList<>());
@@ -509,9 +508,61 @@ public class Local {
          list.get(list.size()-1).add(StringUtil.removeQuotes( input.substring(flushed,input.length() )));
       }
    }
+   public static List<List<String>> splitShellCommand(String command){
+      List<List<String>> rtrn = new ArrayList<>();
+      List<String> current = new ArrayList<>();
+      rtrn.add(current);
+      boolean inQuote = false;
+      int quoteStart = -1;
+      int flushed = 0;
+      char quoteChar = ' ';
+      for(int i=0; i<command.length(); i++){
+         char targetChar = command.charAt(i);
+         if(inQuote){
+            if(targetChar == quoteChar && command.charAt(i-1) != '\\'){
+               inQuote=false;
+            }
+         }else{
+            if(targetChar == '\'' || targetChar == '"' || targetChar == '`'){
+               inQuote=true;
+               quoteStart=i;
+               quoteChar=targetChar;
+            }else if (targetChar == ' ' && (i == 0 || command.charAt(i-1) != '\\') ){//
+               String argument = command.substring(flushed,i);
+               if(!argument.isBlank()) {
+                  current.add(argument);
+               }
+               flushed = i+1;//avoid the current space, we dont need it
+            }else if (targetChar == '|' && (i == 0 || command.charAt(i-1) != '\\') ){
+               if(flushed<i){
+                  String argument = command.substring(flushed,i);
+                  if(!argument.isBlank()) {
+                     current.add(argument);
+                  }
+               }
+               flushed = i+1;//avoid the current character, we dont' need the pipe
+               current = new ArrayList<>();
+               rtrn.add(current);
+            }
+         }
+      }
+      if(flushed < command.length()) {
+         String argument = command.substring(flushed, command.length());
+         if (!argument.isBlank()) {
+            current.add(argument);
+         }
+      }
+      rtrn.removeIf(Collection::isEmpty);
+      return rtrn;
+   }
 
    public static boolean isPipeline(List<String> args){
       return args.stream().anyMatch(v->"|".equals(v) || (v!=null && v.contains("|")));
+   }
+   public static List<List<String>> splitProcessArgs(String command){
+      List<List<String>> rtrn = new ArrayList<>();
+
+      return rtrn;
    }
    public static List<List<String>> splitPipelines(List<String> args){
       List<List<String>> rtrn = new ArrayList<>();
@@ -532,12 +583,15 @@ public class Local {
       }
       return rtrn;
    }
-   private static boolean
+   public static boolean
    runSyncProcess(List<String> cmd, String action, Consumer<String> inputStreamConsumer){
       boolean rtrn = true;//worked
       //ProcessBuilder builder = new ProcessBuilder();
       List<ProcessBuilder> processes = new ArrayList<>();
       List<List<String>> splitCommand = splitPipelines(cmd);
+      System.out.println(AsciiArt.ANSI_GREEN+"runSyncProcess\n  "+cmd.stream().collect(Collectors.joining("\n  "))+"\n"+AsciiArt.ANSI_LIGHT_GREY+
+           splitCommand.stream().map(l->l.stream().collect(Collectors.joining("\n    "))).collect(Collectors.joining("\n"))
+           +AsciiArt.ANSI_RESET);
       for(int i=0; i<splitCommand.size(); i++){
          List<String> args = splitCommand.get(i);
          ProcessBuilder pipe = new ProcessBuilder();

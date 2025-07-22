@@ -784,8 +784,7 @@ public class Run implements Runnable, DispatchObserver {
 
                            getDispatcher().addScriptContext(scriptContext);
                            return shell.isOpen();
-                       }
-                       else {
+                       } else {
                            logger.error("setup failed to connect "+host.getSafeString());
                            shell.close();
                            return false;

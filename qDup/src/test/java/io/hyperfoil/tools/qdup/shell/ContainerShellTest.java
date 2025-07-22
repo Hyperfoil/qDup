@@ -227,7 +227,7 @@ public class ContainerShellTest extends SshTestBase {
     @Test
     public void connect_to_containerId_after_first_connect(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
-        
+
         ContainerShell shell = new ContainerShell(
                 "connect_to_containerId_after_first_connect",
             host,

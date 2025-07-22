@@ -102,7 +102,7 @@ public class LocalShellTest extends SshTestBase {
         assertFalse("path should be cleaned up by File.delete",f.getAbsoluteFile().exists());
     }
     @Test
-    public void exec(){
+    public void exec_date(){
         Host host = new Host();
         AbstractShell shell = new LocalShell(
                 "exec",

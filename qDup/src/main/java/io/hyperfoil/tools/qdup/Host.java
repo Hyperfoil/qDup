@@ -24,13 +24,11 @@ public class Host {
     public static final List<String> DOCKER_LOGIN = Arrays.asList("docker login -u ${{host.username}} -p ${{host.password}} ${{target}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_CHECK_STATUS = Arrays.asList("podman inspect --format=\"{{.State.Status}}\" ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).toList();
     public static final List<String> DOCKER_CHECK_STATUS = Arrays.asList("docker inspect --format=\"{{.State.Status}}\" ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).toList();
-    public static final List<String> PODMAN_START_CONTAINER = Arrays.asList("podman run --detach --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> DOCKER_START_CONTAINER = Arrays.asList("docker run --detach --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> PODMAN_START_CONTAINER = Arrays.asList("podman run --detach --cidfile ${{cidfile}} --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_START_CONTAINER = Arrays.asList("docker run --detach --cidfile ${{cidfile}} --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     //adding prompt to
-    public static final List<String> PODMAN_CREATE_CONNECTED_CONTAINER = Arrays.asList("podman run --interactive --tty --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    //without prompt injection
-    //public static final List<String> PODMAN_CREATE_CONNECTED_CONTAINER = Arrays.asList("podman run --interactive --tty ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
-    public static final List<String> DOCKER_CREATE_CONNECTED_CONTAINER = Arrays.asList("docker run --interactive --tty --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> PODMAN_CREATE_CONNECTED_CONTAINER = Arrays.asList("podman run --interactive --tty --cidfile ${{cidfile}} --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
+    public static final List<String> DOCKER_CREATE_CONNECTED_CONTAINER = Arrays.asList("docker run --interactive --tty --cidfile ${{cidfile}} --env PS1=\"${{"+ HostDefinition.QDUP_PROMPT_VARIABLE +"}}\" ${{image}} /bin/bash").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_STOP_CONTAINER = Arrays.asList("podman stop ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> DOCKER_STOP_CONTAINER = Arrays.asList("docker stop ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
     public static final List<String> PODMAN_REMOVE_CONTAINER = Arrays.asList("podman rm ${{containerId}}").stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
@@ -46,6 +44,8 @@ public class Host {
     public static final List<String> DOCKER_CHECK_CONTAINER_ID = Arrays.asList("docker ps --filter id=${{container}} --format=\"{{.ID}}\"");
     public static final List<String> PODMAN_CHECK_CONTAINER_NAME = Arrays.asList("podman inspect ${{container}} --format=\"{{.Id}}\"");
     public static final List<String> DOCKER_CHECK_CONTAINER_NAME = Arrays.asList("docker inspect ${{container}} --format=\"{{.Id}}\"");
+    public static final List<String> PODMAN_CHECK_ENTRYPOINT = Arrays.asList("podman inspect ${{container}} --format=\"{{.Config.Entrypoint}}\"");
+    public static final List<String> DOCKER_CHECK_ENTRYPOINT = Arrays.asList("docker inspect ${{container}} --format=\"{{.Config.Entrypoint}}\"");
     public static final List<String> PODMAN_UPLOAD = Arrays.asList("podman","cp","${{source}}","${{container}}:${{destination}}");
     public static final List<String> DOCKER_UPLOAD = Arrays.asList("docker","cp","${{source}}","${{container}}:${{destination}}");
     public static final List<String> PODMAN_DOWNLOAD = Arrays.asList("podman","cp","${{container}}:${{source}}","${{destination}}");

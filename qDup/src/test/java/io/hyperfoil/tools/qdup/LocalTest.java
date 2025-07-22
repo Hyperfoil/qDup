@@ -21,6 +21,79 @@ import static org.junit.Assert.*;
 public class LocalTest extends SshTestBase{
 
     @Test
+    public void splitShellCommand_no_split(){
+        List<List<String>> split;
+        split = Local.splitShellCommand("foo\\ bar");
+        assertEquals("should not split escaped space",1,split.size());
+        assertEquals("should not split escaped space",1,split.get(0).size());
+        assertEquals("foo\\ bar",split.get(0).get(0));
+        split = Local.splitShellCommand("foo\\|bar");
+        assertEquals("should not split escaped pipe",1,split.size());
+        assertEquals("should not split escaped pipe",1,split.get(0).size());
+        assertEquals("foo\\|bar",split.get(0).get(0));
+        split = Local.splitShellCommand("foo\\ \\|\\ bar");
+        assertEquals("should not split escaped space pipe space ",1,split.size());
+        assertEquals("should not split escaped space pipe space ",1,split.get(0).size());
+        assertEquals("foo\\ \\|\\ bar",split.get(0).get(0));
+        split = Local.splitShellCommand("foo  \"bar biz\"");
+        assertEquals("should not split escaped space pipe space ",1,split.size());
+        assertEquals("should not split escaped space pipe space ",2,split.get(0).size());
+        assertEquals("foo",split.get(0).get(0));
+        assertEquals("bar biz",split.get(0).get(1));
+    }
+    @Test
+    public void splitShellCommand_split_arguments(){
+        List<List<String>> split;
+        split = Local.splitShellCommand("  foo     bar   ");
+        assertEquals("should not split escaped space",1,split.size());
+        assertEquals("should split multiple spaces into two arguments",2,split.get(0).size());
+        assertEquals("foo",split.get(0).get(0));//should remove preceding spaces
+        assertEquals("bar",split.get(0).get(1));//should remove trailing spaces
+        split = Local.splitShellCommand("  f    b   ");
+        assertEquals("should not split escaped space",1,split.size());
+        assertEquals("should split multiple spaces into two arguments",2,split.get(0).size());
+        assertEquals("f",split.get(0).get(0));//should remove preceding spaces
+        assertEquals("b",split.get(0).get(1));//should remove trailing spaces
+    }
+    @Test
+    public void splitShellCommand_split_piped(){
+        List<List<String>> split;
+        split = Local.splitShellCommand("foo     bar   |   biz buz ");
+        assertEquals("should not split escaped space",2,split.size());
+        assertEquals("should split multiple spaces into two arguments: "+split.get(0),2,split.get(0).size());
+        assertEquals("should split multiple spaces into two arguments: "+split.get(1),2,split.get(1).size());
+        assertEquals("foo",split.get(0).get(0));
+        assertEquals("bar",split.get(0).get(1));
+        assertEquals("biz",split.get(1).get(0));
+        assertEquals("buz",split.get(1).get(1));
+    }
+    @Test
+    public void splitShellCommand_split_piped_no_space(){
+        List<List<String>> split;
+        split = Local.splitShellCommand(" foo b|b b ");
+        assertEquals("should not split escaped space",2,split.size());
+        assertEquals("should split multiple spaces into two arguments: "+split.get(0),2,split.get(0).size());
+        assertEquals("should split multiple spaces into two arguments: "+split.get(1),2,split.get(1).size());
+        assertEquals("foo",split.get(0).get(0));
+        assertEquals("b",split.get(0).get(1));
+        assertEquals("b",split.get(1).get(0));
+        assertEquals("b",split.get(1).get(1));
+    }
+    @Test
+    public void splitShellCommand_split_multiple_piped_no_space(){
+        List<List<String>> split;
+        split = Local.splitShellCommand(" foo b|b|b ");
+        assertEquals("should not split escaped space",3,split.size());
+        assertEquals("should split multiple spaces into two arguments: "+split.get(0),2,split.get(0).size());
+        assertEquals("should split multiple spaces into two arguments: "+split.get(1),1,split.get(1).size());
+        assertEquals("should split multiple spaces into two arguments: "+split.get(2),1,split.get(2).size());
+        assertEquals("foo",split.get(0).get(0));
+        assertEquals("b",split.get(0).get(1));
+        assertEquals("b",split.get(1).get(0));
+        assertEquals("b",split.get(2).get(0));
+    }
+
+    @Test
     public void pipelineSlit_nosplit(){
         List<List<String>> list = new ArrayList<List<String>>();
         Local.pipelineSplit("foobarbiz",list);
@@ -222,6 +295,34 @@ public class LocalTest extends SshTestBase{
             containerShell.stopContainerIfStarted();            
         }
     }    
+
+    @Test
+    public void runSyncProcess_piped(){
+        List<String> args = List.of("cat /proc/1/sched | head -n 1");
+        StringBuilder sb = new StringBuilder();
+
+        boolean response = Local.runSyncProcess(args,"runSyncProcess_piped",sb::append);
+        //systemd (1, #threads: 1)
+        //bash (1, #threads: 1)
+        assertTrue(response);
+        System.out.println(sb);
+        assertFalse(sb.isEmpty());
+        assertTrue(sb.toString().contains("(")); //checking to make sure it wasn't an error about the pipe
+        assertTrue(sb.toString().contains(")"));
+        assertTrue(sb.toString().contains("#threads"));
+    }
+    @Test
+    public void runSyncProcess_date(){
+        List<String> args = List.of("date","+%s");
+        StringBuilder sb = new StringBuilder();
+
+        boolean response = Local.runSyncProcess(args,"runSyncProcess_date",sb::append);
+        //#
+        System.out.println("response="+response);
+        System.out.println("output="+sb);
+        assertTrue(response);
+        assertFalse(sb.isEmpty());
+    }
 
     @Test
     public void local_upload_file(){

@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
+import io.hyperfoil.tools.qdup.Local;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.stream.MultiStream;
@@ -14,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -93,33 +95,73 @@ public class LocalShell extends AbstractShell{
 
     @Override
     public void exec(String command, Consumer<String> callback) {
-        try {
-            Process p = Runtime.getRuntime().exec(command);
-            //TODO do not spawn a new thread per call to exec
+        List<List<String>> args = Local.splitShellCommand(command);
+        List<ProcessBuilder> processes = args.stream().map(l->{ProcessBuilder pipe = new ProcessBuilder();pipe.command(l); return pipe;}).toList();
+        if(processes.isEmpty()){
+            logger.error(getName()+" could not create executable from "+command);
+        }
+        try{
+            //some rather silly single line list manipulation to use p inside a lambda
+            Process p = processes.size() ==1 ? processes.get(0).start() : (new LinkedList<Process>(ProcessBuilder.startPipeline(processes))).getLast();
             Thread t = new Thread(()->{
                 InputStream in = p.getInputStream();
-                byte[] buff = new byte[10 * 1024];
+                InputStream err = p.getErrorStream();
+                byte[] buff = new byte[10*1024];
                 StringBuilder sb = new StringBuilder();
-                //TODO this is not the best way to watch a buffer and pass to a stream
                 int len = 0;
                 try {
-                    while ((len = in.read(buff, 0, buff.length-1)) >= 0) {
+                    while( (len = err.read(buff, 0, buff.length-1)) > 0) {
                         if( len>0 ) {
                             sb.append(new String(buff,0,len));
                         }
                     }
+                    while( (len = in.read(buff, 0, buff.length-1)) > 0) {
+                        if( len>0 ) {
+                            sb.append(new String(buff,0,len));
+                        }
+                    }
+
                     callback.accept(sb.toString());
-                } catch (IOException e) {
+                }catch (IOException e){
                     logger.error(getName()+" error reading from shell stream",e);
                 }
                 logger.debugf("%s exec reader thread is stopping",getName());
             });
             t.setDaemon(false);
             t.start();
-            //TODO read the output or setup something that will
+
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logger.error(getName()+" could not run "+command,e);
         }
+
+
+//        try {
+//            Process p = Runtime.getRuntime().exec(command);
+//            //TODO do not spawn a new thread per call to exec
+//            Thread t = new Thread(()->{
+//                InputStream in = p.getInputStream();
+//                byte[] buff = new byte[10 * 1024];
+//                StringBuilder sb = new StringBuilder();
+//                //TODO this is not the best way to watch a buffer and pass to a stream
+//                int len = 0;
+//                try {
+//                    while ((len = in.read(buff, 0, buff.length-1)) >= 0) {
+//                        if( len>0 ) {
+//                            sb.append(new String(buff,0,len));
+//                        }
+//                    }
+//                    callback.accept(sb.toString());
+//                } catch (IOException e) {
+//                    logger.error(getName()+" error reading from shell stream",e);
+//                }
+//                logger.debugf("%s exec reader thread is stopping",getName());
+//            });
+//            t.setDaemon(false);
+//            t.start();
+//            //TODO read the output or setup something that will
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
 
     }
 
