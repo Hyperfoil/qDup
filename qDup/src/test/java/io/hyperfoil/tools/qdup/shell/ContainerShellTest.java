@@ -287,7 +287,7 @@ public class ContainerShellTest extends SshTestBase {
     }
     @Test
     public void start_that_connects_still_sets_containerId(){
-        Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
+        Host host = new Host("","",null,22,null,true,"podman","quay.io/fedora/fedora");
         host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
         ContainerShell shell = new ContainerShell(
                 "start_that_connects_still_sets_containerId",

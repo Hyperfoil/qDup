@@ -305,7 +305,6 @@ public class LocalTest extends SshTestBase{
         //systemd (1, #threads: 1)
         //bash (1, #threads: 1)
         assertTrue(response);
-        System.out.println(sb);
         assertFalse(sb.isEmpty());
         assertTrue(sb.toString().contains("(")); //checking to make sure it wasn't an error about the pipe
         assertTrue(sb.toString().contains(")"));
@@ -318,8 +317,6 @@ public class LocalTest extends SshTestBase{
 
         boolean response = Local.runSyncProcess(args,"runSyncProcess_date",sb::append);
         //#
-        System.out.println("response="+response);
-        System.out.println("output="+sb);
         assertTrue(response);
         assertFalse(sb.isEmpty());
     }

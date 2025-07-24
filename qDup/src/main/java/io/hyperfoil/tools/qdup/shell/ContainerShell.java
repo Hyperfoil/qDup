@@ -5,16 +5,12 @@ import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -82,6 +78,9 @@ public class ContainerShell extends AbstractShell{
     private String getCidFile(){
         return "/tmp/qdup."+getHost().getShortHostName()+"."+hashCode();
     }
+    private void removeCidFile(){
+        shellExecSync("rm "+getCidFile(),"remove-cidfile",10);
+    }
     private SyncResponse shellShSync(String command,String description, int timeout){
         SyncResponse rtrn = null;
         if(command.contains(StringUtil.PATTERN_PREFIX)){
@@ -103,30 +102,32 @@ public class ContainerShell extends AbstractShell{
         return rtrn;
     }
 
-    private SyncResponse execCheckStatus(String containerId){
-        Json ccJson = new Json();
-        ccJson.set("host", getHost().toJson());
-        ccJson.set("containerId", containerId);
-        return shellExecSync(populateList(getHost().getCheckContainerStatus(), ccJson),HostDefinition.CHECK_CONTAINER_STATUS, 10);
+    private boolean isContainerRunning(String containerId){
+        SyncResponse response = shellExecSync(
+                populateList(getHost().getCheckContainerStatus(), Json.fromMap(Map.of(
+                    "containerId",containerId
+                ))),
+                HostDefinition.CHECK_CONTAINER_STATUS,
+                10
+        );
+        return !response.timedOut() && response.output().contains("running");
     }
+
 
     //TODO should also accept the state or some state representation
     @Override
     PrintStream connectShell() {
-        int asyncTimeoutSeconds = 10;
-        //starts the shell
+
         PrintStream rtrn = null;
-        //need an alt host that has the default connection method for local or remote shell, then we use provided host to connect to the container
-        //how does this work if we want a custom shell (zsh?) on the alt host?
-        //TODO how do we specify custom shell container sub-host?
-        Host subHost = getHost().isLocal() ? new Host() : new Host(getHost().getUserName(),getHost().getHostName(),getHost().getPassword(),getHost().getPort());
+        int asyncTimeoutSeconds = 10;
+        Host subHost = getHost().withoutContainer();
         if(getHost().hasAlias()){
             subHost.setAlias(getHost().getAlias());
         }
         if(getHost().hasIdentity()){
             subHost.setIdentity(getHost().getIdentity());
         }
-        if(getHost().hasPassphrase()) {
+        if(getHost().hasPassphrase()){
             subHost.setPassphrase(getHost().getPassphrase());
         }
         if(getHost().isLocal()){
@@ -134,305 +135,178 @@ public class ContainerShell extends AbstractShell{
         } else {
             shell = new SshShell(getName()+"-sub-shell",subHost,setupCommand,executor,getFilter(),trace);
         }
-
         boolean connected = shell.connect();
         if(!connected){
             logger.errorf("failed to connect %s shell for container to %s",getHost().isLocal() ? "local" : "remote", getHost().getSafeString());
             return null;
         }
         boolean connectSetContainerId=false;
-
-        String startError = null;
-
         subShellIdentifier = shell.execSync(GET_HOST_OR_CONTAINER_ID,asyncTimeoutSeconds).output().trim();//ignoring timeouts for now
-        //synchronized (getHost()) {//trying synchronized on host to avoid double starting
-            // works but not for setting containerId... we either need something that batches the container creation
-            // or callback release from postConnect
 
-        //moving this to after a check for a running containerId is possible but complicates the release logic
         try {
             getHost().getContainerLock().acquire();
         } catch (InterruptedException e) {
             logger.error("interrupted trying to coordinate container creation for "+getName()+" on "+getHost().getAlias());
             Thread.currentThread().interrupt();
         }
-
-        if (getHost().hasContainerId()) { //an already running container
-                containerId = getHost().getContainerId();
-        } else if (Host.isContainerName(getHost().getDefinedContainer())) { //try and get containerId from name
-            String containerName = getHost().getDefinedContainer();
-            if (getHost().hasCheckContainerName()) {
-                SyncResponse checkNameResponse = shellExecSync(
-                        populateList(getHost().getConnectShell(),Json.fromMap(Map.of(
-                                "host",getHost().toJson(),
-                                "image",getHost().getDefinedContainer(),
-                                "container",containerName
-                        ))),
-                        HostDefinition.CHECK_CONTAINER_NAME,
-                        10
-                );
-                if (!checkNameResponse.timedOut() && !hasErrorMessage(checkNameResponse.output())) {//should not timeout for exec
-                    if (Host.isContainerId(checkNameResponse.output())) {
-                        containerId = checkNameResponse.output();
-                    }
-                }
-            } else {
-                //Do we assume it is a valid image? I'm not sure that is going to work...
+        if(getHost().hasContainerId()){
+            containerId = getHost().getContainerId();
+        }else if (Host.isContainerId(getHost().getDefinedContainer())){
+            containerId = getHost().getDefinedContainer();
+        }else if (Host.isContainerName(getHost().getDefinedContainer()) && getHost().hasCheckContainerName()){
+            SyncResponse response = shellExecSync(
+                    populateList(getHost().getCheckContainerName(),Json.fromMap(Map.of(
+                            "host",getHost().toJson(),
+                            "image",getHost().getDefinedContainer(),
+                            "container",getHost().getDefinedContainer()
+                    ))),
+                    HostDefinition.CHECK_CONTAINER_NAME,
+                    asyncTimeoutSeconds
+            );
+            if(!response.timedOut() && !hasErrorMessage(response.output()) && Host.isContainerId(response.output().trim())){
+                containerId = response.output().trim();
             }
-        } else if (Host.isContainerId(getHost().getDefinedContainer())) {
-            containerId = getHost().getDefinedContainer(); //in user we trust?
         }
-        if (containerId == null || containerId.isBlank() || !Host.isContainerId(containerId)) {
-            if (getHost().hasStartContainer()) {
-                String populatedStartContainer = populateList(getHost().getStartContainer(),Json.fromMap(Map.of(
+        //if we need to create a containerId
+        if(containerId == null || containerId.isBlank() || !Host.isContainerId(containerId)){
+            if(getHost().hasStartContainer()){
+                String populatedCommand = populateList(getHost().getStartContainer(),Json.fromMap(Map.of(
                         "host",getHost().toJson(),
                         "image",getHost().getDefinedContainer(),
                         "container",getHost().getDefinedContainer(),
                         "containerId",getHost().getDefinedContainer(),
                         "cidfile",getCidFile()
                 )));
+                if(populatedCommand.contains("cidfile")){
+                    removeCidFile();
+                }
                 SyncResponse response = shellShSync(
-                        populatedStartContainer,
-                        HostDefinition.START_CONTAINER,
+                        populatedCommand,
+                        HostDefinition.CREATE_CONTAINER,
                         10
                 );
-                logger.debugf("%s start-container response\n%s",getName(),response.output());
-                containerId = response.output();
-                if (response.timedOut() && containerId.isBlank()) {
-                    containerId = shell.peekOutput();
-                }
-                if (containerId.contains("select an image")) {
-                    //there was an error reported from container runtime
-                    logger.errorf("error starting %s container %s is ambiguous", getHost().isLocal() ? "local" : "remote", containerId);
-                    return null;
-                } else if (hasErrorMessage(containerId)) {
-                    logger.errorf("error starting %s container %s : %s", getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), containerId);
-                    //cannot start the image if we cannot select it
-                    return null;
-                } else if (containerId.contains("\n") || containerId.isBlank()) {
-                    logger.debugf("%s %s start-container appears to have started interactively",getName(),getHost().getShortHostName());
-                    //assume the container started connected? need to be able to verify this
-                    if(populatedStartContainer.contains("cidfile")){
+                if(hasErrorMessage(response.output())){
+                    if(response.output().contains("select an image")) {
+                        logger.errorf("error starting %s container %s is ambiguous", getHost().isLocal() ? "local" : "remote", containerId);
+                    } else {
+                        logger.errorf("error starting %s container %s : %s", getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), containerId);
+                    }
+                } else if(response.timedOut() || populatedCommand.contains("PS1")){//likely happens when we connected to a terminal
+                    if(populatedCommand.contains("cidfile")){//if we can check a cid file
                         String cid = shellExecSync(
                                 "cat "+getCidFile(),
                                 "read-cidfile",
                                 10
                         ).output();
-                        String status = execCheckStatus(cid).output();
-                        if("running".equals(status)){
+                        if(Host.isContainerId(cid)) {
+                            containerId = cid;
+                        }
+                    }
+                    if( rtrn == null ){//did not set rtrn from the cidfile or didn't have one
+                        SyncResponse shellIdResponse = shellShSync(GET_HOST_OR_CONTAINER_ID,"get-host-or-container-id",10);
+                        if(!subShellIdentifier.equals(shellIdResponse.output())){
                             rtrn = shell.commandStream;
                             shell.setSessionStreams(getSessionStreams());
-                        }else{
-                            logger.debugf(getName()+" created container is not running: "+status);
+                            //containerId will need to be set by the postConnect
                         }
-                    }else{
-                        //prompt may not yet be set, use timeouts :)
                     }
-                    //cannot shSync because connection is not ready and user may not have passed in PROMPT
-                    SyncResponse shellIdResponse = shellShSync(GET_HOST_OR_CONTAINER_ID,"get-host-or-container-id",10);
+                }
+                if( rtrn == null && Host.isContainerId(response.output().trim())) {//command returned something or above failed to set the return
+                    containerId = response.output().trim();
+                }
+            }
+        }
+        //try and restart a stopped container
+        if( rtrn == null && Host.isContainerId(containerId) && !isContainerRunning(containerId) && getHost().hasRestartConnectedContainer()){//if the container isn't running
+            String populatedCommand = populateList(
+                getHost().getRestartConnectedContainer(),Json.fromMap(Map.of(
+                "host",getHost().toJson(),
+                "containerId",containerId
+            )));
+            //not sure this is necessary
+//            if(!shell.getSessionStreams().equals(getSessionStreams())){
+//                shell.setSessionStreams(getSessionStreams());
+//            }
+            SyncResponse response = shellShSync(populatedCommand,HostDefinition.RESTART_CONNECTED_CONTAINER,asyncTimeoutSeconds);
+            if(hasErrorMessage(response.output())){
+                logger.debugf(getName()+" error trying to restart container "+containerId+"\n"+response.output());
+            }else{
+                SyncResponse shellIdResponse = shellShSync(GET_HOST_OR_CONTAINER_ID,"get-host-or-container-id",10);
+                if(!subShellIdentifier.equals(shellIdResponse.output())){
                     rtrn = shell.commandStream;
                     shell.setSessionStreams(getSessionStreams());
-                } else {
-                    //we started a new container (docker and podman)
-                    if (containerId.matches("[0-9a-f]{64}")) {
-                        getHost().setContainerId(containerId);
-                        getHost().setNeedStopContainer(true);
-                        connectSetContainerId = true;
-                    } else {
-                        String ec = shell.shSync("echo $?");
-                        if (!"0".equals(ec)) {
-                            //we won't try to connect once start errors
-                            startError = containerId;
-                        }
-                        containerId = getHost().getDefinedContainer();
-                    }
-                    //check for errors
+                    //containerId will need to be set by the postConnect
                 }
-            } else {
-                //handled by containerId==null check later
+                //else the containerId should now be started (should we check?)
             }
         }
-        if (rtrn == null && getHost().hasConnectShell() && startError == null) {
-            Json json = new Json();
-            json.set("host", getHost().toJson());
-            json.set("image", getHost().getDefinedContainer());
-            json.set("container", containerId);//idk which we should use
-            json.set("containerId", containerId);//TODO decide if container or containerId
-            String populatedConnectShell = populateList(getHost().getConnectShell(), json);
-            if (populatedConnectShell.contains(StringUtil.PATTERN_PREFIX)) {
-                logPopulateError(populatedConnectShell, HostDefinition.CONNECT_SHELL);
-                //TODO how do we fail this case
-            } else {
-                Semaphore connectingShellLock = new Semaphore(0);
-                AtomicBoolean hasError = new AtomicBoolean(false);
-                List<String> errorMessages = Arrays.asList("Error", "-bash");
-                getSessionStreams().addLineConsumer((line) -> {
-                    if (errorMessages.stream().anyMatch(e -> line.contains(e) || line.matches(e))) {
-                        hasError.set(true);
-                    }
-                    if (!line.isBlank()) {//how are we getting a blank line? is there an error in FilteredStream newline filtering after stripping command?
-                        //blank line was probably from bash bracket paste mode
-                        connectingShellLock.release();
-                    }
-                });
-                //TODO replace with method that also adds the command from other sessionStreams
-                //why was the sessionStreams changed before sending connectShell?
-                //this only worked for LocalShell
-                shell.setSessionStreams(getSessionStreams());//moved before sh so filterStream would see the command
-                //calling shSync on shell::LocalShell doesn't work after changing sessionStreams
-
-                //testing using shSync
-                //shell.sh(populatedConnectShell,false,(prompt,output)->{ },null);//use sh without the lock
-                logger.debugf("%s trying %s connect-shell %s ",getName(),getHost().getShortHostName(),populatedConnectShell);
-                SyncResponse response = shell.shSync(populatedConnectShell, null, asyncTimeoutSeconds);
-                logger.debugf("%s connect-shell response\n%s",getName(),response.output());
-                String fsz = response.output();
-                if (fsz.isBlank()) {
-                    //we probably timed out due to container prompt
-                } else {
-                    //we probably got an error
-                }
-                try {
-                    //TODO custom timeout
-                    boolean acquired = connectingShellLock.tryAcquire(asyncTimeoutSeconds, TimeUnit.MILLISECONDS);
-                    if (acquired) {
-                        //if we acquired the lock there was probably an error message
-                    } else {
-                        //this means we didn't get a message with a newline, we likely got the prompt.
-                    }
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                if (hasError.get()) {
-
-                    if (connectSetContainerId) {
-                        // TODO there is a containerId that we started before but stopped, we should use it
-                        if (getHost().hasContainerId() && getHost().hasStartConnectedContainer()) {
-                            Json ccJson = new Json();
-                            ccJson.set("host", getHost().toJson());
-                            ccJson.set("containerId", getHost().getContainerId());
-                            String populatedStartConnected = populateList(getHost().getStartConnectedContainer(), ccJson);
-                            if (populatedStartConnected.contains(StringUtil.PATTERN_PREFIX)) {
-                                logPopulateError(populatedStartConnected, HostDefinition.START_CONNECTED_CONTAINER);
-                                //TODO how do we fail this case?
-                            } else {
-                                hasError.set(false);
-                                SessionStreams currentShellSessionStreams = shell.getSessionStreams();
-                                if (currentShellSessionStreams != getSessionStreams()) {
-                                    shell.setSessionStreams(getSessionStreams());
-                                }
-                                logger.debugf("%s trying %s start-connected-container %s ",getName(),getHost().getShortHostName(),populatedStartConnected);
-                                SyncResponse startConnectedResponse = shell.shSync(populatedStartConnected, null, asyncTimeoutSeconds);
-                                String output = startConnectedResponse.output();
-                                logger.debugf("%s start-connected-container response\n%s",getName(),output);
-                                if (startConnectedResponse.timedOut() && output.isBlank()) {
-                                    output = shell.peekOutput();
-                                }
-                                if (output.contains("Error") || output.contains("error") || output.contains("-bash")) {
-                                    //TODO alert at error tring to start connected?
-                                    hasError.set(true);
-                                } else {
-                                    if (output.isBlank()) {//could be connected or timed out
-                                        if (getHost().hasCheckContainerStatus()) {
-                                            String populatedCheckStatus = populateList(getHost().getCheckContainerStatus(), ccJson);
-                                            if (populatedCheckStatus.contains(StringUtil.PATTERN_PREFIX)) {
-                                                logPopulateError(populatedCheckStatus, HostDefinition.CHECK_CONTAINER_STATUS);
-                                                //TODO alert error
-                                            } else {
-                                                logger.debugf("%s trying %s check-container-status %s ",getName(),getHost().getShortHostName(),populatedCheckStatus);
-                                                SyncResponse checkStatusResponse = shell.execSync(populatedCheckStatus, 10);
-                                                logger.debugf("%s check-contaienr-status response\n%s",getName(),checkStatusResponse.output());
-                                                if (checkStatusResponse.output().contains("running")) {
-                                                    rtrn = shell.connectShell();
-                                                } else {
-                                                    hasError.set(true);
-                                                    rtrn = null;
-                                                }
-                                            }
-                                        } else {
-                                            //TODO what to do when we cannot confirm the container started and it's blank? check uname?
-                                            SyncResponse unameResponse = shell.shSync(GET_HOST_OR_CONTAINER_ID, null, 10);
-                                            if (!unameResponse.timedOut() && !unameResponse.output().contains(subShellIdentifier)) {
-                                                rtrn = shell.connectShell();
-                                            } else {
-                                                hasError.set(true);
-                                                rtrn = null;
-                                            }
-                                        }
-                                    } else { //assume the output indicated it was ok
-                                        rtrn = shell.commandStream;
-                                    }
-                                }
-
-                            }
-                        }
-
-                        if (rtrn == null && hasError.get() && getHost().hasCreateConnectedContainer()) {
-                            Json ccJson = new Json();
-                            ccJson.set("host", getHost().toJson());
-                            ccJson.set("image", getHost().getDefinedContainer());
-                            ccJson.set("cidfile", getCidFile());
-                            String populatedCreateConnected = populateList(getHost().getCreateConnectedContainer(), ccJson);
-                            if (populatedCreateConnected.contains(StringUtil.PATTERN_PREFIX)) {
-                                logPopulateError(populatedCreateConnected, HostDefinition.CREATE_CONNECTED_CONTAINER);
-                                //TODO how do we fail in this case?
-                            } else {
-                                hasError.set(false);
-                                SessionStreams currentShellSessionStreams = shell.getSessionStreams();
-                                if (currentShellSessionStreams != getSessionStreams()) {
-                                    shell.setSessionStreams(getSessionStreams());
-                                }
-                                logger.debugf("%s trying %s create-connected-container %s ",getName(),getHost().getShortHostName(),populatedCreateConnected);
-                                SyncResponse createConnectedResponse = shell.shSync(populatedCreateConnected, null, asyncTimeoutSeconds);
-                                String output = createConnectedResponse.output();
-                                logger.debugf("%s create-connected-container response\n%s",getName(),output);
-                                if (output != null && output.isEmpty()) {//output is empty when timeout triggers
-                                    output = getSessionStreams().currentOutput();
-                                    rtrn = shell.commandStream;
-                                    //clearing containerId to be set by postConnect
-                                    getHost().setContainerId(Host.NO_CONTAINER);
-                                }
-                            }
-                        }
-                        //this what from when we would start a new container, now we reconnect
-                        //getHost().setContainerId(Host.NO_CONTAINER);
-                    } else {
-                        if (!getHost().hasStartConnectedContainer()) {
-                            logger.errorf("failed to connect to container shell for %s\n%s", getHost(), shell.getSessionStreams().currentOutput());
-                        }
-                    }
-                } else {
+        //try and connect to a running containerId
+        if( rtrn == null && Host.isContainerId(containerId) && isContainerRunning(containerId) && getHost().hasConnectShell()){//if we do not yet feel connected to a container but we started one
+            String populatedCommand = populateList(
+                getHost().getConnectShell(),Json.fromMap(Map.of(
+                "host",getHost().toJson(),
+                "image",getHost().getDefinedContainer(),
+                "container",containerId,
+                "containerId",containerId
+            )));
+//            if(!shell.getSessionStreams().equals(getSessionStreams())){
+//                shell.setSessionStreams(getSessionStreams());
+//            }
+            SyncResponse response = shellShSync(populatedCommand,HostDefinition.CONNECT_SHELL,asyncTimeoutSeconds);
+            if(hasErrorMessage(response.output())){
+                logger.debugf(getName()+" failed to connect to container "+containerId);
+            }else{//check if the shellId changed
+                SyncResponse shellIdResponse = shellShSync(GET_HOST_OR_CONTAINER_ID,"get-host-or-container-id",10);
+                if(!subShellIdentifier.equals(shellIdResponse.output())){
                     rtrn = shell.commandStream;
+                    shell.setSessionStreams(getSessionStreams());
+                    //containerId will need to be set by the postConnect
+                }else{//assume we failed to use containerId
+                    //TODO do we remove the container if we created it from prevoius step?
+                    containerId = null; //we cannot use the containerId, time to try creating a new one
                 }
             }
         }
-        if (rtrn == null && getHost().hasStartConnectedContainer()) {
-            if (shell.getSessionStreams() != getSessionStreams()) {
-                //shell.sessionStreams = sessionStreams;
-                shell.setSessionStreams(getSessionStreams());
+        //at this point we could not restart or connect to containerId, assume the value should be neglected
+        //do we clear containerId and the host's containerId?
+        if(rtrn == null && getHost().hasCreateConnectedContainer()){
+            String populatedCommand = populateList(
+                getHost().getCreateConnectedContainer(),Json.fromMap(Map.of(
+                "host",getHost().toJson(),
+                "image",getHost().getDefinedContainer(),
+                "cidfile",getCidFile()
+            )));
+            if(populatedCommand.contains("cidfile")){
+                removeCidFile();
             }
+            SyncResponse response = shellShSync(populatedCommand,HostDefinition.CREATE_CONNECTED_CONTAINER,asyncTimeoutSeconds);
+            if(hasErrorMessage(response.output())){
+                logger.debugf(getName()+" failed to create a connected container "+getHost().getDefinedContainer()+"\n"+response.output());
+            }else {
+                //begin copy and paste from getStartContainer
+                if(populatedCommand.contains("cidfile")){//if we can check a cid file
+                    String cid = shellExecSync(
+                            "cat "+getCidFile(),
+                            "read-cidfile",
+                            10
+                    ).output();
+                    if(Host.isContainerId(cid)) {
 
-            Json json = new Json();
-            json.set("host", getHost().toJson());
-            json.set("image", getHost().getDefinedContainer());
-            json.set("container", containerId);//idk which we should use
-            json.set("containerId", containerId);//TODO decide if container or containerId
-            String populatedCommand = populateList(getHost().getStartConnectedContainer(), json);
-
-            SyncResponse startConnectedResponse = shell.shSync(populatedCommand, null, asyncTimeoutSeconds);
-            String output = startConnectedResponse.output();
-            if (output != null && output.isEmpty()) {//output is empty when timeout triggers
-                output = getSessionStreams().currentOutput();
-                rtrn = shell.commandStream;
-            }
-            assert output != null;
-            if (hasErrorMessage(output)) {
-                //there was an error reported from container runtime
-                logger.errorf("error starting %s container %s : %s", getHost().isLocal() ? "local" : "remote", getHost().getSafeString(), output);
-                rtrn = null;
+                        containerId = cid;
+                    }
+                }
+                if( rtrn == null ){//did not set rtrn from the cidfile or didn't have one
+                    SyncResponse shellIdResponse = shellShSync(GET_HOST_OR_CONTAINER_ID,"get-host-or-container-id",10);
+                    if(!subShellIdentifier.equals(shellIdResponse.output())){
+                        rtrn = shell.commandStream;
+                        shell.setSessionStreams(getSessionStreams());
+                        //containerId will need to be set by the postConnect
+                    }
+                }
+                //end copy and paste from getStartContainer
             }
         }
-        //}//end synchronized(getHost()
+
         return rtrn;
     }
 
@@ -440,13 +314,25 @@ public class ContainerShell extends AbstractShell{
     public boolean postConnect(){
         boolean ok = true;
         if(!getHost().hasContainerId()) {
-            String command = "cat " + getCidFile();
-            String unameN = shell.execSync(command);
-            getHost().setContainerId(unameN);
-            getHost().setNeedStopContainer(true);
-            containerId = unameN;
+            if(containerId!=null && Host.isContainerId(containerId) && isContainerRunning(containerId)){
+                getHost().setContainerId(containerId);
+                getHost().setNeedStopContainer(true);
+            }else {
+                String command = "cat " + getCidFile();
+                String unameN = shell.execSync(command);
+                if (Host.isContainerId(unameN) && isContainerRunning(unameN)) {
+                    getHost().setContainerId(unameN);
+                    getHost().setNeedStopContainer(true);
+                    containerId = unameN;
+                } else {
+                    SyncResponse hostnameResponse = shellShSync("cat /etc/hostname", "cat-hostname", 10);
+                    if (Host.isContainerId(hostnameResponse.output().trim())) {
+                        getHost().setContainerId(hostnameResponse.output().trim());
+                        containerId = hostnameResponse.output().trim();
+                    }
+                }
+            }
         }
-        System.out.println("postConnect");
         String unameN = shell.shSync(GET_HOST_OR_CONTAINER_ID);
         //it should always be 0...
         if(getHost().getContainerLock().availablePermits() == 0){
@@ -478,7 +364,6 @@ public class ContainerShell extends AbstractShell{
      * Will stop the container of the host indicates it was started by qDup
      */
     public void stopContainerIfStarted(){
-        System.out.println(AsciiArt.ANSI_RED+"stopContainerIfStarted "+(Thread.currentThread().getStackTrace()[1])+AsciiArt.ANSI_RESET);
         if(getHost().isContainer() && getHost().needStopContainer() && getHost().startedContainer()){
             if(getHost().hasStopContainer()){
                 Host jumpHost = getHost().withoutContainer();

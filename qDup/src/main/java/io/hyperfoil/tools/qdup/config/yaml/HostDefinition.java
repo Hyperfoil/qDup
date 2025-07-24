@@ -3,7 +3,6 @@ package io.hyperfoil.tools.qdup.config.yaml;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.State;
 import io.hyperfoil.tools.qdup.cmd.Cmd;
-import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.*;
@@ -24,9 +23,9 @@ public class HostDefinition {
     public static final String CHECK_CONTAINER_ID = "check-container-id";
     public static final String CHECK_CONTAINER_NAME = "check-container-name";
     public static final String CHECK_CONTAINER_STATUS = "check-container-status";
-    public static final String START_CONTAINER = "start-container";
+    public static final String CREATE_CONTAINER = "create-container";
     public static final String CREATE_CONNECTED_CONTAINER = "create-connected-container";//TODO drop and start-container must start connected
-    public static final String START_CONNECTED_CONTAINER = "start-connected-container";//TODO rename restart-container
+    public static final String RESTART_CONNECTED_CONTAINER = "restart-connected-container";//TODO rename restart-container
     public static final String STOP_CONTAINER = "stop-container";
     public static final String CONNECT_SHELL = "connect-shell";
     public static final String PLATFORM_LOGIN = "platform-login";
@@ -40,7 +39,7 @@ public class HostDefinition {
 
     public static final List<String> KEYS = Arrays.asList(
             USERNAME,HOSTNAME,PASSWORD,PORT,PROMPT,LOCAL,PLATFORM,CONTAINER,CHECK_CONTAINER_ID,CHECK_CONTAINER_NAME,
-            START_CONTAINER,CREATE_CONNECTED_CONTAINER,START_CONNECTED_CONTAINER,STOP_CONTAINER,CONNECT_SHELL,PLATFORM_LOGIN,EXEC,UPLOAD,DOWNLOAD, IS_SHELL,IDENTITY
+            CREATE_CONTAINER,CREATE_CONNECTED_CONTAINER, RESTART_CONNECTED_CONTAINER,STOP_CONTAINER,CONNECT_SHELL,PLATFORM_LOGIN,EXEC,UPLOAD,DOWNLOAD, IS_SHELL,IDENTITY
     );
 
     public static List<String> unknownKeys(Collection<String> keys){
@@ -112,11 +111,11 @@ public class HostDefinition {
                 rtrn.setCheckContainerStatus(toList(mapping.get(CHECK_CONTAINER_STATUS)));
             }
 
-            if(mapping.has(START_CONTAINER)){
-                rtrn.setStartContainer(toList(mapping.get(START_CONTAINER)));
+            if(mapping.has(CREATE_CONTAINER)){
+                rtrn.setStartContainer(toList(mapping.get(CREATE_CONTAINER)));
             }
-            if(mapping.has(START_CONNECTED_CONTAINER)){
-                rtrn.setStartConnectedContainer(toList(mapping.get(START_CONNECTED_CONTAINER)));
+            if(mapping.has(RESTART_CONNECTED_CONTAINER)){
+                rtrn.setStartConnectedContainer(toList(mapping.get(RESTART_CONNECTED_CONTAINER)));
             }
             if(mapping.has(CREATE_CONNECTED_CONTAINER)){
                 rtrn.setCreateConnectedContainer(toList(mapping.get(CREATE_CONNECTED_CONTAINER)));

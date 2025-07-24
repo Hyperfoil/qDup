@@ -530,14 +530,14 @@ public class Local {
             }else if (targetChar == ' ' && (i == 0 || command.charAt(i-1) != '\\') ){//
                String argument = command.substring(flushed,i);
                if(!argument.isBlank()) {
-                  current.add(argument);
+                  current.add(StringUtil.removeQuotes(argument));
                }
                flushed = i+1;//avoid the current space, we dont need it
             }else if (targetChar == '|' && (i == 0 || command.charAt(i-1) != '\\') ){
                if(flushed<i){
                   String argument = command.substring(flushed,i);
                   if(!argument.isBlank()) {
-                     current.add(argument);
+                     current.add(StringUtil.removeQuotes(argument));
                   }
                }
                flushed = i+1;//avoid the current character, we dont' need the pipe
@@ -549,7 +549,7 @@ public class Local {
       if(flushed < command.length()) {
          String argument = command.substring(flushed, command.length());
          if (!argument.isBlank()) {
-            current.add(argument);
+            current.add(StringUtil.removeQuotes(argument));
          }
       }
       rtrn.removeIf(Collection::isEmpty);
@@ -589,9 +589,6 @@ public class Local {
       //ProcessBuilder builder = new ProcessBuilder();
       List<ProcessBuilder> processes = new ArrayList<>();
       List<List<String>> splitCommand = splitPipelines(cmd);
-      System.out.println(AsciiArt.ANSI_GREEN+"runSyncProcess\n  "+cmd.stream().collect(Collectors.joining("\n  "))+"\n"+AsciiArt.ANSI_LIGHT_GREY+
-           splitCommand.stream().map(l->l.stream().collect(Collectors.joining("\n    "))).collect(Collectors.joining("\n"))
-           +AsciiArt.ANSI_RESET);
       for(int i=0; i<splitCommand.size(); i++){
          List<String> args = splitCommand.get(i);
          ProcessBuilder pipe = new ProcessBuilder();

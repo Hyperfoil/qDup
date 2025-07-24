@@ -338,8 +338,15 @@ public abstract class AbstractShell {
             removeShObserver(SH_BLOCK_CALLBACK);
         }
         assert blockingSemaphore.availablePermits() == 0;
-        System.out.println(AsciiArt.ANSI_GREEN+"shSync "+command+"\n"+AsciiArt.ANSI_LIGHT_GREY+blockingResponse.toString()+AsciiArt.ANSI_RESET);
         //adding peek output to see what was written before the timeout
+        if(!acquired) {
+            //TODO does this need to reset the shellLock in
+            int availale = shellLock.availablePermits(); //TODO reset to 1
+            if(availale == 0){
+                shellLock.release();
+            }
+            String peeked = peekOutput();
+        }
         return new SyncResponse(blockingResponse.toString()+(!acquired?peekOutput():""),!acquired);
     }
     public void sh(String command) {
@@ -504,7 +511,6 @@ public abstract class AbstractShell {
             }
             Thread.currentThread().interrupt();
         }
-        System.out.println(AsciiArt.ANSI_CYAN+getClass().getSimpleName()+".execSync "+command+"\n"+AsciiArt.ANSI_LIGHT_GREY+sb.toString()+AsciiArt.ANSI_RESET);
         return  new SyncResponse(sb.toString(),!acquired);
     }
     public void exec(String command) {
