@@ -161,5 +161,6 @@ class QDupPicoTest {
         LaunchResult result = launcher.launch("--fullPath","/tmp","--identity",getIdentity(),configPath.toString());
 
 
+
     }
 }

@@ -3,6 +3,7 @@ package io.hyperfoil.tools.qdup;
 import io.hyperfoil.tools.qdup.cmd.*;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.RunError;
+import io.vertx.core.Vertx;
 import org.apache.commons.cli.*;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
@@ -675,7 +676,7 @@ public class QDup {
 
                 JsonServer jsonServer = null;
                 if (startJsonServer) {
-                    jsonServer = new JsonServer(run, getJsonPort());
+                    jsonServer = new JsonServer(Vertx.vertx(),run, getJsonPort());
                     getBreakpoints().forEach(jsonServer::addBreakpoint);
                     jsonServer.start();
                 }

@@ -7,6 +7,7 @@ import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.vertx.core.Vertx;
 import org.junit.Test;
 
 import java.util.stream.Collectors;
@@ -91,7 +92,7 @@ public class ExecTest extends SshTestBase {
       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
-      JsonServer jsonServer = new JsonServer(doit, 31337);
+      JsonServer jsonServer = new JsonServer(Vertx.vertx(), doit, 31337);
       //TODO somehow starting the jsonServer causes this test to not stop
 //      jsonServer.start();
       doit.run();

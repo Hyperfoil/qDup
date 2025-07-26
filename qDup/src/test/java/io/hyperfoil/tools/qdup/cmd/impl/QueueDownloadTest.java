@@ -86,7 +86,9 @@ public class QueueDownloadTest extends SshTestBase {
         doit.run();
 
         State state = doit.getConfig().getState();
-        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/uno.txt");
+        Host host = config.getAllHostsInRoles().iterator().next();
+
+        File uno = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/uno.txt");
 
         File tmpFile = new File(tmpDir.toString());
         String tree = AsciiArt.printTree(new File(tmpDir.toString()),(f)-> f.listFiles() == null ? Collections.EMPTY_LIST : Arrays.asList(f.listFiles()),v->(v.isDirectory()? "/":"")+v.getName());
@@ -122,9 +124,10 @@ public class QueueDownloadTest extends SshTestBase {
         doit.run();
 
         State state = doit.getConfig().getState();
+        Host host = config.getAllHostsInRoles().iterator().next();
 
-        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/uno.txt");
-        File dos = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/dos.txt");
+        File uno = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/uno.txt");
+        File dos = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/dos.txt");
 
         assertTrue("uno should exist @ "+uno.getPath(),uno.exists());
         assertTrue("dos should exist @ "+dos.getPath(),dos.exists());
@@ -160,9 +163,10 @@ public class QueueDownloadTest extends SshTestBase {
         doit.run();
 
         State state = doit.getConfig().getState();
+        Host host = config.getAllHostsInRoles().iterator().next();
 
-        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/one/uno.txt");
-        File dos = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/two/dos.txt");
+        File uno = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/one/uno.txt");
+        File dos = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/two/dos.txt");
 
         assertTrue("uno should exist @ "+uno.getPath(),uno.exists());
         assertTrue("dos should exist @ "+dos.getPath(),dos.exists());
@@ -176,7 +180,7 @@ public class QueueDownloadTest extends SshTestBase {
         String timestamp = ""+System.currentTimeMillis();
 
         Script runScript = new Script("run-queue");
-        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getHostName()+"/"));
+        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getShortHostName()+"/"));
         runScript.then(Cmd.sh("export FOO=\"/tmp\""));
         runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
 
@@ -198,8 +202,9 @@ public class QueueDownloadTest extends SshTestBase {
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
+        Host host = config.getAllHostsInRoles().iterator().next();
 
-        File downloadFile = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/date.txt");
+        File downloadFile = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/date.txt");
 
         assertTrue(tmpDir.toString() + "/download.txt should exist",downloadFile.exists());
 
@@ -222,7 +227,7 @@ public class QueueDownloadTest extends SshTestBase {
         RunConfigBuilder builder = getBuilder();
         String timestamp = ""+System.currentTimeMillis();
         Script runScript = new Script("run-queue");
-        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getHostName()+"/"));
+        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getShortHostName()+"/"));
         runScript.then(Cmd.sh("export FOO=\"/tmp\""));
         runScript.then(Cmd.sh("cd /tmp"));
         runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
@@ -236,8 +241,9 @@ public class QueueDownloadTest extends SshTestBase {
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
+        Host host = config.getAllHostsInRoles().iterator().next();
 
-        File downloadFile = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/date.txt");
+        File downloadFile = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/date.txt");
         assertTrue(tmpDir.toString() + "/download.txt should exist",downloadFile.exists());
         try {
             String content = new String(Files.readAllBytes(downloadFile.toPath())).trim();
@@ -255,7 +261,7 @@ public class QueueDownloadTest extends SshTestBase {
         RunConfigBuilder builder = getBuilder();
         String timestamp = ""+System.currentTimeMillis();
         Script runScript = new Script("run-queue");
-        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getHostName()+"/"));
+        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getShortHostName()+"/"));
         runScript.then(Cmd.sh("export FOO=\"/tmp\""));
         runScript.then(Cmd.sh("cd /tmp"));
         runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
@@ -269,8 +275,9 @@ public class QueueDownloadTest extends SshTestBase {
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
+        Host host = config.getAllHostsInRoles().iterator().next();
 
-        File downloadFile = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/date.txt");
+        File downloadFile = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/date.txt");
         assertTrue(tmpDir.toString() + "/download.txt should exist",downloadFile.exists());
         try {
             String content = new String(Files.readAllBytes(downloadFile.toPath())).trim();
@@ -316,10 +323,12 @@ public class QueueDownloadTest extends SshTestBase {
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
 
+        Host host = config.getAllHostsInRoles().iterator().next();
+
         State state = doit.getConfig().getState();
 
-        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/uno.txt");
-        File dos = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/dos.txt");
+        File uno = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/uno.txt");
+        File dos = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/dos.txt");
 
 
 
@@ -371,10 +380,12 @@ public class QueueDownloadTest extends SshTestBase {
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.run();
 
-        State state = doit.getConfig().getState();
 
-        File uno = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/uno.txt");
-        File dos = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/dos.txt");
+        State state = doit.getConfig().getState();
+        Host host = config.getAllHostsInRoles().iterator().next();
+
+        File dos = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/dos.txt");
+        File uno = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/uno.txt");
 
 
 
@@ -386,7 +397,7 @@ public class QueueDownloadTest extends SshTestBase {
         RunConfigBuilder builder = getBuilder();
         String timestamp = ""+System.currentTimeMillis();
         Script runScript = new Script("run-queue");
-        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getHostName()+"/"));
+        runScript.then(Cmd.sh("rm -rf /tmp/"+getHost().getShortHostName()+"/"));
         runScript.then(Cmd.sh("export FOO=\"/tmp\""));
         runScript.then(Cmd.sh("cd /tmp"));
         runScript.then(Cmd.sh("echo "+timestamp+" > /tmp/date.txt"));
@@ -400,8 +411,8 @@ public class QueueDownloadTest extends SshTestBase {
         Dispatcher dispatcher = new Dispatcher();
         Run run = new Run(tmpDir.toString(),config,dispatcher);
         run.run();
-
-        File downloadFile = new File(tmpDir.toString() + "/"+getHost().getHostName()+"/date.txt");
+        Host host = config.getAllHostsInRoles().iterator().next();
+        File downloadFile = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/date.txt");
         assertTrue(tmpDir.toString() + "/download.txt should exist",downloadFile.exists());
         try {
             String content = new String(Files.readAllBytes(downloadFile.toPath())).trim();
@@ -453,9 +464,10 @@ public class QueueDownloadTest extends SshTestBase {
 
         assertEquals(10000000l, remoteLargeFileSize);
         assertEquals(1000000l, remoteSmallFileSize);
+        Host host = config.getAllHostsInRoles().iterator().next();
 
-        assertTrue(new File(tmpDir.toString().concat("/").concat(getHost().getHostName()).concat("/").concat("small.file")).exists());
-        assertFalse(new File(tmpDir.toString().concat("/").concat(getHost().getHostName()).concat("/").concat("large.file")).exists());
+        assertTrue(new File(tmpDir.toString().concat("/").concat(host.getShortHostName()).concat("/").concat("small.file")).exists());
+        assertFalse(new File(tmpDir.toString().concat("/").concat(host.getShortHostName()).concat("/").concat("large.file")).exists());
 
         new File(tmpDir.toString()).delete();
     }

@@ -20,10 +20,10 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.MountableFile;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -106,7 +106,36 @@ public class SshTestBase {
 
         return perms;
     }
+    public static String readUrl(String url){
+        return readUrl(url,0);
+    }
+    public static String readUrl(String url,int timeout){
+        if(url == null || url.isBlank()){
+            return "";
+        }
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setConnectTimeout(timeout);
+            connection.setReadTimeout(timeout);
 
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                StringBuilder contentBuffer = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if(!contentBuffer.isEmpty()){
+                        contentBuffer.append(System.lineSeparator());
+                    }
+                    contentBuffer.append(line);
+
+                }
+                return contentBuffer.toString();
+            }
+        } catch (IOException e) {
+            return e.getMessage();
+        }
+
+
+    }
 
     public String getIdentity() {
         return getPath("keys/qdup").toFile().getPath();

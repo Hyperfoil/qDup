@@ -52,12 +52,12 @@ public class JsonServer implements RunObserver, ContextObserver {
     private final Map<Integer, AtomicReference<Context>> contextAtomicReference = new ConcurrentHashMap<>();
     private String hostname = "localhost";
 
-    public JsonServer(Run run){
-        this(run,DEFAULT_PORT);
+    public JsonServer(Vertx vertx,Run run){
+        this(vertx,run,DEFAULT_PORT);
     }
-    public JsonServer(Run run, int port){
+    public JsonServer(Vertx vertx,Run run, int port){
         this.port = port;
-        this.vertx = Vertx.vertx();
+        this.vertx = vertx;
         this.breakpoints = new HashSet<>();
         vertx.eventBus().registerDefaultCodec(Json.class,new JsonMessageCodec());
         //vertx.eventBus().registerCodec(new JsonMessageCodec());
@@ -329,8 +329,6 @@ public class JsonServer implements RunObserver, ContextObserver {
                 } else{
                     rc.response().setStatusCode(400).end("unexpected error trying to test parse:\n"+body);
                 }
-
-
             } else {
                 rc.response().setStatusCode(400).end("could not find session "+cmdUid);
             }
@@ -568,6 +566,8 @@ public class JsonServer implements RunObserver, ContextObserver {
 
         server = vertx.createHttpServer();
         server.requestHandler(router).listen(port/*, InetAddress.getLocalHost().getHostName()*/);
+
+
     }
 
     public void stop(){

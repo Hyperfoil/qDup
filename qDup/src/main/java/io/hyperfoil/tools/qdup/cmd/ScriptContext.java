@@ -131,7 +131,7 @@ public class ScriptContext implements Context, Runnable{
                 cmdName = root.toString();
             }
         }
-        return (cmdName.isEmpty() ? "" : cmdName+":"+getRootCmd().getUid()+"@") + (getShell()!=null ? getShell().getHost().toString() : "");
+        return (cmdName.isEmpty() ? "" : cmdName+":"+getRootCmd().getUid()+"@") + (getShell()!=null ? getShell().getHost().getShortHostName() : "");
     }
 
     public ScriptContext(AbstractShell session, State state, Run run, SystemTimer timer, Cmd rootCmd, boolean checkExitCode){

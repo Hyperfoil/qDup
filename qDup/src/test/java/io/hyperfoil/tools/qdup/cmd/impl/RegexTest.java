@@ -10,6 +10,7 @@ import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
+import io.vertx.core.Vertx;
 import org.junit.Ignore;
 import org.junit.Test;
 import io.hyperfoil.tools.qdup.SshTestBase;
@@ -431,7 +432,7 @@ public class RegexTest extends SshTestBase {
 
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
-        JsonServer jsonServer = new JsonServer(doit);
+        JsonServer jsonServer = new JsonServer(Vertx.vertx(), doit);
         jsonServer.start();
         doit.run();
         dispatcher.shutdown();

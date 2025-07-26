@@ -54,7 +54,7 @@ public class QueueDownload extends Cmd {
 
     @Override
     public void run(String input, Context context) {
-        String basePath = context.getRunOutputPath()+ File.separator+context.getShell().getHost().getHostName();
+        String basePath = context.getRunOutputPath()+ File.separator+context.getShell().getHost().getShortHostName();
         String resolvedPath = Cmd.populateStateVariables(getPath(),this,context);
         String resolvedDestination = Cmd.populateStateVariables(basePath + File.separator + getDestination(),this,context);
 

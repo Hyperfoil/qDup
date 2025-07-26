@@ -308,6 +308,7 @@ public abstract class AbstractShell {
     }
     public static record SyncResponse(String output,boolean timedOut){};
     public SyncResponse shSync(String command, Map<String, String> prompt,int seconds) {
+        logger.debugf(getName()+".shSync "+command);
         if(commandStream==null || Status.Closing.equals(status)){
             return new SyncResponse("",false);
         }

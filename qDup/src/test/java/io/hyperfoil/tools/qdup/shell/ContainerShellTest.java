@@ -6,6 +6,7 @@ import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.json.Json;
+import io.vertx.core.Vertx;
 import org.junit.Test;
 
 import java.io.File;
@@ -374,7 +375,7 @@ public class ContainerShellTest extends SshTestBase {
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
         doit.ensureConsoleLogging();
 
-        JsonServer jsonServer = new JsonServer(doit,31337);
+        JsonServer jsonServer = new JsonServer(Vertx.vertx(), doit, 31337);
         jsonServer.start();
 
         doit.run();

@@ -12,6 +12,7 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
+import io.vertx.core.Vertx;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
@@ -961,7 +962,7 @@ public class RunTest extends SshTestBase {
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
 
-      JsonServer jsonServer = new JsonServer(doit, 31337);
+      JsonServer jsonServer = new JsonServer(Vertx.vertx(), doit, 31337);
       jsonServer.start();
       doit.run();
       jsonServer.stop();
@@ -2169,17 +2170,19 @@ public class RunTest extends SshTestBase {
       Run run = new Run(tmpDir.toString(), config, dispatcher);
       long start = System.currentTimeMillis();
 
-      JsonServer server = new JsonServer(run);
+      JsonServer server = new JsonServer(Vertx.vertx(), run);
       server.start();
       run.run();
       server.stop();
+
+      Host host = config.getAllHostsInRoles().iterator().next();
 
       assertFalse("script should not invoke beyond a done", staysFalse.get());
       assertTrue("cleanupTimer should be > 0", cleanupTimer.get() > 0);
       assertTrue("done should stop before NEVER is signalled", cleanupTimer.get() - start < 30_000);
 
       File outputPath = new File(run.getOutputPath());
-      File downloaded = new File(outputPath.getAbsolutePath(), getHost().getHostName() + "/foo.txt");
+      File downloaded = new File(outputPath.getAbsolutePath(), host.getShortHostName() + "/foo.txt");
 
       assertTrue("queue-download should execute despite done", downloaded.exists());
    }

@@ -8,8 +8,12 @@ import io.hyperfoil.tools.qdup.config.RunError;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.StringUtil;
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
+import io.vertx.core.Vertx;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -104,6 +108,9 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
     @ConfigProperty(name = "qdup.console.format")
     String consoleFormat;
 
+    //@Inject
+    Vertx vertx;
+
     @Override
     public int run(String... args) throws Exception {
         //characters for brail spinner
@@ -120,6 +127,8 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
     public Integer call() throws Exception {
         DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
         String uid = dt.format(LocalDateTime.now());
+
+
 
         if(!tracePattern.isEmpty() && traceNamePattern.isEmpty()){
             traceNamePattern = uid;
@@ -285,7 +294,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
 
         //colorTerminal = colorTerminal && ConfigProvider.getConfig().getValue("quarkus.console.color",Boolean.class);
         String qDupFormat = ConfigProvider.getConfig().getOptionalValue("qdup.console.format",String.class).orElse("%d{HH:mm:ss.SSS} %-5p %m%n");
-        String qDupLevel = ConfigProvider.getConfig().getOptionalValue("qdup.console.format",String.class).orElse("INFO");
+        String qDupLevel = ConfigProvider.getConfig().getOptionalValue("qdup.console.level",String.class).orElse("INFO");
         org.jboss.logmanager.Logger qdupLogger = org.jboss.logmanager.Logger.getLogger("io.hyperfoil.tools.qdup");
         //qdupLogger.setUseParentHandlers(false);//to disable double console
         PatternFormatter formatter = colorTerminal ? new ColorPatternFormatter(qDupFormat) : new PatternFormatter(qDupFormat);
@@ -295,7 +304,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         config.setColorTerminal(colorTerminal);
         qdupLogger.addHandler(consoleHandler);
 
-        //qdupLogger.setLevel(Level.ALL);
+        qdupLogger.setLevel(Level.parse(qDupLevel));
 
 
         if(config.hasErrors()){
@@ -364,7 +373,8 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         boolean startJsonServer = !Boolean.parseBoolean(System.getProperty("disableRestApi", "false"));
         JsonServer jsonServer = null;
         if (startJsonServer) {
-            jsonServer = new JsonServer(run, jsonPort);
+            vertx = Arc.container().instance(Vertx.class).get(); // Programmatic lookup
+            jsonServer = new JsonServer(vertx, run, jsonPort);
             if(breakPoints!=null){ breakPoints.forEach(jsonServer::addBreakpoint);}
             jsonServer.start();
         }
