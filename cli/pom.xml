@@ -38,7 +38,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-picocli</artifactId>
         </dependency>
-        <dependency><!-- can take this out? -->
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
@@ -68,11 +68,9 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <!--<version>${compiler-plugin.version}</version>-->
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <!--<version>${surefire-plugin.version}</version>-->
                 <configuration>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -82,7 +80,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <!--        <version>${surefire-plugin.version}</version>-->
                 <executions>
                     <execution>
                         <goals>
@@ -103,7 +100,6 @@
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${version.quarkus}</version>
-                <!--<version>${quarkus.platform.version}</version>-->
                 <executions>
                     <execution>
                         <goals>
@@ -112,7 +108,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <!-- trick to exclude this module from deployment bundle -->
             <plugin>
                 <groupId>org.sonatype.central</groupId>
@@ -126,7 +121,6 @@
             </plugin>
         </plugins>
     </build>
-
     <profiles>
         <profile>
             <id>native</id>
@@ -141,5 +135,4 @@
             </properties>
         </profile>
     </profiles>
-
 </project>
