@@ -7,7 +7,7 @@
     <groupId>io.hyperfoil.tools</groupId>
     <artifactId>hyperfoil-qDup</artifactId>
     <packaging>pom</packaging>
-    <version>0.10.2</version>
+    <version>0.10.3-SNAPSHOT</version>
     <modules>
         <module>qDup</module>
         <module>cli</module>
@@ -20,7 +20,7 @@
         <connection>scm:git:git://github.com/Hyperfoil/qDup.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/Hyperfoil/qDup.git</developerConnection>
         <url>https://github.com/Hyperfoil/qDup</url>
-        <tag>0.10.2</tag>
+        <tag>qDup-0.8.4</tag>
     </scm>
     <licenses>
         <license>
