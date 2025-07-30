@@ -55,8 +55,10 @@
             "container": {"type": "string"},
             "check-container-id":{"type":"string"},
             "check-container-name": {"type":"string"},
-            "start-container": {"type":"string"},
-            "start-connected-container": {"type":"string"},
+            "check-container-status": {"type":"string"},
+            "create-container": {"type":"string"},
+            "create-connected-container": {"type":"string"},
+            "restart-connected-container": {"type":"string"},
             "stop-container": {"type":"string"},
             "connect-shell": {"type":"string"},
             "platform-login": {"type":"string"},
@@ -66,7 +68,10 @@
             "download": {"type":"string"},
             "is-shell": {"type":"boolean"}
           },
-          "required": ["username","hostname"],
+          "anyOf": [
+            { "required": ["local"] },
+            { "required": ["username","hostname"] }
+          ],
           "additionalProperties": false
         }
       ]
