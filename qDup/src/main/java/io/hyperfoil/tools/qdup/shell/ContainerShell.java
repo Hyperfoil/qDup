@@ -62,7 +62,7 @@ public class ContainerShell extends AbstractShell{
         if(input == null){
             return true;//invalid input is an error? :)
         }
-        return Stream.of("Error","error","-bash","command not found","select an image","no such object:","bad substitution")
+        return Stream.of("Error","error","-bash","command not found","select an image","no such object:","bad substitution","not supported and ignored")
             .anyMatch(e->input.contains(e) || input.matches(e));
     }
 
@@ -88,6 +88,7 @@ public class ContainerShell extends AbstractShell{
             rtrn = new SyncResponse("Error: failed to populate pattern",true);
         }else {
             rtrn = shell.shSync(command, new HashMap<>(), timeout);
+            logger.debugf("%s - %s%n  %s%n  timedOut: %s%n  response:%n%s",getName(),HostDefinition.CREATE_CONTAINER,command,rtrn.timedOut(),rtrn.output());
         }
         return rtrn;
     }
@@ -113,10 +114,13 @@ public class ContainerShell extends AbstractShell{
         return !response.timedOut() && response.output().contains("running");
     }
 
+    private static record CommandResponse(String name,String command,SyncResponse response){}
 
     //TODO should also accept the state or some state representation
     @Override
     PrintStream connectShell() {
+
+        List<CommandResponse> responses = new ArrayList<>();
 
         PrintStream rtrn = null;
         int asyncTimeoutSeconds = 10;
@@ -141,8 +145,10 @@ public class ContainerShell extends AbstractShell{
             return null;
         }
         boolean connectSetContainerId=false;
-        subShellIdentifier = shell.execSync(GET_HOST_OR_CONTAINER_ID,asyncTimeoutSeconds).output().trim();//ignoring timeouts for now
-
+        SyncResponse shellIdentifierResponse = shell.execSync(GET_HOST_OR_CONTAINER_ID,asyncTimeoutSeconds);
+        responses.add(new CommandResponse("subshell-identifier",GET_HOST_OR_CONTAINER_ID,shellIdentifierResponse));
+        subShellIdentifier = shellIdentifierResponse.output().trim();//ignoring timeouts for now
+        logger.debugf("%s subShell identifier = %s",getName(),subShellIdentifier);
         try {
             getHost().getContainerLock().acquire();
         } catch (InterruptedException e) {
@@ -154,15 +160,17 @@ public class ContainerShell extends AbstractShell{
         }else if (Host.isContainerId(getHost().getDefinedContainer())){
             containerId = getHost().getDefinedContainer();
         }else if (Host.isContainerName(getHost().getDefinedContainer()) && getHost().hasCheckContainerName()){
+            String populated = populateList(getHost().getCheckContainerName(),Json.fromMap(Map.of(
+                    "host",getHost().toJson(),
+                    "image",getHost().getDefinedContainer(),
+                    "container",getHost().getDefinedContainer()
+            )));
             SyncResponse response = shellExecSync(
-                    populateList(getHost().getCheckContainerName(),Json.fromMap(Map.of(
-                            "host",getHost().toJson(),
-                            "image",getHost().getDefinedContainer(),
-                            "container",getHost().getDefinedContainer()
-                    ))),
+                    populated,
                     HostDefinition.CHECK_CONTAINER_NAME,
                     asyncTimeoutSeconds
             );
+            responses.add(new CommandResponse(HostDefinition.CHECK_CONTAINER_NAME,populated,response));
             if(!response.timedOut() && !hasErrorMessage(response.output()) && Host.isContainerId(response.output().trim())){
                 containerId = response.output().trim();
             }
@@ -185,6 +193,7 @@ public class ContainerShell extends AbstractShell{
                         HostDefinition.CREATE_CONTAINER,
                         10
                 );
+                responses.add(new CommandResponse(HostDefinition.CREATE_CONTAINER,populatedCommand,response));
                 if(hasErrorMessage(response.output())){
                     if(response.output().contains("select an image")) {
                         logger.errorf("error starting %s container %s is ambiguous", getHost().isLocal() ? "local" : "remote", containerId);
@@ -228,6 +237,7 @@ public class ContainerShell extends AbstractShell{
 //                shell.setSessionStreams(getSessionStreams());
 //            }
             SyncResponse response = shellShSync(populatedCommand,HostDefinition.RESTART_CONNECTED_CONTAINER,asyncTimeoutSeconds);
+            responses.add(new CommandResponse(HostDefinition.RESTART_CONNECTED_CONTAINER,populatedCommand,response));
             if(hasErrorMessage(response.output())){
                 logger.debugf(getName()+" error trying to restart container "+containerId+"\n"+response.output());
             }else{
@@ -253,6 +263,7 @@ public class ContainerShell extends AbstractShell{
 //                shell.setSessionStreams(getSessionStreams());
 //            }
             SyncResponse response = shellShSync(populatedCommand,HostDefinition.CONNECT_SHELL,asyncTimeoutSeconds);
+            responses.add(new CommandResponse(HostDefinition.CONNECT_SHELL,populatedCommand,response));
             if(hasErrorMessage(response.output())){
                 logger.debugf(getName()+" failed to connect to container "+containerId);
             }else{//check if the shellId changed
@@ -280,6 +291,7 @@ public class ContainerShell extends AbstractShell{
                 removeCidFile();
             }
             SyncResponse response = shellShSync(populatedCommand,HostDefinition.CREATE_CONNECTED_CONTAINER,asyncTimeoutSeconds);
+            responses.add(new CommandResponse(HostDefinition.CREATE_CONNECTED_CONTAINER,populatedCommand,response));
             if(hasErrorMessage(response.output())){
                 logger.debugf(getName()+" failed to create a connected container "+getHost().getDefinedContainer()+"\n"+response.output());
             }else {
@@ -306,7 +318,11 @@ public class ContainerShell extends AbstractShell{
                 //end copy and paste from getStartContainer
             }
         }
-
+        if(rtrn == null){
+            String message = responses.stream().map(cr->cr.name+"\ncommand: "+cr.command+"\ntimeout: "+cr.response.timedOut()+"\noutput:\n"+cr.response.output()).collect(Collectors.joining("\n"));
+            System.out.println(message);
+            logger.errorf("%s failed to connect %s. Attempted:%n%s",getName(),getHost().getSafeString(),message);
+        }
         return rtrn;
     }
 
