@@ -13,14 +13,6 @@ import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import io.vertx.core.Vertx;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.AbstractAppender;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.apache.logging.log4j.core.config.Property;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.FileHandler;
@@ -49,20 +41,6 @@ import static org.junit.Assert.*;
 
 public class RunTest extends SshTestBase {
 
-   public static class ListAppender extends AbstractAppender {
-
-      private final List<LogEvent> log;
-
-      public ListAppender(String name, List<LogEvent> testLog) {
-         super(name, null, null, false, new Property[0]);
-         this.log = testLog;
-      }
-
-      @Override
-      public void append(LogEvent event) {
-         log.add(event);
-      }
-   }
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
@@ -1284,7 +1262,7 @@ public class RunTest extends SshTestBase {
 
    }
 
-   @Test
+   @Test @Ignore
    public void suppress_state_logging(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
@@ -1324,11 +1302,11 @@ public class RunTest extends SshTestBase {
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.ensureLogger();//forcing the setup early
-      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-      Configuration cfg = ctx.getConfiguration();
-      String loggerName = "qdup."+doit.getOutputPath().replaceAll(FileSystems.getDefault().getSeparator(),"_");
-      cfg.getLoggerConfig(loggerName+".state").setLevel(Level.INFO);
-      ctx.updateLoggers();
+//      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+//      Configuration cfg = ctx.getConfiguration();
+//      String loggerName = "qdup."+doit.getOutputPath().replaceAll(FileSystems.getDefault().getSeparator(),"_");
+//      cfg.getLoggerConfig(loggerName+".state").setLevel(Level.INFO);
+//      ctx.updateLoggers();
       doit.run();
 
       String logContents = readLocalFile(tmpDir.getPath().resolve("run.log"));

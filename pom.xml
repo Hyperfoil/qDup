@@ -80,7 +80,6 @@
         <version.maven-plugin-annotations>3.5.1</version.maven-plugin-annotations>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.log4j>2.17.2</version.log4j>
         <version.slf4j>1.7.36</version.slf4j>
 
         <version.graalvm>24.0.1</version.graalvm>
@@ -134,16 +133,6 @@
                 <groupId>io.hyperfoil.tools</groupId>
                 <artifactId>parse</artifactId>
                 <version>${version.parse}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>${version.log4j}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
-                <version>${version.log4j}</version>
             </dependency>
             <dependency>
                 <groupId>commons-cli</groupId>
