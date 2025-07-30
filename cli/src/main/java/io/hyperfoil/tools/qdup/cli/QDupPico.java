@@ -72,7 +72,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
     boolean colorTerminal;
     @CommandLine.Option(names = {"-K","--breakpoint"}, description = "break before starting commands matching the pattern")
     List<String> breakPoints;
-    @CommandLine.Option(names = {"-s","--scheduledPool"}, description = "number of threads for executing scheduled tasks", defaultValue = "4")
+    @CommandLine.Option(names = {"-s","--scheduledPool"}, description = "number of threads for executing scheduled tasks", defaultValue = "24")
     int schedulePool;
     @CommandLine.Option(names = {"-S","--state"}, description = "set state parameters")
     Map<String,String> stateParameters;
