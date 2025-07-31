@@ -415,6 +415,12 @@ public class Run implements Runnable, DispatchObserver {
             toWrite.set("version","0.0.1");
             toWrite.set("state",this.getConfig().getState().toJson());
 
+            Json hosts = new Json(true);
+            this.getConfig().getAllHostsInRoles().forEach(h->{
+                hosts.add(h.toJson(true));
+            });
+            toWrite.set("hosts",hosts);
+
             Json latches = new Json();
             this.getCoordinator().getLatchTimes().forEach((key,value)->{
                 latches.set(key,value);
