@@ -35,6 +35,9 @@
     "state": {
       "type": "object"
     },
+    "hosts": {
+      "type": "array"
+    },
     "timestamps": {
       "type": "object",
       "patternProperties": {
