@@ -320,7 +320,6 @@ public class ContainerShell extends AbstractShell{
         }
         if(rtrn == null){
             String message = responses.stream().map(cr->cr.name+"\ncommand: "+cr.command+"\ntimeout: "+cr.response.timedOut()+"\noutput:\n"+cr.response.output()).collect(Collectors.joining("\n"));
-            System.out.println(message);
             logger.errorf("%s failed to connect %s. Attempted:%n%s",getName(),getHost().getSafeString(),message);
         }
         return rtrn;
