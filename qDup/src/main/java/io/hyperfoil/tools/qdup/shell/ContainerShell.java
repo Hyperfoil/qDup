@@ -62,7 +62,7 @@ public class ContainerShell extends AbstractShell{
         if(input == null){
             return true;//invalid input is an error? :)
         }
-        return Stream.of("Error","error","-bash","command not found","select an image","no such object:","bad substitution","not supported and ignored")
+        return Stream.of("Error","error","-bash","command not found","select an image","no such object:","bad substitution")
             .anyMatch(e->input.contains(e) || input.matches(e));
     }
 
