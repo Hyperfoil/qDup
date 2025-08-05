@@ -14,6 +14,38 @@ import static org.junit.Assert.assertEquals;
 public class RunConfigTest extends SshTestBase {
 
    @Test
+   public void getAllHostsInRoles_alias_same_host(){
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("pwd",
+              """
+              scripts:
+                foo:
+                  - signal: ${{signal:}}
+              hosts:
+                uno: LOCAL//quay.io/fedora/fedora
+                dos: LOCAL//quay.io/fedora/fedora
+              roles:
+                one:
+                  hosts: [uno]
+                  run-scripts:
+                  - bar:
+                two:
+                  hosts: [dos]
+                  run-scripts:
+                  - bar:
+              states:
+                MASTER: ["one","two","three"]
+              """.replaceAll("HOST_USERNAME",getHost().getUserName())
+                      .replaceAll("HOST_HOSTNAME",getHost().getHostName())
+      ));
+      RunConfig config = builder.buildConfig(parser);
+      Set<Host> hosts = config.getAllHostsInRoles();
+      assertEquals(2,hosts.size());
+
+   }
+
+   @Test
    public void host_with_download_preserves_variables(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();

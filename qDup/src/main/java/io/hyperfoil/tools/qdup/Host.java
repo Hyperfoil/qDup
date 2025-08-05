@@ -673,11 +673,11 @@ public class Host {
     }
 
     @Override
-    public int hashCode(){return toString().hashCode();}
+    public int hashCode(){return toJson().toString().hashCode();}
     @Override
     public boolean equals(Object object){
-        if(object instanceof Host && object!=null){
-            return toString().equals(object.toString());
+        if(object instanceof Host){
+            return toJson().equals(((Host)object).toJson());
         }
         return false;
     }
