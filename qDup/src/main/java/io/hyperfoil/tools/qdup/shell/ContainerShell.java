@@ -209,6 +209,7 @@ public class ContainerShell extends AbstractShell{
                         ).output();
                         if(Host.isContainerId(cid)) {
                             containerId = cid;
+                            connectSetContainerId = true;
                         }
                     }
                     if( rtrn == null ){//did not set rtrn from the cidfile or didn't have one
@@ -222,6 +223,7 @@ public class ContainerShell extends AbstractShell{
                 }
                 if( rtrn == null && Host.isContainerId(response.output().trim())) {//command returned something or above failed to set the return
                     containerId = response.output().trim();
+                    connectSetContainerId = true;
                 }
             }
         }
@@ -321,6 +323,9 @@ public class ContainerShell extends AbstractShell{
         if(rtrn == null){
             String message = responses.stream().map(cr->cr.name+"\ncommand: "+cr.command+"\ntimeout: "+cr.response.timedOut()+"\noutput:\n"+cr.response.output()).collect(Collectors.joining("\n"));
             logger.errorf("%s failed to connect %s. Attempted:%n%s",getName(),getHost().getSafeString(),message);
+        }else{
+            //TODO I do not think this is necessary, it breaks shell.sh
+           //getSessionStreams().getSuffixStream().removeConsumer(shell.semaphoreCallback);
         }
         return rtrn;
     }
@@ -340,15 +345,16 @@ public class ContainerShell extends AbstractShell{
                     getHost().setNeedStopContainer(true);
                     containerId = unameN;
                 } else {
-                    SyncResponse hostnameResponse = shellShSync("cat /etc/hostname", "cat-hostname", 10);
+                    SyncResponse hostnameResponse = shSync("cat /etc/hostname",null,10); //shellShSync("cat /etc/hostname", "cat-hostname", 10);
                     if (Host.isContainerId(hostnameResponse.output().trim())) {
                         getHost().setContainerId(hostnameResponse.output().trim());
                         containerId = hostnameResponse.output().trim();
+                        getHost().setNeedStopContainer(true);
                     }
                 }
             }
         }
-        String unameN = shell.shSync(GET_HOST_OR_CONTAINER_ID);
+        String unameN = shSync(GET_HOST_OR_CONTAINER_ID); //shell.shSync(GET_HOST_OR_CONTAINER_ID);
         //it should always be 0...
         if(getHost().getContainerLock().availablePermits() == 0){
             getHost().getContainerLock().release();

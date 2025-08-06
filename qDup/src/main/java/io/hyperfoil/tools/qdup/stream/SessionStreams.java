@@ -56,6 +56,9 @@ public class SessionStreams extends MultiStream {
     *          shStream - stores the write buffer for a command
     *       promptStream - watches for suffixes and sends a prompt response (Y/n, Ok?, ...)
     */
+
+   private String traceName;
+
    public SessionStreams(String name, ScheduledThreadPoolExecutor executor){
       super(name);
       shStream = new ByteArrayOutputStream();
@@ -103,7 +106,9 @@ public class SessionStreams extends MultiStream {
    @Override
    public void write(byte b[], int off, int len) throws IOException {
       if(hasTrace()){
-         trace("[--qdup--]");
+         trace("[>>qdup["+off+","+len+"]--]\n");
+         trace(MultiStream.printByteCharacters(b,off,len));
+         trace("\n[<<qdup["+off+","+len+"]--]\n");
       }
       super.write(b,off,len);
       //escapeFilteredStream.write(b,off,len);
@@ -174,15 +179,23 @@ public class SessionStreams extends MultiStream {
    public boolean hasTrace(){
       return escapeFilteredStream.hasStream("trace");
    }
-   public void setTrace(String traceName) throws IOException{
+   public String getTraceName(){return traceName;}
+   public void setTrace(String traceName){
       if(!hasTrace()){
+         this.traceName = traceName;
          try {
             String tDir = System.getProperty("java.io.tmpdir");
             logger.info("streamtracing " + traceName + " to " + tDir);
-            String rawTracePath = Files.createFile(Paths.get(tDir, "qdup." + traceName + ".raw.log")).toAbsolutePath().toString();
-            FileOutputStream rawTraceStream = new FileOutputStream(rawTracePath);
-            String efsTracePath = Files.createFile(Paths.get(tDir, "qdup." + traceName + ".efs.log")).toAbsolutePath().toString();
-            FileOutputStream efsTraceStream = new FileOutputStream(efsTracePath);
+            Path rawTracePath = Paths.get(tDir, "qdup." + traceName + ".raw.log");
+            if(!Files.exists(rawTracePath)){
+               Files.createFile(rawTracePath);
+            }
+            FileOutputStream rawTraceStream = new FileOutputStream(rawTracePath.toFile());
+            Path efsTracePath = Paths.get(tDir, "qdup." + traceName + ".efs.log");
+            if(!Files.exists(efsTracePath)){
+               Files.createFile(efsTracePath);
+            }
+            FileOutputStream efsTraceStream = new FileOutputStream(efsTracePath.toFile());
             escapeFilteredStream.addStream("trace", efsTraceStream);
             addStream("trace", rawTraceStream);
          }catch(Exception e){

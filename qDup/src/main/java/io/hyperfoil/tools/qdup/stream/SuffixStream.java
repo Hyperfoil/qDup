@@ -151,6 +151,7 @@ public class SuffixStream extends MultiStream {
     public void addConsumer(Consumer<String> consumer){
         consumers.add(consumer);
     }
+    public List<Consumer<String>> getConsumers(){return Collections.unmodifiableList(consumers);}
     public boolean hasConsumers(){return !consumers.isEmpty();}
     public void removeConsumer(Consumer<String> consumer){
         consumers.remove(consumer);

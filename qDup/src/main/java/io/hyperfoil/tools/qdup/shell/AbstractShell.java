@@ -133,7 +133,7 @@ public abstract class AbstractShell {
         this.host = host;
         this.setupCommand = setupCommand;
         this.executor = executor;
-        this.trace=false;
+
 
         shellLock = new Semaphore(1);
         lineObservers = new ConcurrentHashMap<>();
@@ -149,6 +149,7 @@ public abstract class AbstractShell {
         sessionStreams = new SessionStreams(getName(),executor);
         this.filter = filter;
         this.isPromptShell = new HashMap<>();
+        this.trace = trace;
     }
 
     abstract PrintStream connectShell();
@@ -156,6 +157,10 @@ public abstract class AbstractShell {
     final void setSessionStreams(SessionStreams sessionStreams){
         //TODO copy prompts from original sessionStreams to new sessionStreams
         this.sessionStreams.sharePrompts(sessionStreams);
+        if(this.sessionStreams.hasTrace()){
+            sessionStreams.setTrace(this.sessionStreams.getTraceName());
+        }
+
         this.sessionStreams = sessionStreams;
         updateSessionStream(sessionStreams);
         //trying fix shSync after setSessionStreams is called
@@ -163,6 +168,7 @@ public abstract class AbstractShell {
             this.sessionStreams.addPromptCallback(this.semaphoreCallback);
             this.sessionStreams.addLineConsumer(this::lineConsumers);
         }
+
 
 
     }
@@ -197,17 +203,26 @@ public abstract class AbstractShell {
             //TODO need to replace lambda with method access for changes to sessionStream to be visible
             semaphoreCallback = (name) -> {
                 String output = getShOutput(true);
+                if(isTracing()){
+
+                }
                 //TODO use atomic boolean to set expecting response and check for true before release?
                 if(permits() == 0) {
                     shellLock.release();
                     if (isTracing()) {
                         try {
-                            sessionStreams.getTrace().write("RELEASE".getBytes());
+                            sessionStreams.getTrace().write(("RELEASE "+"\n").getBytes());
                         } catch (IOException e) {
                         }
                     }
                 } else {
                     //this should only happen if reconnected
+                    if (isTracing()) {
+                        try {
+                            sessionStreams.getTrace().write(("RECONNECT "+permits()+"\n").getBytes());
+                        } catch (IOException e) {
+                        }
+                    }
                     logger.debug("skipping release, suspect reconnect "+permits());
                 }
                 shObservers(output,name);
@@ -221,6 +236,7 @@ public abstract class AbstractShell {
                 addPrompt(getHost().getPrompt(), getHost().isShell());
             }
             sessionStreams.addPromptCallback(this.semaphoreCallback);
+
             commandStream = connectShell();
             if(commandStream == null){
                 if(getHost().hasAlias()){
@@ -271,6 +287,7 @@ public abstract class AbstractShell {
             rtrn = isOpen();
         }
         if(rtrn){
+            setTrace(trace);
             rtrn = postConnect();
         }
         if(!rtrn){//something went wrong in post connect, this shell is no good
@@ -605,7 +622,7 @@ public abstract class AbstractShell {
         return isOpen() && isReady();
     }
 
-    public void setTrace(boolean trace) throws IOException {
+    public void setTrace(boolean trace) {
         this.trace = trace;
         if (trace) {
             String path =  hasName() ? getName() : getHost().toString();
@@ -669,7 +686,7 @@ public abstract class AbstractShell {
         return shellLock.availablePermits();
     }
     public boolean isTracing() {
-        return sessionStreams!=null && sessionStreams.hasTrace();
+        return trace && sessionStreams!=null && sessionStreams.hasTrace();
     }
 
     public String getShOutput(boolean flush){

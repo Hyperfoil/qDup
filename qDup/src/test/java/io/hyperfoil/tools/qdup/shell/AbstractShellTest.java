@@ -46,4 +46,15 @@ public class AbstractShellTest extends SshTestBase {
         assertTrue("shell should be ready",shell.isReady());
         assertTrue("shell should be SshShell but was "+shell.getClass().getSimpleName(),shell instanceof SshShell);
     }
+
+    @Test
+    public void isTracing(){
+        Host host = getHost();
+        AbstractShell shell = AbstractShell.getShell("tracingShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),true);
+
+        boolean isTracing = shell.isTracing();
+        assertTrue(isTracing);
+        String path = shell.getSessionStreams().getTraceName();
+        shell.shSync("env");
+    }
 }
