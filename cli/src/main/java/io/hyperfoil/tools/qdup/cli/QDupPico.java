@@ -129,6 +129,18 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         String uid = dt.format(LocalDateTime.now());
 
 
+        //colorTerminal = colorTerminal && ConfigProvider.getConfig().getValue("quarkus.console.color",Boolean.class);
+        String qDupFormat = ConfigProvider.getConfig().getOptionalValue("qdup.console.format",String.class).orElse("%d{HH:mm:ss.SSS} %-5p %m%n");
+        String qDupLevel = ConfigProvider.getConfig().getOptionalValue("qdup.console.level",String.class).orElse("INFO");
+        org.jboss.logmanager.Logger qdupLogger = org.jboss.logmanager.Logger.getLogger("io.hyperfoil.tools.qdup");
+        //qdupLogger.setUseParentHandlers(false);//to disable double console
+        PatternFormatter formatter = colorTerminal ? new ColorPatternFormatter(qDupFormat) : new PatternFormatter(qDupFormat);
+        ConsoleHandler consoleHandler = new ConsoleHandler(formatter);
+        //consoleHandler.setLevel(Level.ALL);
+        //consoleHandler.setLevel(Level.ALL);
+        qdupLogger.addHandler(consoleHandler);
+
+        qdupLogger.setLevel(Level.parse(qDupLevel));
 
         if(!tracePattern.isEmpty() && traceNamePattern.isEmpty()){
             traceNamePattern = uid;
@@ -292,19 +304,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
             outputFile.mkdirs();
         }
 
-        //colorTerminal = colorTerminal && ConfigProvider.getConfig().getValue("quarkus.console.color",Boolean.class);
-        String qDupFormat = ConfigProvider.getConfig().getOptionalValue("qdup.console.format",String.class).orElse("%d{HH:mm:ss.SSS} %-5p %m%n");
-        String qDupLevel = ConfigProvider.getConfig().getOptionalValue("qdup.console.level",String.class).orElse("INFO");
-        org.jboss.logmanager.Logger qdupLogger = org.jboss.logmanager.Logger.getLogger("io.hyperfoil.tools.qdup");
-        //qdupLogger.setUseParentHandlers(false);//to disable double console
-        PatternFormatter formatter = colorTerminal ? new ColorPatternFormatter(qDupFormat) : new PatternFormatter(qDupFormat);
-        ConsoleHandler consoleHandler = new ConsoleHandler(formatter);
-        //consoleHandler.setLevel(Level.ALL);
-        //consoleHandler.setLevel(Level.ALL);
         config.setColorTerminal(colorTerminal);
-        qdupLogger.addHandler(consoleHandler);
-
-        qdupLogger.setLevel(Level.parse(qDupLevel));
 
 
         if(config.hasErrors()){
