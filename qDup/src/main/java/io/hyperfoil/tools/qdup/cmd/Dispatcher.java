@@ -303,18 +303,10 @@ public class Dispatcher {
             });
             if(nonWaitingContexts.get() == 0){
                 if(!scriptContexts.isEmpty()){
-
-                    if(logger.isTraceEnabled()){
-                        logger.tracef("ending phase with %d active idle waiting scripts\n%s",
-                           scriptContexts.size(),
-                           getActiveJson().toString(2)
-                        );
-                    }else{
-                        logger.infof("ending phase with %d active idle waiting scripts\n%s",
-                           scriptContexts.size(),
-                           getActiveJson().toString(2)
-                        );
-                    }
+                    logger.warnf("ending phase with %d active idle waiting scripts\n%s",
+                       scriptContexts.size(),
+                       getActiveJson().toString(2)
+                    );
                     ScriptContext first = scriptContexts.values().iterator().next();
                     first.done();//use context.done to also stop the waiters
                 }
