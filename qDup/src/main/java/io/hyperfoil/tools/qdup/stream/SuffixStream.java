@@ -255,6 +255,11 @@ public class SuffixStream extends MultiStream {
         consumers.forEach(c -> c.accept(name));
     }
     public int suffixLength(byte b[], byte toFind[], int endIndex){
+        // Skip trailing nulls that some custom shell prompts seam to append
+        while (endIndex > 0 && b[endIndex-1] == 0) {
+            endIndex--;
+        }
+
         boolean matching = false;
         int rtrn = 0;
         for(int shift=Math.max(0,toFind.length-endIndex); shift< toFind.length && !matching; shift++){
