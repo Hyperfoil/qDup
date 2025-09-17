@@ -5,15 +5,16 @@
 
 
     <groupId>io.hyperfoil.tools</groupId>
-    <artifactId>hyperfoil-qDup</artifactId>
+    <artifactId>qDup-parent</artifactId>
+    <name>qDup-parent</name>
     <packaging>pom</packaging>
     <version>0.10.5-SNAPSHOT</version>
     <modules>
+        <module>qDup-core</module>
         <module>qDup</module>
-        <module>cli</module>
     </modules>
 
-    <name>hyperfoil-qDup</name>
+
     <description>Coordinate multiple terminal shell connections for queuing performance tests and collecting output files</description>
     <url>https://github.com/Hyperfoil/qDup</url>
     <scm>
