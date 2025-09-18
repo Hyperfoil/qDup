@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusMainTest
-class QDupPicoTest {
+class QDupTest {
 
 
     private static GenericContainer container;
@@ -112,7 +112,7 @@ class QDupPicoTest {
 
     public static Path getPath(String subDir){
         return  Paths.get(
-                QDupPicoTest.class.getProtectionDomain().getCodeSource().getLocation().getPath()
+                QDupTest.class.getProtectionDomain().getCodeSource().getLocation().getPath()
         ).resolve(
                 Paths.get(subDir)
         );

@@ -9,6 +9,7 @@ import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.config.yaml.YamlFile;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.quarkus.arc.Arc;
+import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.vertx.core.Vertx;
@@ -26,7 +27,6 @@ import sun.misc.Signal;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.channels.Channels;
@@ -41,7 +41,7 @@ import java.util.logging.Level;
 
 @QuarkusMain
 @CommandLine.Command(name="qdup", description = "performance test automation", mixinStandardHelpOptions = true, subcommands={CommandLine.HelpCommand.class, AutoComplete.GenerateCompletion.class}, versionProvider = QDupVersionProvider.class)
-public class QDupPico implements Callable<Integer>, QuarkusApplication {
+public class QDup implements Callable<Integer>, QuarkusApplication {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -104,10 +104,6 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
     @ConfigProperty(name = "qdup.console.format")
     String consoleFormat;
 
-    @Inject
-    @ConfigProperty(name = "quarkus.application.gitHash")
-    String gitHash;
-
     //@Inject
     Vertx vertx;
 
@@ -116,7 +112,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         //characters for brail spinner
         //sout("\u2807\u280B\u2819\u2838\u2834\u2826");
         System.setProperty("polyglotimpl.DisableClassPathIsolation", "true");
-        CommandLine cmd = new CommandLine(new QDupPico());
+        CommandLine cmd = new CommandLine(new QDup());
         CommandLine gen = cmd.getSubcommands().get("generate-completion");
         gen.getCommandSpec().usageMessage().hidden(true);
         return cmd.execute(args);
