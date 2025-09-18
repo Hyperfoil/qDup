@@ -8,7 +8,7 @@
         <version>0.10.6-SNAPSHOT</version>
     </parent>
 
-    <name>qDup-cli</name>
+    <name>qDup</name>
     <artifactId>qDup</artifactId>
 
     <properties>
