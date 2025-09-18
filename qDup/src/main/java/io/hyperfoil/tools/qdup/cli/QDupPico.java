@@ -104,6 +104,10 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
     @ConfigProperty(name = "qdup.console.format")
     String consoleFormat;
 
+    @Inject
+    @ConfigProperty(name = "quarkus.application.gitHash")
+    String gitHash;
+
     //@Inject
     Vertx vertx;
 
@@ -138,10 +142,15 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
 
         qdupLogger.setLevel(Level.parse(qDupLevel));
 
+        QDupVersionProvider versionProvider = new QDupVersionProvider();
+
+        logger.infof("Running qDup version %s ", versionProvider.getVersion()[0]);
+
+
+
         if(!tracePattern.isEmpty() && traceNamePattern.isEmpty()){
             traceNamePattern = uid;
         }
-
 
         String outputPath = null;
         if(!outputModeGroup.basePath.isEmpty()){
@@ -151,25 +160,6 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         }else{
             outputPath = "/tmp/"+uid;
         }
-
-        Properties properties = new Properties();
-        try (InputStream is = QDup.class.getResourceAsStream("/META-INF/MANIFEST.MF")) {
-            if (is != null) {
-                properties.load(is);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try (InputStream is = QDup.class.getResourceAsStream("/META-INF/maven/io.hyperfoil.tools/qDup/pom.properties")) {
-            if (is != null) {
-                properties.load(is);
-
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        String version = properties.getProperty("version", "unknown");
-        String hash = properties.getProperty("hash", "unknown");
 
         if(yamlPaths.isEmpty()){
             logger.error("missing configuration files");
@@ -344,7 +334,7 @@ public class QDupPico implements Callable<Integer>, QuarkusApplication {
         config.getGlobals().addSetting("check-exit-code", !ignoreExitCode);
         final Run run = new Run(outputPath, config, dispatcher);
         run.ensureConsoleLogging();
-        logger.infof("Running qDup version %s @ %s", version, hash);
+
         logger.info("output path = " + run.getOutputPath());
         if(!ignoreExitCode){
             logger.info("shell exit code checks enabled");

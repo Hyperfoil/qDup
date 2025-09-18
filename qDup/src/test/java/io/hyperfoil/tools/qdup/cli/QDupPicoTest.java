@@ -141,9 +141,8 @@ class QDupPicoTest {
 
     @Test
     public void whoami(QuarkusMainLauncher launcher) throws IOException {
-        Path configPath = Files.writeString(File.createTempFile("parse",".yaml").toPath(),
+        Path configPath = Files.writeString(File.createTempFile("qdup",".yaml").toPath(),
                 """
-                ---
                 scripts:
                   whoami:
                   - sh: whoami
@@ -162,5 +161,27 @@ class QDupPicoTest {
 
 
 
+    }
+
+
+    @Test
+    public void invalid_yaml(QuarkusMainLauncher launcher) throws IOException {
+        Path configPath = Files.writeString(File.createTempFile("qdup",".yaml").toPath(),
+                """
+                scripts:
+                  invalid:
+                  - invalidCmd
+                hosts:
+                  target: HOST_TARGET
+                roles:
+                  test:
+                    hosts:
+                    - target
+                    run-scripts:
+                    - invalid
+                """.replaceAll("HOST_TARGET",getHost().toString()));
+        configPath.toFile().deleteOnExit();
+        LaunchResult result = launcher.launch("--fullPath","/tmp","--identity",getIdentity(),configPath.toString());
+        assertTrue(result.getOutput().contains("Failed to load"));
     }
 }
