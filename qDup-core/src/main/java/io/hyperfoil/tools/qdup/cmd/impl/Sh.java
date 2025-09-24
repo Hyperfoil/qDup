@@ -126,7 +126,7 @@ public class Sh extends Cmd {
             // ensure the output does not contain characters from other processes
             // this gets into a hot loop when ctrl+C the process
             int retry = 0;
-            while(retry < 5 && !response.matches("\\d+") && !response.isBlank() && context.getShell().isReady() && !context.isAborted()){
+            while(retry < 5 && !response.matches("-?\\d+") && !response.isBlank() && context.getShell().isReady() && !context.isAborted()){
                 response = context.getShell().shSync("echo $__qdup_ec;");
                 retry++;
             }
@@ -178,7 +178,13 @@ public class Sh extends Cmd {
                         }
                         cmd = cmd.getParent();
                     }
-                    context.error("aborting run due to exit code "+response+"\n  host: "+context.getShell().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
+                    if(response.matches("-?\\d+")){
+                        context.error("aborting run due to exit code ["+response+"]\n  host: "+context.getShell().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
+                    }else{
+                        context.error("aborting run due to unexpected characters in exit code ["+response+"] The prompt may have changed\n  host: "+context.getShell().getHost()+"\n  command: "+ this +(stack.length()>0?"\nstack:"+stack.toString():""));
+                    }
+
+
                     context.abort(false);
                 }
             }
