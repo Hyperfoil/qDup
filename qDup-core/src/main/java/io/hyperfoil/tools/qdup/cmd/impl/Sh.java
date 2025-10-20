@@ -60,6 +60,11 @@ public class Sh extends Cmd {
     @Override
     public void run(String input, Context context) {
         populatedCommand = populateStateVariables(command,this,context);
+        //enable stream logging if enabled
+        if(context.getCoordinator().getGlobals().getSetting(Globals.STREAM_LOGGING,false)){
+            context.getShell().addLineObserver("stream",context::log);
+        }
+
         if(Cmd.hasStateReference(populatedCommand,this)){
             List<String> missing = Cmd.getStateVariables(populatedCommand,this,context);
             context.error(
@@ -115,13 +120,20 @@ public class Sh extends Cmd {
 
     @Override
     public void postRun(String output,Context context){
+        //turn off stream logging if enabled
+        if(context.getCoordinator().getGlobals().getSetting(Globals.STREAM_LOGGING,false)){
+            context.getShell().removeLineObserver("stream");
+        }
+
         //if the remove shell has exit codes and the response came from the base shell
+        //TODO the base shell is not the only one that supports exit code checking
         if(context.getShell()!=null &&
             context.getShell().isOpen() &&
             /*SshSession.PROMPT.equals(getPreviousPrompt()) &&*/
             context.getShell().isPromptShell(getPreviousPrompt()) &&
             context.getShell().getHost().isShell())
         {
+
             String response = context.getShell().shSync("export __qdup_ec=$?; echo $__qdup_ec;");
             // ensure the output does not contain characters from other processes
             // this gets into a hot loop when ctrl+C the process
@@ -190,8 +202,11 @@ public class Sh extends Cmd {
             }
         }else{
             //duplicate getting toLog to avoid the overhead if not needed
-            String toLog = getLogOutput(output,context);
-            context.log(toLog);
+            //turn off stream logging if on
+            if(!context.getCoordinator().getGlobals().getSetting(Globals.STREAM_LOGGING,false)){
+                String toLog = getLogOutput(output,context);
+                context.log(toLog);
+            }
         }
     }
 

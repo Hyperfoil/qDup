@@ -179,7 +179,7 @@ public class Run implements Runnable, DispatchObserver {
                     fileHandler.setFormatter(formatter);
                     internalRunLogger = org.jboss.logmanager.Logger.getLogger(getLoggerName());
                     internalRunLogger.setUseParentHandlers(false);//to disable double console
-                    internalRunLogger.setLevel(Level.INFO);
+                    internalRunLogger.setLevel(Level.ALL);
                     //internalRunLogger.setParent(org.jboss.logmanager.Logger.getGlobal());//was commented out //disallowed
                     internalStateLogger = org.jboss.logmanager.Logger.getLogger(internalRunLogger.getName() + ".state");
                     //internalStateLogger.setParent(org.jboss.logmanager.Logger.getGlobal());//was commented out //disallowed
@@ -781,12 +781,6 @@ public class Run implements Runnable, DispatchObserver {
                                    (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                            );
                            scriptContext.setRoleName(role.getName());
-                           if(config.isStreamLogging()){
-                               shell.addLineObserver("stream",(line)->{
-                                   ensureLogger();
-                                    scriptContext.log(line);
-                               });
-                           }
 
                            getDispatcher().addScriptContext(scriptContext);
                            return shell.isOpen();
@@ -864,12 +858,6 @@ public class Run implements Runnable, DispatchObserver {
                                         (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                                 );
                                 scriptContext.setRoleName(role.getName());
-                                if(config.isStreamLogging()){
-                                    shell.addLineObserver("stream",(line)->{
-                                        ensureLogger();
-                                        scriptContext.log(line);
-                                    });
-                                }
                                 getDispatcher().addScriptContext(scriptContext);
                                 boolean rtrn = shell.isOpen();
                                 timer.start("waiting for start");
@@ -971,12 +959,6 @@ public class Run implements Runnable, DispatchObserver {
                                     (Boolean)config.getGlobals().getSetting("check-exit-code",false)
                             );
                             scriptContext.setRoleName(role.getName());
-                            if(config.isStreamLogging()){
-                                shell.addLineObserver("stream",(line)->{
-                                    ensureLogger();
-                                    scriptContext.log(line);
-                                });
-                            }
 
                             getDispatcher().addScriptContext(scriptContext);
                             return shell.isOpen();

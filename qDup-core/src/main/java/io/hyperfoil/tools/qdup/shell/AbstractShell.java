@@ -307,6 +307,7 @@ public abstract class AbstractShell {
         };
         sh(command,false, consumer,null);
         try{
+
             semaphore.acquire();
         } catch (InterruptedException e) {
             logger.warn("interrupted waiting for response to: "+command);
@@ -373,6 +374,12 @@ public abstract class AbstractShell {
 
     public void addLineObserver(String name, Consumer<String> consumer) {
         lineObservers.put(name, consumer);
+    }
+    public void removeLineObserver(String name) {
+        lineObservers.remove(name);
+    }
+    public boolean hasLineObserver(String name) {
+        return lineObservers.containsKey(name);
     }
 
     public void sh(String command, Map<String, String> prompt) {
