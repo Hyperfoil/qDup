@@ -1,5 +1,7 @@
 package io.hyperfoil.tools.qdup.cli;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.model.Device;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
 import io.quarkus.test.junit.main.LaunchResult;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,6 +42,9 @@ class QDupTest {
     }
 
     public static void setup(Path pubPath ) throws IOException {
+        setup(pubPath,"Dockerfile");
+    }
+    public static void setup(Path pubPath, String dockerfile) throws IOException {
         String pub = "";
         try {
             pub = Files.readString(pubPath);
@@ -47,49 +53,15 @@ class QDupTest {
         }
         //MountableFile mountableFile = MountableFile.forClasspathResource("keys/qdup.pub",Integer.parseInt("644",8));
         String pubKey = pub;
-        container = new GenericContainer(new ImageFromDockerfile("local/qdup-testcontainer",false)
-                .withDockerfileFromBuilder(builder ->
-                        builder
-                                //.from("alpine:3.2")
-                                .from("mirror.gcr.io/library/ubuntu:24.10")
-//                 .from("fedora:35")
-                                .run("apt-get update && apt-get install -y openssh-server openssh-client rsync sudo curl && apt-get clean")
-//                      .run("apt-get install -y apt-transport-https")
-//                      .run("apt-get install -y openssh-server openssh-client rsync sudo curl && apt-get clean")
-//                      .run("curl -fsSL https://get.docker.com -o get-docker.sh")
-//                      .run("ulimit -n 1048576")
-//                      .run("sh ./get-docker.sh")
-
-//                      .volume("/var/run/docker.sock:/var/run/docker.sock")
-//                      .volume("/bin/docker:/bin/docker")
-
-                                //.run("service docker start")///etc/init.d/docker: 61: ulimit: error setting limit (Operation not permitted)
-//                 .run("dnf install -y openssh-server openssh-clients rsync")
-
-                                .run("mkdir -p /var/run/sshd")
-                                .run("(umask 077 && test -d /root/.ssh || mkdir /root/.ssh)")
-////                 .run("(umask 077 && touch /root/.ssh/authorized_keys)")
-////                 .run(" echo \""+pubKey+"\" >> /root/.ssh/authorized_keys")
-                                .run("chmod 700 /root/.ssh")
-
-//                      .run("chown root /root/.ssh/authorized_keys")
-
-//                 .run("chmod 600 /root/.ssh/authorized_keys")
-                                //.run("ssh-keygen -A")
-                                .run("ls -al /root/.ssh")
-//                      .run("cat /root/.ssh/authorized_keys")
-                                .run("echo 'root:password' | chpasswd")
-                                .run("sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config")
-                                .run("sed -i 's/#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\\/authorized_keys/g' /etc/ssh/sshd_config")
-                                .run("sed 's@session\\s*required\\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd")
-                                .expose(22)
-                                .entryPoint("/usr/sbin/sshd -D")
-                                .build()))
+        container = new GenericContainer(new ImageFromDockerfile("local/qdup-testcontainer-zsh",false)
+                .withFileFromClasspath("Dockerfile",dockerfile))//"Dockerfile"))
+                .withPrivilegedMode(true)
                 .withImagePullPolicy(PullPolicy.defaultPolicy())
                 .withCopyToContainer(Transferable.of(Files.readAllBytes(pubPath)),"/root/.ssh/authorized_keys")
-                .withFileSystemBind("/var/run/docker.sock","/var/run/docker.sock", BindMode.READ_WRITE)
-                .withFileSystemBind("/bin/docker","/bin/docker", BindMode.READ_ONLY)
-//           .withCopyFileToContainer(mountableFile,"/root/.ssh/authorized_keys")
+                .withCreateContainerCmdModifier(cmd->{
+                    ((CreateContainerCmd)cmd).getHostConfig().withSecurityOpts(List.of("label=disable","unmask=ALL"));
+                    ((CreateContainerCmd) cmd).getHostConfig().withDevices(Device.parse("/dev/fuse"));
+                })
                 .withExposedPorts(22);
         container.start();
         try {

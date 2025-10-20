@@ -73,7 +73,6 @@ public class RunTest extends SshTestBase {
 
       Dispatcher dispatcher = new Dispatcher();
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
-      doit.ensureConsoleLogging();
       doit.run();
 
       State state = config.getState();
@@ -1326,7 +1325,7 @@ public class RunTest extends SshTestBase {
       RunConfigBuilder builder = getBuilder();
       Json hostJson = getHost().toJson();
       hostJson.set("container","quay.io/fedora/fedora");
-      hostJson.set("platform","docker");
+      hostJson.set("platform","podman");
       builder.loadYaml(parser.loadFile("signal",
               """
               scripts:
@@ -1806,6 +1805,7 @@ public class RunTest extends SshTestBase {
          scripts:
            foo:
            - sleep: 1s
+           - sh: dnf install -y top
            - sh:
                command: top
                silent: false

@@ -152,7 +152,7 @@ public class ContainerShellTest extends SshTestBase {
             getHost().getPort(),
             getHost().getPrompt(),
             getHost().isLocal(),
-            "docker",
+            "podman",
             "registry.access.redhat.com/ubi8/ubi");
         host.setPassphrase(getHost().getPassphrase());
         host.setIdentity(getHost().getIdentity());

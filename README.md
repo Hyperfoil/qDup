@@ -27,21 +27,34 @@ qDup builds to a single executable jar that includes all its dependencies using 
 
 qDup requires [Java 17](https://adoptopenjdk.net/) or higher.
 
-```sh
+```shell
 mvn clean package
 ```
 
-The qDup test suite requires [Docker](https://www.docker.com/); otherwise the test suite can be skipped using
+The qDup test suite requires [Podman](https://podman.io/) with a running instance of podman-socket for testcontainers. 
 
-```sh
-mvn -DskipTests clean package
+```shell
+systemctl --user status podman.socket
+```
+We saw intermittent test failures where TestContainers would throw exceptions related to a "broken pipe" or failure to pull an image. 
+Changing the default service timeout resolved the issue
+`/usr/share/containers/containers.conf`
+```shell
+service_timeout=0
+```
+The default is 5 but changing it to 0 disables the timeouts entirely.
+
+The test suite can also be skipped using
+
+```shell
+mvn -DskipTests -DskipITs clean package
 ```
 
 ### Running qDup
 
 Execute your qDup script using
 
-```sh
+```shell
 java -jar qDup-uber.jar test.yaml
 ```
 
@@ -52,7 +65,7 @@ should be the last argument on the command line.
 The above example shows only 1 YAML file but you can also load helper YAML files with
 shared definitions (e.g. `scripts` or `hosts`)
 
-```sh
+```shell
 java -jar qDup-uber.jar test.yaml hosts.yaml scripts.yaml
 ```
 
