@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
+import io.hyperfoil.tools.qdup.JsonServer;
 import io.hyperfoil.tools.qdup.Run;
 import io.hyperfoil.tools.qdup.SshTestBase;
 import io.hyperfoil.tools.qdup.State;
@@ -13,6 +14,7 @@ import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.yaup.Sets;
 import io.hyperfoil.tools.yaup.json.Json;
+import io.vertx.core.Vertx;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -272,6 +274,7 @@ public class ForEachTest extends SshTestBase {
 
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
         doit.run();
         dispatcher.shutdown();
         assertEquals("FOO should loop over bar entries", " one=1 one=2 one=3 two=2 two=4 two=6 three=3 three=6 three=9", config.getState().get("LOG"));
@@ -1365,13 +1368,13 @@ public class ForEachTest extends SshTestBase {
         assertEquals("for-each should run 3 times entries:\n" + splits.stream().collect(Collectors.joining("\n")), 3, splits.size());
     }
 
-    @Test
+    @Test //hanging
     public void forEach_ls1_loop() {
         List<String> lines = new ArrayList<>();
         AtomicBoolean tail = new AtomicBoolean(false);
         Script runScript = new Script("run");
         runScript
-                .then(Cmd.sh("rm -r /tmp/foo"))
+                .then(Cmd.sh("rm -rf /tmp/foo"))
                 .then(Cmd.sh("mkdir /tmp/foo"))
                 .then(Cmd.sh("echo \"one\" > /tmp/foo/one.txt"))
                 .then(Cmd.sh("echo \"two\" > /tmp/foo/two.txt"))
@@ -1389,11 +1392,10 @@ public class ForEachTest extends SshTestBase {
                     tail.set(true);
                     return Result.next(input);
                 })))
-                .then(Cmd.sh("rm -r /tmp/foo"))
+                .then(Cmd.sh("rm -rf /tmp/foo"))
         ;
 
         RunConfigBuilder builder = getBuilder();
-
         builder.addScript(runScript);
         builder.addHostAlias("local", getHost().toString());
         builder.addHostToRole("role", "local");
@@ -1403,8 +1405,16 @@ public class ForEachTest extends SshTestBase {
         assertFalse("unexpected errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
 
         Dispatcher dispatcher = new Dispatcher();
+
         Run run = new Run(tmpDir.toString(), config, dispatcher);
+        run.ensureConsoleLogging();
+
+        JsonServer jsonServer = new JsonServer(Vertx.vertx(),run,31337);
+        jsonServer.start();
+
         run.run();
+
+        jsonServer.stop();
 
         assertEquals("lines contains 3 entries:\n" + lines, 4, lines.size());
         assertTrue("tail should be called", tail.get());
