@@ -157,7 +157,8 @@ public class RunConfigBuilder {
       });
       yamlFile.getHostDefinitions().forEach((name, definition) -> {
          if (hostDefinitions.containsKey(name) && !hostDefinitions.get(name).equals(definition)) {
-            addError(String.format("%s tried to load host %s:%s but already defined as %s", yamlFile.getPath(), name, definition, hostDefinitions.get(name)));
+             logger.warnf("%s tried to load host %s:%s but already defined as %s", yamlFile.getPath(), name, definition, hostDefinitions.get(name));
+
          } else {
             hostDefinitions.put(name, definition);
          }

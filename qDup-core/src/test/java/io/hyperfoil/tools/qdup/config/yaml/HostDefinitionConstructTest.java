@@ -30,6 +30,14 @@ public class HostDefinitionConstructTest {
         yaml = new Yaml(constructor);
     }
 
+    @Test
+    public void string_ip_user(){
+        Host loaded = yaml.loadAs("userName@127.0.0.1",HostDefinition.class).toHost(new State(""));
+        assertNotNull("should load from string",loaded);
+        assertEquals("username","userName",loaded.getUserName());
+        assertEquals("hostname","127.0.0.1",loaded.getHostName());
+        assertEquals("port",22,loaded.getPort());
+    }
 
     @Test
     public void string_host_user(){

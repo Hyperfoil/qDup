@@ -2,16 +2,81 @@ package io.hyperfoil.tools.qdup.config;
 
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.cmd.Script;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class RunConfigTest extends SshTestBase {
+
+    @Test
+    public void script_load_order(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("local",
+                """
+                scripts:
+                  uno:
+                  - sh: echo "hi"
+                """
+        ));
+        builder.loadYaml(parser.loadFile("remote",
+                """
+                scripts:
+                  uno:
+                  - wait-for: bar
+                """
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+        Script uno = config.getScript("uno");
+        assertNotNull("uno", uno);
+        assertTrue(uno.getNext().toString().contains("sh"));
+    }
+
+   @Test
+   public void host_load_order(){
+       Parser parser = Parser.getInstance();
+       RunConfigBuilder builder = getBuilder();
+       builder.loadYaml(parser.loadFile("local",
+               """
+               hosts:
+                 uno: LOCAL//quay.io/fedora/fedora
+               """
+       ));
+       builder.loadYaml(parser.loadFile("remote",
+               """
+               scripts:
+                 foo:
+                 - sh: echo "foo"
+               hosts:
+                 uno: user@localhost:2222
+               roles:
+                 test:
+                   hosts:
+                   - uno
+                   setup-scripts:
+                   - foo
+               """
+       ));
+       RunConfig config = builder.buildConfig(parser);
+       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+       Set<Host> hosts = config.getAllHostsInRoles();
+       assertEquals(1, hosts.size());
+       Host first = hosts.iterator().next();
+       assertNotNull(first);
+       assertTrue(first.isLocal());
+       assertTrue(first.isContainer());
+       assertTrue(first.getDefinedContainer().contains("fedora"));
+   }
+
 
    @Test
    public void getAllHostsInRoles_alias_same_host(){
