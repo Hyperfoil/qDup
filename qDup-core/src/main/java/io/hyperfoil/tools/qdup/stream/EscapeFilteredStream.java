@@ -4,7 +4,6 @@ import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.Sets;
 import org.jboss.logging.Logger;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
@@ -90,6 +89,33 @@ public class EscapeFilteredStream extends MultiStream {
     public void write(byte b[]) throws IOException {
         write(b,0,b.length);
     }
+
+    // returns the index after the last byte written to destination
+    public static int copyNonNulBytes(byte[] source, int sourceOffset, byte[] destination, int destinationOffset, int len){
+        int nonNullIndex = -1;
+        int lastWriteIndex = destinationOffset;
+        for(int i=sourceOffset;i<sourceOffset+len;i++){
+            if (source[i] == 0) {
+                if(nonNullIndex > -1){ // flush to this point
+                    int writeLength = i-nonNullIndex;
+                    System.arraycopy(source,nonNullIndex,destination,lastWriteIndex,writeLength);
+                    nonNullIndex = -1;
+                    lastWriteIndex += writeLength;
+                }
+            }else{
+                if(nonNullIndex == -1){
+                    nonNullIndex = i;
+                }
+            }
+        }
+        if(nonNullIndex > -1){
+            int writeLength = len- (nonNullIndex-sourceOffset);
+            System.arraycopy(source,nonNullIndex,destination,lastWriteIndex,writeLength);
+            lastWriteIndex += writeLength;
+        }
+        return lastWriteIndex;
+    }
+
     @Override
     public void write(byte b[], int off, int len) throws IOException {
         try {
@@ -102,15 +128,17 @@ public class EscapeFilteredStream extends MultiStream {
                 System.arraycopy(buffered, 0, newBuffer, 0, writeIndex);
                 buffered = newBuffer;
             }
-            System.arraycopy(b, off, buffered, writeIndex, len);
-            writeIndex += len;
+            //System.arraycopy(b, off, buffered, writeIndex, len);
+            //writeIndex += len;
+            int newWriteIndex = copyNonNulBytes(b,off,buffered,writeIndex,len);
+            writeIndex = newWriteIndex;
 
             for (int currentIndex = flushIndex; currentIndex < writeIndex; currentIndex++) {
                 boolean filtered = false;
                 do {
                     filtered = false;
                     int escapeLength = escapeLength(buffered, currentIndex, writeIndex - currentIndex);
-                    if (escapeLength > 0 && isEscaped(buffered, currentIndex, escapeLength)) {//is full match, flush to super
+                    if (escapeLength > 0 && isCompleteEscapeSequence(buffered, currentIndex, escapeLength)) {//is full match, flush to super
                         filtered = true;
                     } else if (escapeLength > 0) {//match reached end of buffer
                         if (trailingEscapeIndex > currentIndex) {
@@ -141,6 +169,7 @@ public class EscapeFilteredStream extends MultiStream {
 
 
             }
+            //compact the buffer
             if (flushIndex > 0) {
                 System.arraycopy(buffered, flushIndex, buffered, 0, writeIndex - flushIndex);
                 writeIndex = writeIndex - flushIndex;
@@ -152,36 +181,43 @@ public class EscapeFilteredStream extends MultiStream {
         }
     }
     //basically just makes sure we have \u001b[...m
-    public boolean isEscaped(byte b[],int off,int len){
+    //checks that the escape sequence is complete and not partially finished
+    public boolean isCompleteEscapeSequence(byte b[], int off, int len){
         boolean rtrn =
-                (len ==1 && (b[off] == CR || b[off] == SHIFT_IN || b[off] == SHIFT_OUT)) ||
-            (
-                b[off]==ESC
-                &&
+                (len ==1 && (b[off] == CR || b[off] == SHIFT_IN || b[off] == SHIFT_OUT))
+                ||
                 (
+                  len >= 2 && b[off]=='#' && b[off+1] == ESC && isCompleteEscapeSequence(b,off+1,len-1)
+                ) || (
+                    len >= 2 && b[off]=='e' && b[off+1]==8    //miss-configured backspace in zsh
+                ) ||
+                (
+                    b[off]==ESC
+                    &&
                     (
-                        ( len>=3 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]))
-                        || (len == 2 && b[off+1]=='=')
-                        || (len == 2 && b[off+1]=='>')
-                    ) || (
-                        len>=15
-                        && b[off+ 1]==']'
-                        && b[off+ 2]=='7'
-                        && b[off+ 3]=='7'
-                        && b[off+ 4]=='7'
-                        && b[off+ 5]==';'
-                        && b[off+ 6]=='p'
-                        && b[off+ 7]=='r'
-                        && b[off+ 8]=='e'
-                        && b[off+ 9]=='e'
-                        && b[off+10]=='x'
-                        && b[off+11]=='e'
-                        && b[off+12]=='c'
-                        && b[off+13]==ESC
-                        && b[off+14]=='\\'
+                        (
+                            ( len>=3 && b[off+1]=='[' && CONTROL_SUFFIX.contains((char)b[off+len-1]))
+                            || (len == 2 && b[off+1]=='=')
+                            || (len == 2 && b[off+1]=='>')
+                        ) || (
+                            len>=15
+                            && b[off+ 1]==']'
+                            && b[off+ 2]=='7'
+                            && b[off+ 3]=='7'
+                            && b[off+ 4]=='7'
+                            && b[off+ 5]==';'
+                            && b[off+ 6]=='p'
+                            && b[off+ 7]=='r'
+                            && b[off+ 8]=='e'
+                            && b[off+ 9]=='e'
+                            && b[off+10]=='x'
+                            && b[off+11]=='e'
+                            && b[off+12]=='c'
+                            && b[off+13]==ESC
+                            && b[off+14]=='\\'
+                        )
                     )
-                )
-            );
+                );
         if(!rtrn && len >=5 && b[off]==ESC && b[off+1]==']' && b[off+2]=='0' && b[off+3]==';'){
             int i=0;
             while(off + i < len && b[off + i] != (char)7){
@@ -192,10 +228,18 @@ public class EscapeFilteredStream extends MultiStream {
         return rtrn;
     }
     //return length of match up to len or 0 if match failed
-    public int escapeLength(byte b[], int off, int len){
+    public int escapeLength(byte b[], int off, int len) {
         boolean matching = true;
         int rtrn = 0;
-        if( b[off]==ESC ) {//\003
+        if (b[off] == 'e'){ // check for miss-configured zsh backspace
+            if(len == 1 ){
+                rtrn = 1;
+            }else if(len >= 2 && b[off+1] == 8){
+                rtrn = 2;
+            }
+        }else if( len >= 2 && b[off] == '#' && b[off+1] == ESC){
+            rtrn = 1+escapeLength(b,off+1,len-1);
+        }else if( b[off]==ESC ) {//\003
             rtrn = 1;
             if (2 <= len) {
                 if (b[off + 1] == '[') {

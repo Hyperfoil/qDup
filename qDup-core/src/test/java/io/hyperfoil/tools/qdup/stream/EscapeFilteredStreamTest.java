@@ -70,6 +70,75 @@ public class EscapeFilteredStreamTest {
     }
 
     @Test
+    public void copyNonNulBytes_no_nul(){
+        byte[] source = new byte[]{1,2,3,4};
+        byte[] dest = new byte[]{0,0,0,0};
+
+        int rtrn = EscapeFilteredStream.copyNonNulBytes(source,0,dest,0,4);
+        assertEquals(4,rtrn);
+        assertArrayEquals(new byte[]{1,2,3,4},dest);
+    }
+    @Test
+    public void copyNonNulBytes_all_nul(){
+        byte[] source = new byte[]{0,0,0,0};
+        byte[] dest = new byte[]{1,1,1,1};
+
+        int rtrn = EscapeFilteredStream.copyNonNulBytes(source,0,dest,0,4);
+        assertEquals(0,rtrn);
+        assertArrayEquals(new byte[]{1,1,1,1},dest);
+    }
+
+    @Test
+    public void copyNonNulBytes_skip_leading_nul(){
+        byte[] source = new byte[]{0,0,2,2};
+        byte[] dest = new byte[]{1,1,1,1};
+
+        int rtrn = EscapeFilteredStream.copyNonNulBytes(source,0,dest,0,4);
+        assertEquals(2,rtrn);
+        assertArrayEquals(new byte[]{2,2,1,1},dest);
+    }
+    @Test
+    public void copyNonNulBytes_skip_trailing_nul(){
+        byte[] source = new byte[]{0,0,2,2};
+        byte[] dest = new byte[]{1,1,1,1};
+
+        int rtrn = EscapeFilteredStream.copyNonNulBytes(source,0,dest,0,4);
+        assertEquals(2,rtrn);
+        assertArrayEquals(new byte[]{2,2,1,1},dest);
+    }
+    @Test
+    public void copyNonNulBytes_skip_middle_nul(){
+        byte[] source = new byte[]{2,0,0,2};
+        byte[] dest = new byte[]{1,1,1,1};
+
+        int rtrn = EscapeFilteredStream.copyNonNulBytes(source,0,dest,0,4);
+        assertEquals(2,rtrn);
+        assertArrayEquals(new byte[]{2,2,1,1},dest);
+    }
+
+    @Test
+    public void copyNonNulBytes_destination_offset(){
+        byte[] source = new byte[]{2,0,0,2};
+        byte[] dest = new byte[]{1,1,1,1};
+
+        int rtrn = EscapeFilteredStream.copyNonNulBytes(source,0,dest,2,4);
+        assertEquals(4,rtrn);
+        assertArrayEquals(new byte[]{1,1,2,2},dest);
+    }
+    @Test
+    public void copyNonNulBytes_source_offset(){
+        byte[] source = new byte[]{2,0,0,2};
+        byte[] dest = new byte[]{1,1,1,1};
+
+        int rtrn = EscapeFilteredStream.copyNonNulBytes(source,2,dest,2,2);
+        assertEquals(3,rtrn);
+        assertArrayEquals(new byte[]{1,1,2,1},dest);
+    }
+
+
+
+
+    @Test
     public void issue_remove_shift_in(){
         String output = filterPerCharacter(Character.toString(15)+"o"+Character.toString(15)+"ne"+Character.toString(15),true);
         assertEquals("leading, trailing, and injected shift in should be removed", "one",output);
@@ -89,8 +158,8 @@ public class EscapeFilteredStreamTest {
 
         try {
             //[[[[INFOOO]   -
-            stream.write(new byte[]{91,27,91,49});
-            stream.write(new byte[]{59});
+            stream.write(new byte[]{91,27,91,49});//[\u001b1;
+            stream.write(new byte[]{59});//;
             stream.write(new byte[]{51});
             stream.write(new byte[]{52,109});
             stream.write(new byte[]{73,78});
@@ -134,21 +203,28 @@ public class EscapeFilteredStreamTest {
     }
 
     @Test
+    public void filter_null(){
+        String input = " \0\0\0\0 ";
+        assertEquals("expect to remove null","  ",filter(input));
+    }
+
+    @Test
+    public void filter_zsh_hash_escape(){
+        String input = "\0\0#\u001b[m\0\0foo\0\0#\u001b[m\0";
+        String output = filter(input);
+        assertEquals("expect to remove the escape:","foo",output);
+    }
+
+    @Test
+    public void filter_tres(){
+        String input = "uno\r\ndos\r\ntres\n";
+        String output = filter(input);
+        assertEquals("uno\r\ndos\r\ntres\n",output);
+    }
+
+    @Test
     public void filter_mid(){
         String input = "  \u001b[Kbar";
-
-        EscapeFilteredStream fs = new EscapeFilteredStream();
-        ByteArrayOutputStream bao = new ByteArrayOutputStream();
-        fs.addStream("bao",bao);
-
-        try {
-            fs.write(input.getBytes(),0,input.getBytes().length);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        String response = new String(bao.toByteArray());
-
         assertEquals("expect to remove the escape:","  bar",filter(input));
     }
 
@@ -283,29 +359,31 @@ public class EscapeFilteredStreamTest {
     }
 
     @Test
-    public void isEscaped(){
+    public void isCompleteEscapeSequence(){
         EscapeFilteredStream fs = new EscapeFilteredStream();
         String input;
         input = "x";
-        assertFalse("not escaped",fs.isEscaped(input.getBytes(),0,input.getBytes().length));
+        assertFalse("not escaped",fs.isCompleteEscapeSequence(input.getBytes(),0,input.getBytes().length));
         input = "\u001b";
-        assertFalse("not escaped",fs.isEscaped(input.getBytes(),0,input.getBytes().length));
+        assertFalse("not escaped",fs.isCompleteEscapeSequence(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[";
-        assertFalse("not escaped",fs.isEscaped(input.getBytes(),0,input.getBytes().length));
+        assertFalse("not escaped",fs.isCompleteEscapeSequence(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[0";
-        assertFalse("not escaped",fs.isEscaped(input.getBytes(),0,input.getBytes().length));
+        assertFalse("not escaped",fs.isCompleteEscapeSequence(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[0;";
-        assertFalse("not escaped",fs.isEscaped(input.getBytes(),0,input.getBytes().length));
+        assertFalse("not escaped",fs.isCompleteEscapeSequence(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[0m";
-        assertTrue("escaped",fs.isEscaped(input.getBytes(),0,input.getBytes().length));
+        assertTrue("escaped",fs.isCompleteEscapeSequence(input.getBytes(),0,input.getBytes().length));
         input = "\u001b[0;1m";
-        assertTrue("escaped",fs.isEscaped(input.getBytes(),0,input.getBytes().length));
+        assertTrue("escaped",fs.isCompleteEscapeSequence(input.getBytes(),0,input.getBytes().length));
         byte[] bytes = new byte[]{  27, 93, 48, 59, 64, 50,100,101, 56, 52, 98, 50, 99, 50, 48, 51, 53, 58, 47,  7};
-        assertTrue("escaped",fs.isEscaped(bytes,0,bytes.length));
+        assertTrue("escaped",fs.isCompleteEscapeSequence(bytes,0,bytes.length));
         bytes = new byte[]{  27, 93, 48, 59, 64, 50,100,101, 56, 52, 98, 50, 99, 50, 48, 51, 53, 58, 47,  7, 69};
-        assertTrue("escaped",fs.isEscaped(bytes,0,bytes.length));
+        assertTrue("escaped",fs.isCompleteEscapeSequence(bytes,0,bytes.length));
         bytes = new byte[]{  27, 93, 48, 59, 64, 50,100,101, 56, 52, 98, 50, 99, 50, 48, 51, 53, 58, 47};
-        assertFalse("not escaped",fs.isEscaped(bytes,0,bytes.length));
+        assertFalse("not escaped",fs.isCompleteEscapeSequence(bytes,0,bytes.length));
+        input = "#\u001b[m";
+        assertTrue("escaped",fs.isCompleteEscapeSequence(input.getBytes(),0,input.getBytes().length));
     }
 
 

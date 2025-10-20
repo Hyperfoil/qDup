@@ -169,6 +169,7 @@ public class SuffixStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
+
         if(b==null || len < 0 || off + len > b.length){
             logger.error(getClass().getName()+".write("+off+","+len+")");
             logger.error(printByteCharacters(b,off,Math.min(10,b.length-off)));
@@ -215,6 +216,7 @@ public class SuffixStream extends MultiStream {
                             future.cancel(true);
                         }
                         foundRunnable.reset(foundName,writeIndex);
+
                         future = executor.schedule(foundRunnable, executorDelay,TimeUnit.MILLISECONDS);
                     } else {
                         foundSuffix(foundName,writeIndex);
@@ -226,6 +228,8 @@ public class SuffixStream extends MultiStream {
                     superWrite(buffered, 0, writeIndex - trailingSuffixLength);
                     System.arraycopy(buffered, writeIndex - trailingSuffixLength, buffered, 0, trailingSuffixLength);
                     writeIndex = trailingSuffixLength;
+                } else {
+                    //TODO what if none of the characters matched
                 }
             }
         }catch(Exception e){
