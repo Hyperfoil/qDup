@@ -53,7 +53,7 @@ class QDupTest {
         }
         //MountableFile mountableFile = MountableFile.forClasspathResource("keys/qdup.pub",Integer.parseInt("644",8));
         String pubKey = pub;
-        container = new GenericContainer(new ImageFromDockerfile("local/qdup-testcontainer-zsh",false)
+        container = new GenericContainer(new ImageFromDockerfile("local/qdup-testcontainer-cli",false)
                 .withFileFromClasspath("Dockerfile",dockerfile))//"Dockerfile"))
                 .withPrivilegedMode(true)
                 .withImagePullPolicy(PullPolicy.defaultPolicy())
