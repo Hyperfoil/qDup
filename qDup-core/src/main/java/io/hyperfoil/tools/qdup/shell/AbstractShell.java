@@ -247,7 +247,10 @@ public abstract class AbstractShell {
                 return false;
             }
             if(getHost().isShell()){
-                shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"; unset PS0;");
+                //bash
+                shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"; unset PS0;");// "function fish_prompt; echo -n \""+ PROMPT+"\"; end");
+                //fish
+                shConnecting("function fish_prompt; echo -n \""+ PROMPT+"\"; end");
             }
             if(setupCommand !=null && !setupCommand.trim().isEmpty()){
                 shConnecting(setupCommand);
