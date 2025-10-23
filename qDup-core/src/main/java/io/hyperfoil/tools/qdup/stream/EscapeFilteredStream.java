@@ -237,7 +237,7 @@ public class EscapeFilteredStream extends MultiStream {
             }else if(len >= 2 && b[off+1] == 8){
                 rtrn = 2;
             }
-        }else if( len >= 2 && b[off] == '#' && b[off+1] == ESC){
+        }else if( len >= 2 && b[off] == '#' && b[off+1] == ESC){ //zsh
             rtrn = 1+escapeLength(b,off+1,len-1);
         }else if( b[off]==ESC ) {//\003
             rtrn = 1;

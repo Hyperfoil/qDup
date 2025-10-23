@@ -76,62 +76,6 @@ public class QDupTest extends SshTestBase{
     }
 
     @Test
-    public void main_exit_sh() {
-        Output output = runMain(
-                "-i",
-                getIdentity(),
-                makeFile(
-                    "hosts:",
-                    "  local: "+getHost(),
-                    "scripts:",
-                    "  doit:",
-                    "  - sh: whoami; (exit 42);",
-                    "  - set-state: RUN.foo true",
-                    "",
-                    "roles:",
-                    "  run:",
-                    "    hosts: [local]",
-                    "    run-scripts:",
-                    "    - doit"
-                )
-        );
-        assertNotNull(output);
-        assertEquals("Qdup.main should exit with 1","1",output.getExit());
-    }
-
-    @Test
-    public void yaml_with_else(){
-        Output output = runMain(
-                "-Y",
-                makeFile(
-                        "hosts:",
-                        "  local: "+getHost(),
-                        "scripts:",
-                        "  doit:",
-                        "  - sh: cat log",
-                        "  - regex: foo",
-                        "    then:",
-                        "    - sh: echo 'found'",
-                        "    else:",
-                        "    - sh: echo 'lost'",
-                        "",
-                        "roles:",
-                        "  run:",
-                        "    hosts: [local]",
-                        "    run-scripts:",
-                        "    - doit"
-                )
-        );
-        assertNotNull(output);
-    }
-
-    @Test
-    public void main_exit_invalid_args(){
-        Output output = runMain("");
-        assertNotNull(output);
-        assertEquals("incorrect exit code for invalid args to QDup.main"+output.getOutput(),"1",output.getExit());
-    }
-    @Test
     public void main_exit_bad_yaml(){
         Output output = runMain(
                 "-i",
@@ -153,30 +97,6 @@ public class QDupTest extends SshTestBase{
         );
         assertNotNull(output);
         assertEquals("incorrect exit code for invalid args to QDup.main"+output.getOutput(),"1",output.getExit());
-    }
-    @Test
-    public void main_exit_sh_ignore() {
-        Output output = runMain(
-                "-ix",
-                "-i",
-                getIdentity(),
-                makeFile(
-                    "hosts:",
-                    "  local: "+getHost(),
-                    "scripts:",
-                    "  doit:",
-                    "  - sh: whoami; (exit 42);",
-                    "  - set-state: RUN.foo true",
-                    "",
-                    "roles:",
-                    "  run:",
-                    "    hosts: [local]",
-                    "    run-scripts:",
-                    "    - doit"
-                )
-        );
-        assertNotNull(output);
-        assertEquals("Qdup.main should exit with 0","0",output.getExit());
     }
     @Test
     public void exit_code_checking_by_default(){

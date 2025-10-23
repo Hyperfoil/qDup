@@ -23,8 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusMainTest
 class QDupTest {
@@ -155,5 +154,100 @@ class QDupTest {
         configPath.toFile().deleteOnExit();
         LaunchResult result = launcher.launch("--fullPath","/tmp","--identity",getIdentity(),configPath.toString());
         assertTrue(result.getOutput().contains("Failed to load"));
+    }
+
+    @Test
+    public void main_exit_sh(QuarkusMainLauncher launcher) throws IOException {
+        Path configPath = Files.writeString(File.createTempFile("qdup",".yaml").toPath(),
+                """
+                scripts:
+                  doit:
+                  - sh: whoami; (exit 42);
+                  - set-state: RUN.foo true
+                hosts:
+                  target: HOST_TARGET
+                roles:
+                  test:
+                    hosts:
+                    - target
+                    run-scripts:
+                    - doit
+                """.replaceAll("HOST_TARGET",getHost().toString()));
+        configPath.toFile().deleteOnExit();
+        LaunchResult result = launcher.launch("--fullPath","/tmp","--identity",getIdentity(),configPath.toString());
+        assertEquals(1,result.exitCode());
+    }
+    @Test
+    public void main_exit_sh_ignore(QuarkusMainLauncher launcher) throws IOException {
+        Path configPath = Files.writeString(File.createTempFile("qdup",".yaml").toPath(),
+                """
+                scripts:
+                  doit:
+                  - sh: whoami; (exit 42);
+                  - set-state: RUN.foo true
+                hosts:
+                  target: HOST_TARGET
+                roles:
+                  test:
+                    hosts:
+                    - target
+                    run-scripts:
+                    - doit
+                """.replaceAll("HOST_TARGET",getHost().toString()));
+        configPath.toFile().deleteOnExit();
+        LaunchResult result = launcher.launch("--ignore-exit-code", "--fullPath","/tmp","--identity",getIdentity(),configPath.toString());
+        assertEquals(0,result.exitCode());
+    }
+
+    @Test
+    public void main_exit_invalid_yaml(QuarkusMainLauncher launcher) throws IOException {
+        Path configPath = Files.writeString(File.createTempFile("qdup",".yaml").toPath(),
+                """
+                scripts:
+                  doit
+                  - sh: whoami
+                    - set-state: RUN.foo true
+                hosts:
+                  target: HOST_TARGET
+                roles:
+                  test:
+                    hosts:
+                    - target
+                    run-scripts:
+                    - doit
+                """.replaceAll("HOST_TARGET",getHost().toString()));
+        configPath.toFile().deleteOnExit();
+        LaunchResult result = launcher.launch("--fullPath","/tmp","--identity",getIdentity(),configPath.toString());
+        assertEquals(1,result.exitCode());
+    }
+
+    @Test
+    public void yaml_with_else(QuarkusMainLauncher launcher) throws IOException {
+        Path configPath = Files.writeString(File.createTempFile("qdup",".yaml").toPath(),
+                """
+                scripts:
+                  doit:
+                  - sh: cat log
+                  - regex: foo
+                    then:
+                    - sh: echo 'found'
+                    else:
+                    - sh: echo 'lost'
+                hosts:
+                  target: HOST_TARGET
+                roles:
+                  test:
+                    hosts:
+                    - target
+                    run-scripts:
+                    - doit
+                """.replaceAll("HOST_TARGET",getHost().toString()));
+        configPath.toFile().deleteOnExit();
+        LaunchResult result = launcher.launch("-Y","--identity",getIdentity(),configPath.toString());
+        assertEquals(0,result.exitCode());
+        assertNotNull(result.getOutput());
+
+
+
     }
 }
