@@ -60,6 +60,7 @@ public class LocalShell extends AbstractShell{
             }else{
                 ProcessBuilder pb = new ProcessBuilder(newPopulated.toArray(new String[0]));
                 pb.environment().put("TERM","xterm");
+                pb.environment().put("COLUMNS","10240");
                 pb.directory(new File(System.getProperty("user.home")));
                 pb.redirectErrorStream(true);
                 try {
@@ -92,6 +93,7 @@ public class LocalShell extends AbstractShell{
         }
         return rtrn;
     }
+
 
     @Override
     public void exec(String command, Consumer<String> callback) {
