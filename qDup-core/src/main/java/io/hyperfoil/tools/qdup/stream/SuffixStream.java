@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.qdup.stream;
 
-import io.hyperfoil.tools.yaup.AsciiArt;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
@@ -49,7 +48,7 @@ public class SuffixStream extends MultiStream {
     private Map<String,byte[]> suffixes;
     private Map<String,byte[]> replacements;
     private List<Consumer<String>> consumers;
-
+    private HashSet<Byte> injectable;
     private ScheduledThreadPoolExecutor executor;
     private int executorDelay = DEFAULT_DELAY;
     private ScheduledFuture future;
@@ -67,9 +66,21 @@ public class SuffixStream extends MultiStream {
         consumers = new LinkedList<>();
         executor = threadPool;
         future = null;
+        injectable = new HashSet<>();
         foundRunnable = new FoundRunnable("",-1);
     }
-
+    public void addInjectable(byte b){
+        injectable.add(b);
+    }
+    public void removeInjectable(byte b){
+        injectable.remove(b);
+    }
+    public boolean hasInjectable(byte b){
+        return injectable.contains(b);
+    }
+    public Set<Byte> getInjectables(){
+        return injectable;
+    }
     public String getBuffered(){
         return new String(buffered,0,writeIndex);
     }
@@ -169,7 +180,6 @@ public class SuffixStream extends MultiStream {
     }
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-
         if(b==null || len < 0 || off + len > b.length){
             logger.error(getClass().getName()+".write("+off+","+len+")");
             logger.error(printByteCharacters(b,off,Math.min(10,b.length-off)));
@@ -199,8 +209,9 @@ public class SuffixStream extends MultiStream {
                 String foundName = "";
                 for (String name : suffixes.keySet()) {
                     byte[] toFind = suffixes.get(name);
-                    int suffMatch = suffixLength(buffered, toFind, writeIndex);
-                    if (suffMatch == toFind.length) {
+                    MatchLength matchLength =suffixLength(buffered, toFind, writeIndex);
+                    int suffMatch = matchLength.length();
+                    if (matchLength.fullMatch()) {
                         if (!found || trailingSuffixLength < suffMatch) {//pick the longest match
                             found = true;
                             foundName = name;
@@ -228,9 +239,7 @@ public class SuffixStream extends MultiStream {
                     superWrite(buffered, 0, writeIndex - trailingSuffixLength);
                     System.arraycopy(buffered, writeIndex - trailingSuffixLength, buffered, 0, trailingSuffixLength);
                     writeIndex = trailingSuffixLength;
-                } else {
-                    //TODO what if none of the characters matched
-                }
+                } //don't need an else because 0 trailingSuffixLength > Integer.MIN_VALUE
             }
         }catch(Exception e){
             logger.error(e.getMessage(),e);
@@ -258,7 +267,7 @@ public class SuffixStream extends MultiStream {
     private void callConsumers(String name){
         consumers.forEach(c -> c.accept(name));
     }
-    public int suffixLength(byte b[], byte toFind[], int endIndex){
+    public int old_suffixLength(byte b[], byte toFind[], int endIndex){
         boolean matching = false;
         int rtrn = 0;
         for(int shift=Math.max(0,toFind.length-endIndex); shift< toFind.length && !matching; shift++){
@@ -278,6 +287,44 @@ public class SuffixStream extends MultiStream {
         return rtrn;
     }
 
+    // returns the length of toFind that was found at the end of b
+    public MatchLength suffixLength(byte b[],byte toFind[], int endIndex){
+
+        int startingSuffixIndex = toFind.length-1;
+        MatchLength rtrn = null;
+        do {
+            int suffixIndex = startingSuffixIndex;
+            int bIndex = endIndex-1;
+            int matchLength = 0;
+            while(matchLength >= 0 && suffixIndex >= 0 && bIndex >= 0){
+                byte targetByte = b[bIndex];
+                if ( targetByte == toFind[suffixIndex] ) {
+                    bIndex--;
+                    suffixIndex--;
+                    matchLength++;
+
+                //if the character is skippable and already matched at least one character
+                //already matched at least one character ensures we do not match a trailing injectable
+                } else if ( hasInjectable(targetByte) && suffixIndex < startingSuffixIndex ) {
+                    bIndex--; // just decrement the buffer index
+                } else {
+                    matchLength=-1; //no match
+                }
+            }
+            if(matchLength > 0){
+                int matchedBytes = endIndex-1-bIndex;
+                MatchLength newLength = new MatchLength(matchedBytes,startingSuffixIndex == toFind.length-1);
+                if(rtrn==null || newLength.length() > rtrn.length()){
+                    rtrn = newLength;
+                }
+            }
+            startingSuffixIndex--;
+        } while (startingSuffixIndex >= 0 && rtrn == null);
+        if(rtrn==null){
+            rtrn = new MatchLength(0,false);
+        }
+        return rtrn;
+    }
 
 
 }

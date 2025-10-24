@@ -63,6 +63,7 @@ public class MultiStream extends OutputStream{
         indxs.append("]");
         return "bytes="+bytes.toString()+System.lineSeparator()+"chars="+chars.toString()+System.lineSeparator()+"indxs="+indxs.toString();
     }
+    public record MatchLength(int length,boolean fullMatch){}
 
     private String name = "";
     private Map<String,OutputStream> streams;
@@ -136,4 +137,6 @@ public class MultiStream extends OutputStream{
             s.flush();
         }
     }
+
+
 }

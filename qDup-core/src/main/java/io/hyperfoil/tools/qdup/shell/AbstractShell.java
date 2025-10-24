@@ -179,7 +179,7 @@ public abstract class AbstractShell {
         return executor;
     }
     public SecretFilter getFilter(){return filter;}
-    public boolean connect(){
+    public final boolean connect(){
         Status previousStates = status;
         if(isOpen()){
             return true;

@@ -6,6 +6,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.wildfly.common.Assert.assertFalse;
 
 public class FilteredStreamTest {
 
@@ -17,12 +19,29 @@ public class FilteredStreamTest {
 
         String input;
         input = "bar";
-        assertEquals("FOO should not match any of bar",0,fs.prefixLength(input.getBytes(),expected,0,input.getBytes().length));
+        MultiStream.MatchLength matchLength = fs.prefixLength(input.getBytes(),expected,0,input.getBytes().length);
+        assertFalse(matchLength.fullMatch());
+        assertEquals("FOO should not match any of bar",0,matchLength.length());
         input = "FOO";
-        assertEquals("FOO should match the entire length",expected.length,fs.prefixLength(input.getBytes(),expected,0,input.getBytes().length));
+        matchLength = fs.prefixLength(input.getBytes(),expected,0,input.getBytes().length);
+        assertTrue(matchLength.fullMatch());
+        assertEquals("FOO should match the entire length",expected.length,matchLength.length());
         input = "F";
-        assertEquals("FOO should match the entire length",input.getBytes().length,fs.prefixLength(input.getBytes(),expected,0,input.getBytes().length));
+        matchLength = fs.prefixLength(input.getBytes(),expected,0,input.getBytes().length);
+        assertFalse(matchLength.fullMatch());
+        assertEquals("FOO should match the entire length",input.getBytes().length,matchLength.length());
 
+    }
+
+    @Test
+    public void prefixLength_injected_cr(){
+        FilteredStream fs = new FilteredStream();
+        fs.addInjectable((byte)'\r');
+        byte expected[] = "FOO".getBytes();
+        String input = "F\rO\rO\r";
+        MultiStream.MatchLength matchLength = fs.prefixLength(input.getBytes(),expected,0,input.getBytes().length);
+        assertTrue("prefix should be a full match",matchLength.fullMatch());
+        assertEquals("prefix match length should include injected CR but not trailing CR",5,matchLength.length());
     }
 
     @Test

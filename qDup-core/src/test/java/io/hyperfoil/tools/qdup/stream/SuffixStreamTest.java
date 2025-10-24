@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.qdup.stream;
 
-import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -16,13 +15,36 @@ import static org.junit.Assert.*;
 public class SuffixStreamTest {
 
     @Test
+    public void suffixLength_injected_middle(){
+        SuffixStream stream = new SuffixStream();
+        stream.addInjectable((byte)'\r');
+        byte expected[] = "FOO".getBytes();
+        String input = "FO\rO";
+        SuffixStream.MatchLength matchLength = stream.suffixLength(input.getBytes(),expected,input.getBytes().length);
+        assertTrue(matchLength.fullMatch());
+        assertEquals(expected.length+1,matchLength.length());
+    }
+    @Test
+    public void suffixLength_injected_end(){
+        SuffixStream stream = new SuffixStream();
+        stream.addInjectable((byte)'\r');
+        byte expected[] = "FOO".getBytes();
+        String input = "FOO\r";
+        SuffixStream.MatchLength matchLength = stream.suffixLength(input.getBytes(),expected,input.getBytes().length);
+        assertFalse(matchLength.fullMatch());
+        assertEquals(0,matchLength.length());
+    }
 
+
+    @Test
     public void suffixLength_end_before_match(){
         SuffixStream stream = new SuffixStream();
         byte expected[] = "FOO".getBytes();
         String input;
         input = "notFOO";
-        assertEquals("FOO should not match any of \"\"",0,stream.suffixLength(input.getBytes(),expected,2));
+        SuffixStream.MatchLength matchLength = stream.suffixLength(input.getBytes(),expected,2);
+        assertEquals("FOO should not match any of \"\"",0,matchLength.length());
+        assertFalse(matchLength.fullMatch());
     }
     @Test
     public void suffixLength_noMatch(){
@@ -30,7 +52,9 @@ public class SuffixStreamTest {
         byte expected[] = "FOO".getBytes();
         String input;
         input = "";
-        assertEquals("FOO should not match any of \"\"",0,stream.suffixLength(input.getBytes(),expected,input.getBytes().length));
+        SuffixStream.MatchLength matchLength = stream.suffixLength(input.getBytes(),expected,input.getBytes().length);
+        assertEquals("FOO should not match any of \"\"",0,matchLength.length());
+        assertFalse(matchLength.fullMatch());
     }
     @Test
     public void suffixLength_fullMatch(){
@@ -38,7 +62,9 @@ public class SuffixStreamTest {
         byte expected[] = "FOO".getBytes();
         String input;
         input = "FOO";
-        assertEquals("FOO should be a full match",3,stream.suffixLength(input.getBytes(),expected,input.getBytes().length));
+        SuffixStream.MatchLength matchLength = stream.suffixLength(input.getBytes(),expected,input.getBytes().length);
+        assertEquals("FOO should be a full match",3,matchLength.length());
+        assertTrue(matchLength.fullMatch());
     }
     @Test
     public void suffixLength_partialMatch(){
@@ -46,7 +72,9 @@ public class SuffixStreamTest {
         byte expected[] = "FOO".getBytes();
         String input;
         input = "FO";
-        assertEquals("FOO should be a full match",2,stream.suffixLength(input.getBytes(),expected,input.getBytes().length));
+        SuffixStream.MatchLength matchLength = stream.suffixLength(input.getBytes(),expected,input.getBytes().length);
+        assertEquals("FOO should be a full match",2,matchLength.length());
+        assertFalse(matchLength.fullMatch());
     }
     @Test
     public void suffixLength_partialMatch2(){
@@ -54,7 +82,9 @@ public class SuffixStreamTest {
         byte expected[] = "FOO".getBytes();
         String input;
         input = "F";
-        assertEquals("FOO should be a full match",1,stream.suffixLength(input.getBytes(),expected,input.getBytes().length));
+        SuffixStream.MatchLength matchLength = stream.suffixLength(input.getBytes(),expected,input.getBytes().length);
+        assertEquals("FOO should be a full match",1,matchLength.length());
+        assertFalse(matchLength.fullMatch());
     }
 
     @Test

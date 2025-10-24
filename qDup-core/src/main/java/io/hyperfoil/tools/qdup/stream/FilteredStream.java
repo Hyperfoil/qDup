@@ -23,6 +23,7 @@ public class FilteredStream extends MultiStream{
     private int postFilterDrop = 0;
     private final Map<String,byte[]> filters;
     private final Map<String,byte[]> replacements;
+    private HashSet<Byte> injectable;
 
     private final List<Consumer<String>> observers;
 
@@ -33,6 +34,20 @@ public class FilteredStream extends MultiStream{
         filters = new ConcurrentHashMap<>();//to ensure key order
         replacements = new HashMap<>();
         observers = new LinkedList<>();
+        injectable = new HashSet<>();
+    }
+
+    public void addInjectable(byte b){
+        injectable.add(b);
+    }
+    public void removeInjectable(byte b){
+        injectable.remove(b);
+    }
+    public boolean hasInjectable(byte b){
+        return injectable.contains(b);
+    }
+    public Set<Byte> getInjectables(){
+        return injectable;
     }
 
     public String getBuffered(){
@@ -170,10 +185,11 @@ public class FilteredStream extends MultiStream{
                             String name = filterNames[i];
                             byte[] filter = filters.get(name);
                             if(filter!=null){
-                                int prefixLength = prefixLength(buffered, filter, currentIndex, writeIndex-currentIndex);
-                                if(prefixLength == filter.length) {//full match
-                                    if(filter.length > dropLength){
-                                        dropLength=filter.length;
+                                MatchLength matchLength = prefixLength(buffered, filter, currentIndex, writeIndex-currentIndex);
+                                int prefixLength = matchLength.length();
+                                if(matchLength.fullMatch()) {//full match
+                                    if(prefixLength > dropLength){
+                                        dropLength=prefixLength;
                                         filtered=true;
                                         filteredAtLeastOnce=true;
                                         matchedName = name;
@@ -248,7 +264,7 @@ public class FilteredStream extends MultiStream{
         }
         return rtrn;
     }
-    public int prefixLength(byte b[],byte prefix[],int off, int len){
+    public int old_prefixLength(byte b[],byte prefix[],int off, int len){
 
         boolean matching = true;
         int rtrn = 0;
@@ -262,6 +278,31 @@ public class FilteredStream extends MultiStream{
                 }
 
             }
+        }
+        return rtrn;
+    }
+    public MatchLength prefixLength(byte b[],byte prefix[], int off, int len){
+        MatchLength rtrn = null;
+        int prefixIndex = 0;
+        int bIndex = off;
+        int matchLength = 0;
+        while( matchLength >= 0 && bIndex < off + len && prefixIndex < prefix.length){
+            byte targetByte = b[bIndex];
+            if (targetByte == prefix[prefixIndex]) {
+                bIndex++;
+                prefixIndex++;
+                matchLength++;
+            }else if ( hasInjectable(targetByte) && matchLength > 0) {
+                bIndex++;
+            }else{
+                matchLength=-1;
+            }
+        }
+        if(matchLength > 0){
+            int matchedBytes = bIndex-off;
+            rtrn = new MatchLength(matchedBytes,prefixIndex == prefix.length);
+        }else{
+            rtrn = new MatchLength(0,false);
         }
         return rtrn;
     }

@@ -74,14 +74,13 @@ public class SessionStreams extends MultiStream {
 
       suffixStream.addStream("filtered", filteredStream);
       suffixStream.addStream("prompt-callback", promptStream);
-
+      filteredStream.addInjectable((byte)'\r'); //for column width wrapping
       filteredStream.addObserver(this::clearCommand);
 
       //move before opening connection or sending
       //was getting a ConcurrentModificationException with this after the setup sh() calls
       filteredStream.addStream("lines", lineEmittingStream);
       filteredStream.addStream("sh", shStream);
-
       filteredStream.addFilter("^C", new byte[]{0, 0, 0, 3});
       filteredStream.addFilter("echo-^C", "^C");
       filteredStream.addFilter("^D", new byte[]{0, 0, 0, 4});
@@ -90,6 +89,7 @@ public class SessionStreams extends MultiStream {
       filteredStream.addFilter("^T", new byte[]{0, 0, 0, 20});
       filteredStream.addFilter("^X", new byte[]{0, 0, 0, 24});
       filteredStream.addFilter("^@", new byte[]{0, 0, 0});
+
    }
 
    public void write(String towrite) throws IOException {
