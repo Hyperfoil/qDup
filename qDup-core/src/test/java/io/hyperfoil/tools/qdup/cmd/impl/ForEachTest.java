@@ -274,7 +274,6 @@ public class ForEachTest extends SshTestBase {
 
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
         doit.run();
         dispatcher.shutdown();
         assertEquals("FOO should loop over bar entries", " one=1 one=2 one=3 two=2 two=4 two=6 three=3 three=6 three=9", config.getState().get("LOG"));
@@ -1407,7 +1406,6 @@ public class ForEachTest extends SshTestBase {
         Dispatcher dispatcher = new Dispatcher();
 
         Run run = new Run(tmpDir.toString(), config, dispatcher);
-        run.ensureConsoleLogging();
 
         JsonServer jsonServer = new JsonServer(Vertx.vertx(),run,31337);
         jsonServer.start();

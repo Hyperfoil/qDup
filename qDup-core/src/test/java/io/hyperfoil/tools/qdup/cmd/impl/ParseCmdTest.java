@@ -44,7 +44,6 @@ public class ParseCmdTest extends SshTestBase {
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
         doit.run();
         dispatcher.shutdown();
         State state = config.getState();
@@ -82,7 +81,6 @@ public class ParseCmdTest extends SshTestBase {
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
         doit.run();
         dispatcher.shutdown();
         State state = config.getState();
@@ -122,7 +120,6 @@ public class ParseCmdTest extends SshTestBase {
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
         doit.run();
         dispatcher.shutdown();
         State state = config.getState();

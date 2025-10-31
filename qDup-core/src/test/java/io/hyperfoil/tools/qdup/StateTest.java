@@ -128,7 +128,6 @@ public class StateTest extends SshTestBase{
         RunConfig config = builder.buildConfig(parser);
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
         doit.getRunLogger().info("bizbuzfizfuz");
         doit.run();
 

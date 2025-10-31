@@ -373,7 +373,6 @@ public class ContainerShellTest extends SshTestBase {
 
         Dispatcher dispatcher = new Dispatcher(10,10,10);
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
 
         JsonServer jsonServer = new JsonServer(Vertx.vertx(), doit, 31337);
         jsonServer.start();
@@ -436,7 +435,6 @@ public class ContainerShellTest extends SshTestBase {
 
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
         doit.run();
 
         State state = config.getState();
@@ -493,7 +491,6 @@ public class ContainerShellTest extends SshTestBase {
 
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
         doit.run();
 
         State state = config.getState();
@@ -540,7 +537,6 @@ public class ContainerShellTest extends SshTestBase {
 
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
         doit.run();
 
         State state = config.getState();
@@ -584,7 +580,6 @@ public class ContainerShellTest extends SshTestBase {
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
         Dispatcher dispatcher = new Dispatcher();
         Run doit = new Run(tmpDir.toString(), config, dispatcher);
-        doit.ensureConsoleLogging();
         doit.run();
 
         State state = config.getState();
