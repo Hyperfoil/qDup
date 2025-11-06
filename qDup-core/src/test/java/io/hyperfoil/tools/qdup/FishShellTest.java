@@ -4,8 +4,8 @@ import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
-import io.hyperfoil.tools.qdup.shell.SshShellTest;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -13,12 +13,12 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class ZshShellTest extends SshTestBase {
+public class FishShellTest extends SshTestBase {
 
     @BeforeClass
     public static void createContainer() {
         try {
-            setup(getPath("keys/qdup.pub"),"ZshDockerfile");
+            setup(getPath("keys/qdup.pub"),"FishDockerfile");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -27,8 +27,8 @@ public class ZshShellTest extends SshTestBase {
 
 
 
-    @Test
-    public void test_zsh_shell(){
+    @Test @Ignore
+    public void test_fish_shell(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
         builder.loadYaml(parser.loadFile("",

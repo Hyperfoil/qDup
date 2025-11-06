@@ -99,6 +99,7 @@ public class Run implements Runnable, DispatchObserver {
     private CountDownLatch runLatch = new CountDownLatch(1);
 
     FileHandler fileHandler;
+    ConsoleHandler consoleHandler;
     Logger runLogger;// = XLoggerFactory.getXLogger(RUN_LOGGER_NAME);
     Logger stateLogger;// = XLoggerFactory.getXLogger(STATE_LOGGER_NAME);
 
@@ -200,10 +201,9 @@ public class Run implements Runnable, DispatchObserver {
 
     public void ensureConsoleLogging(){
         ensureLogger();
-        if(internalRunLogger!=null){
-
+        if(internalRunLogger!=null && consoleHandler==null){
             PatternFormatter formatter = getConfig().isColorTerminal() ? new ColorPatternFormatter(config.getConsoleFormatPattern()) : new PatternFormatter(config.getConsoleFormatPattern());
-            ConsoleHandler consoleHandler = new ConsoleHandler(formatter);
+            consoleHandler = new ConsoleHandler(formatter);
             consoleHandler.setLevel(Level.ALL);
             internalRunLogger.addHandler(consoleHandler);
         }
@@ -1018,8 +1018,14 @@ public class Run implements Runnable, DispatchObserver {
                 }
             }
         });
+
         String tree = config.getState().tree();//tree filters itself
         stateLogger.debugf("%s closing state:\n%s",config.getName(),tree);
+        if(consoleHandler != null){
+            internalRunLogger.removeHandler(consoleHandler);
+            consoleHandler = null;
+        }
+
         runLatch.countDown();
     }
     public Dispatcher getDispatcher(){return dispatcher;}
