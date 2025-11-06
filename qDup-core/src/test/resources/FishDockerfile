@@ -1,0 +1,68 @@
+FROM registry.fedoraproject.org/fedora:latest
+
+RUN dnf -y update; yum -y reinstall shadow-utils; \
+yum -y install podman fuse-overlayfs  openssh-server openssh-clients rsync git sudo curl --exclude container-selinux; \
+rm -rf /var/cache /var/log/dnf* /var/log/yum.*
+
+RUN useradd podman; \
+echo podman:10000:5000 > /etc/subuid; \
+echo podman:10000:5000 > /etc/subgid;
+
+VOLUME /var/lib/containers
+VOLUME /home/podman/.local/share/containers
+
+RUN cat >  /etc/containers/containers.conf <<'EOF'
+[containers]
+netns="host"
+userns="host"
+ipcns="host"
+utsns="host"
+cgroupns="host"
+cgroups="disabled"
+log_driver = "k8s-file"
+[engine]
+cgroup_manager = "cgroupfs"
+events_logger="file"
+runtime="crun"
+EOF
+RUN mkdir -p /home/podman/.config/containers/
+RUN cat > /home/podman/.config/containers/containers.conf <<'EOF'
+[containers]
+volumes = [
+        "/proc:/proc",
+]
+default_sysctls = []
+EOF
+
+RUN chown podman:podman -R /home/podman
+
+RUN chmod 644 /etc/containers/containers.conf
+#RUN sed -i -e 's|^#mount_program|mount_program|g' -e '/additionalimage.*/a "/var/lib/shared",' -e 's|^mountopt[[:space:]]*=.*$|mountopt = "nodev,fsync=0"|g' /etc/containers/storage.conf
+
+RUN mkdir -p /var/lib/shared/overlay-images /var/lib/shared/overlay-layers /var/lib/shared/vfs-images /var/lib/shared/vfs-layers
+RUN touch /var/lib/shared/overlay-images/images.lock
+RUN touch /var/lib/shared/overlay-layers/layers.lock
+RUN touch /var/lib/shared/vfs-images/images.lock
+RUN touch /var/lib/shared/vfs-layers/layers.lock
+
+ENV _CONTAINERS_USERNS_CONFIGURED=""
+
+RUN mkdir -p /var/run/sshd
+#setup ssh for root user
+RUN (umask 077 && test -d /root/.ssh || mkdir /root/.ssh)
+RUN chmod 700 /root/.ssh
+RUN printf 'root:password' | chpasswd
+RUN ssh-keygen -A
+RUN sed -i 's/^#\{0,1\}PermitRootLogin.*$/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+EXPOSE 22
+
+#adding fish
+RUN dnf install -y fish
+RUN fish
+RUN chsh -s /usr/bin/fish
+
+
+ENTRYPOINT /usr/sbin/sshd -D
+
