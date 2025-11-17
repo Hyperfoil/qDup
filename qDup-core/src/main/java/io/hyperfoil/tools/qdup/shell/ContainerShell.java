@@ -33,8 +33,8 @@ public class ContainerShell extends AbstractShell{
     private String containerId = null;
     private String subShellIdentifier = null;
 
-    public ContainerShell(String name,Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace) {
-        super(name,host, setupCommand, executor, filter, trace);
+    public ContainerShell(String name,Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, String tracePath) {
+        super(name,host, setupCommand, executor, filter, tracePath);
     }
 
     public static String populateList(List<String> toPopulate, Json variables){
@@ -135,9 +135,9 @@ public class ContainerShell extends AbstractShell{
             subHost.setPassphrase(getHost().getPassphrase());
         }
         if(getHost().isLocal()){
-            shell = new LocalShell(getName()+"-sub-shell",subHost,setupCommand,executor,getFilter(),trace);
+            shell = new LocalShell(getName()+"-sub-shell",subHost,setupCommand,executor,getFilter(),tracePath);
         } else {
-            shell = new SshShell(getName()+"-sub-shell",subHost,setupCommand,executor,getFilter(),trace);
+            shell = new SshShell(getName()+"-sub-shell",subHost,setupCommand,executor,getFilter(),tracePath);
         }
         boolean connected = shell.connect();
         if(!connected){
@@ -388,7 +388,7 @@ public class ContainerShell extends AbstractShell{
         if(getHost().isContainer() && getHost().needStopContainer() && getHost().startedContainer()){
             if(getHost().hasStopContainer()){
                 Host jumpHost = getHost().withoutContainer();
-                AbstractShell closeShell = AbstractShell.getShell(jumpHost.getShortHostName()+"-stop-container",jumpHost, getScheduledExector(), getFilter(), false);
+                AbstractShell closeShell = AbstractShell.getShell(jumpHost.getShortHostName()+"-stop-container",jumpHost, getScheduledExector(), getFilter(), null);
                 closeShell.setName(getName()+"-stop-container-sub-shell");
                 Json json = new Json();
                 json.set("host",getHost().toJson());
@@ -447,7 +447,7 @@ public class ContainerShell extends AbstractShell{
             setupCommand,
             executor,
             getFilter(),
-            trace
+            tracePath
         );
     }
 

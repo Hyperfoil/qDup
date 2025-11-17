@@ -35,8 +35,8 @@ public class LocalShell extends AbstractShell{
 
     private final AtomicInteger connectCounter = new AtomicInteger(0);
 
-    public LocalShell(String name,Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace) {
-        super(name,host, setupCommand, executor, filter, trace);
+    public LocalShell(String name,Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, String tracePath) {
+        super(name,host, setupCommand, executor, filter, tracePath);
     }
 
     @Override
@@ -180,7 +180,7 @@ public class LocalShell extends AbstractShell{
                 setupCommand,
                 executor,
                 getFilter(),
-                trace
+                tracePath
         );
     }
 

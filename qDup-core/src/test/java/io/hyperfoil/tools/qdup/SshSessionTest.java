@@ -21,7 +21,7 @@ public class SshSessionTest extends SshTestBase{
     public void parallel_exec(){
 
         List<String> outputs = new ArrayList<>();
-        AbstractShell sshSession = getSession(false);
+        AbstractShell sshSession = getSession();
         executor.submit(()->{
             sshSession.exec("echo 'first'",(out)->{
                 outputs.add(out);

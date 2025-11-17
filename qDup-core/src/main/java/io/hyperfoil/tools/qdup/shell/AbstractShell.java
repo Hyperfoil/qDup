@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,7 +85,7 @@ public abstract class AbstractShell {
 
     String setupCommand;
     ScheduledThreadPoolExecutor executor;
-    boolean trace;
+    String tracePath;
 
     private StampedLock connectingLock = new StampedLock();
     private static final String SH_CALLBACK = "qdup-sh-callback";
@@ -111,24 +112,24 @@ public abstract class AbstractShell {
 
     private Host host;
 
-    public static final AbstractShell getShell(String name, Host host,ScheduledThreadPoolExecutor executor,SecretFilter filter, boolean trace){
-        return getShell(name,host,"",executor,filter,trace);
+    public static final AbstractShell getShell(String name, Host host,ScheduledThreadPoolExecutor executor,SecretFilter filter, String tracePath){
+        return getShell(name,host,"",executor,filter,tracePath);
     }
-    public static final AbstractShell getShell(String name, Host host,String setupCommand, ScheduledThreadPoolExecutor executor,SecretFilter filter, boolean trace){
+    public static final AbstractShell getShell(String name, Host host,String setupCommand, ScheduledThreadPoolExecutor executor,SecretFilter filter, String tracePath){
         AbstractShell shell = null;
         if(host.isContainer()){
-            shell = new ContainerShell(name,host,setupCommand,executor,filter,trace);
+            shell = new ContainerShell(name,host,setupCommand,executor,filter,tracePath);
         }else if (host.isLocal()){
-            shell = new LocalShell(name,host,setupCommand,executor,filter,trace);
+            shell = new LocalShell(name,host,setupCommand,executor,filter,tracePath);
         }else {
-            shell = new SshShell(name,host,setupCommand,executor,filter,trace);
+            shell = new SshShell(name,host,setupCommand,executor,filter,tracePath);
         }
         //should this conect the shell or just create the correct shell?
         boolean connected = shell.connect();
         return shell;
     }
 
-    public AbstractShell(String name,Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, boolean trace){
+    public AbstractShell(String name,Host host, String setupCommand, ScheduledThreadPoolExecutor executor, SecretFilter filter, String tracePath){
         this.name = name;
         this.host = host;
         this.setupCommand = setupCommand;
@@ -149,7 +150,7 @@ public abstract class AbstractShell {
         sessionStreams = new SessionStreams(getName(),executor);
         this.filter = filter;
         this.isPromptShell = new HashMap<>();
-        this.trace = trace;
+        this.tracePath = tracePath;
     }
 
     abstract PrintStream connectShell();
@@ -290,7 +291,11 @@ public abstract class AbstractShell {
             rtrn = isOpen();
         }
         if(rtrn){
-            setTrace(trace);
+            //enable tracing
+            if(this.tracePath!=null){
+                String path = Path.of(tracePath,hasName() ? getName() : getHost().toString()).toString() ;
+                sessionStreams.setTrace(path);
+            }
             rtrn = postConnect();
         }
         if(!rtrn){//something went wrong in post connect, this shell is no good
@@ -631,15 +636,6 @@ public abstract class AbstractShell {
         }
         return isOpen() && isReady();
     }
-
-    public void setTrace(boolean trace) {
-        this.trace = trace;
-        if (trace) {
-            String path =  hasName() ? getName() : getHost().toString();
-            sessionStreams.setTrace(path);
-        }
-
-    }
     public void markAborting(){
         statusUpdater.set(this, Status.Closing);
     }
@@ -696,7 +692,7 @@ public abstract class AbstractShell {
         return shellLock.availablePermits();
     }
     public boolean isTracing() {
-        return trace && sessionStreams!=null && sessionStreams.hasTrace();
+        return tracePath != null && sessionStreams!=null && sessionStreams.hasTrace();
     }
 
     public String getShOutput(boolean flush){

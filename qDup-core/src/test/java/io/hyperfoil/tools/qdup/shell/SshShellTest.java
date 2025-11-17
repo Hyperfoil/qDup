@@ -21,7 +21,7 @@ public class SshShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
 
         assertFalse("shell should not be open",shell.isOpen());

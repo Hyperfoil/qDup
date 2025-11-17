@@ -1045,7 +1045,7 @@ public class RunTest extends SshTestBase {
               getHost(),
               scheduled,
               state.getSecretFilter(),
-              false
+              null
       );
       RunConfig config = builder.buildConfig(Parser.getInstance());
       Dispatcher dispatcher = new Dispatcher();

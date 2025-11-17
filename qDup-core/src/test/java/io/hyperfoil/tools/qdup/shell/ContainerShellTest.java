@@ -32,7 +32,7 @@ public class ContainerShellTest extends SshTestBase {
             "",
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
         boolean connected = shell.connect();
         try{
@@ -54,7 +54,7 @@ public class ContainerShellTest extends SshTestBase {
             "",
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
         boolean connected = shell.connect();
         try{
@@ -78,7 +78,7 @@ public class ContainerShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         shell.connect();
         assertFalse("should see an error connecting to image without registry",shell.isReady());
@@ -98,7 +98,7 @@ public class ContainerShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         shell.connect();
         assertFalse("should see an error connecting to password protected container",shell.isReady());
@@ -117,7 +117,7 @@ public class ContainerShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         boolean connected = shell.connect();
         try{
@@ -139,7 +139,7 @@ public class ContainerShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         remoteShell.setName("remote_container_connect");
         boolean remoteConnected = remoteShell.connect();
@@ -164,7 +164,7 @@ public class ContainerShellTest extends SshTestBase {
             "",
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
         boolean connected = shell.connect();
         try{
@@ -186,7 +186,7 @@ public class ContainerShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         boolean connected = shell.connect();
         try{
@@ -210,7 +210,7 @@ public class ContainerShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         boolean connected = shell.connect();
         try{
@@ -235,7 +235,7 @@ public class ContainerShellTest extends SshTestBase {
             "",
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
         boolean connected = shell.connect();
         try{
@@ -249,7 +249,7 @@ public class ContainerShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
             );
             connected = shell.connect();
             assertTrue("shell should be connected",connected);
@@ -273,7 +273,7 @@ public class ContainerShellTest extends SshTestBase {
             "",
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
             assertFalse("host should not have a containerId",host.hasContainerId());
             boolean connected = shell.connect();
@@ -296,7 +296,7 @@ public class ContainerShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
             assertFalse("host should not have a containerId",host.hasContainerId());
             boolean connected = shell.connect();
@@ -319,7 +319,7 @@ public class ContainerShellTest extends SshTestBase {
             "",
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
         assertFalse("host should not have a containerId",host.hasContainerId());
         boolean connected = shell.connect();        

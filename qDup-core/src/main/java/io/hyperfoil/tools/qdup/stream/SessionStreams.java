@@ -184,14 +184,13 @@ public class SessionStreams extends MultiStream {
       if(!hasTrace()){
          this.traceName = traceName;
          try {
-            String tDir = System.getProperty("java.io.tmpdir");
-            logger.info("streamtracing " + traceName + " to " + tDir);
-            Path rawTracePath = Paths.get(tDir, "qdup." + traceName + ".raw.log");
+            logger.info("streamtracing to " + traceName);
+            Path rawTracePath = Paths.get(traceName + ".raw.log");
             if(!Files.exists(rawTracePath)){
                Files.createFile(rawTracePath);
             }
             FileOutputStream rawTraceStream = new FileOutputStream(rawTracePath.toFile());
-            Path efsTracePath = Paths.get(tDir, "qdup." + traceName + ".efs.log");
+            Path efsTracePath = Paths.get(traceName + ".efs.log");
             if(!Files.exists(efsTracePath)){
                Files.createFile(efsTracePath);
             }

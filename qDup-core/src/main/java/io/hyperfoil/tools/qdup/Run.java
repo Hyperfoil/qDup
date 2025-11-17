@@ -357,7 +357,7 @@ public class Run implements Runnable, DispatchObserver {
                     "",
                     getDispatcher().getCallback(),
                     getConfig().getState().getSecretFilter(),
-                    false);
+                    null);
                 Set<String> deleteList = pendingDeletes.get(host);
                 for(String delete : deleteList){
                     shell.execSync("rm "+delete);
@@ -622,7 +622,7 @@ public class Run implements Runnable, DispatchObserver {
                         "",
                         getDispatcher().getCallback(),
                         getConfig().getState().getSecretFilter(),
-                        isTrace(name)
+                        isTrace(name) ? getOutputPath() : null
                 );
                 shell.setName(name);
 
@@ -685,7 +685,7 @@ public class Run implements Runnable, DispatchObserver {
                         "",
                         getDispatcher().getCallback(),
                         getConfig().getState().getSecretFilter(),
-                        isTrace(name)
+                        isTrace(name) ? getOutputPath() : null
                 );
                 shell.setName(name);
                 if ( shell.isReady() ) {
@@ -758,7 +758,7 @@ public class Run implements Runnable, DispatchObserver {
                                "",
                                getDispatcher().getCallback(),
                                getConfig().getState().getSecretFilter(),
-                               isTrace(name)
+                               isTrace(name) ? getOutputPath() : null
                        );
                        shell.setName(name);
                        if ( shell.isReady() ) {
@@ -842,7 +842,7 @@ public class Run implements Runnable, DispatchObserver {
                                     setupCommand,
                                     getDispatcher().getCallback(),
                                     getConfig().getState().getSecretFilter(),
-                                    isTrace(name)
+                                    isTrace(name) ? getOutputPath() : null
                             );
                             shell.setName(name);
                             if (shell.isReady()) {
@@ -936,7 +936,7 @@ public class Run implements Runnable, DispatchObserver {
                                 "",
                                 getDispatcher().getCallback(),
                                 getConfig().getState().getSecretFilter(),
-                                isTrace(name)
+                                isTrace(name) ? getOutputPath() : null
                         );
                         shell.setName(name);
                         if ( shell.isReady() ) {
@@ -1013,7 +1013,7 @@ public class Run implements Runnable, DispatchObserver {
                         "",
                         dispatcher.getScheduler(), 
                         getConfig().getState().getSecretFilter(), 
-                        false);
+                        null);
                     containerShell.stopContainerIfStarted();
                 }
             }

@@ -15,7 +15,7 @@ public class AbstractShellTest extends SshTestBase {
     @Test
     public void getShell_localShell(){
         Host host = Host.parse(Host.LOCAL);
-        AbstractShell shell = AbstractShell.getShell("getShell_localShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(), false);
+        AbstractShell shell = AbstractShell.getShell("getShell_localShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(), null);
         assertNotNull("shell should not be null",shell);
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
@@ -25,7 +25,7 @@ public class AbstractShellTest extends SshTestBase {
     @Test
     public void getShell_podman_containerShell(){
         Host host = new Host("","",null,22,null,true,"podman","quay.io/fedora/fedora");
-        AbstractShell shell = AbstractShell.getShell("getShell_podman_containerShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),false);
+        AbstractShell shell = AbstractShell.getShell("getShell_podman_containerShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),null);
         try{
             assertNotNull("shell should not be null",shell);
             assertTrue("shell should be open",shell.isOpen());
@@ -40,7 +40,7 @@ public class AbstractShellTest extends SshTestBase {
     @Test
     public void getShell_sshShell(){
         Host host = getHost();
-        AbstractShell shell = AbstractShell.getShell("getShell_sshShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),false);
+        AbstractShell shell = AbstractShell.getShell("getShell_sshShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),null);
         assertNotNull("shell should not be null",shell);
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
@@ -50,7 +50,7 @@ public class AbstractShellTest extends SshTestBase {
     @Test
     public void isTracing(){
         Host host = getHost();
-        AbstractShell shell = AbstractShell.getShell("tracingShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),true);
+        AbstractShell shell = AbstractShell.getShell("tracingShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),System.getProperty("java.io.tmpdir"));
 
         boolean isTracing = shell.isTracing();
         assertTrue(isTracing);

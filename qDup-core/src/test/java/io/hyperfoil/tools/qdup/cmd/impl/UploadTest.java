@@ -80,7 +80,7 @@ public class UploadTest extends SshTestBase {
                 Host.parse(Host.LOCAL),
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         Run run = new Run(runFolder.getPath(),new RunConfigBuilder().buildConfig(),new Dispatcher());
         ScriptContext scriptContext = new ScriptContext(shell,run.getConfig().getState(),run,new SystemTimer("download"),upload,true);
@@ -110,7 +110,7 @@ public class UploadTest extends SshTestBase {
             Host.parse(Host.LOCAL),
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
         Run run = new Run(runFolder.getPath(),new RunConfigBuilder().buildConfig(),new Dispatcher());
         ScriptContext scriptContext = new ScriptContext(shell,run.getConfig().getState(),run,new SystemTimer("download"),upload,true);
@@ -137,7 +137,7 @@ public class UploadTest extends SshTestBase {
             Host.parse(Host.LOCAL),
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
         Run run = new Run(runFolder.getPath(),new RunConfigBuilder().buildConfig(),new Dispatcher());
         ScriptContext scriptContext = new ScriptContext(shell,run.getConfig().getState(),run,new SystemTimer("download"),upload,true);

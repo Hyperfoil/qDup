@@ -33,7 +33,7 @@ public class DownloadTest {
                 Host.parse(Host.LOCAL),
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         Run run = new Run(destinationFolder.getPath(),new RunConfigBuilder().buildConfig(),new Dispatcher());
         ScriptContext scriptContext = new ScriptContext(localShell,run.getConfig().getState(),run,new SystemTimer("download"),d,true);

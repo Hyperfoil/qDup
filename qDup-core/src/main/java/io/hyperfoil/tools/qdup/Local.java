@@ -109,7 +109,7 @@ public class Local {
             "",
             stpe,
             new SecretFilter(), 
-            false);
+            null);
          String remoteDestination = shell.shSync("mktemp -d");
          boolean uploaded = upload(path,remoteDestination,remoteHost);
          if(!uploaded){
@@ -256,7 +256,7 @@ public class Local {
             "",
             stpe,
             new SecretFilter(), 
-            false);
+            null);
          //TODO this temp remomte directory should be created based on the host type
          String remoteDestination = downloadShell.shSync("mktemp -d");
          Json json = new Json();

@@ -266,7 +266,7 @@ public class LocalTest extends SshTestBase{
                 host,
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
@@ -290,7 +290,7 @@ public class LocalTest extends SshTestBase{
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
             );
             containerShell.stopContainerIfStarted();            
         }
@@ -365,7 +365,7 @@ public class LocalTest extends SshTestBase{
                 host,
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
@@ -389,7 +389,7 @@ public class LocalTest extends SshTestBase{
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
             );
             containerShell.stopContainerIfStarted();            
         }
@@ -436,7 +436,7 @@ public class LocalTest extends SshTestBase{
             "",
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
@@ -460,7 +460,7 @@ public class LocalTest extends SshTestBase{
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
             );
             containerShell.stopContainerIfStarted();
         }
@@ -478,7 +478,7 @@ public class LocalTest extends SshTestBase{
                 host,
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
@@ -511,7 +511,7 @@ public class LocalTest extends SshTestBase{
                 host,
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());

@@ -22,7 +22,7 @@ public class LocalShellTest extends SshTestBase {
             "",
             new ScheduledThreadPoolExecutor(2),
             new SecretFilter(),
-            false
+            null
         );
         try {
             String response = shell.shSync("echo 'foo' > /tmp/foo.txt");
@@ -39,7 +39,7 @@ public class LocalShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         boolean connected = shell.connect();
         if(!connected){
@@ -60,7 +60,7 @@ public class LocalShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         boolean connected = shell.connect();
         if(!connected){
@@ -81,7 +81,7 @@ public class LocalShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         boolean connected = shell.connect();
         if(!connected){
@@ -110,7 +110,7 @@ public class LocalShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         boolean connected = shell.connect();
         if(!connected){
@@ -133,7 +133,7 @@ public class LocalShellTest extends SshTestBase {
                 "",
                 new ScheduledThreadPoolExecutor(2),
                 new SecretFilter(),
-                false
+                null
         );
         boolean connected = shell.connect();
         if(!connected){

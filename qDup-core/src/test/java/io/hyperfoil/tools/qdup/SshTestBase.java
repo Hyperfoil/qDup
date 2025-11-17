@@ -263,12 +263,9 @@ public class SshTestBase {
     }
 
     public AbstractShell getSession(){
-        return getSession(SCHEDULED_THREAD_POOL_EXECUTOR,false);
+        return getSession(SCHEDULED_THREAD_POOL_EXECUTOR);
     }
-    public AbstractShell getSession(boolean trace){
-        return getSession(SCHEDULED_THREAD_POOL_EXECUTOR,trace);
-    }
-    public AbstractShell getSession(ScheduledThreadPoolExecutor executor, boolean trace){
+    public AbstractShell getSession(ScheduledThreadPoolExecutor executor){
         String userHome = System.getProperty("user.home");
         String currentDir = System.getProperty("user.dir");
         String setupCommand = "export FOO=\"foo\"  BAR=\"bar\"";
@@ -277,7 +274,7 @@ public class SshTestBase {
                 getHost(),
                 executor,
                 new SecretFilter(),
-                trace
+                null
         );
         assertTrue("local ssh session failed to connect",shell.isOpen());
         return shell;
