@@ -1,6 +1,8 @@
 package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -278,7 +280,6 @@ public class PatternValuesMapTest {
         Cmd use = Cmd.sh("pwd");
         Cmd cmd = Cmd.sh("ls");
         State state = new State(State.RUN_PREFIX);
-        //cmd.with("key", Json.fromString("{ \"value\":\"foo\"}"));
         cmd.with(Json.fromString("{\"key\":{\"value\":\"foo\"}}"));
 
         Cmd.Ref ref = new Cmd.Ref(use);
@@ -294,7 +295,6 @@ public class PatternValuesMapTest {
         Cmd use = Cmd.sh("pwd");
         Cmd cmd = Cmd.sh("ls");
         State state = new State(State.RUN_PREFIX);
-        //cmd.with("key", Json.fromString("{ \"value\":\"foo\"}"));
         cmd.with(Json.fromString("{\"key\":{\"value\":\"foo\"}}"));
 
         Cmd.Ref ref = new Cmd.Ref(use);
@@ -304,4 +304,21 @@ public class PatternValuesMapTest {
         assertTrue("map should have key",map.containsKey("key.value"));
         assertEquals("key.value should be value","foo",map.get("key.value"));
     }
+
+    @Test
+    public void global_prompt(){
+        Cmd cmd = Cmd.sh("ls");
+        State state = new State(State.RUN_PREFIX);
+        Cmd.Ref ref = new Cmd.Ref(cmd);
+
+        PatternValuesMap map = new PatternValuesMap(cmd,state,null,null,ref);
+
+        String toFind = PatternValuesMap.QDUP_GLOBAL+"."+ HostDefinition.QDUP_PROMPT_VARIABLE;
+
+        assertTrue("map shoudl have key",map.containsKey(toFind));
+        Object found = map.get(toFind);
+        assertNotNull("should have found key",found);
+        assertEquals("value should match default prompt", AbstractShell.PROMPT,found.toString());
+    }
+
 }

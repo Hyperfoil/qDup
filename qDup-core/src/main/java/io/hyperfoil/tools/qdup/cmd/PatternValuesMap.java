@@ -2,6 +2,8 @@ package io.hyperfoil.tools.qdup.cmd;
 
 import io.hyperfoil.tools.qdup.Coordinator;
 import io.hyperfoil.tools.qdup.State;
+import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
+import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.Sets;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -35,7 +37,7 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
    public static final String QDUP_GLOBAL_TIMESTAMPS = "timestamps";
 
    public static final String QDUP_GLOBAL_ABORTED = "ABORTED";
-   public static final Set<String> QDUP_GLOBAL_KEYS = Sets.of(QDUP_GLOBAL_STATE,QDUP_GLOBAL_SIGNALS,QDUP_GLOBAL_COUNTERS,QDUP_GLOBAL_TIMESTAMPS,QDUP_GLOBAL_ABORTED);
+   public static final Set<String> QDUP_GLOBAL_KEYS = Sets.of(QDUP_GLOBAL_STATE,QDUP_GLOBAL_SIGNALS,QDUP_GLOBAL_COUNTERS,QDUP_GLOBAL_TIMESTAMPS,QDUP_GLOBAL_ABORTED, HostDefinition.QDUP_PROMPT_VARIABLE);
 
    private Cmd cmd;
    private State state;
@@ -124,6 +126,7 @@ public class PatternValuesMap implements Map<Object, Object>  , ProxyObject {
          rtrn.set("counters", counter);
       }
       rtrn.set("timestamps",timestamps);
+      rtrn.set(HostDefinition.QDUP_PROMPT_VARIABLE, AbstractShell.PROMPT);
       return rtrn;
    }
 
