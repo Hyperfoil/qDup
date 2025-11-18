@@ -74,7 +74,7 @@ class QDupTest {
             e.printStackTrace();
         }
         String hostname=container.getHost();
-        host = new Host("root",hostname,null,container.getMappedPort(22),null,false,null,null);
+        host = new Host("root",hostname,null,container.getMappedPort(22),null,true,false,null,null);
         host.setIdentity(getPath("keys/qdup").toFile().getPath());
         hostDefinition = new HostDefinition(host.toString());
 
