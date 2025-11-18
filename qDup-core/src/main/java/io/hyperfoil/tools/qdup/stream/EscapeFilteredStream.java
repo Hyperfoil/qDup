@@ -6,7 +6,9 @@ import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * need to return length of full match or length or partial match
@@ -56,6 +58,11 @@ public class EscapeFilteredStream extends MultiStream {
         buffered = new byte[20*1024];
     }
     protected void superWrite(byte b[], int off, int len) throws IOException {
+        if(len < 0 || b.length - off < len){
+            logger.error("superWrite invalid write(b.length="+b.length+", off="+off+", length=" + len+")\n"
+                    +MultiStream.printByteCharacters(b,off,b.length-off)+"\n"+
+                    Arrays.asList(Thread.currentThread().getStackTrace()).stream().map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber()).collect(Collectors.joining("\n")));
+        }
         super.write(b,off,len);
     }
 
