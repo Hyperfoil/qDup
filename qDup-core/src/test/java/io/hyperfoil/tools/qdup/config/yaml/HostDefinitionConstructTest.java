@@ -97,12 +97,31 @@ public class HostDefinitionConstructTest {
     }
     @Test
     public void map_username_hostname_identity(){
-        Host loaded = yaml.loadAs("username: userName\nhostname: hostName.subdomain.domain.com\nidentity: foo",HostDefinition.class).toHost(new State(""));
+        Host loaded = yaml.loadAs("""
+        username: userName
+        hostname: hostName.subdomain.domain.com
+        identity: foo
+        """,HostDefinition.class).toHost(new State(""));
         assertNotNull("should load from map",loaded);
         assertEquals("username","userName",loaded.getUserName());
         assertEquals("hostname","hostName.subdomain.domain.com",loaded.getHostName());
         assertTrue("host has identity",loaded.hasIdentity());
         assertEquals("identity","foo",loaded.getIdentity());
+    }
+    @Test
+    public void map_prompt_isShell(){
+        Host loaded = yaml.loadAs("""
+        username: userName
+        hostname: hostName.subdomain.domain.com
+        prompt: foo
+        is-shell: true
+        """.replaceAll("is-shell",HostDefinition.IS_SHELL),HostDefinition.class).toHost(new State(""));
+        assertNotNull("should load from map",loaded);
+        assertEquals("username","userName",loaded.getUserName());
+        assertEquals("hostname","hostName.subdomain.domain.com",loaded.getHostName());
+        assertTrue("host is shell",loaded.isShell());
+        assertTrue("host has prompt",loaded.hasPrompt());
+        assertEquals("prompt","foo",loaded.getPrompt());
     }
     @Test
     public void map_username_hostname_port_password(){

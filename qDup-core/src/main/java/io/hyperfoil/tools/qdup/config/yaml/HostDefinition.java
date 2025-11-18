@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 public class HostDefinition {
 
     public static final String QDUP_PROMPT_VARIABLE = "QDUP_PROMPT";
+
     public static final String USERNAME = "username";
     public static final String HOSTNAME = "hostname";
     public static final String PASSWORD = "password";
@@ -97,6 +98,7 @@ public class HostDefinition {
                     mapping.getString(PASSWORD, Host.NO_PASSWORD),
                     (int)mapping.getLong(PORT, Host.DEFAULT_PORT),
                     mapping.getString(PROMPT,Host.NO_PROMPT),
+                    mapping.getBoolean(IS_SHELL,true),
                     mapping.getBoolean(LOCAL,false),
                     mapping.getString(PLATFORM,""),
                     mapping.getString(CONTAINER,"")

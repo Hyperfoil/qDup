@@ -711,7 +711,7 @@ public class Parser {
         constructor.addConstruct(new Tag("local"),new HostDefinitionConstruct(){
             @Override
             public Object construct(Node node){
-                return new Host("","",null,22,null,true,"podman",null);
+                return new Host("","",null,22,null,true,true,"podman",null);
             }
         });
         constructor.addConstruct(new Tag("pattern"), new DeferableConstruct() {

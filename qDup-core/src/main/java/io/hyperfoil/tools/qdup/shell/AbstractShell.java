@@ -232,7 +232,7 @@ public abstract class AbstractShell {
                     assert permits() == 1;
                 }
             };
-            addPrompt(PROMPT,true);
+            addPrompt( getPrompt(getHost()) ,true);
             if(getHost().hasPrompt()){ //TODO should we only add default prompt if host does NOT have a prompt?
                 addPrompt(getHost().getPrompt(), getHost().isShell());
             }
@@ -249,9 +249,9 @@ public abstract class AbstractShell {
             }
             if(getHost().isShell()){
                 //bash
-                shConnecting("unset PROMPT_COMMAND; export PS1='" + PROMPT + "'; set +o history; export HISTCONTROL=\"ignoreboth\"; unset PS0;");// "function fish_prompt; echo -n \""+ PROMPT+"\"; end");
+                shConnecting("unset PROMPT_COMMAND; export PS1='" + getPrompt(getHost()) + "'; set +o history; export HISTCONTROL=\"ignoreboth\"; unset PS0;");// "function fish_prompt; echo -n \""+ PROMPT+"\"; end");
                 //fish
-                shConnecting("function fish_prompt; echo -n \""+ PROMPT+"\"; end");
+                shConnecting("function fish_prompt; echo -n \"" + getPrompt(getHost()) + "\"; end");
             }
             if(setupCommand !=null && !setupCommand.trim().isEmpty()){
                 shConnecting(setupCommand);
@@ -303,6 +303,9 @@ public abstract class AbstractShell {
             commandStream = null;//appears to break things
         }
         return rtrn;
+    }
+    private String getPrompt(Host host){
+        return host.hasPrompt() ? host.getPrompt() : PROMPT;
     }
     void shConnecting(String command){
         if(commandStream == null){

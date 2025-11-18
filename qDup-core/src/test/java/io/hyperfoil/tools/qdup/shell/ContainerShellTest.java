@@ -25,7 +25,7 @@ public class ContainerShellTest extends SshTestBase {
      */
     @Test(timeout = 5_000)
     public void failure_cannot_connect_remote(){
-        Host host = new Host("idk","doesnotexist.localhost",null,22,null,false,"podman","quay.io/wreicher/omb");
+        Host host = new Host("idk","doesnotexist.localhost",null,22,null,true,false,"podman","quay.io/wreicher/omb");
         ContainerShell shell = new ContainerShell(
             "failure_cannot_connect_remote",
             host,
@@ -151,6 +151,7 @@ public class ContainerShellTest extends SshTestBase {
             getHost().getPassword(),
             getHost().getPort(),
             getHost().getPrompt(),
+            getHost().isShell(),
             getHost().isLocal(),
             "podman",
             "registry.access.redhat.com/ubi8/ubi");
@@ -227,7 +228,7 @@ public class ContainerShellTest extends SshTestBase {
     //This ensures we can connect to the same container for setup, run, cleanup
     @Test
     public void connect_to_containerId_after_first_connect(){
-        Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
+        Host host = new Host("","",null,22,null,true,true,"podman","quay.io/wreicher/omb");
 
         ContainerShell shell = new ContainerShell(
                 "connect_to_containerId_after_first_connect",
@@ -266,7 +267,7 @@ public class ContainerShellTest extends SshTestBase {
 
     @Test
     public void connect_sets_containerId(){
-        Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
+        Host host = new Host("","",null,22,null,true,true,"podman","quay.io/wreicher/omb");
         ContainerShell shell = new ContainerShell(
                 "connect_sets_containerId",
             host,
@@ -288,7 +289,7 @@ public class ContainerShellTest extends SshTestBase {
     }
     @Test
     public void start_that_connects_still_sets_containerId(){
-        Host host = new Host("","",null,22,null,true,"podman","quay.io/fedora/fedora");
+        Host host = new Host("","",null,22,null,true,true,"podman","quay.io/fedora/fedora");
         host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
         ContainerShell shell = new ContainerShell(
                 "start_that_connects_still_sets_containerId",
@@ -312,7 +313,7 @@ public class ContainerShellTest extends SshTestBase {
     }
     @Test
     public void connect_replaces_sub_shell(){
-        Host host = new Host("","",null,22,null,true,"podman","quay.io/wreicher/omb");
+        Host host = new Host("","",null,22,null,true,true,"podman","quay.io/wreicher/omb");
         ContainerShell shell = new ContainerShell(
                 "start_that_connects_still_sets_containerId",
             host,

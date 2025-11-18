@@ -129,7 +129,7 @@ public class Host {
         String container = NO_CONTAINER;
         String platform = "podman";
         if(fullyQualified == null || fullyQualified.isBlank()){
-            return new Host(NO_USER,NO_HOST,NO_PASSWORD,22,NO_PROMPT,true,platform,NO_CONTAINER);
+            return new Host(NO_USER,NO_HOST,NO_PASSWORD,22,NO_PROMPT,true,true,platform,NO_CONTAINER);
         }
 
 
@@ -138,7 +138,7 @@ public class Host {
             fullyQualified = fullyQualified.substring(0,fullyQualified.indexOf(CONTAINER_SEPARATOR));
         }
         if (LOCAL.equals(fullyQualified)){
-            return new Host(NO_USER,NO_HOST,NO_PASSWORD,22,NO_PROMPT,true,platform,container);
+            return new Host(NO_USER,NO_HOST,NO_PASSWORD,22,NO_PROMPT,true,true,platform,container);
         }
         if (fullyQualified.contains("@")) {//remote host
             String password = null;
@@ -154,12 +154,12 @@ public class Host {
                 port = Integer.parseInt(hostname.substring(hostname.indexOf(":") + 1));
                 hostname = hostname.substring(0, hostname.indexOf(":"));
             }
-            rtrn = new Host(username, hostname, password, port, null, false, platform, container);
+            rtrn = new Host(username, hostname, password, port, null,true, false, platform, container);
         }else if (fullyQualified.contains("/")){//fully qualified is the container
             if(container!=NO_CONTAINER){
                 //this shouldn't happen, we have  a problem
             }
-            return new Host(NO_USER,NO_HOST,NO_PASSWORD,22,NO_PROMPT,true,platform,fullyQualified);
+            return new Host(NO_USER,NO_HOST,NO_PASSWORD,22,NO_PROMPT,true,true,platform,fullyQualified);
         }
         return rtrn;
     }
@@ -237,15 +237,15 @@ public class Host {
         this(userName,hostName,DEFAULT_PORT);
     }
     public Host(String userName,String hostName,int port){
-        this(userName,hostName,null,port,NO_PROMPT,LOCAL.equals(hostName),null,null);
+        this(userName,hostName,null,port,NO_PROMPT,true,LOCAL.equals(hostName),null,null);
     }
-    public Host(String userName,String hostName,String password,int port){this(userName, hostName,password,port,NO_PROMPT,false,"","");}
-    public Host(String userName,String hostName,String password,int port,String prompt,boolean isLocal,String platform,String container){
+    public Host(String userName,String hostName,String password,int port){this(userName, hostName,password,port,NO_PROMPT,true,false,"","");}
+    public Host(String userName,String hostName,String password,int port,String prompt,boolean isShell,boolean isLocal,String platform,String container){
         this.userName = userName;
         this.hostName = hostName;
         this.password = password;
         this.port = port;
-        this.isShell = prompt == NO_PROMPT || prompt.isBlank();
+        this.isShell = isShell;
         this.prompt = prompt;
         this.isLocal = isLocal;
         if(isLocal){
@@ -576,6 +576,9 @@ public class Host {
 
         State toUse = state.clone(true);
         toUse.set(HostDefinition.QDUP_PROMPT_VARIABLE,AbstractShell.PROMPT);
+        if(prompt!=null && !prompt.isBlank()){
+            toUse.set(HostDefinition.PROMPT,prompt);
+        }
         hostName = nullOrPopulate(hostName,toUse);
         password = nullOrPopulate(password,toUse);
         userName = nullOrPopulate(userName,toUse);

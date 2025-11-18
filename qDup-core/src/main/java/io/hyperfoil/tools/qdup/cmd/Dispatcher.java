@@ -278,7 +278,7 @@ public class Dispatcher {
                 if(command.hasIdleTimer() &&  timestamp - lastUpdate > command.getIdleTimer(context.getState())){
                     if(command instanceof Sh){
                         String output = context.getShell().peekOutput();
-                        boolean hasPrompt = output.contains(AbstractShell.PROMPT);
+                        boolean hasPrompt = output.contains(context.getHost().hasPrompt() ? context.getHost().getPrompt() : AbstractShell.PROMPT);
                         boolean moreInput = output.endsWith("> ");
                         String parentName = null;
                         if (command.getParent() instanceof Script)
