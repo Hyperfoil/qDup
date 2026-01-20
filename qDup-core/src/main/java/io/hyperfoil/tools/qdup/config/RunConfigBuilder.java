@@ -80,7 +80,6 @@ public class RunConfigBuilder {
    private Globals globals;
    private List<String> errors;
    private List<Stage> skipStages;
-   private boolean streamLogging = false;
    private String consoleFormatPattern;
    private boolean isValid = false;
 
@@ -133,10 +132,12 @@ public class RunConfigBuilder {
       }
    }
    public void setStreamLogging(Boolean streamLogging){
-      this.streamLogging = streamLogging;
+      if(streamLogging) {
+          this.globals.addSetting(Globals.STREAM_LOGGING, streamLogging);
+      }
    }
    public boolean isStreamLogging(){
-      return streamLogging;
+      return globals.getSetting(Globals.STREAM_LOGGING,false);
    }
    public int errorCount() {
       return errors.size();
@@ -655,7 +656,6 @@ public class RunConfigBuilder {
          getTracePatterns(),
          skipStages,
          globals,
-         streamLogging,
          consoleFormatPattern
       );
       if(yamlParser.isAbortOnExitCode()){
