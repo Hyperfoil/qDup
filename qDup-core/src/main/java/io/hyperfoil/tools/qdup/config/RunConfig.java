@@ -77,7 +77,6 @@ public class RunConfig {
     private Set<String> tracePatterns;
 
     private int timeout = 10;
-    private boolean streamLogging;
     private Globals globals;
     private String consoleFormatPattern;
 
@@ -95,7 +94,6 @@ public class RunConfig {
             Set<String> tracePatterns,
             List<Stage> skipStages,
             Globals globals,
-            boolean streamLogging,
             String consoleFormatPattern){
         this.name = name;
         this.errors = errors;
@@ -112,12 +110,11 @@ public class RunConfig {
         this.tracePatterns = new HashSet<>(tracePatterns);
         this.skipStages = skipStages;
         this.globals = globals;
-        this.streamLogging = streamLogging;
         this.consoleFormatPattern = consoleFormatPattern;
     }
 
     public String getConsoleFormatPattern(){return consoleFormatPattern;}
-    public boolean isStreamLogging(){return streamLogging;}
+    public boolean isStreamLogging(){return globals.getSetting(Globals.STREAM_LOGGING,false);}
     public boolean hasSkipStages(){return !skipStages.isEmpty();}
     public List<Stage> getSkipStages(){return skipStages;}
 

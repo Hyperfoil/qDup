@@ -198,6 +198,34 @@ class QDupTest {
         LaunchResult result = launcher.launch("--ignore-exit-code", "--fullPath","/tmp","--identity",getIdentity(),configPath.toString());
         assertEquals(0,result.exitCode());
     }
+    @Test
+    public void stream_logging(QuarkusMainLauncher launcher) throws IOException {
+        Path configPath = Files.writeString(File.createTempFile("qdup",".yaml").toPath(),
+                """
+                scripts:
+                  doit:
+                  - sh: echo -e "one\\ntwo\\nthree"
+                hosts:
+                  target: HOST_TARGET
+                roles:
+                  test:
+                    hosts:
+                    - target
+                    run-scripts:
+                    - doit
+                """.replaceAll("HOST_TARGET",getHost().toString()));
+        configPath.toFile().deleteOnExit();
+        LaunchResult result = launcher.launch("--stream-logging", "--fullPath","/tmp","--identity",getIdentity(),configPath.toString());
+        assertEquals(0,result.exitCode());
+        File runLog = new File("/tmp/run.log");
+        assertTrue(runLog.exists());
+        String content = Files.readString(runLog.toPath());
+
+        assertTrue(content.contains("] one"),"expending one with log prefix:\n"+content);
+        assertTrue(content.contains("] two"),"expending two with log prefix:\n"+content);
+        assertTrue(content.contains("] three"),"expending three with log prefix:\n"+content);
+
+    }
 
     @Test
     public void main_exit_invalid_yaml(QuarkusMainLauncher launcher) throws IOException {
