@@ -11,6 +11,8 @@ only a `key` then the value will be the input from the previous command.
 - set-state:
     key: name
     value: beth #changes the name to beth
+    separator: "_" #character to separate state key from default value. Useful to override when creating json
+    autoCovert: false #disables qDup auto conversion of text output to supported types. Default is true
 ----
 
 `set-state` can use the `RUN.` and `HOST.` prefixes to target the global run state or
@@ -28,4 +30,7 @@ will be converted into JSON.
       age: 20
 ----
 
+`set-state` will automatically convert input text to a a supported type (e.g. integers and decimal numbers).
+This can cause problems if the output needs to preserve the format (e.g. `0000` being converted to 0).
+Use `autoConvert: false` to prevent the default conversion.
 
