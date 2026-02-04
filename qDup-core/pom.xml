@@ -58,6 +58,11 @@
             <version>1.4</version>
         </dependency>
         <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jansi</artifactId>
+            <version>3.30.6</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5.14</version>
@@ -102,6 +107,7 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
     <build>
         <plugins>
