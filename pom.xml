@@ -8,7 +8,7 @@
     <artifactId>qDup-parent</artifactId>
     <name>qDup-parent</name>
     <packaging>pom</packaging>
-    <version>0.11.0</version>
+    <version>0.11.1-SNAPSHOT</version>
     <modules>
         <module>qDup-core</module>
         <module>qDup</module>
@@ -21,7 +21,7 @@
         <connection>scm:git:git://github.com/Hyperfoil/qDup.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/Hyperfoil/qDup.git</developerConnection>
         <url>https://github.com/Hyperfoil/qDup</url>
-        <tag>0.11.0</tag>
+        <tag>0.10.7</tag>
     </scm>
     <licenses>
         <license>
