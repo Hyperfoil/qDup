@@ -944,6 +944,18 @@ public abstract class Cmd {
       return thens.setCount();
    }
 
+   public Cmd getInputSource(){
+       Cmd parent = getParent();
+       if(parent == null){
+           return null;
+       }
+       //
+       if (parent instanceof Script || parent instanceof LoopCmd){
+           return parent.previousChildOrParent(this);
+       }else{
+           return parent;
+       }
+   }
 
    public Cmd getPrevious() {
       Cmd rtrn = null;

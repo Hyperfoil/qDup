@@ -522,6 +522,51 @@ public class CmdTest extends SshTestBase {
       assertEquals("expect both values to replace", "foobar", populated);
    }
 
+   @Test
+   public void getPrevious(){
+       Parser parser = Parser.getInstance();
+       RunConfigBuilder builder = getBuilder();
+       builder.loadYaml(parser.loadFile("",
+               """
+               scripts:
+                 foo:
+                 - sh: echo {"foo":"bar","biz":"buz"}
+                   then:
+                   - json: $.foo
+                     then:
+                     - set-state: RUN.FOO
+                   - json: $.biz
+                     then:
+                     - set-state: RUN.BIZ
+               hosts:
+                 local: TARGET_HOST
+               roles:
+                 doit:
+                   hosts: [local]
+                   run-scripts:
+                   - foo:
+               states:
+                 value: worked
+               """.replaceAll("TARGET_HOST",getHost().toString())
+       ));
+
+       RunConfig config = builder.buildConfig(parser);
+       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
+       Script foo = config.getScript("foo");
+       assertNotNull("foo script should exist",foo);
+       Cmd first = foo.getNext();
+       assertNotNull("first should exist",first);
+       Cmd firstJson =  first.getNext();
+       Cmd secondjson = firstJson.getSkip();
+       System.out.println("second json = "+secondjson);
+
+       System.out.println("previous = "+secondjson.getPrevious());
+       System.out.println("inputSource = "+secondjson.getInputSource());
+
+
+
+   }
 
    @Test
    public void run_multiple_thens_check_input_source() {

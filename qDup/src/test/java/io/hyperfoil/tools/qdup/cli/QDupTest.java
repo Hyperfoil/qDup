@@ -117,7 +117,6 @@ class QDupTest {
                 scripts:
                   whoami:
                   - sh: whoami
-                  - sh: hostname
                 hosts:
                   target: HOST_TARGET
                 roles:
@@ -129,7 +128,7 @@ class QDupTest {
                 """.replaceAll("HOST_TARGET",getHost().toString()));
         configPath.toFile().deleteOnExit();
         LaunchResult result = launcher.launch("--fullPath","/tmp","--identity",getIdentity(),configPath.toString());
-
+        assertEquals(0,result.exitCode());
 
 
     }

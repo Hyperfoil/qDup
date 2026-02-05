@@ -8,7 +8,7 @@
     <artifactId>qDup-parent</artifactId>
     <name>qDup-parent</name>
     <packaging>pom</packaging>
-    <version>0.10.9-SNAPSHOT</version>
+    <version>0.11.0-SNAPSHOT</version>
     <modules>
         <module>qDup-core</module>
         <module>qDup</module>

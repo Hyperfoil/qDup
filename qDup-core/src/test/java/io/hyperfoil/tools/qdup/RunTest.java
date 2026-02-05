@@ -1595,7 +1595,7 @@ public class RunTest extends SshTestBase {
       Run doit = new Run(tmpDir.toString(), config, dispatcher);
       doit.run();
       assertEquals("echo child should see echo output", "0", echoChildInput.toString());
-      assertEquals("pwd child should see echo output", "0", pwdChildInput.toString());
+      assertEquals("pwd child should see pwd output", "/root", pwdChildInput.toString());
       assertEquals("pwd sibling should see pwd", pwdFirstChildInput.toString(), pwdSiblingInput.toString());
    }
 

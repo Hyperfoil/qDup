@@ -463,8 +463,10 @@ public class ScriptContext implements Context, Runnable{
     public void run() {
         Cmd cmd = getCurrentCmd();
         Cmd previous = cmd !=null ? cmd.getPrevious() : null;
+        Cmd inputSource = cmd != null ? cmd.getInputSource() : null;
         String input = previous != null ? previous.getOutput() : "";
-        run(cmd,input);
+        String sourceInput = inputSource!=null ? inputSource.getOutput() : "";
+        run(cmd,sourceInput);
     }
     public void run(Cmd cmd,String input){
         if (cmd == null) {

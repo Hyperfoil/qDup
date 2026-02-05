@@ -21,6 +21,12 @@ import static org.junit.Assert.*;
 public class SetStateTest extends SshTestBase {
 
    @Test
+   public void default_value_in_nested_pattern(){
+       SpyContext spyContext = new SpyContext();
+
+   }
+
+   @Test
    public void return_set(){
       SpyContext spyContext = new SpyContext();
       spyContext.getState().set("FOO",Json.fromString("{\"key\":\"value\"}"));

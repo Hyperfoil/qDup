@@ -31,6 +31,15 @@ public class JsCmdTest {
         Cmd elseCmd = jsCmd.getNext();
         assertNotNull("next should not be null",elseCmd);
     }
+    @Test
+    public void boolean_true(){
+        JsCmd jsCmd = new JsCmd("true");
+        SpyContext context = new SpyContext();
+        jsCmd.run("input",context);
+
+        assertTrue("return true should call next",context.hasNext());
+    }
+
 
     @Test
     public void boolean_expression_true(){
