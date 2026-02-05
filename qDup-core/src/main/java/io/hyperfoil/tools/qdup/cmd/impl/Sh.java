@@ -62,6 +62,7 @@ public class Sh extends Cmd {
         populatedCommand = populateStateVariables(command,this,context);
         //enable stream logging if enabled
         if(context.getCoordinator().getGlobals().getSetting(Globals.STREAM_LOGGING,false)){
+            context.log(populatedCommand);
             context.getShell().addLineObserver("stream",context::log);
         }
 
