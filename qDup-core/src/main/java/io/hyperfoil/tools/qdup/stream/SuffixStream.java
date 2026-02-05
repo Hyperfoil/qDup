@@ -36,8 +36,11 @@ public class SuffixStream extends MultiStream {
         public void run() {
             if(lastIndex == writeIndex){//if there has not been a subsequent write
                 future = null; //so we don't accidentally cancel the future running a shSync
-                foundSuffix(name,writeIndex);
-                callConsumers(name);
+                boolean stillFound = foundSuffix(name,writeIndex);
+                if(stillFound){
+                    callConsumers(name);
+                }
+
             }
         }
     }
@@ -230,9 +233,10 @@ public class SuffixStream extends MultiStream {
 
                         future = executor.schedule(foundRunnable, executorDelay,TimeUnit.MILLISECONDS);
                     } else {
-                        foundSuffix(foundName,writeIndex);
-
-                        callConsumers(foundName);
+                        boolean stillFound = foundSuffix(foundName,writeIndex);
+                        if(stillFound) {
+                            callConsumers(foundName);
+                        }
                     }
 
                 } else if (trailingSuffixLength > Integer.MIN_VALUE) {
@@ -246,23 +250,32 @@ public class SuffixStream extends MultiStream {
             throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);
         }
     }
-    private void foundSuffix(String name,int index){
+    private boolean foundSuffix(String name,int index){
         try {
             if (replacements.containsKey(name)) {
                 byte replacement[] = replacements.get(name);
                 int trimLength = suffixes.get(name).length;
-                superWrite(buffered, 0, writeIndex - trimLength);
-                if (replacement.length > 0) {
-                    superWrite(replacement, 0, replacement.length);
+                //so are seeing the writeIndex changing between when the FoundRunner starts and now?
+                if(writeIndex == index && writeIndex - trimLength >= 0){
+                    superWrite(buffered, 0, writeIndex - trimLength);
+                    if (replacement.length > 0) {
+                        superWrite(replacement, 0, replacement.length);
+                    }
+                    writeIndex = 0;
+                    return true;
+                }else{
+                    //log that we suspect a concurrent write while this method was executing?
+                    logger.error(getName()+".foundSuffix("+name+") aborted write for index="+index+" trimLength="+trimLength+" writeIndex="+writeIndex);
                 }
-                writeIndex = 0;
             } else {
                 superWrite(buffered, 0, writeIndex);
                 writeIndex = 0;
+                return true;
             }
         }catch(IOException e){
             logger.error(e.getMessage(),e);
         }
+        return false;
     }
     private void callConsumers(String name){
         consumers.forEach(c -> c.accept(name));
