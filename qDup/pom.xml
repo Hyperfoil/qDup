@@ -33,7 +33,7 @@
         </dependency>
         <dependency>
             <groupId>io.hyperfoil.tools</groupId>
-            <artifactId>yaup</artifactId>
+            <artifactId>yaup-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

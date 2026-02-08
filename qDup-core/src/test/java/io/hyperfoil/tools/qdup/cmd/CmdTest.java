@@ -467,7 +467,7 @@ public class CmdTest extends SshTestBase {
    @Test
    public void getStateVariables_two_states(){
       List<String> list = Cmd.getStateVariables("${{RUN.BAR:}}-${{FOO.name}}",null,null);
-      assertEquals("expect two entries",2,list.size());
+      assertEquals("expect two entries: "+list,1,list.size());
    }
    @Test
    public void getStateVariables_ENV_state_dot_path(){

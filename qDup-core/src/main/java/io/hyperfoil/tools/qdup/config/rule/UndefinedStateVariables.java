@@ -273,7 +273,8 @@ public class UndefinedStateVariables implements RunRule {
                                 "qd_",
                         StringUtil.PATTERN_DEFAULT_SEPARATOR,
                         "_qd",
-                        StringUtil.PATTERN_JAVASCRIPT_PREFIX
+                        StringUtil.PATTERN_JAVASCRIPT_PREFIX,
+                        true
                         );
                         missing = found.stream().filter(k->!hasSetVariable(k)).collect(Collectors.toList());
                     } catch (PopulatePatternException e) {

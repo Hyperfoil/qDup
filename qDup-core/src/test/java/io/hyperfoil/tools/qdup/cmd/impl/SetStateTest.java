@@ -21,12 +21,6 @@ import static org.junit.Assert.*;
 public class SetStateTest extends SshTestBase {
 
    @Test
-   public void default_value_in_nested_pattern(){
-       SpyContext spyContext = new SpyContext();
-
-   }
-
-   @Test
    public void return_set(){
       SpyContext spyContext = new SpyContext();
       spyContext.getState().set("FOO",Json.fromString("{\"key\":\"value\"}"));
@@ -540,7 +534,7 @@ public class SetStateTest extends SshTestBase {
       Json foo = target.getJson("foo");
       assertTrue("foo should be an array "+foo,foo.isArray());
       assertEquals("foo should have 1 entry",1,foo.size());
-      assertEquals("foo[0] should equal value",206640l,foo.get(0));
+      assertEquals("foo[0] should equal value",206640,foo.get(0));
       //assertEquals("expect script:foo to finish before script:update starts","-SET-phase",config.getState().get("FOO"));
    }
 

@@ -90,8 +90,8 @@
         <version.failsafe-plugin>3.2.5</version.failsafe-plugin>
 
         <version.vertx>4.5.16</version.vertx>
-        <version.yaup>0.9.8</version.yaup>
-        <version.parse>0.3.3</version.parse>
+        <version.yaup>0.9.11</version.yaup>
+        <version.parse>0.3.5</version.parse>
 
     </properties>
     <dependencyManagement>
@@ -127,12 +127,12 @@
             </dependency>
             <dependency>
                 <groupId>io.hyperfoil.tools</groupId>
-                <artifactId>yaup</artifactId>
+                <artifactId>yaup-core</artifactId>
                 <version>${version.yaup}</version>
             </dependency>
             <dependency>
                 <groupId>io.hyperfoil.tools</groupId>
-                <artifactId>parse</artifactId>
+                <artifactId>parse-core</artifactId>
                 <version>${version.parse}</version>
             </dependency>
             <dependency>

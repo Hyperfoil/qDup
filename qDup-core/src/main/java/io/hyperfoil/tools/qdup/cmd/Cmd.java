@@ -532,7 +532,8 @@ public abstract class Cmd {
                  cmd == null ? StringUtil.PATTERN_PREFIX : cmd.getPatternPrefix(),
                  cmd == null ? StringUtil.PATTERN_DEFAULT_SEPARATOR : cmd.getPatternSeparator(),
                  cmd == null ? StringUtil.PATTERN_SUFFIX : cmd.getPatternSuffix(),
-                 cmd == null ? StringUtil.PATTERN_JAVASCRIPT_PREFIX : cmd.getPatternJavascriptPrefix()
+                 cmd == null ? StringUtil.PATTERN_JAVASCRIPT_PREFIX : cmd.getPatternJavascriptPrefix(),
+                 true
          );
       } catch (PopulatePatternException e) {}
       return rtrn;

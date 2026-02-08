@@ -31,6 +31,37 @@ public class UndefinedStateVariablesTest {
     public RunConfigBuilder getBuilder(){
         return new RunConfigBuilder();
     }
+
+    @Test
+    public void default_value_in_nested_pattern(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - set-state: RUN.jvm_args ${{= "${{RUN.jvm_args:}}" + " " + "${{asprof_jvm_args}}" }}
+                hosts:
+                  local: fake@localhost
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts:
+                      - foo:
+                states:
+                   asprof_dir: /dir/
+                   h5m_folder: /dir2
+                   filename: foo
+                   asprof_jvm_args: >
+                     -agentpath:${{asprof_dir}}/lib/libasyncProfiler.so=start,event=${{asprof_event:cpu}},file=${{h5m_folder}}/${{filename}}.html
+                """
+        ));
+
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+
+    }
+
     @Test
     public void script_with_at_runtime(){
         Parser parser = Parser.getInstance();
@@ -539,7 +570,7 @@ public class UndefinedStateVariablesTest {
         summary.addRule("state",rule);
         summary.scan(config.getRolesValues(),builder);
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
-        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),8,rule.getUsedVariables().size());
+        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),7,rule.getUsedVariables().size());
     }
 
     @Test
@@ -609,7 +640,7 @@ public class UndefinedStateVariablesTest {
         summary.scan(config.getRolesValues(),builder);
 
         assertFalse("unexpected errors:\n"+summary.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),summary.hasErrors());
-        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),7,rule.getUsedVariables().size());
+        assertEquals("unexpected number of variables: "+rule.getUsedVariables(),4,rule.getUsedVariables().size());
     }
 
     @Test

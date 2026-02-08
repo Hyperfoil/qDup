@@ -114,13 +114,13 @@ public class GlobalExpressionTest extends SshTestBase {
         assertTrue("state config is not JSON", initializedState instanceof Json);
         assertTrue("state config is not Array", ((Json) initializedState).isArray());
         assertEquals("array length not 1", 1, ((Json) initializedState).size());
-        assertEquals("value is not 200", 200l, ((Json) initializedState).get(0));
+        assertEquals("value is not 200", 200, ((Json) initializedState).get(0));
         Object defaultState = runState.get("output.default");
         assertNotNull("state config null", defaultState);
         assertTrue("state config is not JSON", defaultState instanceof Json);
         assertTrue("state config is not Array", ((Json) defaultState).isArray());
         assertEquals("array length not 2", 2, ((Json) defaultState).size());
-        assertEquals("value is not 300", 300l, ((Json) defaultState).get(0));
+        assertEquals("value is not 300", 300, ((Json) defaultState).get(0));
 
     }
 
