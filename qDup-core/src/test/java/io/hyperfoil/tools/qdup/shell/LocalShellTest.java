@@ -68,7 +68,7 @@ public class LocalShellTest extends SshTestBase {
         }
         assertTrue("shell should be open",shell.isOpen());
         assertTrue("shell should be ready",shell.isReady());
-        String exec = shell.shSync("podman");
+        String exec = shell.shSync(getContainerPlatform());
         assertFalse("command should be found by the local shell: "+exec,exec.contains("command not found"));
     }
 

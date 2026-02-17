@@ -34,6 +34,40 @@ import static org.junit.Assert.assertTrue;
 
 public class SshTestBase {
 
+    private static volatile String detectedPlatform;
+
+    public static String getContainerPlatform() {
+        if (detectedPlatform == null) {
+            synchronized (SshTestBase.class) {
+                if (detectedPlatform == null) {
+                    // Try podman first, then docker
+                    for (String candidate : new String[]{"podman", "docker"}) {
+                        try {
+                            Process p = new ProcessBuilder("which", candidate)
+                                    .redirectErrorStream(true)
+                                    .start();
+                            int exit = p.waitFor();
+                            if (exit == 0) {
+                                detectedPlatform = candidate;
+                                break;
+                            }
+                        } catch (IOException | InterruptedException ignored) {
+                        }
+                    }
+                    if (detectedPlatform == null) {
+                        throw new IllegalStateException("Neither podman nor docker found on PATH");
+                    }
+                }
+            }
+        }
+        return detectedPlatform;
+    }
+
+    public static List<String> getCreateConnectedContainerCmd() {
+        return "podman".equals(getContainerPlatform())
+                ? Host.PODMAN_CREATE_CONNECTED_CONTAINER
+                : Host.DOCKER_CREATE_CONNECTED_CONTAINER;
+    }
 
     protected TmpDir tmpDir;
 

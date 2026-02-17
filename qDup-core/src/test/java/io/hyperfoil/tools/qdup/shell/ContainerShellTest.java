@@ -25,7 +25,7 @@ public class ContainerShellTest extends SshTestBase {
      */
     @Test(timeout = 5_000)
     public void failure_cannot_connect_remote(){
-        Host host = new Host("idk","doesnotexist.localhost",null,22,null,true,false,"podman","quay.io/wreicher/omb");
+        Host host = new Host("idk","doesnotexist.localhost",null,22,null,true,false,getContainerPlatform(),"quay.io/wreicher/omb");
         ContainerShell shell = new ContainerShell(
             "failure_cannot_connect_remote",
             host,
@@ -45,7 +45,7 @@ public class ContainerShellTest extends SshTestBase {
     //@Test(timeout = 10_000)
     @Test
     public void failure_container_stops_before_connect(){
-        Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
+        Host host = Host.parse("registry.access.redhat.com/ubi8/ubi", getContainerPlatform());
         host.setStartConnectedContainer(Collections.EMPTY_LIST);
         host.setCreateConnectedContainer(Collections.EMPTY_LIST);
         ContainerShell shell = new ContainerShell(
@@ -69,7 +69,7 @@ public class ContainerShellTest extends SshTestBase {
 
     @Test
     public void failure_missing_image_registry(){
-        Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"redhat/ubi10");
+        Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"redhat/ubi10", getContainerPlatform());
         host.setStartConnectedContainer(Collections.EMPTY_LIST);
         host.setCreateConnectedContainer(Collections.EMPTY_LIST);
         ContainerShell shell = new ContainerShell(
@@ -89,7 +89,7 @@ public class ContainerShellTest extends SshTestBase {
     }
     @Test
     public void failure_missing_image_registry_credentials(){
-        Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/redhat/ubi10");
+        Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/redhat/ubi10", getContainerPlatform());
         host.setStartConnectedContainer(Collections.EMPTY_LIST);
         host.setCreateConnectedContainer(Collections.EMPTY_LIST);
         ContainerShell shell = new ContainerShell(
@@ -109,8 +109,8 @@ public class ContainerShellTest extends SshTestBase {
     }
     @Test
     public void container_start_also_connects(){
-        Host host = Host.parse("quay.io/fedora/fedora");
-        host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
+        Host host = Host.parse("quay.io/fedora/fedora", getContainerPlatform());
+        host.setStartContainer(getCreateConnectedContainerCmd());
         ContainerShell shell = new ContainerShell(
                 "container_start_also_connects",
                 host,
@@ -145,6 +145,15 @@ public class ContainerShellTest extends SshTestBase {
         boolean remoteConnected = remoteShell.connect();
         assertTrue("remote shell should be connected",remoteConnected);
         String remoteHostname = remoteShell.shSync("uname -a");
+        //detect which container runtime is available inside the remote container
+        String remotePlatform = "podman";
+        String whichPodman = exec("which", "podman");
+        if (whichPodman == null || whichPodman.isBlank() || whichPodman.contains("no podman")) {
+            String whichDocker = exec("which", "docker");
+            if (whichDocker != null && !whichDocker.isBlank() && !whichDocker.contains("no docker")) {
+                remotePlatform = "docker";
+            }
+        }
         Host host = new Host(
             getHost().getUserName(),
             getHost().getHostName(),
@@ -153,7 +162,7 @@ public class ContainerShellTest extends SshTestBase {
             getHost().getPrompt(),
             getHost().isShell(),
             getHost().isLocal(),
-            "podman",
+            remotePlatform,
             "registry.access.redhat.com/ubi8/ubi");
         host.setPassphrase(getHost().getPassphrase());
         host.setIdentity(getHost().getIdentity());
@@ -179,8 +188,8 @@ public class ContainerShellTest extends SshTestBase {
     }
     @Test
     public void container_connect_also_performs_start(){
-        Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
-        host.setConnectShell(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
+        Host host = Host.parse("registry.access.redhat.com/ubi8/ubi", getContainerPlatform());
+        host.setConnectShell(getCreateConnectedContainerCmd());
         ContainerShell shell = new ContainerShell(
                 "container_connect_also_performs_start",
                 host,
@@ -204,7 +213,7 @@ public class ContainerShellTest extends SshTestBase {
 
     @Test
     public void container_stops_before_connect_then_starts_connected(){
-        Host host = Host.parse("registry.access.redhat.com/ubi8/ubi");
+        Host host = Host.parse("registry.access.redhat.com/ubi8/ubi", getContainerPlatform());
         ContainerShell shell = new ContainerShell(
                 "container_stops_before_connect_then_starts_connected",
                 host,
@@ -228,7 +237,7 @@ public class ContainerShellTest extends SshTestBase {
     //This ensures we can connect to the same container for setup, run, cleanup
     @Test
     public void connect_to_containerId_after_first_connect(){
-        Host host = new Host("","",null,22,null,true,true,"podman","quay.io/wreicher/omb");
+        Host host = new Host("","",null,22,null,true,true,getContainerPlatform(),"quay.io/wreicher/omb");
 
         ContainerShell shell = new ContainerShell(
                 "connect_to_containerId_after_first_connect",
@@ -267,7 +276,7 @@ public class ContainerShellTest extends SshTestBase {
 
     @Test
     public void connect_sets_containerId(){
-        Host host = new Host("","",null,22,null,true,true,"podman","quay.io/wreicher/omb");
+        Host host = new Host("","",null,22,null,true,true,getContainerPlatform(),"quay.io/wreicher/omb");
         ContainerShell shell = new ContainerShell(
                 "connect_sets_containerId",
             host,
@@ -289,8 +298,8 @@ public class ContainerShellTest extends SshTestBase {
     }
     @Test
     public void start_that_connects_still_sets_containerId(){
-        Host host = new Host("","",null,22,null,true,true,"podman","quay.io/fedora/fedora");
-        host.setStartContainer(Host.PODMAN_CREATE_CONNECTED_CONTAINER);
+        Host host = new Host("","",null,22,null,true,true,getContainerPlatform(),"quay.io/fedora/fedora");
+        host.setStartContainer(getCreateConnectedContainerCmd());
         ContainerShell shell = new ContainerShell(
                 "start_that_connects_still_sets_containerId",
                 host,
@@ -313,7 +322,7 @@ public class ContainerShellTest extends SshTestBase {
     }
     @Test
     public void connect_replaces_sub_shell(){
-        Host host = new Host("","",null,22,null,true,true,"podman","quay.io/wreicher/omb");
+        Host host = new Host("","",null,22,null,true,true,getContainerPlatform(),"quay.io/wreicher/omb");
         ContainerShell shell = new ContainerShell(
                 "start_that_connects_still_sets_containerId",
             host,
@@ -367,7 +376,7 @@ public class ContainerShellTest extends SshTestBase {
                        - captureName
                  states:
                    found: []
-                 """.replaceAll("TARGET_HOST",Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora")
+                 """.replaceAll("TARGET_HOST","{local: true, platform: "+getContainerPlatform()+", container: quay.io/fedora/fedora}")
         ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -429,7 +438,7 @@ public class ContainerShellTest extends SshTestBase {
                        - captureName
                  states:
                    found: []
-                 """.replaceAll("TARGET_HOST",Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora")
+                 """.replaceAll("TARGET_HOST","{local: true, platform: "+getContainerPlatform()+", container: quay.io/fedora/fedora}")
         ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -485,7 +494,7 @@ public class ContainerShellTest extends SshTestBase {
                    - captureName
              states:
                found: []
-             """.replaceAll("TARGET_HOST",Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora")
+             """.replaceAll("TARGET_HOST","{local: true, platform: "+getContainerPlatform()+", container: quay.io/fedora/fedora}")
         ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -531,7 +540,7 @@ public class ContainerShellTest extends SshTestBase {
                        - captureName
                  states:
                    found: []
-                 """.replaceAll("TARGET_HOST",Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora")
+                 """.replaceAll("TARGET_HOST","{local: true, platform: "+getContainerPlatform()+", container: quay.io/fedora/fedora}")
         ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
@@ -554,6 +563,7 @@ public class ContainerShellTest extends SshTestBase {
     public void local_container_state_in_create_connected(){
         Parser parser = Parser.getInstance();
         RunConfigBuilder builder = getBuilder();
+        String platform = getContainerPlatform();
         builder.loadYaml(parser.loadFile("signal",
                 """
                  scripts:
@@ -564,9 +574,9 @@ public class ContainerShellTest extends SshTestBase {
                  hosts:
                     uno:
                         local: true
-                        platform: podman
+                        platform: DETECTED_PLATFORM
                         container: quay.io/fedora/fedora
-                        create-connected-container: podman run --cpus=${{cpuCount}} --interactive --tty ${{image}} /bin/bash
+                        create-connected-container: DETECTED_PLATFORM run --cpus=${{cpuCount}} --interactive --tty ${{image}} /bin/bash
                  roles:
                    one:
                      hosts:
@@ -575,7 +585,7 @@ public class ContainerShellTest extends SshTestBase {
                        - captureName
                  states:
                    cpuCount: 2
-                 """
+                 """.replace("DETECTED_PLATFORM", platform)
         ));
         RunConfig config = builder.buildConfig(parser);
         assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
