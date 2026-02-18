@@ -1325,7 +1325,7 @@ public class RunTest extends SshTestBase {
       RunConfigBuilder builder = getBuilder();
       Json hostJson = getHost().toJson();
       hostJson.set("container","quay.io/fedora/fedora");
-      hostJson.set("platform","podman");
+      hostJson.set("platform",getContainerPlatform());
       builder.loadYaml(parser.loadFile("signal",
               """
               scripts:

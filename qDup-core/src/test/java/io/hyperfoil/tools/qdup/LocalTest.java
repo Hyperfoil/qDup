@@ -254,7 +254,7 @@ public class LocalTest extends SshTestBase{
     public void remote_container_upload_file(){
         Json hostJson = getHost().toJson();
         hostJson.set("container","quay.io/fedora/fedora");
-        hostJson.set("platform","podman");
+        hostJson.set("platform",getContainerPlatform());
         HostDefinition hostDefinition = new HostDefinition(hostJson);
         Host host = hostDefinition.toHost(new State(""));        
         assertFalse(host.isLocal());
@@ -355,7 +355,7 @@ public class LocalTest extends SshTestBase{
     }
     @Test
     public void local_container_upload_file(){
-        Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora");
+        Host host = Host.parse(Host.LOCAL+Host.CONTAINER_SEPARATOR+"quay.io/fedora/fedora", getContainerPlatform());
         assertTrue(host.isLocal());
         assertTrue(host.isContainer());
         File toSend = null;
@@ -429,7 +429,7 @@ public class LocalTest extends SshTestBase{
 
     @Test
     public void local_container_download_file(){
-        Host host = Host.parse("quay.io/fedora/fedora");
+        Host host = Host.parse("quay.io/fedora/fedora", getContainerPlatform());
         AbstractShell shell = AbstractShell.getShell(
             "local_container_download_file",
             host,
@@ -470,7 +470,7 @@ public class LocalTest extends SshTestBase{
     public void remote_container_download_file(){
         Json hostJson = getHost().toJson();
         hostJson.set("container","quay.io/fedora/fedora:42");
-        hostJson.set("platform","podman");
+        hostJson.set("platform",getContainerPlatform());
         HostDefinition hostDefinition = new HostDefinition(hostJson);
         Host host = hostDefinition.toHost(new State(""));
         AbstractShell shell = AbstractShell.getShell(
@@ -503,7 +503,7 @@ public class LocalTest extends SshTestBase{
     public void remote_container_download_folder(){
         Json hostJson = getHost().toJson();
         hostJson.set("container","quay.io/fedora/fedora");
-        hostJson.set("platform","podman");
+        hostJson.set("platform",getContainerPlatform());
         HostDefinition hostDefinition = new HostDefinition(hostJson);
         Host host = hostDefinition.toHost(new State(""));
         AbstractShell shell = AbstractShell.getShell(

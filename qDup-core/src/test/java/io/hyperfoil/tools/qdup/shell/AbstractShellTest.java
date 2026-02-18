@@ -23,7 +23,7 @@ public class AbstractShellTest extends SshTestBase {
 
     @Test
     public void getShell_podman_containerShell(){
-        Host host = new Host("","",null,22,null,true,true,"podman","quay.io/fedora/fedora");
+        Host host = new Host("","",null,22,null,true,true,getContainerPlatform(),"quay.io/fedora/fedora");
         AbstractShell shell = AbstractShell.getShell("getShell_podman_containerShell",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),null);
         try{
             assertNotNull("shell should not be null",shell);
@@ -57,7 +57,7 @@ public class AbstractShellTest extends SshTestBase {
 
     @Test
     public void host_prompt(){
-        Host host = new Host(getHost().getUserName(),getHost().getHostName(),getHost().getPassword(),getHost().getPort(),"FOO",true,false,"podman",getHost().getContainerId());
+        Host host = new Host(getHost().getUserName(),getHost().getHostName(),getHost().getPassword(),getHost().getPort(),"FOO",true,false,getContainerPlatform(),getHost().getContainerId());
         host.setIdentity(getHost().getIdentity());
         host.setPassphrase(getHost().getPassphrase());
         AbstractShell shell = AbstractShell.getShell("host_prompt",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),null);

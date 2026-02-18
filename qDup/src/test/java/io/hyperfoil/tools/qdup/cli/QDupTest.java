@@ -58,7 +58,7 @@ class QDupTest {
                 .withImagePullPolicy(PullPolicy.defaultPolicy())
                 .withCopyToContainer(Transferable.of(Files.readAllBytes(pubPath)),"/root/.ssh/authorized_keys")
                 .withCreateContainerCmdModifier(cmd->{
-                    ((CreateContainerCmd)cmd).getHostConfig().withSecurityOpts(List.of("label=disable","unmask=ALL"));
+                    ((CreateContainerCmd)cmd).getHostConfig().withSecurityOpts(List.of("label=disable"));
                     ((CreateContainerCmd) cmd).getHostConfig().withDevices(Device.parse("/dev/fuse"));
                 })
                 .withExposedPorts(22);
