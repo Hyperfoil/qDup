@@ -675,6 +675,7 @@ public class Parser {
     private MapRepresenter mapRepresenter;
     private Map<String, FromString> noArgs;
     private Map<Class, CmdMapping> cmdMappings;
+    private Map<String, List<String>> commandParameters;
     private boolean abortOnExitCode;
 
     private Parser() {
@@ -689,6 +690,7 @@ public class Parser {
         mapRepresenter = new MapRepresenter();
         cmdMappings = new HashMap<>();
         noArgs = new HashMap<>();
+        commandParameters = new HashMap<>();
         DumperOptions dumperOptions = new DumperOptions();
         dumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         dumperOptions.setWidth(1024);
@@ -753,6 +755,34 @@ public class Parser {
         this.abortOnExitCode = abortOnExitCode;
     }
 
+    /**
+     * Returns the set of all registered command names (tags).
+     */
+    public Set<String> getCommandNames() {
+        Set<String> names = new LinkedHashSet<>();
+        for (CmdMapping mapping : cmdMappings.values()) {
+            String key = mapping.getKey();
+            if (key != null && !key.startsWith("#")) {
+                names.add(key);
+            }
+        }
+        return Collections.unmodifiableSet(names);
+    }
+
+    /**
+     * Returns the set of command names that take no arguments.
+     */
+    public Set<String> getNoArgCommandNames() {
+        return Collections.unmodifiableSet(noArgs.keySet());
+    }
+
+    /**
+     * Returns the expected parameter keys for the given command, or an empty list if unknown.
+     */
+    public List<String> getCommandParameters(String commandName) {
+        return commandParameters.getOrDefault(commandName, Collections.emptyList());
+    }
+
     public Object representCommand(Cmd cmd) {
         return cmdMappings.containsKey(cmd.getClass()) ? cmdMappings.get(cmd.getClass()).getEncoder().encode(cmd) : "";
     }
@@ -780,6 +810,10 @@ public class Parser {
     public <T extends Cmd> void addCmd(Class<T> clazz, String tag, boolean noArg, CmdEncoder<T> encoder, FromString<T> fromString, Function<Json, Cmd> fromJson, String... expectedKeys) {
         Construct construct = new CmdConstruct(tag, fromString, fromJson, expectedKeys);
         CmdMapping cmdMapping = new CmdMapping<T>(tag, encoder);
+
+        if (expectedKeys != null && expectedKeys.length > 0) {
+            commandParameters.put(tag, List.of(expectedKeys));
+        }
 
         if (noArg) {
             this.noArgs.put(tag, fromString);
