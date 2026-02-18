@@ -125,9 +125,12 @@ public class Host {
     public static final String CONTAINER_SEPARATOR = "//";
 
     public static Host parse(String fullyQualified) {
+        return parse(fullyQualified, "podman");
+    }
+    public static Host parse(String fullyQualified, String defaultPlatform) {
         Host rtrn = null;
         String container = NO_CONTAINER;
-        String platform = "podman";
+        String platform = defaultPlatform;
         if(fullyQualified == null || fullyQualified.isBlank()){
             return new Host(NO_USER,NO_HOST,NO_PASSWORD,22,NO_PROMPT,true,true,platform,NO_CONTAINER);
         }
