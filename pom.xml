@@ -12,6 +12,7 @@
     <modules>
         <module>qDup-core</module>
         <module>qDup</module>
+        <module>qDup-lsp</module>
     </modules>
 
 

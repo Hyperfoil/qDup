@@ -1,0 +1,13 @@
+name: example qDup script
+scripts:
+  test-script:
+    - sh: echo "hello"
+    - set-state: greeting
+hosts:
+  local: me@localhost
+roles:
+  test-role:
+    hosts:
+      - local
+    run-scripts:
+      - test-script
