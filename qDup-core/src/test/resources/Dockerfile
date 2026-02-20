@@ -11,28 +11,24 @@ echo podman:10000:5000 > /etc/subgid;
 VOLUME /var/lib/containers
 VOLUME /home/podman/.local/share/containers
 
-RUN cat >  /etc/containers/containers.conf << 'EOF'
-[containers]
-netns="host"
-userns="host"
-ipcns="host"
-utsns="host"
-cgroupns="host"
-cgroups="disabled"
-log_driver = "k8s-file"
-[engine]
-cgroup_manager = "cgroupfs"
-events_logger="file"
-runtime="crun"
-EOF
+RUN printf '[containers]\n\
+netns="host"\n\
+userns="host"\n\
+ipcns="host"\n\
+utsns="host"\n\
+cgroupns="host"\n\
+cgroups="disabled"\n\
+log_driver = "k8s-file"\n\
+[engine]\n\
+cgroup_manager = "cgroupfs"\n\
+events_logger="file"\n\
+runtime="crun"\n' > /etc/containers/containers.conf
 RUN mkdir -p /home/podman/.config/containers/
-RUN cat > /home/podman/.config/containers/containers.conf << 'EOF'
-[containers]
-volumes = [
-        "/proc:/proc",
-]
-default_sysctls = []
-EOF
+RUN printf '[containers]\n\
+volumes = [\n\
+        "/proc:/proc",\n\
+]\n\
+default_sysctls = []\n' > /home/podman/.config/containers/containers.conf
 
 RUN chown podman:podman -R /home/podman
 
