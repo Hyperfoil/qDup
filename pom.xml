@@ -83,7 +83,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <version.slf4j>1.7.36</version.slf4j>
 
-        <version.graalvm>24.0.1</version.graalvm>
+        <version.graalvm>25.0.1</version.graalvm>
         <version.jackson>2.12.7</version.jackson>
         <version.quarkus>3.24.5</version.quarkus>
         <version.surefire-plugin>3.2.5</version.surefire-plugin>

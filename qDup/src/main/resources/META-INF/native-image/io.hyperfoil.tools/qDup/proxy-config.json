@@ -1,0 +1,11 @@
+[
+  {
+    "interfaces":["org.apache.sshd.common.channel.ChannelListener"]
+  },
+  {
+    "interfaces":["org.apache.sshd.common.forward.PortForwardingEventListener"]
+  },
+  {
+    "interfaces":["org.apache.sshd.common.session.SessionListener"]
+  }
+]

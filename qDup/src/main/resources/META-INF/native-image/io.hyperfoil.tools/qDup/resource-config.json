@@ -1,0 +1,145 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "\\QMETA-INF/MANIFEST.MF\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/graalvm/org.graalvm.polyglot/version\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/graalvm/org.graalvm.truffle/version\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/maven/io.hyperfoil.tools/qDup-core/pom.properties\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/maven/io.hyperfoil.tools/qDup/pom.properties\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/microprofile-config.properties\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/resources/engine/libtruffleattach/linux/amd64/sha256\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/com.oracle.truffle.api.TruffleRuntimeAccess\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.hyperfoil.tools.parse.factory.ParseFactory\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.quarkus.arc.ComponentsProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.quarkus.arc.ResourceReferenceProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.smallrye.mutiny.infrastructure.CallbackDecorator\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.smallrye.mutiny.infrastructure.ExecutorConfiguration\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.smallrye.mutiny.infrastructure.MultiInterceptor\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.smallrye.mutiny.infrastructure.UniInterceptor\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.vertx.core.spi.JsonFactory\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.vertx.core.spi.VerticleFactory\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.vertx.core.spi.VertxServiceProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.net.spi.InetAddressResolverProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.net.spi.URLStreamHandlerProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.nio.channels.spi.AsynchronousChannelProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.nio.channels.spi.SelectorProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.nio.file.spi.FileSystemProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/jdk.vm.ci.services.JVMCIServiceLocator\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.apache.sshd.common.io.IoServiceFactoryFactory\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.eclipse.microprofile.config.spi.ConfigProviderResolver\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.graalvm.polyglot.impl.AbstractPolyglotImpl\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.jboss.logging.LoggerProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.jboss.logmanager.ConfiguratorFactory\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.jboss.logmanager.LogContextConfigurator\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.jboss.logmanager.LogContextInitializer\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.jboss.logmanager.MDCProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.jboss.logmanager.NDCProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.slf4j.spi.SLF4JServiceProvider\\E"
+      },
+      {
+        "pattern": "\\Qapplication.properties\\E"
+      },
+      {
+        "pattern": "\\Qlogging.properties\\E"
+      },
+      {
+        "pattern": "\\Qmozilla/public-suffix-list.txt\\E"
+      },
+      {
+        "pattern": "\\Qorg/apache/sshd/sshd-version.properties\\E"
+      },
+      {
+        "pattern": "\\Qorg/jboss/threads/Version.properties\\E"
+      },
+      {
+        "pattern": "\\Qschema.json\\E"
+      },
+      {
+        "pattern": "java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfkc.nrm\\E"
+      },
+      {
+        "pattern": "java.base:\\Qjdk/internal/icu/impl/data/icudt72b/uprops.icu\\E"
+      },
+      {
+        "pattern": "java.base:\\Qsun/net/idn/uidna.spp\\E"
+      },
+      {
+        "pattern": "java.base:\\Qsun/text/resources/LineBreakIteratorData\\E"
+      }
+    ]
+  },
+  "bundles": []
+}

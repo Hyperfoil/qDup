@@ -1,0 +1,3595 @@
+[
+  {
+    "name": "[B"
+  },
+  {
+    "name": "[Lcom.fasterxml.jackson.databind.deser.Deserializers;"
+  },
+  {
+    "name": "[Lcom.fasterxml.jackson.databind.ser.Serializers;"
+  },
+  {
+    "name": "[Ljava.lang.String;"
+  },
+  {
+    "name": "[Lsun.security.pkcs.SignerInfo;"
+  },
+  {
+    "name": "com.fasterxml.jackson.core.JsonFactoryBuilder",
+    "queryAllPublicMethods": true
+  },
+  {
+    "name": "com.fasterxml.jackson.core.TSFBuilder",
+    "methods": [
+      {
+        "name": "recyclerPool",
+        "parameterTypes": []
+      },
+      {
+        "name": "recyclerPool",
+        "parameterTypes": [
+          "com.fasterxml.jackson.core.util.RecyclerPool"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.AESCipher$General",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.ARCFOURCipher",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.ChaCha20Cipher$ChaCha20Poly1305",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.DESCipher",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.DESedeCipher",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.DHKeyPairGenerator",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.DHParameters",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.GaloisCounterMode$AESGCM",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.HmacCore$HmacSHA256",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.TlsMasterSecretGenerator",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.hyperfoil.tools.parse.Eat",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "io.hyperfoil.tools.parse.Exp",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "io.hyperfoil.tools.parse.ExpMerge",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "io.hyperfoil.tools.parse.ExpRule",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "io.hyperfoil.tools.parse.Parser",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "io.hyperfoil.tools.qdup.Run",
+    "fields": [
+      {
+        "name": "stage"
+      }
+    ]
+  },
+  {
+    "name": "io.hyperfoil.tools.qdup.cli.PathConverter",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.hyperfoil.tools.qdup.cli.QDup",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "io.hyperfoil.tools.qdup.cli.QDup$OutputModeGroup",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.hyperfoil.tools.qdup.cli.QDupVersionProvider",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.hyperfoil.tools.qdup.cmd.ScriptContext",
+    "fields": [
+      {
+        "name": "currentCmd"
+      }
+    ]
+  },
+  {
+    "name": "io.hyperfoil.tools.qdup.cmd.SyncContext",
+    "fields": [
+      {
+        "name": "currentCmd"
+      }
+    ]
+  },
+  {
+    "name": "io.hyperfoil.tools.qdup.shell.AbstractShell",
+    "fields": [
+      {
+        "name": "currentAction"
+      },
+      {
+        "name": "status"
+      }
+    ]
+  },
+  {
+    "name": "io.hyperfoil.tools.yaup.json.graaljs.JsFetch",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "io.hyperfoil.tools.yaup.xml.pojo.Xml",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "io.netty.channel.EventLoopGroup"
+  },
+  {
+    "name": "io.netty.util.concurrent.DefaultPromise",
+    "fields": [
+      {
+        "name": "result"
+      }
+    ]
+  },
+  {
+    "name": "io.netty.util.concurrent.SingleThreadEventExecutor",
+    "fields": [
+      {
+        "name": "state"
+      },
+      {
+        "name": "threadProperties"
+      }
+    ]
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
+    "fields": [
+      {
+        "name": "producerLimit"
+      }
+    ]
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
+    "fields": [
+      {
+        "name": "consumerIndex"
+      }
+    ]
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
+    "fields": [
+      {
+        "name": "producerIndex"
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.arc.AsyncObserverExceptionHandler"
+  },
+  {
+    "name": "io.quarkus.arc.generator.Default_jakarta_enterprise_context_ApplicationScoped_ContextInstances",
+    "fields": [
+      {
+        "name": "0l"
+      },
+      {
+        "name": "1l"
+      },
+      {
+        "name": "2l"
+      },
+      {
+        "name": "3l"
+      },
+      {
+        "name": "4l"
+      },
+      {
+        "name": "5l"
+      },
+      {
+        "name": "6l"
+      },
+      {
+        "name": "7l"
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.arc.generator.Default_jakarta_enterprise_context_RequestScoped_ContextInstances",
+    "fields": [
+      {
+        "name": "0l"
+      },
+      {
+        "name": "1l"
+      },
+      {
+        "name": "2l"
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.arc.impl.AbstractInstanceHandle",
+    "fields": [
+      {
+        "name": "destroyed"
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.arc.impl.CurrentManagedContext$CurrentContextState",
+    "fields": [
+      {
+        "name": "beforeDestroyedFired"
+      },
+      {
+        "name": "initializedFired"
+      },
+      {
+        "name": "isValid"
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.arc.impl.DefaultAsyncObserverExceptionHandler"
+  },
+  {
+    "name": "io.quarkus.arc.impl.InjectableRequestContextController"
+  },
+  {
+    "name": "io.quarkus.arc.runtime.ConfigStaticInitCheckInterceptor"
+  },
+  {
+    "name": "io.quarkus.arc.runtime.ConfigStaticInitValues"
+  },
+  {
+    "name": "io.quarkus.arc.runtime.LaunchModeProducer"
+  },
+  {
+    "name": "io.quarkus.arc.runtime.LoggerProducer"
+  },
+  {
+    "name": "io.quarkus.picocli.runtime.DefaultPicocliCommandLineFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.Instance",
+          "io.quarkus.picocli.runtime.PicocliConfiguration",
+          "picocli.CommandLine$IFactory"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.picocli.runtime.PicocliCommandLineFactory"
+  },
+  {
+    "name": "io.quarkus.picocli.runtime.PicocliCommandLineProducer"
+  },
+  {
+    "name": "io.quarkus.picocli.runtime.PicocliConfiguration"
+  },
+  {
+    "name": "io.quarkus.picocli.runtime.PicocliConfiguration$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.picocli.runtime.PicocliRunner",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "picocli.CommandLine",
+          "jakarta.enterprise.event.Event"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runner.ApplicationImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.ApplicationConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.ApplicationConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.BannerRuntimeConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.BannerRuntimeConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.ConfigConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.ConfigConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.LaunchConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.LaunchConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.LaunchMode"
+  },
+  {
+    "name": "io.quarkus.runtime.LiveReloadConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.LiveReloadConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.LocalesBuildTimeConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.LocalesBuildTimeConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.QuarkusApplication"
+  },
+  {
+    "name": "io.quarkus.runtime.StartupEvent"
+  },
+  {
+    "name": "io.quarkus.runtime.ThreadPoolConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.ThreadPoolConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.configuration.CharsetConverter",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.configuration.InetSocketAddressConverter",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.configuration.MemorySize"
+  },
+  {
+    "name": "io.quarkus.runtime.configuration.MemorySizeConverter",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.console.ConsoleRuntimeConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.console.ConsoleRuntimeConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.generated.RunTimeConfig",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.generated.StaticInitConfig",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.init.InitRuntimeConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.init.InitRuntimeConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.init.InitRuntimeConfig$BooleanConverter",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.InheritableLevel",
+    "methods": [
+      {
+        "name": "of",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LevelConverter",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogBuildTimeConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogBuildTimeConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogBuildTimeConfig$CategoryBuildTimeConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig$AsyncConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig$CategoryConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig$CleanupFilterConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig$ConsoleConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig$FileConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig$FileConfig$RotationConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig$SocketConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.logging.LogRuntimeConfig$SyslogConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.runtime.shutdown.ShutdownConfig"
+  },
+  {
+    "name": "io.quarkus.runtime.shutdown.ShutdownConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.security.identity.CurrentIdentityAssociation"
+  },
+  {
+    "name": "io.quarkus.security.identity.IdentityProvider"
+  },
+  {
+    "name": "io.quarkus.security.identity.IdentityProviderManager"
+  },
+  {
+    "name": "io.quarkus.security.identity.SecurityIdentity"
+  },
+  {
+    "name": "io.quarkus.security.identity.SecurityIdentityAugmentor"
+  },
+  {
+    "name": "io.quarkus.security.identity.request.CertificateAuthenticationRequest"
+  },
+  {
+    "name": "io.quarkus.security.runtime.IdentityProviderManagerCreator"
+  },
+  {
+    "name": "io.quarkus.security.runtime.SecurityConfig"
+  },
+  {
+    "name": "io.quarkus.security.runtime.SecurityConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.security.runtime.SecurityConfig$SecurityEventsConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.security.runtime.SecurityIdentityAssociation"
+  },
+  {
+    "name": "io.quarkus.security.runtime.SecurityIdentityProxy"
+  },
+  {
+    "name": "io.quarkus.security.runtime.X509IdentityProvider"
+  },
+  {
+    "name": "io.quarkus.security.runtime.interceptor.SecurityConstrainer"
+  },
+  {
+    "name": "io.quarkus.security.runtime.interceptor.SecurityHandler"
+  },
+  {
+    "name": "io.quarkus.security.spi.runtime.AbstractSecurityIdentityAssociation"
+  },
+  {
+    "name": "io.quarkus.security.spi.runtime.AuthorizationController"
+  },
+  {
+    "name": "io.quarkus.security.spi.runtime.BlockingSecurityExecutor"
+  },
+  {
+    "name": "io.quarkus.security.spi.runtime.SecurityCheckStorage"
+  },
+  {
+    "name": "io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationProvider"
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.VertxLogDelegateFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.config.ClusterConfiguration$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.config.EventBusConfiguration$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.config.JksConfiguration$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.config.PfxConfiguration$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.config.VertxConfiguration"
+  },
+  {
+    "name": "io.quarkus.vertx.core.runtime.config.VertxConfiguration$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.quarkus.vertx.runtime.VertxProducer"
+  },
+  {
+    "name": "io.quarkus.virtual.threads.VirtualThreadsConfig"
+  },
+  {
+    "name": "io.quarkus.virtual.threads.VirtualThreadsConfig$$CMImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "io.smallrye.config.ConfigMappingContext"
+        ]
+      },
+      {
+        "name": "getProperties",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.smallrye.common.net.CidrAddress"
+  },
+  {
+    "name": "io.smallrye.config.ConfigValue"
+  },
+  {
+    "name": "io.smallrye.config.SmallRyeConfig"
+  },
+  {
+    "name": "io.smallrye.config._private.ConfigLogging_$logger",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "org.jboss.logging.Logger"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "io.smallrye.config._private.ConfigLogging_$logger_en"
+  },
+  {
+    "name": "io.smallrye.config._private.ConfigLogging_$logger_en_US"
+  },
+  {
+    "name": "io.smallrye.config._private.ConfigMessages_$bundle",
+    "fields": [
+      {
+        "name": "INSTANCE"
+      }
+    ]
+  },
+  {
+    "name": "io.smallrye.config._private.ConfigMessages_$bundle_en"
+  },
+  {
+    "name": "io.smallrye.config._private.ConfigMessages_$bundle_en_US"
+  },
+  {
+    "name": "io.smallrye.config.inject.ConfigProducer",
+    "methods": [
+      {
+        "name": "getIntegerValue",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "getLongValue",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceBooleanConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceByteConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceCharacterConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceConfigValue",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceDoubleConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceFloatConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceOptionalConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceOptionalDoubleConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceOptionalIntConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceOptionalLongConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceShortConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceStringConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "produceSupplierConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "producesListConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "producesMapConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      },
+      {
+        "name": "producesSetConfigProperty",
+        "parameterTypes": [
+          "jakarta.enterprise.inject.spi.InjectionPoint"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "io.smallrye.context.SmallRyeManagedExecutor"
+  },
+  {
+    "name": "io.smallrye.context.SmallRyeThreadContext"
+  },
+  {
+    "name": "io.smallrye.mutiny.vertx.MutinyDelegate"
+  },
+  {
+    "name": "io.vertx.core.Vertx"
+  },
+  {
+    "name": "io.vertx.core.eventbus.EventBus"
+  },
+  {
+    "name": "io.vertx.core.eventbus.impl.EventBusImpl",
+    "fields": [
+      {
+        "name": "inboundInterceptors"
+      },
+      {
+        "name": "outboundInterceptors"
+      }
+    ]
+  },
+  {
+    "name": "io.vertx.core.metrics.Measured"
+  },
+  {
+    "name": "io.vertx.mutiny.core.Vertx"
+  },
+  {
+    "name": "io.vertx.mutiny.core.eventbus.EventBus"
+  },
+  {
+    "name": "io.vertx.mutiny.core.metrics.Measured"
+  },
+  {
+    "name": "jakarta.enterprise.context.BeforeDestroyed",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "value",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "jakarta.enterprise.context.Destroyed",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "value",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "jakarta.enterprise.context.Initialized",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "value",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "jakarta.enterprise.context.control.RequestContextController"
+  },
+  {
+    "name": "jakarta.enterprise.event.Event"
+  },
+  {
+    "name": "jakarta.enterprise.inject.Any",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "jakarta.enterprise.inject.Default",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "jakarta.enterprise.inject.Instance"
+  },
+  {
+    "name": "jakarta.inject.Inject",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.io.Closeable",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.io.Serializable",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.lang.AutoCloseable",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.lang.BaseVirtualThread"
+  },
+  {
+    "name": "java.lang.Boolean",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "queryAllDeclaredConstructors": true,
+    "methods": [
+      {
+        "name": "of",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      },
+      {
+        "name": "of",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "valueOf",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Comparable",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.lang.Enum",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.lang.Integer",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "queryAllDeclaredConstructors": true
+  },
+  {
+    "name": "java.lang.Long",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "queryAllDeclaredConstructors": true
+  },
+  {
+    "name": "java.lang.Number",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.lang.Object",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.lang.ProcessHandle",
+    "methods": [
+      {
+        "name": "current",
+        "parameterTypes": []
+      },
+      {
+        "name": "pid",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.String"
+  },
+  {
+    "name": "java.lang.System",
+    "methods": [
+      {
+        "name": "console",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Thread",
+    "fields": [
+      {
+        "name": "contextClassLoader"
+      },
+      {
+        "name": "inheritableThreadLocals"
+      },
+      {
+        "name": "threadLocalRandomProbe"
+      },
+      {
+        "name": "threadLocals"
+      }
+    ],
+    "methods": [
+      {
+        "name": "isVirtual",
+        "parameterTypes": []
+      },
+      {
+        "name": "ofVirtual",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Thread$Builder",
+    "methods": [
+      {
+        "name": "factory",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Thread$Builder$OfVirtual",
+    "methods": [
+      {
+        "name": "name",
+        "parameterTypes": [
+          "java.lang.String",
+          "long"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Throwable",
+    "methods": [
+      {
+        "name": "getSuppressed",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.constant.Constable",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.lang.constant.ConstantDesc",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.net.InetAddress"
+  },
+  {
+    "name": "java.net.InetSocketAddress"
+  },
+  {
+    "name": "java.net.UnixDomainSocketAddress",
+    "methods": [
+      {
+        "name": "of",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.nio.Bits",
+    "fields": [
+      {
+        "name": "MAX_MEMORY"
+      },
+      {
+        "name": "UNALIGNED"
+      }
+    ]
+  },
+  {
+    "name": "java.nio.Buffer",
+    "fields": [
+      {
+        "name": "address"
+      }
+    ]
+  },
+  {
+    "name": "java.nio.ByteBuffer",
+    "methods": [
+      {
+        "name": "alignedSlice",
+        "parameterTypes": [
+          "int"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.nio.DirectByteBuffer",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "long"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.nio.charset.Charset"
+  },
+  {
+    "name": "java.nio.file.Path"
+  },
+  {
+    "name": "java.nio.file.Paths",
+    "methods": [
+      {
+        "name": "get",
+        "parameterTypes": [
+          "java.lang.String",
+          "java.lang.String[]"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.security.AlgorithmParametersSpi"
+  },
+  {
+    "name": "java.security.KeyFactory",
+    "methods": [
+      {
+        "name": "getInstance",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "getInstance",
+        "parameterTypes": [
+          "java.lang.String",
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.security.KeyPairGenerator",
+    "methods": [
+      {
+        "name": "getInstance",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.security.KeyStoreSpi"
+  },
+  {
+    "name": "java.security.MessageDigest",
+    "methods": [
+      {
+        "name": "getInstance",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.security.SecureRandomParameters"
+  },
+  {
+    "name": "java.security.Signature",
+    "methods": [
+      {
+        "name": "getInstance",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.security.cert.PKIXRevocationChecker"
+  },
+  {
+    "name": "java.security.interfaces.ECPrivateKey"
+  },
+  {
+    "name": "java.security.interfaces.ECPublicKey"
+  },
+  {
+    "name": "java.security.interfaces.RSAPrivateKey"
+  },
+  {
+    "name": "java.security.interfaces.RSAPublicKey"
+  },
+  {
+    "name": "java.time.Duration",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.Instant",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.LocalDate",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.LocalDateTime",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.LocalTime",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.MonthDay",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.OffsetDateTime",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.OffsetTime",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.Period",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.Year",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.YearMonth",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.ZoneId",
+    "methods": [
+      {
+        "name": "of",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.ZoneOffset",
+    "methods": [
+      {
+        "name": "of",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.time.ZonedDateTime",
+    "methods": [
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.CharSequence"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.util.ArrayList",
+    "queryAllDeclaredMethods": true,
+    "queryAllDeclaredConstructors": true
+  },
+  {
+    "name": "java.util.Date"
+  },
+  {
+    "name": "java.util.HashMap",
+    "queryAllDeclaredMethods": true,
+    "queryAllDeclaredConstructors": true
+  },
+  {
+    "name": "java.util.LinkedHashMap",
+    "queryAllDeclaredMethods": true,
+    "queryAllDeclaredConstructors": true
+  },
+  {
+    "name": "java.util.Locale"
+  },
+  {
+    "name": "java.util.concurrent.ForkJoinTask",
+    "fields": [
+      {
+        "name": "aux"
+      },
+      {
+        "name": "status"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicBoolean",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicMarkableReference",
+    "fields": [
+      {
+        "name": "pair"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicReference",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.Striped64",
+    "fields": [
+      {
+        "name": "base"
+      },
+      {
+        "name": "cellsBusy"
+      }
+    ]
+  },
+  {
+    "name": "java.util.logging.Level"
+  },
+  {
+    "name": "java.util.logging.LogRecord",
+    "methods": [
+      {
+        "name": "getLongThreadID",
+        "parameterTypes": []
+      },
+      {
+        "name": "setLongThreadID",
+        "parameterTypes": [
+          "long"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.util.regex.Pattern"
+  },
+  {
+    "name": "javax.crypto.KeyAgreement",
+    "methods": [
+      {
+        "name": "getInstance",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "javax.security.auth.x500.X500Principal",
+    "fields": [
+      {
+        "name": "thisX500Name"
+      }
+    ],
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "sun.security.x509.X500Name"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "jdk.internal.misc.Unsafe",
+    "methods": [
+      {
+        "name": "getUnsafe",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "net.i2p.crypto.eddsa.EdDSAKey"
+  },
+  {
+    "name": "net.i2p.crypto.eddsa.EdDSASecurityProvider",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "net.i2p.crypto.eddsa.KeyFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.apache.sshd.common.SshConstants",
+    "allPublicFields": true
+  },
+  {
+    "name": "org.apache.sshd.common.channel.ChannelListener",
+    "methods": [
+      {
+        "name": "channelClosed",
+        "parameterTypes": [
+          "org.apache.sshd.common.channel.Channel",
+          "java.lang.Throwable"
+        ]
+      },
+      {
+        "name": "channelOpenSuccess",
+        "parameterTypes": [
+          "org.apache.sshd.common.channel.Channel"
+        ]
+      },
+      {
+        "name": "channelStateChanged",
+        "parameterTypes": [
+          "org.apache.sshd.common.channel.Channel",
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.apache.sshd.common.session.SessionListener",
+    "methods": [
+      {
+        "name": "sessionClosed",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session"
+        ]
+      },
+      {
+        "name": "sessionCreated",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session"
+        ]
+      },
+      {
+        "name": "sessionEstablished",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session"
+        ]
+      },
+      {
+        "name": "sessionEvent",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session",
+          "org.apache.sshd.common.session.SessionListener$Event"
+        ]
+      },
+      {
+        "name": "sessionNegotiationEnd",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session",
+          "java.util.Map",
+          "java.util.Map",
+          "java.util.Map",
+          "java.lang.Throwable"
+        ]
+      },
+      {
+        "name": "sessionNegotiationOptionsCreated",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session",
+          "java.util.Map"
+        ]
+      },
+      {
+        "name": "sessionNegotiationStart",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session",
+          "java.util.Map",
+          "java.util.Map"
+        ]
+      },
+      {
+        "name": "sessionPeerIdentificationLine",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session",
+          "java.lang.String",
+          "java.util.List"
+        ]
+      },
+      {
+        "name": "sessionPeerIdentificationReceived",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session",
+          "java.lang.String",
+          "java.util.List"
+        ]
+      },
+      {
+        "name": "sessionPeerIdentificationSend",
+        "parameterTypes": [
+          "org.apache.sshd.common.session.Session",
+          "java.lang.String",
+          "java.util.List"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.apache.sshd.common.util.security.SunJCESecurityProviderRegistrar",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider"
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.COMPOSITE$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.CONTEXT$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.CompositeSignatures$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.DH$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.DSA$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.DSTU4145$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.Dilithium$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.ECGOST$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.EXTERNAL$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.EdEC$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.ElGamal$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.Falcon$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.GM$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.GOST$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.IES$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.LMS$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.MLDSA$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.MLKEM$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.NTRU$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.NoSig$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.SLHDSA$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.SPHINCSPlus$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.X509$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.Blake2b$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.Blake2s$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.Blake3$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.DSTU7564$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.GOST3411$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.Haraka$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.Keccak$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.MD2$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.MD4$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.MD5$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.RIPEMD128$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.RIPEMD160$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.RIPEMD256$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.RIPEMD320$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.SHA1$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.SHA224$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.SHA256$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.SHA3$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.SHA384$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.SHA512$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.SM3$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.Skein$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.Tiger$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.digest.Whirlpool$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.drbg.DRBG$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.keystore.BC$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.keystore.BCFKS$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.keystore.PKCS12$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.AES$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.ARC4$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.ARIA$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Blowfish$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.CAST5$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.CAST6$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Camellia$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.ChaCha$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.DES$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.DESede$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.DSTU7624$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.GOST28147$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.GOST3412_2015$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Grain128$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Grainv1$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.HC128$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.HC256$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.IDEA$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Noekeon$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.OpenSSLPBKDF$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.PBEPBKDF1$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.PBEPBKDF2$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.PBEPKCS12$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Poly1305$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.RC2$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.RC5$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.RC6$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Rijndael$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.SCRYPT$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.SEED$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.SM4$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Salsa20$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Serpent$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Shacal2$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.SipHash$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.SipHash128$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Skipjack$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.TEA$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.TLSKDF$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Threefish$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Twofish$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.VMPC$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.VMPCKSA3$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.XSalsa20$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.XTEA$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.Zuc$Mappings",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bouncycastle.jce.provider.BouncyCastleProvider",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.eclipse.microprofile.config.Config"
+  },
+  {
+    "name": "org.eclipse.microprofile.config.ConfigValue"
+  },
+  {
+    "name": "org.eclipse.microprofile.context.ManagedExecutor"
+  },
+  {
+    "name": "org.eclipse.microprofile.context.ThreadContext"
+  },
+  {
+    "name": "org.graalvm.polyglot.io.IOHelper",
+    "fields": [
+      {
+        "name": "ACCESS"
+      }
+    ]
+  },
+  {
+    "name": "org.graalvm.polyglot.management.Management",
+    "fields": [
+      {
+        "name": "ACCESS"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.logging.BasicLogger"
+  },
+  {
+    "name": "org.jboss.logging.Logger"
+  },
+  {
+    "name": "org.jboss.logmanager.CopyOnWriteMap",
+    "fields": [
+      {
+        "name": "map"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.logmanager.ExtHandler",
+    "fields": [
+      {
+        "name": "handlers"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.logmanager.ExtLogRecord",
+    "methods": [
+      {
+        "name": "setMarker",
+        "parameterTypes": [
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.logmanager.LogManager"
+  },
+  {
+    "name": "org.jboss.logmanager.Logger$AttachmentKey"
+  },
+  {
+    "name": "org.jboss.logmanager.LoggerNode",
+    "fields": [
+      {
+        "name": "handlers"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.logmanager.StandardOutputStreams"
+  },
+  {
+    "name": "picocli.AutoComplete$GenerateCompletion",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "picocli.CommandLine"
+  },
+  {
+    "name": "picocli.CommandLine$AutoHelpMixin",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "picocli.CommandLine$HelpCommand",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "picocli.CommandLine$IFactory"
+  },
+  {
+    "name": "picocli.CommandLine$ParseResult"
+  },
+  {
+    "name": "sun.misc.Unsafe",
+    "fields": [
+      {
+        "name": "theUnsafe"
+      }
+    ],
+    "methods": [
+      {
+        "name": "copyMemory",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "java.lang.Object",
+          "long",
+          "long"
+        ]
+      },
+      {
+        "name": "getAndAddLong",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "long"
+        ]
+      },
+      {
+        "name": "getAndSetObject",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "java.lang.Object"
+        ]
+      },
+      {
+        "name": "invokeCleaner",
+        "parameterTypes": [
+          "java.nio.ByteBuffer"
+        ]
+      },
+      {
+        "name": "storeFence",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.nio.ch.SelectorImpl",
+    "fields": [
+      {
+        "name": "publicSelectedKeys"
+      },
+      {
+        "name": "selectedKeys"
+      }
+    ]
+  },
+  {
+    "name": "sun.security.pkcs12.PKCS12KeyStore",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.pkcs12.PKCS12KeyStore$DualFormatPKCS12",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.DSA$SHA224withDSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.DSA$SHA256withDSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.JavaKeyStore$DualFormatJKS",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.JavaKeyStore$JKS",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.MD5",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.NativePRNG",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.security.SecureRandomParameters"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.NativePRNG$NonBlocking",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.security.SecureRandomParameters"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA2$SHA224",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA2$SHA256",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA5$SHA384",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA5$SHA512",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.X509Factory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.certpath.PKIXCertPathValidator",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.PSSParameters",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSAKeyFactory$Legacy",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSAPSSSignature",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSASignature$SHA224withRSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSASignature$SHA256withRSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSASignature$SHA384withRSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSASignature$SHA512withRSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.ssl.KeyManagerFactoryImpl$SunX509",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.ssl.SSLContextImpl$DefaultSSLContext",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.ssl.TrustManagerFactoryImpl$PKIXFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.util.ObjectIdentifier"
+  },
+  {
+    "name": "sun.security.x509.AuthorityInfoAccessExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.AuthorityKeyIdentifierExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.BasicConstraintsExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.CRLDistributionPointsExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.CertificateExtensions"
+  },
+  {
+    "name": "sun.security.x509.CertificatePoliciesExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.ExtendedKeyUsageExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.IssuerAlternativeNameExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.KeyUsageExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.NetscapeCertTypeExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.PrivateKeyUsageExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.SubjectAlternativeNameExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.SubjectKeyIdentifierExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  }
+]

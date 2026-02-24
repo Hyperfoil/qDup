@@ -76,6 +76,26 @@ Roles are merged across all YAML files based on name.
 Running `java -jar qDup-uber.jar` without any arguments will list
 the supported options for the jar. 
 
+### Building a native binary
+
+qDup can be compiled to a native binary using [GraalVM](https://www.graalvm.org/) for faster startup.
+
+Requirements:
+- [GraalVM CE](https://www.graalvm.org/downloads/) (includes `native-image`)
+- A separate JDK 17+ (e.g. Temurin 21) to run Maven
+
+```shell
+JAVA_HOME=/path/to/jdk21 GRAALVM_HOME=/path/to/graalvm \
+  mvn package -Dnative -DskipTests
+```
+
+The native binary is created at `qDup/target/qDup` and can be used as a drop-in replacement for the uber-jar:
+
+```shell
+./qDup/target/qDup test.yaml
+./qDup/target/qDup -T test.yaml   # validate YAML without running
+```
+
 ## Contributing
 
 Contributions to qDup are managed on [GitHub.com](https://github.com/Hyperfoil/qDup/)
