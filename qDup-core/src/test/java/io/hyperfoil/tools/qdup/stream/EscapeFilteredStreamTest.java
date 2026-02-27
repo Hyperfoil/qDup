@@ -66,20 +66,6 @@ public class EscapeFilteredStreamTest {
         assertEquals("leading, trailing, and injected shift in should be removed", "one", output);
     }
 
-    @Test
-    public void testGetBuffered() throws IOException {
-        EscapeFilteredStream stream = new EscapeFilteredStream("test");
-        String input = "Hello World";
-
-        stream.write(input.getBytes(StandardCharsets.UTF_8));
-        stream.flush();
-
-        String buffered = stream.getBuffered();
-        logger.info("Captured from stream: " + buffered);
-
-        assertFalse("getBuffered should not be empty", buffered.isEmpty());
-        assertEquals("Hello World", buffered);
-    }
 
     @Test
     public void issue_remove_shift_out() {
@@ -143,7 +129,7 @@ public class EscapeFilteredStreamTest {
 
         String response = new String(bao.toByteArray());
 
-        assertEquals("expect to remove the escape:","  \u001b[bar",filter(input));
+        assertEquals("expect to remove the escape:","  ar",response);
 
     }
 

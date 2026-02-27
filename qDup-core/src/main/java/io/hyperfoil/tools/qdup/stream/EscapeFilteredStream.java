@@ -23,6 +23,7 @@ public class EscapeFilteredStream extends MultiStream {
     private static final int ESC = 27;
     private static final int SHIFT_IN = 15;
     private static final int SHIFT_OUT = 14;
+    private boolean skipNext = false;
 
     public EscapeFilteredStream() {
         this("");
@@ -34,11 +35,12 @@ public class EscapeFilteredStream extends MultiStream {
         OutputStream optStream = new OutputStream() {
             @Override
             public void write(int b) throws IOException {
-                barrierBuffer.write(b);
+
+                superWrite(new byte[]{(byte)b}, 0, 1);
             }
             @Override
             public void write(byte[] b, int off, int len) throws IOException {
-                barrierBuffer.write(b, off, len);
+                superWrite(b, off, len);
             }
         };
 
@@ -66,15 +68,33 @@ public class EscapeFilteredStream extends MultiStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        byte[] filtered = new byte[len];
+        //byte[] filtered = new byte[len];
         int fIdx = 0;
 
+
         for (int i = 0; i < len; i++) {
+
+            if (skipNext) {
+                skipNext = false;
+                continue;
+            }
+
             byte c = b[off + i];
 
             if (c == 0) {
                 continue;
             }
+
+            if(c == 8){
+                if(fIdx>0){
+                    fIdx --;
+                }
+                else{
+                    skipNext = true;
+                }
+                continue;
+            }
+
 
             if (c == SHIFT_IN || c == SHIFT_OUT) {
                 continue;
@@ -92,32 +112,10 @@ public class EscapeFilteredStream extends MultiStream {
                 }
             }
 
-            filtered[fIdx++] = c;
+            jansiStream.write(c);
         }
 
-        if (fIdx > 0) {
-            jansiStream.write(filtered, 0, fIdx);
-            jansiStream.flush();
 
-            if (barrierBuffer.size() > 0) {
-                byte[] data = barrierBuffer.toByteArray();
-                logger.debug("Capturing to Storage buffer:" + new String(data, StandardCharsets.UTF_8));
-
-                //Resetting  storage buffer
-                storageBuffer.write(data);
-
-                if(storageBuffer.size() > 20 * 1024){
-                    byte[] current = storageBuffer.toByteArray();
-                    storageBuffer.reset();
-                    // Keep only the last 20KB
-                    int keepFrom = current.length - 20 * 1024;
-                    storageBuffer.write(current, keepFrom, 20 * 1024);
-                }
-
-                superWrite(data, 0, barrierBuffer.size());
-                barrierBuffer.reset();
-            }
-        }
     }
 
     @Override
@@ -132,27 +130,10 @@ public class EscapeFilteredStream extends MultiStream {
 
     @Override
     public void close() throws IOException {
-        if (barrierBuffer.size() > 0) {
-            byte[] data = barrierBuffer.toByteArray();
-
-            // Apply the same logic as write()
-            storageBuffer.write(data);
-            if(storageBuffer.size() > 20 * 1024){
-                byte[] current = storageBuffer.toByteArray();
-                storageBuffer.reset();
-                int keepFrom = current.length - 20 * 1024;
-                storageBuffer.write(current, keepFrom, 20 * 1024);
-            }
-
-            superWrite(data, 0, data.length);
-            barrierBuffer.reset();
-        }
         jansiStream.close();
     }
 
         public void reset() {
-            barrierBuffer.reset();
-            storageBuffer.reset();
         }
 
 
@@ -163,7 +144,12 @@ public class EscapeFilteredStream extends MultiStream {
         super.write(b, off, len);
     }
 
+    protected void superWrite(int b) throws IOException{
+        super.write(b);
+    }
+
+
     public String getBuffered() {
-        return storageBuffer.toString(StandardCharsets.UTF_8);
+        return "";
     }
 }

@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  */
 public class LineEmittingStream extends OutputStream {
     private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
-
+    private byte lastByte = 0;
     private String name = "";
     int writeIndex = 0;
     byte buffered[] = new byte[4*1024];
@@ -88,8 +88,11 @@ public class LineEmittingStream extends OutputStream {
             //printB(b,off,len);
             for (int i = 0; i < len; i++) {
                 if (b[off + i] == 10 || b[off + i] == 13) { // if CR or LR
-                    if (writeIndex == 0) {//nothing buffered, can just flush from b
-                        emit(b, writeFrom, off + i - writeFrom);
+                    if (writeIndex == 0) {
+                        int emitLen = off + i - writeFrom;
+                        if (emitLen > 0 || lastByte != 13) {
+                            emit(b, writeFrom, off + i - writeFrom);
+                        }
                     } else {//have to add up to off+i to buffered to emit all at once
                         if (writeIndex + off + i >= buffered.length) {
                             int needed = writeIndex + off + i - buffered.length;
@@ -126,6 +129,9 @@ public class LineEmittingStream extends OutputStream {
                 System.arraycopy(b, writeFrom, buffered, writeIndex, toBuffer);
                 writeIndex += toBuffer;
             }
+            if (len > 0) {
+                lastByte = b[off + len - 1];
+            }
         }catch(Exception e){
             logger.error(e.getMessage(),e);
             throw new RuntimeException("b.length="+(b==null?"null":b.length)+" off="+off+" len="+len+" buffered.length="+buffered.length, e);
@@ -155,7 +161,10 @@ public class LineEmittingStream extends OutputStream {
         }
         return -1;
     }
+
     private void emit(byte content[], int start,int length){
+
+
         //trips out ANSI escape sequences (such as terminal coloring)
         String toEmit = new String(content,start,length);
         if(!consumers.isEmpty()){
