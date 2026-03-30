@@ -10,6 +10,8 @@ import io.hyperfoil.tools.yaup.time.SystemTimer;
 
 import java.util.*;
 
+import static io.hyperfoil.tools.qdup.stream.SuffixStream.DEFAULT_DELAY;
+
 public class Sh extends Cmd {
 
     private String command;
@@ -121,6 +123,7 @@ public class Sh extends Cmd {
 
     @Override
     public void postRun(String output,Context context){
+
         //turn off stream logging if enabled
         if(context.getCoordinator().getGlobals().getSetting(Globals.STREAM_LOGGING,false)){
             context.getShell().removeLineObserver("stream");
@@ -133,9 +136,26 @@ public class Sh extends Cmd {
             context.getShell().isPromptShell(getPreviousPrompt()) &&
             context.getShell().getHost().isShell())
         {
+
+            long start = System.currentTimeMillis();
+
             // Combined exit code capture + pwd + exit code restore in a single shSync
             // to reduce per-command overhead from 3 round-trips to 1
             String combined = context.getShell().shSync("export __qdup_ec=$?; echo \"${__qdup_ec}:::$(pwd)\"; (exit $__qdup_ec)");
+
+            long round_trip_time = System.currentTimeMillis() - start;
+
+            round_trip_time = round_trip_time - context.getShell().getDelay();
+
+
+            if(round_trip_time > DEFAULT_DELAY){
+                round_trip_time = DEFAULT_DELAY;
+            }
+
+            if(round_trip_time > 0){
+                context.getShell().setDelay((int) round_trip_time);
+            }
+
 
             String response = "";
             String pwd = "";
