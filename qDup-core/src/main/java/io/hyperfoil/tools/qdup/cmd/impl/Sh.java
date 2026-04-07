@@ -208,6 +208,8 @@ public class Sh extends Cmd {
                 context.abort(false);
             } else if (context.getShell().isReady() && !context.isAborted()) {
                 context.setCwd(pwd);
+                // Store exit code for ExitCode command to find without a separate shSync
+                with(ExitCode.EXIT_CODE_KEY, response);
                 if(response.matches("\\d+")){
                     try {
                         context.getCommandTimer().getData().set("exit_code", Integer.parseInt(response));
