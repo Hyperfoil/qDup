@@ -14,7 +14,7 @@ import io.hyperfoil.tools.qdup.cmd.Context;
  */
 public class ExitCode extends Cmd {
 
-    private static final String EXIT_CODE_KEY = "qdupExitCode";
+    static final String EXIT_CODE_KEY = "qdupExitCode";
     private static final String DEFAULT_EXIT_CODE = "-1";
 
     private String expected;
