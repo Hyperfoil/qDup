@@ -8,6 +8,7 @@ import io.hyperfoil.tools.qdup.cmd.impl.ReadState;
 import io.hyperfoil.tools.qdup.cmd.impl.Sh;
 import io.hyperfoil.tools.qdup.config.RunConfig;
 import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
+import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
 import io.hyperfoil.tools.yaup.json.Json;
@@ -44,7 +45,7 @@ public class RunTest extends SshTestBase {
 
 //    @Rule
 //    public final TestServer testServer = new TestServer();
-
+    
    @Test
    public void test_stuck_fedora40(){
       Parser parser = Parser.getInstance();
@@ -124,6 +125,61 @@ public class RunTest extends SshTestBase {
       assertTrue(read instanceof Json);
       assertEquals(3,((Json)items).size());
       assertEquals(3,((Json)read).size());
+   }
+
+   @Test
+   public void two_local_hosts(){
+       Parser parser = Parser.getInstance();
+       RunConfigBuilder builder = new RunConfigBuilder();
+       builder.loadYaml(parser.loadFile("",
+               """
+               scripts:
+                 fox:
+                 - set-state:
+                     key: HOST.foo
+                     value: fox
+                 bat:
+                 - set-state:
+                     key: HOST.foo
+                     value: bat
+                 echo:
+                 - sh: echo ${{foo}}
+                   then:
+                   - set-state: RUN.heard ${{= [...${{RUN.heard}},'${{foo}}' ] }}
+               hosts:
+                 one: TARGET_HOST
+                 two: TARGET_HOST
+               roles:
+                 first:
+                   hosts: [one]
+                   setup-scripts:
+                   - fox
+                   run-scripts:
+                   - echo
+                 second:
+                   hosts: [two]
+                   setup-scripts:
+                   - bat
+                   run-scripts:
+                   - echo
+               states:
+                 heard: []
+               """
+                       .replaceAll("TARGET_HOST", Host.LOCAL)
+       ));
+
+       RunConfig config = builder.buildConfig(parser);
+       assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+       Dispatcher dispatcher = new Dispatcher();
+       Run doit = new Run(tmpDir.toString(), config, dispatcher);
+       doit.ensureConsoleLogging();
+       doit.run();
+
+       State state = config.getState();
+       assertNotNull(state);
+       assertTrue(state.has("heard"));
+       Json heard = (Json)state.get("heard");
+       assertEquals(2,heard.size());
    }
 
    @Test(timeout = 40_000)

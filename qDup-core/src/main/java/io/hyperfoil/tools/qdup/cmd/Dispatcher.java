@@ -478,7 +478,7 @@ public class Dispatcher {
      * @return
      */
     private boolean onlyWaiters(){
-        boolean rtrn = scriptContexts.values().stream().allMatch(c->{
+        boolean rtrn = !scriptContexts.isEmpty() && scriptContexts.values().stream().allMatch(c->{
             return c.getCurrentCmd() instanceof WaitFor && !c.getCurrentCmd().hasTimers();});
         return rtrn;
     }
