@@ -12,6 +12,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -63,6 +64,50 @@ public class UploadTest extends SshTestBase {
             e.printStackTrace();
         }
     }
+
+    @Test
+    public void upload_folder() throws IOException {
+        Path dir = Files.createTempDirectory("qdup.upload_without_desitnation");
+        File source = Files.createTempFile(dir,"qdup.",".upload.txt").toFile();
+        Files.write(source.toPath(),"bizbuz".getBytes());
+        File second = Files.createTempFile(dir,"qdup.",".upload.txt").toFile();
+        Files.write(second.toPath(),"bizbuz".getBytes());
+
+        Parser parser = Parser.getInstance();
+        parser.setAbortOnExitCode(true);
+        RunConfigBuilder builder = getBuilder();
+
+        builder.loadYaml(parser.loadFile("pwd",
+                """
+                scripts:
+                  foo:
+                   - sh: export FOLDER=foo
+                   - sh: cd /tmp
+                   - upload: SRC ./foo
+                   - sh: find ./foo/ -name "*"
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+                        .replaceAll("SRC",dir.toAbsolutePath().toString()+"/")
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+        doit.run();
+
+        List.of("/tmp/foo/"+source.getName(),"/tmp/foo/"+second.getName()).forEach(path->{
+            assertTrue(path+" should exist",exists(path));
+            String read = readFile(path);
+            assertEquals("bizbuz",read);
+        });
+    }
+
 
     @Test
     public void return_remote_path_new_name() throws IOException {
