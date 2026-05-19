@@ -722,6 +722,9 @@ public class Run implements Runnable, DispatchObserver {
         return ok;
 
     }
+    private State getHostState(State root,Host host){
+        return root.getChild(host.isContainer() ? host.getAlias() : host.getHostName(), State.HOST_PREFIX);
+    }
     private boolean queueSessions(List<Callable<Boolean>> connectSessions){
         boolean ok = true;
         if(!connectSessions.isEmpty()){
@@ -765,7 +768,7 @@ public class Run implements Runnable, DispatchObserver {
                            //TODO configure session delay
                            //session.setDelay(SuffixStream.NO_DELAY);
                            Cmd setupCopy = setup.deepCopy();
-                           State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
+                           State hostState = getHostState(config.getState(),host);
                            State scriptState = hostState.getChild(setup.getName()).getChild("id=" + setupCopy.getUid());
 
                            profiles.getProperties(name).set("host",host.getShortHostName());
@@ -819,7 +822,7 @@ public class Run implements Runnable, DispatchObserver {
                 for (ScriptCmd script : role.getRun()) {
                     for (Host host : role.getHosts(config)) {
                         ScriptCmd scriptCopy = (ScriptCmd) script.deepCopy();
-                        State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
+                        State hostState = getHostState(config.getState(),host);
                         State scriptState = hostState.getChild(scriptCopy.getName()).getChild("id=" + scriptCopy.getUid());
                         String profileName = scriptCopy.getName() + "-" + scriptCopy.getUid() + "@" + host;
                         SystemTimer timer = profiles.get(profileName);
@@ -941,7 +944,7 @@ public class Run implements Runnable, DispatchObserver {
                         shell.setName(name);
                         if ( shell.isReady() ) {
                             Script cleanupCopy = (Script)cleanup.deepCopy();
-                            State hostState = config.getState().getChild(host.getHostName(), State.HOST_PREFIX);
+                            State hostState = getHostState(config.getState(),host);
                             State scriptState = hostState.getChild(cleanupCopy.getName()).getChild("id=" + cleanupCopy.getUid());
 
                             String profileName = roleName + "-cleanup@" + host.getShortHostName();

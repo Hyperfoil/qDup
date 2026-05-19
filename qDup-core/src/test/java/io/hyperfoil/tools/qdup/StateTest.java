@@ -10,6 +10,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -331,6 +332,66 @@ public class StateTest extends SshTestBase{
 
         String populated = Cmd.populateStateVariables("${{inline[1]}}",null,config.getState(),null,null);
         assertEquals("two",populated);
+    }
+
+    @Test
+    public void container_host_scope_isolation(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  fox:
+                  - set-state:
+                      key: HOST.foo
+                      value: fox
+                  bat:
+                  - set-state:
+                      key: HOST.foo
+                      value: bat
+                  echo:
+                  - sh: echo ${{foo}}
+                    then:
+                    - set-state: RUN.heard ${{= [...${{RUN.heard}},'${{foo}}' ] }}
+                hosts:
+                  one: TARGET_HOST
+                  two: TARGET_HOST
+                roles:
+                  first:
+                    hosts: [one]
+                    setup-scripts:
+                    - fox
+                    run-scripts:
+                    - echo
+                  second:
+                    hosts: [two]
+                    setup-scripts:
+                    - bat
+                    run-scripts:
+                    - echo
+                states:
+                  heard: []
+                """
+                        //.replaceAll("TARGET_HOST","LOCAL")
+                //.replaceAll("TARGET_HOST",getHost().toString())
+                        .replaceAll("TARGET_HOST","{local: true, platform: "+getContainerPlatform()+", container: quay.io/fedora/fedora}")
+        ));
+
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+        doit.run();
+
+        State state = config.getState();
+        assertNotNull(state);
+        assertTrue(state.has("heard"));
+        Json heard = (Json)state.get("heard");
+        assertEquals(2,heard.size());
+        assertNotEquals("two entries in heard should notmatch: "+heard,heard.get(0),heard.get(1));
+
+
     }
 
     @Test
