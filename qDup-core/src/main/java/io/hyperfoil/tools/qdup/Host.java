@@ -99,8 +99,7 @@ public class Host {
         SSH_FILE_PASS,
         "/usr/bin/rsync",
         "--archive",
-        "--quiet",
-        /*"--verbose",*/
+        "--verbose",
         "--compress",
         "-e",
         SSH_OPTS,
