@@ -73,7 +73,8 @@ public class Host {
         SSH_FILE_PASS,
         "/usr/bin/rsync",
         "--archive",
-        "--verbose",
+        "--quiet",
+        /*"--verbose",*/
         "--compress",
         "-e",
         SSH_OPTS,
@@ -85,7 +86,8 @@ public class Host {
         SSH_FILE_PASS,
         "/usr/bin/rsync",
         "--archive",
-        "--verbose",
+        "--quiet",
+        /*"--verbose",*/
         "--compress",
         "-e",
         SSH_OPTS,
@@ -97,7 +99,8 @@ public class Host {
         SSH_FILE_PASS,
         "/usr/bin/rsync",
         "--archive",
-        "--verbose",
+        "--quiet",
+        /*"--verbose",*/
         "--compress",
         "-e",
         SSH_OPTS,
