@@ -96,6 +96,49 @@ public class QueueDownloadTest extends SshTestBase {
         assertTrue("uno should exist @ "+uno.getPath()+"\n"+tree,uno.exists());
     }
     @Test(timeout = 50_000)
+    public void remote_folder(){
+        Parser parser = Parser.getInstance();
+        parser.setAbortOnExitCode(true);
+        RunConfigBuilder builder = getBuilder();
+
+        builder.loadYaml(parser.loadFile("pwd",
+                """
+                scripts:
+                  foo:
+                   - sh: mkdir -p /tmp/foo
+                   - sh: echo 'uno' >> /tmp/foo/uno.txt
+                   - sh: echo 'dos' >> /tmp/foo/dos.txt
+                   - queue-download: /tmp/foo/
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+        doit.run();
+
+        State state = doit.getConfig().getState();
+        Host host = config.getAllHostsInRoles().iterator().next();
+
+        File uno = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/uno.txt");
+        File dos = new File(tmpDir.toString() + "/"+host.getShortHostName()+"/dos.txt");
+
+
+        for(File child : new File(tmpDir.toString()+"/"+host.getShortHostName()+"").listFiles()){
+            System.out.println("child "+child.getPath());
+        }
+
+        assertTrue("uno should exist @ "+uno.getPath(),uno.exists());
+        assertTrue("dos should exist @ "+dos.getPath(),dos.exists());
+    }
+    @Test(timeout = 50_000)
     public void path_star_slash_star(){
         Parser parser = Parser.getInstance();
         parser.setAbortOnExitCode(true);
