@@ -31,10 +31,11 @@ The YAML state is globally available but if scripts updated the global state by 
 qDup avoids script state collision by using a tiered approach to state.
 
 * Shared Global Run State
-** Shared Host State
-*** Script State
+** Shared Role State
+*** Shared Host State
+**** Script State
 
-Each script defaults new values to its own private state. The values can target the `host` or `run` state by putting a prefix
+Each script defaults new values to its own private state. The values can target the `host`, 'role', or `run` state by putting a prefix
 before the state name.
 ....
 set-state: RUN.name bill
@@ -60,11 +61,11 @@ expressions can include a default value with a `:` separator
 ${{count:100}}
 ....
 
-Scripts do not need to use the prefix to access values from the `host` or `run` state.
+Scripts do not need to use the prefix to access values from the `host`, 'role', or `run` state.
 The prefix can be used to only accept values from the target state but this is rarely necessary.
 [source,yaml]
 ----
-- sh: echo "hi ${{name}}" #will check default, then host, then run state
+- sh: echo "hi ${{name}}" #will check default, then host, then role, then run state
 - sh: echo "who is ${{RUN.name}}" #will only check the run state
 ----
 

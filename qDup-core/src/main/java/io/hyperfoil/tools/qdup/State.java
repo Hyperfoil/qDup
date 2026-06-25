@@ -34,6 +34,7 @@ public class State {
     public static final String CHILD_DELIMINATOR = ".";
     public static final String RUN_PREFIX = "RUN"+CHILD_DELIMINATOR;
     public static final String HOST_PREFIX = "HOST"+CHILD_DELIMINATOR;
+    public static final String ROLE_PREFIX = "ROLE"+CHILD_DELIMINATOR;
 
 
     private State parent;
@@ -67,8 +68,10 @@ public class State {
             return "";
         }else if (input.startsWith(RUN_PREFIX)){
             return input.substring(RUN_PREFIX.length());
-        }else if (input.startsWith(HOST_PREFIX)){
+        }else if (input.startsWith(HOST_PREFIX)) {
             return input.substring(HOST_PREFIX.length());
+        }else if (input.startsWith(ROLE_PREFIX)) {
+            return input.substring(ROLE_PREFIX.length());
         }else{
             return input;
         }

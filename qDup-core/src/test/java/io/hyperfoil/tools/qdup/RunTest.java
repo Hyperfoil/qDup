@@ -1853,6 +1853,179 @@ public class RunTest extends SshTestBase {
    }
 
    @Test
+   public void readState_role_over_run(){
+       Parser parser = Parser.getInstance();
+       RunConfigBuilder builder = getBuilder();
+       builder.loadYaml(parser.loadFile("",
+           """
+           scripts:
+             set-role:
+             - set-state:
+                 key: ROLE.foo
+                 value: role
+             set-run:
+             - set-state:
+                 key: RUN.foo
+                 value: run
+             read-foo:
+             - set-state:
+                 key: RUN.read
+                 value: ${{foo}}
+           hosts:
+             target: TARGET_HOST
+           roles:
+             doit:
+               hosts:
+               - target
+               setup-scripts:
+               - set-run
+               - set-role
+               run-scripts:
+               - read-foo
+           """.replaceAll("TARGET_HOST",getHost().toString())
+       ));
+       RunConfig config = builder.buildConfig(parser);
+       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+       Dispatcher dispatcher = new Dispatcher();
+       Run doit = new Run(tmpDir.toString(), config, dispatcher);
+       doit.run();
+       dispatcher.shutdown();
+
+       State state = config.getState();
+       assertTrue(state.has("read"));
+       assertEquals("role",state.get("read").toString());
+
+   }
+    @Test
+    public void readState_host_over_role(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  set-role:
+                  - set-state:
+                      key: ROLE.foo
+                      value: role
+                  set-host:
+                  - set-state:
+                      key: HOST.foo
+                      value: host
+                  read-foo:
+                  - set-state:
+                      key: RUN.read
+                      value: ${{foo}}
+                hosts:
+                  target: TARGET_HOST
+                roles:
+                  doit:
+                    hosts:
+                    - target
+                    setup-scripts:
+                    - set-host
+                    - set-role
+                    run-scripts:
+                    - read-foo
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+        assertTrue(state.has("read"));
+        assertEquals("host",state.get("read").toString());
+
+    }
+    @Test
+    public void readState_with_over_host(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  set-host:
+                  - set-state:
+                      key: HOST.foo
+                      value: host
+                  read-foo:
+                  - set-state:
+                      key: RUN.read
+                      value: ${{foo}}
+                hosts:
+                  target: TARGET_HOST
+                roles:
+                  doit:
+                    hosts:
+                    - target
+                    setup-scripts:
+                    - set-host
+                    run-scripts:
+                    - read-foo:
+                      with:
+                        foo: "with"
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+        assertTrue(state.has("read"));
+        assertEquals("with",state.get("read").toString());
+
+    }
+    @Test
+    public void readState_with_over_script(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  set-host:
+                  - set-state:
+                      key: HOST.foo
+                      value: host
+                  read-foo:
+                  - set-state:
+                      key: foo
+                      value: script
+                  - set-state:
+                      key: RUN.read
+                      value: ${{foo}}
+                hosts:
+                  target: TARGET_HOST
+                roles:
+                  doit:
+                    hosts:
+                    - target
+                    setup-scripts:
+                    - set-host
+                    run-scripts:
+                    - read-foo:
+                      with:
+                        foo: "with"
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
+        RunConfig config = builder.buildConfig(parser);
+        assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+        Dispatcher dispatcher = new Dispatcher();
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
+        assertTrue(state.has("read"));
+        assertEquals("with",state.get("read").toString());
+    }
+
+   @Test
    public void watch_only_ctrlC_if_active(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
