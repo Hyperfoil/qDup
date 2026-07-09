@@ -1,0 +1,61 @@
+= How to use exit codes in qDup
+
+qDup is designed to automate the steps a user takes when working in an ssh terminal session. Users normally check command output messages and not exit codes.
+
+For example, if I want to run a bash script `./missing.sh` I look for the `No such file or directory` error message instead of checking that the exit code with `echo $?`.
+
+```
+#> ./missing.sh
+bash: ./missing.sh: No such file or directory
+#> echo $?
+127
+```
+There are, however, times when a commands exit code provides important information. In those cases, we have two ways to work with exit codes.
+
+== Stop on errors
+The first option is to enable exit code checking with either the `-x` ro `--exitCode` command line argument or adding `check-exit-code` to the `settings`.
+```yaml
+#...
+settings:
+  check-exit-code: true
+```
+Exit code checking will automatically check the exit code of all `sh` commands that end with the default qDup prompt. We don't check the exit code of commands that end with a prompt from `add-prompt` because those commands are typically in a sub-shell that may not support exit codes. qDup will then abort if the exit code is non-zero. This is a very strict way to enforce exit codes and most scripts probably are not written to consider exit codes.
+
+For example, trying to remove a file that may or may not exist before writing to it will result in a non-zero exit code from `rm`
+```
+#> rm may_not_exist
+rm: cannot remove 'may_not_exist': No such file or directory
+#> echo $?
+1
+```
+In this case you can disable exit code checking for the `rm` by using the full map yaml syntax for `sh`
+```yaml
+#...
+- sh:
+    command: rm may_not_exist
+    ignore-exit-code: true
+```
+We can also use `ignore-exit-code` without enabling exit code checking on all other commands to only enable it for specific commands
+```yaml
+#...
+- sh:
+    command: mvn clean install
+    ignore-exit-code: false #do not ignore the exit code
+```
+
+== Specific exit values
+
+qDup has built in support for zero and non-zero exit codes but a command can return any valid integer as an exit code and some commands provide error information based on the exit number. qDup does not have native support for filtering the exit code but we can add `echo $?` to our scripts the same way we would check the exit code if we were manually runnin commands in an ssh terminal.
+```yaml
+#...
+- sh: mvn clean install
+- sh: echo $?
+  then:
+  - regex: "^0$" #use ^ and ? to ensure we match the full output
+    then:
+    - signal: OK
+  - regex: "^1?"
+    then:
+    #...
+```
+
