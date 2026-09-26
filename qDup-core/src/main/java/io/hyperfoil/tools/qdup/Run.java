@@ -724,7 +724,17 @@ public class Run implements Runnable, DispatchObserver {
     }
     private State getHostState(State root,String role, Host host){
         State roleState = root.getChild(role,State.ROLE_PREFIX);
-        return roleState.getChild(host.isContainer() ? host.getAlias() : host.getHostName(), State.HOST_PREFIX);
+        String childName = host.isContainer() ? host.getAlias() : host.getHostName();
+        if(roleState.hasChild(childName)){
+            return roleState.getChild(childName);
+        }else{
+            State found = root.findFirst(State.HOST_PREFIX,childName);
+            if(found!=null){
+                return roleState.cloneToChild(childName,found);
+            }else{
+               return roleState.getChild(childName, State.HOST_PREFIX);
+            }
+        }
     }
     private boolean queueSessions(List<Callable<Boolean>> connectSessions){
         boolean ok = true;

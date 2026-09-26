@@ -95,7 +95,24 @@ public class State {
     }
 
     public boolean hasParent(){return parent()!=null;}
-
+    private State cloneForNewParent(State parent){
+        return new State(parent,this.secretFilter,this.prefix,this.json);
+        //should this clone children state too?
+    }
+    public State findFirst(String prefix,String name){
+        Queue<State> toSearch = new LinkedList<>();
+        toSearch.add(this);
+        State found = null;
+        while(!toSearch.isEmpty() && found == null){
+            State current = toSearch.poll();
+            if(current.hasChild(name) && current.getChild(name).getPrefix().equals(prefix)){
+                found = current.getChild(name);
+            }else{
+                toSearch.addAll(current.childStates.values());
+            }
+        }
+        return found;
+    }
     public State rootState(){
         State rtrn = this;
         while(rtrn.hasParent()){
@@ -113,9 +130,12 @@ public class State {
         this(parent,parent.secretFilter,prefix);
     }
     private State(State parent, SecretFilter filter, String prefix){
+        this(parent,filter,prefix,new Json());
+    }
+    private State(State parent, SecretFilter filter, String prefix, Json data){
         this.parent = parent;
         this.secretFilter = filter;
-        this.json = new Json();
+        this.json = data;
         this.childStates = new ConcurrentHashMap<>();
         this.prefix = prefix;
     }
@@ -215,6 +235,12 @@ public class State {
     }
     public State addChild(String name,String prefix){
         childStates.putIfAbsent(name,new State(this,prefix));
+        return childStates.get(name);
+    }
+    public State cloneToChild(String name,State state){
+        if(!childStates.containsKey(name)){
+            childStates.putIfAbsent(name,state.cloneForNewParent(this));
+        }
         return childStates.get(name);
     }
 

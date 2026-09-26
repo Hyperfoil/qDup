@@ -242,7 +242,7 @@ public class Sh extends Cmd {
         }
         return rtrn;
     }
-    
+
     @Override public String toString(){
         String toUse = populatedCommand!=null ? populatedCommand : command;
         return "sh: "+toUse;

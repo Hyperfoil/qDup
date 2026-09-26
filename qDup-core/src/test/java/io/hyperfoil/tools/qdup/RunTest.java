@@ -1967,6 +1967,48 @@ public class RunTest extends SshTestBase {
    }
 
    @Test
+   public void readState_host_from_other_role_other_stage(){
+       Parser parser = Parser.getInstance();
+       RunConfigBuilder builder = getBuilder();
+       builder.loadYaml(parser.loadFile("",
+           """
+           scripts:
+             set-foo:
+             - set-state:
+                 key: HOST.foo
+                 value: set
+             use-foo:
+             - read-state: ${{foo:missing}}
+               then:
+               - set-state: RUN.found
+           hosts:
+             target: TARGET_HOST
+           roles:
+             useit:
+               hosts:
+               - target
+               run-scripts:
+               - use-foo
+             doit:
+               hosts:
+               - target
+               setup-scripts:
+               - set-foo
+           """.replaceAll("TARGET_HOST",getHost().toString())
+       ));
+       RunConfig config = builder.buildConfig(parser);
+       assertFalse("unexpected errors:\n"+config.getErrors().stream().map(Objects::toString).collect(Collectors.joining("\n")),config.hasErrors());
+       Dispatcher dispatcher = new Dispatcher();
+       Run doit = new Run(tmpDir.toString(), config, dispatcher);
+       doit.run();
+       dispatcher.shutdown();
+
+       State state = config.getState();
+       assertTrue(state.has("found"));
+       assertEquals("set",state.get("found").toString());
+   }
+
+   @Test
    public void readState_role_over_run(){
        Parser parser = Parser.getInstance();
        RunConfigBuilder builder = getBuilder();
