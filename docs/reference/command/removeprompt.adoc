@@ -1,0 +1,12 @@
+= remove-prompt
+
+qDup detects the end of the prevoius command by looking for prompt at the end of the output.
+Custom prompts can be added with `add-prompt` but sometimes they are conditional and can interfere with later commands.
+use `remove-prompt` to remove a prompt so that qDup will no longer consider it the end of the input.
+
+[source,yaml]
+----
+- remove-prompt: "/] " #jboss-cli
+- remove-prompt: "/ #] " #jboss-cli batch
+----
+

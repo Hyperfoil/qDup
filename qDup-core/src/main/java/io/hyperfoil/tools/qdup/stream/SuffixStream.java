@@ -141,6 +141,10 @@ public class SuffixStream extends MultiStream {
             replacements.remove(name);
         }
     }
+    public void removeSuffix(String name){
+        suffixes.remove(name);
+        replacements.remove(name);
+    }
     public boolean hasSuffix(String name){
         return suffixes.containsKey(name);
     }

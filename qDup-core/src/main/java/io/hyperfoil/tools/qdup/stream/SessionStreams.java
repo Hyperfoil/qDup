@@ -253,6 +253,9 @@ public class SessionStreams extends MultiStream {
    public void addPrompt(String name,String prompt,String replacement){
       suffixStream.addSuffix(name,prompt,replacement);
    }
+   public void remmovePrompt(String name){
+       suffixStream.removeSuffix(name);
+   }
 
    public void sharePrompts(SessionStreams otherStreams){
       if(otherStreams==null){

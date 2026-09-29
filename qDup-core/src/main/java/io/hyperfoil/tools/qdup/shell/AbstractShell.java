@@ -557,7 +557,12 @@ public abstract class AbstractShell {
 
     public void addPrompt(String prompt,boolean isShell) {
         sessionStreams.addPrompt(prompt);
+
         isPromptShell.put(prompt,isShell);
+    }
+    public void removePrompt(String prompt) {
+        sessionStreams.remmovePrompt(prompt);
+        isPromptShell.remove(prompt);
     }
     public boolean isPromptShell(String prompt){
         return isPromptShell.getOrDefault(prompt,false);

@@ -454,6 +454,13 @@ public class Parser {
                 )
         );
         rtrn.addCmd(
+                RemovePrompt.class,
+                "remove-prompt",
+                RemovePrompt::getPrompt,
+                (str,prefix,suffix)->new RemovePrompt(str),
+                null
+        );
+        rtrn.addCmd(
                 RepeatUntilSignal.class,
                 "repeat-until",
                 (cmd) -> cmd.getName(),
