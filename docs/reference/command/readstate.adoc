@@ -13,3 +13,20 @@ if the result is not `null` and not an empty string, otherwise it invokes the `e
 ----
 
 NOTE: `read-state` will run the `then` commands even if `${{use_https}}` is `"false"` because that is not empty and not null. Use link:./js.adoc['js'] if you want to perform boolean operations
+
+If you need to evaluate two variables or more you can use one of the following approaches:
+
+* use `js` which lets you write a JavaScript function that invokes the `then` if the return is truth, otherwise it invokes the else
+* use `${{=` to start a JavaScript evaluation and perform the boolean operation there
+e.g.
+
+[source,yaml]
+----
+- read-state: ${{= ${{abort_on_failure:true}} && "${{START_JOB_RESULT:}}" !== 'SUCCESS' }}
+  then:
+  - sh: echo Failure
+  else:
+  - sh: echo Success
+----
+
+The expression above will return true or false based on the desired boolean expression. Note the `"` around `START_JOB_RESULT` so that the JavaScript evaluation sees it as a string literal and not the name of a variable.
