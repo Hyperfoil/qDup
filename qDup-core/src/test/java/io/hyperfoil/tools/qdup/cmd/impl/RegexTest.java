@@ -19,6 +19,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -151,6 +152,49 @@ public class RegexTest extends SshTestBase {
         assertTrue("state should have regex", state.has("regex"));
         assertEquals("regex should be MISS", "MATCHED", state.getString("regex"));
 
+    }
+
+    @Test @Ignore
+    public void regex_override_foreach_variable(){
+        Parser parser = Parser.getInstance();
+        RunConfigBuilder builder = getBuilder();
+        builder.loadYaml(parser.loadFile("",
+                """
+                scripts:
+                  foo:
+                  - for-each: foo ["biz-buz","buz-buz"]
+                    then:
+                    - js: >
+                        "${{foo}}".match(/buz-.*/)
+                      else:
+                      - sh: echo "nah"
+                        then:
+                        - regex: (?<foo>\\\\w+)
+                    - sh: echo "foo = ${{foo}}"
+                    - set-state: RUN.list ${{= [...${{RUN.list:[]}}, "${{foo}}" ] }}
+                hosts:
+                  local: TARGET_HOST
+                roles:
+                  doit:
+                    hosts: [local]
+                    run-scripts: [foo]
+                states:
+                  data: "True"
+                """.replaceAll("TARGET_HOST",getHost().toString())
+        ));
+
+        RunConfig config = builder.buildConfig(parser);
+
+        assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+
+        Dispatcher dispatcher = new Dispatcher();
+
+        Run doit = new Run(tmpDir.toString(), config, dispatcher);
+        doit.ensureConsoleLogging();
+        doit.run();
+        dispatcher.shutdown();
+
+        State state = config.getState();
     }
 
     @Test

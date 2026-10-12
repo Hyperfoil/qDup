@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.stream;
 
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
+import io.hyperfoil.tools.yaup.Sets;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -92,6 +93,21 @@ public class SessionStreamsTest {
       assertFalse("do not merge env lines because of previous filter",output.contains(":SSH_CONNECTION"));
       assertTrue("do not remove trailing command",output.endsWith("env\n"));
       assertEquals(input,output);
+   }
+   @Test
+   public void inlinePrompt(){
+       List<String> seen = new  ArrayList<>();
+       SessionStreams sessionStreams = getStreams();
+       sessionStreams.addInlinePrompts(Sets.of("a\r\n","b"),seen::add);
+       try{
+           write(sessionStreams,"a\r\n");
+           write(sessionStreams,"b");
+       } catch (IOException e) {
+           fail(e.getMessage());
+       }
+       assertEquals("expected two prompts:"+seen,2,seen.size());
+       assertTrue("seen:"+seen,seen.contains("a\r\n"));
+       assertTrue("seen:"+seen,seen.contains("b"));
    }
 
    @Test
