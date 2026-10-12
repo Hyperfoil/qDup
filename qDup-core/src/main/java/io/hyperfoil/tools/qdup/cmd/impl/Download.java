@@ -142,10 +142,13 @@ public class Download extends Cmd {
                 }
             }
             return canDownload ?
-                    destinationPath.endsWith(File.separator) ?
-                            destinationPath + (new File(remotePath)).getName() :
-                            destinationPath + File.separator + (new File(remotePath)).getName()
-                    : null;
+                    remotePath.endsWith(File.separator) ?
+                            destinationPath :
+                            destinationPath.endsWith(File.separator) ?
+                                    (destinationPath + (new File(remotePath)).getName()) :
+                                    (destinationPath + File.separator + (new File(remotePath)).getName())
+                    :
+                    null;
         }
         return null; // something went wrong
     }

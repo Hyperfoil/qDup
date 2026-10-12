@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.qdup.cmd.impl;
 
 import io.hyperfoil.tools.qdup.*;
+import io.hyperfoil.tools.qdup.cmd.Cmd;
 import io.hyperfoil.tools.qdup.cmd.Dispatcher;
 import io.hyperfoil.tools.qdup.cmd.ScriptContext;
 import io.hyperfoil.tools.qdup.cmd.SpyContext;
@@ -15,14 +16,130 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 
 public class DownloadTest extends SshTestBase{
+
+    @Test
+    public void download_folder_local_remote_container_consistency() throws IOException {
+        AbstractShell localShell = AbstractShell.getShell(
+                "download_consistency",
+                Host.parse(Host.LOCAL),//getHost(),//
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                null
+        );
+        AbstractShell remoteShell = AbstractShell.getShell(
+                "download_consistency",
+                getHost(),
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                null
+        );
+        Host host = Host.parse("quay.io/fedora/fedora", getContainerPlatform());
+        host.setAlias("container");
+        host.setIdentity(getIdentity());
+        AbstractShell containerShell = AbstractShell.getShell(
+                "download_consistency",
+                host,
+                "",
+                new ScheduledThreadPoolExecutor(2),
+                new SecretFilter(),
+                null
+        );
+        assertTrue(containerShell.getHost().isContainer());
+        assertTrue(containerShell.isOpen());
+        assertTrue(containerShell.isReady());
+
+        Path runPath = Files.createTempDirectory("run");
+        Run run = new Run(runPath.toString(),getBuilder().buildConfig(),new Dispatcher());
+
+        ScriptContext localContext = new ScriptContext(localShell,run.getConfig().getState(),run,new SystemTimer("upload"), Cmd.NO_OP(),true);
+        SpyContext localSpyContext = new SpyContext(localContext,run.getConfig().getState(), run.getCoordinator());
+
+        ScriptContext remoteContext = new ScriptContext(remoteShell,run.getConfig().getState(),run,new SystemTimer("upload"),Cmd.NO_OP(),true);
+        SpyContext remoteSpyContext = new SpyContext(remoteContext,run.getConfig().getState(), run.getCoordinator());
+
+        ScriptContext containerContext = new ScriptContext(containerShell,run.getConfig().getState(),run,new SystemTimer("upoad"),Cmd.NO_OP(),true);
+        SpyContext containerSpyContext = new SpyContext(containerContext,run.getConfig().getState(), run.getCoordinator());
+
+        //create the files to download
+        for(AbstractShell shell : Arrays.asList(localShell,remoteShell,containerShell)){
+            shell.execSync("mkdir -p /tmp/download_consistency");
+            shell.execSync("/bin/sh -c 'echo \"one\" > /tmp/download_consistency/one.txt'");
+            shell.execSync("/bin/sh -c 'echo \"two\" > /tmp/download_consistency/two.txt'");
+        }
+
+        for(Download download : List.of(
+/*
+                new Download("/tmp/download_consistency", "one"),
+                new Download("/tmp/download_consistency", "one/"),
+*/
+                /*new Download("/tmp/download_consistency/", "one/"),*/
+                new Download("/tmp/download_consistency/", "one")
+        )){
+            download.run("",remoteSpyContext);
+            assertTrue(remoteSpyContext.hasNext());
+            String remotePath =remoteSpyContext.getNext();
+            List<String> remoteContent = Files.walk(Path.of(remoteSpyContext.getNext())).map(Path::toString).toList();
+
+            download.run("",localSpyContext);
+            assertTrue(localSpyContext.hasNext());
+            String localPath =localSpyContext.getNext();
+            List<String> localContent = Files.walk(Path.of(localSpyContext.getNext())).map(Path::toString).toList();
+
+            download.run("",containerSpyContext);
+            assertTrue(containerSpyContext.hasNext());
+            String containerPath =containerSpyContext.getNext();
+            List<String> containerContent = Files.walk(Paths.get(containerSpyContext.getNext())).map(Path::toString).toList();
+
+            assertEquals("expect 3 remote entries: "+remoteContent,3,remoteContent.size());
+            assertEquals("expect 3 local entries: "+localContent,3,localContent.size());
+            assertEquals("expect 3 container entries: "+containerContent,3,containerContent.size());
+            for(int i=0; i<3; i++){
+                String local = localContent.get(i).substring(localContent.get(i).indexOf(download.getDestination()));
+                String remote = remoteContent.get(i).substring(remoteContent.get(i).indexOf(download.getDestination()));
+                String  container = containerContent.get(i).substring(containerContent.get(i).indexOf(download.getDestination()));
+                assertTrue("paths["+i+"] should match: "+List.of(remoteContent.get(i),localContent.get(i),containerContent.get(i)),
+                        local.equals(remote) && local.equals(container));
+            }
+            //cleanup the local download for the next loop
+            rm(remotePath);
+            rm(localPath);
+            rm(containerPath);
+
+        }
+
+        //remove the files to download
+        for(AbstractShell shell : Arrays.asList(localShell,remoteShell,containerShell)){
+            shell.execSync("rm -rf /tmp/download_consistency");
+        }
+    }
+
+    private boolean rm(String dir){
+        try (Stream<Path> walk = Files.walk(Path.of(dir))) {
+            walk.sorted(Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            System.err.printf("Failed to delete %s%n", path);
+                        }
+                    });
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
+    }
 
     @Test
     public void return_local_file_path_when_defined_without_destination() throws IOException {

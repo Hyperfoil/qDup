@@ -48,8 +48,8 @@ public class Host {
     public static final List<String> DOCKER_CHECK_ENTRYPOINT = Arrays.asList("docker inspect ${{container}} --format=\"{{.Config.Entrypoint}}\"");
     public static final List<String> PODMAN_UPLOAD = Arrays.asList("podman","cp","${{source}}","${{container}}:${{destination}}");
     public static final List<String> DOCKER_UPLOAD = Arrays.asList("docker","cp","${{source}}","${{container}}:${{destination}}");
-    public static final List<String> PODMAN_DOWNLOAD = Arrays.asList("podman","cp","${{container}}:${{source}}","${{destination}}");
-    public static final List<String> DOCKER_DOWNLOAD = Arrays.asList("docker","cp","${{container}}:${{source}}","${{destination}}");
+    public static final List<String> PODMAN_DOWNLOAD = Arrays.asList("podman","cp","${{container}}:${{='${{source}}'.endsWith('/') ? '${{source}}'+'.' : '${{source}}'}}","${{destination}}");
+    public static final List<String> DOCKER_DOWNLOAD = Arrays.asList("docker","cp","${{container}}:${{='${{source}}'.endsWith('/') ? '${{source}}'+'.' : '${{source}}'}}","${{destination}}");
     public static final List<String> PODMAN_FILE_SIZE = Arrays.asList("podman exec ${{container}} du -bc ${{source}} | grep total | cut -d '\t' -f1");
     public static final List<String> DOCKER_FILE_SIZE = Arrays.asList("docker exec ${{container}} du -bc ${{source}} | grep total | cut -d '\t' -f1");
 
@@ -59,7 +59,7 @@ public class Host {
     public static final List<String> LOCAL_MACOS_CONNECT_SHELL = Arrays.asList("script", "-q", "/dev/null", "/bin/bash");
     //LOCAL_EXEC uses System.getRuntime().exec(...)
     public static final List<String> LOCAL_LINUX_UPLOAD = Arrays.asList("cp","-r","${{='${{source}}'.endsWith('/') ? '${{source}}'+'.' : '${{source}}'}}","${{destination}}");
-    public static final List<String> LOCAL_LINUX_DOWNLOAD = Arrays.asList("cp","-r","${{source}}","${{destination}}");
+    public static final List<String> LOCAL_LINUX_DOWNLOAD = Arrays.asList("cp","-r","${{='${{source}}'.endsWith('/') ? '${{source}}'+'.' : '${{source}}'}}","${{destination}}");
     public static final List<String> LOCAL_LINUX_FILE_SIZE = Arrays.asList("du","-cb","${{source}}","|","grep","total","|","cut","-d","\t","-f1");
 
     private static final String SSH_FILE_PASS = "${{= host.password ? `sshpass -p ${host.password}` : \"\"}}";
