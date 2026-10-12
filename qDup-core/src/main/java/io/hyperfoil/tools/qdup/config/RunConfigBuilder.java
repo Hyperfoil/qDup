@@ -146,7 +146,10 @@ public class RunConfigBuilder {
    private boolean haveAlias(String alias){
       return hostDefinitions.containsKey(alias);
    }
-   public boolean loadYaml(YamlFile yamlFile) {
+    public boolean loadYaml(YamlFile yamlFile) {
+       return loadYaml(yamlFile,true);
+    }
+   public boolean loadYaml(YamlFile yamlFile,boolean loadHosts) {
       if (yamlFile == null) {
          addError("tried to load an invalid yaml file");
          return false;
@@ -156,14 +159,16 @@ public class RunConfigBuilder {
       yamlFile.getScripts().forEach((name, script) -> {
          addScript(script);
       });
-      yamlFile.getHostDefinitions().forEach((name, definition) -> {
-         if (hostDefinitions.containsKey(name) && !hostDefinitions.get(name).equals(definition)) {
-             logger.warnf("%s tried to load host %s:%s but already defined as %s", yamlFile.getPath(), name, definition, hostDefinitions.get(name));
+      if(loadHosts) {
+          yamlFile.getHostDefinitions().forEach((name, definition) -> {
+              if (hostDefinitions.containsKey(name) && !hostDefinitions.get(name).equals(definition)) {
+                  logger.warnf("%s tried to load host %s:%s but already defined as %s", yamlFile.getPath(), name, definition, hostDefinitions.get(name));
 
-         } else {
-            hostDefinitions.put(name, definition);
-         }
-      });
+              } else {
+                  hostDefinitions.put(name, definition);
+              }
+          });
+      }
       yamlFile.getRoles().forEach((name, role) -> {
          if(role.hasHostExpression()){
             setRoleHostExpession(name,role.getHostExpression().getExpression());

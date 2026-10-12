@@ -89,7 +89,10 @@ public class QDup implements Callable<Integer>, QuarkusApplication {
     @CommandLine.Option(names = {"-ix","--ignore-exit-code"}, description = "disable abort on non-zero exit code", defaultValue = "false")
     boolean ignoreExitCode;
 
-    static enum SkipableStage { setup, run, cleanup}
+    @CommandLine.Option(names = {"-l","--lock-hosts"}, description = "lock host definitions to only the first yaml file", defaultValue = "false")
+    boolean lockHosts;
+    @CommandLine.Option(names= {"-h","--host-source"}, description = "enables lock-hosts with only the specified yaml files defining hosts", split = ",")
+    Set<String> hostSource;
 
     @CommandLine.Option(names = {"--skip-stages"}, description = "skip specified stages")
     Set<Stage> skipStages;
@@ -167,7 +170,15 @@ public class QDup implements Callable<Integer>, QuarkusApplication {
         RunConfigBuilder runConfigBuilder = new RunConfigBuilder();
 
         boolean ok = true;
+        boolean isFirst = true;
+        if(hostSource == null){
+            hostSource = Collections.emptySet();
+        }
+        if(!hostSource.isEmpty()){
+            yamlPaths.addAll(hostSource);
+        }
         for (String yamlPath : yamlPaths){
+            boolean loadHosts = !lockHosts || (hostSource.isEmpty() ? isFirst : hostSource.contains(yamlPath));
             File yamlFile = new File(yamlPath);
             if(!yamlFile.exists()){
                 if(yamlPath.startsWith("http")){
@@ -197,7 +208,7 @@ public class QDup implements Callable<Integer>, QuarkusApplication {
                                 logger.errorf("Aborting run due to error reading %s", yamlPath);
                                 ok = false;
                             }
-                            runConfigBuilder.loadYaml(file);
+                            runConfigBuilder.loadYaml(file,loadHosts);
                         } catch (IOException e) {
                             logger.error("Error: failed to download " + yamlPath);
                             ok = false;
@@ -219,7 +230,7 @@ public class QDup implements Callable<Integer>, QuarkusApplication {
                                 logger.errorf("Aborting run due to error reading %s", child.getPath());
                                 ok = false;
                             }
-                            runConfigBuilder.loadYaml(file);
+                            runConfigBuilder.loadYaml(file,loadHosts);
                         } else {
                             logger.trace("  skipping: " + child.getPath());
                         }
@@ -231,9 +242,10 @@ public class QDup implements Callable<Integer>, QuarkusApplication {
                         logger.errorf("Aborting run due to error reading %s", yamlPath);
                         ok = false;
                     }
-                    runConfigBuilder.loadYaml(file);
+                    runConfigBuilder.loadYaml(file,loadHosts);
                 }
             }
+            isFirst = false;
         }
 
         if(!ok){
