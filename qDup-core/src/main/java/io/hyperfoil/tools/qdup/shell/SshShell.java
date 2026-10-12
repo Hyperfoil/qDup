@@ -15,6 +15,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionListener;
@@ -213,6 +214,8 @@ public class SshShell extends AbstractShell{
             if(getHost().hasPassword()){
                 logger.tracef("%s setting client password provider %s",getName());
                 sshClient.setPasswordIdentityProvider((sc) -> Arrays.asList(getHost().getPassword()));
+                //disable keys for this client
+                sshClient.setKeyIdentityProvider(KeyIdentityProvider.EMPTY_KEYS_PROVIDER);
             }
             if(getHost().hasPassphrase()){
                 logger.tracef("%s setting client passphrase",getName());
