@@ -932,6 +932,7 @@ public class Run implements Runnable, DispatchObserver {
         //Observer to set the Env.Diffs
         List<Callable<Boolean>> connectSessions = new LinkedList<>();
 
+        Role allRole = config.getRole(RunConfigBuilder.ALL_ROLE);
         config.getRoleNames().forEach(roleName->{
             Role role = config.getRole(roleName);
             if(!role.getCleanup().isEmpty()){
@@ -941,13 +942,17 @@ public class Run implements Runnable, DispatchObserver {
                     cleanup.then(cmd);
                 });
                 role.getHosts(config).forEach(host->{
-                    String setupCommand = role.hasEnvironment(host) ? role.getEnv(host).getDiff().getCommand() : "";
+                    Env env = role.hasEnvironment(host) ? role.getEnv(host) : new Env();
+                    if(!role.getName().equals(RunConfigBuilder.ALL_ROLE) && allRole!=null && allRole.hasEnvironment(host)){
+                        env.merge(allRole.getEnv(host));
+                    }
+                    String setupCommand = env.getDiff().getCommand();
                     connectSessions.add(()->{
                         String name = roleName + "-cleanup@"+host.getShortHostName()+"."+Cmd.populateStateVariables(config.getGlobals().getSettings().getString(RunConfig.TRACE_NAME),null,getConfig().getState(),getCoordinator(),Json.fromMap(getTimestamps()));
                         AbstractShell shell = AbstractShell.getShell(
                                 name,
                                 host,
-                                "",
+                                setupCommand,
                                 getDispatcher().getCallback(),
                                 getConfig().getState().getSecretFilter(),
                                 isTrace(name) ? getOutputPath() : null

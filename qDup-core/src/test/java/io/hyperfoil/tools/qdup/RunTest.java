@@ -182,8 +182,53 @@ public class RunTest extends SshTestBase {
        assertEquals(2,heard.size());
    }
 
-   @Test(timeout = 40_000)
-   public void waitfor_never_signaled(){
+  @Test
+  public void setup_env_propagates_to_run_and_cleanup(){
+      // setup exports PROJECT=qdup; run and cleanup each echo $PROJECT and capture it
+      // into state. Both are new shell connections that rely on qDup replaying the env
+      // diff captured by RoleEnv
+      Parser parser = Parser.getInstance();
+      RunConfigBuilder builder = getBuilder();
+      builder.loadYaml(parser.loadFile("env-propagation",
+           """
+           scripts:
+             do-setup:
+               - sh: export PROJECT=qdup
+             do-run:
+               - sh: echo $PROJECT
+               - set-state: RUN.project_in_run
+             do-cleanup:
+               - sh: echo $PROJECT
+               - set-state: RUN.project_in_cleanup
+           hosts:
+             local: TARGET_HOST
+           roles:
+             role:
+               hosts: [local]
+               setup-scripts:
+               - do-setup
+               run-scripts:
+               - do-run
+               cleanup-scripts:
+               - do-cleanup
+           """.replaceAll("TARGET_HOST", getHost().toString())
+      ));
+
+      RunConfig config = builder.buildConfig(parser);
+      assertFalse("runConfig errors:\n" + config.getErrorStrings().stream().collect(Collectors.joining("\n")), config.hasErrors());
+      Dispatcher dispatcher = new Dispatcher();
+      Run doit = new Run(tmpDir.toString(), config, dispatcher);
+      doit.run();
+
+      State state = config.getState();
+      assertTrue("run should have captured PROJECT", state.has("project_in_run"));
+      assertEquals("PROJECT exported in setup must be visible in run", "qdup", state.get("project_in_run").toString().trim());
+      assertTrue("cleanup should have captured PROJECT", state.has("project_in_cleanup"));
+      assertEquals("PROJECT exported in setup must be visible in cleanup", "qdup", state.get("project_in_cleanup").toString().trim());
+  }
+
+  @Test(timeout = 40_000)
+  public void waitfor_never_signaled(){
       Parser parser = Parser.getInstance();
       RunConfigBuilder builder = getBuilder();
       builder.loadYaml(parser.loadFile("signal",
