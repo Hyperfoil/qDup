@@ -223,7 +223,7 @@ public class SshShell extends AbstractShell{
                     return getHost().getPassphrase();
                 });
             }
-            if(getHost().hasIdentity()){
+            if(getHost().hasNonDefaultIdentity()){
                 logger.tracef("%s setting client identity %s",getName(),getHost().getIdentity());
                 try {
                     URLResource urlResource = new URLResource(Paths.get(getHost().getIdentity()).toUri().toURL());

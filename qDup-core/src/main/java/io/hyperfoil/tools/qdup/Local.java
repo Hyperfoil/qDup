@@ -126,7 +126,7 @@ public class Local {
          json.set("isDirectory",new File(path).isDirectory());
          json.set("destination",destination);
          json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
-          if(host.hasIdentity()){
+          if(host.hasNonDefaultIdentity()){
               json.set("identity",host.getIdentity());
           }else if (hasIdentity()){
               json.set("identity",getIdentity());
@@ -157,10 +157,13 @@ public class Local {
          json.set("isDirectory",new File(path).isDirectory());
          json.set("destination",destination);
          json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
-         if(host.hasIdentity()){
+         if(host.hasNonDefaultIdentity()){
              json.set("identity",host.getIdentity());
          }else if (hasIdentity()){
              json.set("identity",getIdentity());
+         }else{
+             //need to have a value for upload
+             json.set("identity",host.getIdentity());
          }
          if(host.hasContainerId()){
             json.set("container",host.getContainerId());
@@ -168,7 +171,7 @@ public class Local {
 
          List<String> populated = Cmd.populateList(json,host.getUpload()).stream().filter(v->v!=null && !v.isBlank()).collect(Collectors.toUnmodifiableList());
          if(Cmd.hasPatternReference(populated,StringUtil.PATTERN_PREFIX)){
-            logger.error("failed to populate upload pattern: "+populated.stream().collect(Collectors.joining(" "))+"\nhost: "+host);
+            logger.error("failed to populate upload pattern: "+populated.stream().collect(Collectors.joining(" "))+"\nhost: "+host.getSafeString());
 
             return false;
          }else{
@@ -276,10 +279,13 @@ public class Local {
          //need a tmp destination on the remoteHost
          json.set("destination",remoteDestination);
          json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
-          if(host.hasIdentity()){
+          if(host.hasNonDefaultIdentity()){
               json.set("identity",host.getIdentity());
           }else if (hasIdentity()){
               json.set("identity",getIdentity());
+          }else{
+              //need to have a value for upload
+              json.set("identity",host.getIdentity());
           }
 
           if(host.hasContainerId()){
@@ -313,13 +319,16 @@ public class Local {
          json.set("source",path);
          json.set("destination",destination);
          json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
-          if(host.hasIdentity()){
-              json.set("identity",host.getIdentity());
-          }else if (hasIdentity()){
-              json.set("identity",getIdentity());
-          }
+         if(host.hasNonDefaultIdentity()){
+            json.set("identity",host.getIdentity());
+         }else if (hasIdentity()){
+            json.set("identity",getIdentity());
+         }else{
+            //need to have a value for upload
+            json.set("identity",host.getIdentity());
+         }
 
-          if(host.hasContainerId()){
+         if(host.hasContainerId()){
             json.set("container",host.getContainerId());
          }
          //this is painfully slow in vscode debugger :(
@@ -347,7 +356,7 @@ public class Local {
          json.set("host",host.toJson());
          json.set("source",path);
          json.set("knownHost",hasKnownHosts()?getKnownHosts():false);
-          if(host.hasIdentity()){
+          if(host.hasNonDefaultIdentity()){
               json.set("identity",host.getIdentity());
           }else if (hasIdentity()){
               json.set("identity",getIdentity());
@@ -632,6 +641,7 @@ public class Local {
       logger.debug("Running local command : " + cmd);
       try {
          Process p;
+
          if(processes.size()==1){
             p = processes.get(0).start();
          }else{
@@ -643,6 +653,10 @@ public class Local {
          final InputStream errorStream = p.getErrorStream();
 
          int result = p.waitFor();
+         if(result > 0){
+             logger.error(" E: {}", cmd.stream().collect(Collectors.joining(" ")));
+             rtrn = false;
+         }
          logger.debug(action.concat("result = {}"), result);
          String line = null;
          BufferedReader reader = null;
@@ -661,6 +675,7 @@ public class Local {
 
       } catch (IOException e) {
          rtrn = false;
+         logger.error(" E: {}", cmd.stream().collect(Collectors.joining(" ")));
          e.printStackTrace();
       } catch (InterruptedException e) {
 //         logger.warn("rysnc was interrupted: " + path);

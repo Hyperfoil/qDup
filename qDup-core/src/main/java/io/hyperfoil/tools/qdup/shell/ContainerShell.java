@@ -12,9 +12,6 @@ import io.hyperfoil.tools.yaup.json.Json;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -128,7 +125,7 @@ public class ContainerShell extends AbstractShell{
         if(getHost().hasAlias()){
             subHost.setAlias(getHost().getAlias());
         }
-        if(getHost().hasIdentity()){
+        if(getHost().hasNonDefaultIdentity()){
             subHost.setIdentity(getHost().getIdentity());
         }
         if(getHost().hasPassphrase()){

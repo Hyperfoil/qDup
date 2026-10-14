@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.qdup;
 
+import io.hyperfoil.tools.qdup.config.RunConfigBuilder;
 import io.hyperfoil.tools.qdup.config.yaml.HostDefinition;
 import io.hyperfoil.tools.qdup.config.yaml.Parser;
 import io.hyperfoil.tools.qdup.shell.AbstractShell;
@@ -211,6 +212,40 @@ public class LocalTest extends SshTestBase{
 
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            if(toSend !=null && toSend.exists()){
+                toSend.delete();
+            }
+            if(toRead !=null && toRead.exists()){
+                toRead.delete();
+            }
+        }
+    }
+    @Test
+    public void remote_ssh_upload_password(){
+        Host host = getPasswordHost();
+        File toSend = null;
+        File toRead = null;
+        try {
+            toSend = File.createTempFile("tmp","local");
+            toSend.deleteOnExit();
+            Files.write(toSend.toPath(),"foo".getBytes());
+
+            RunConfigBuilder builder = getBuilder();
+            builder.setIdentity(null);
+
+            Local local = new Local(builder.buildConfig(Parser.getInstance()));
+
+
+            local.upload(toSend.getPath(),"/tmp/destination.txt",host);
+            assertTrue("/tmp/destination.txt exists",exists("/tmp/destination.txt"));
+
+
+            String read = readFile("/tmp/destination.txt");
+            assertEquals("foo",read);
+
+        } catch (IOException e) {
+            fail(e.getMessage());
         } finally {
             if(toSend !=null && toSend.exists()){
                 toSend.delete();
@@ -550,6 +585,46 @@ public class LocalTest extends SshTestBase{
             Files.write(toSend.toPath(),"foo".getBytes());
 
             Local local = new Local(getBuilder().buildConfig(Parser.getInstance()));
+
+            local.upload(toSend.getPath(),"/tmp/destination.txt",host);
+            assertTrue("/tmp/destination.txt exists",exists("/tmp/destination.txt"));
+
+
+            String read = readFile("/tmp/destination.txt");
+            assertEquals("foo",read);
+
+            toRead = File.createTempFile("tmp","local");
+            toRead.deleteOnExit();
+
+            local.download("/tmp/destination.txt",toRead.getPath(),host);
+
+            read = readLocalFile(toRead.toPath());
+            assertEquals("foo",read);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(toSend !=null && toSend.exists()){
+                toSend.delete();
+            }
+            if(toRead !=null && toRead.exists()){
+                toRead.delete();
+            }
+        }
+    }
+    @Test
+    public void remote_ssh_download_password(){
+        Host host = getPasswordHost();
+        File toSend = null;
+        File toRead = null;
+        try {
+            toSend = File.createTempFile("tmp","local");
+            toSend.deleteOnExit();
+            Files.write(toSend.toPath(),"foo".getBytes());
+
+            RunConfigBuilder builder = getBuilder();
+            builder.setIdentity(null);
+            Local local = new Local(builder.buildConfig(Parser.getInstance()));
 
             local.upload(toSend.getPath(),"/tmp/destination.txt",host);
             assertTrue("/tmp/destination.txt exists",exists("/tmp/destination.txt"));

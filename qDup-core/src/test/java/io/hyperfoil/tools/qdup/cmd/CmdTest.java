@@ -28,6 +28,17 @@ public class CmdTest extends SshTestBase {
    @Rule
    public Timeout globalTimeout = Timeout.seconds(120);
 
+   @Test
+   public void populateList_javascript_variable(){
+       Json json = new Json();
+       json.set("found","foo");
+       json.set("missing",null);
+       List<String> toPopulate = List.of(
+               "${{=missing ? ${{found}} : 'nope'}}"
+       );
+       List<String> result = Cmd.populateList(json,toPopulate);
+       System.out.println(result);
+   }
 
    @Test
    public void getExternalStateReference_no_references(){

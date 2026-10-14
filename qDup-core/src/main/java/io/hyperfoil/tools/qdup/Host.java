@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by wreicher
@@ -62,28 +63,32 @@ public class Host {
     public static final List<String> LOCAL_LINUX_DOWNLOAD = Arrays.asList("cp","-r","${{='${{source}}'.endsWith('/') ? '${{source}}'+'.' : '${{source}}'}}","${{destination}}");
     public static final List<String> LOCAL_LINUX_FILE_SIZE = Arrays.asList("du","-cb","${{source}}","|","grep","total","|","cut","-d","\t","-f1");
 
-    private static final String SSH_FILE_PASS = "${{= host.password ? `sshpass -p ${host.password}` : \"\"}}";
+    private static final List<String> SSH_FILE_PASS = List.of("${{=host.password ? `/usr/bin/sshpass` : \"\"}}","${{=host.password ? `-p` : \"\"}}","${{=host.password ? `${host.password}` : \"\"}}");
     private static final String SSH_OPTS =
         "/usr/bin/ssh " +
+        "-o IdentityAgent=none " +
         "${{=knownHost ? '-o UserKnownHostsFile=\"${{knownHost}}\"' : '-o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'}} " +
-        "${{=identity ? '-i \"${{identity}}\" ' : \"\"}} " +
-        "${{=host.port ? `-p ${host.port} ` : ''}} " +
+        "${{=host.password ? `-o PubkeyAuthentication=no -o PreferredAuthentications=password ` : ''}} " +
+        "${{=identity ? '-i \"${{identity}}\" -o IdentitiesOnly=yes ' : \"\"}} " +
+        "${{=host.port ? `-p ${{host.port}} ` : ''}} " +
         "-o StrictHostKeyChecking=no";
-    public static final List<String> SSH_UPLOAD = Arrays.asList(
-        SSH_FILE_PASS,
-        "/usr/bin/rsync",
-        "--archive",
-        "--quiet",
-        /*"--verbose",*/
-        "--compress",
-        "-e",
-        SSH_OPTS,
-        "--ignore-times",
-        "${{source}}",
-        "${{host.username}}@${{host.hostname}}:${{destination}}"
-    );
-    public static final List<String> SSH_DOWNLOAD = Arrays.asList(
-        SSH_FILE_PASS,
+    public static final List<String> SSH_UPLOAD = Stream.concat(
+            SSH_FILE_PASS.stream(),
+            Stream.of(
+            "/usr/bin/rsync",
+            "--archive",
+            "--quiet",
+            /*"--verbose",*/
+            "--compress",
+            "-e",
+            SSH_OPTS,
+            "--ignore-times",
+            "${{source}}",
+            "${{host.username}}@${{host.hostname}}:${{destination}}")).toList();
+
+    public static final List<String> SSH_DOWNLOAD = Stream.concat(
+        SSH_FILE_PASS.stream(),
+        Stream.of(
         "/usr/bin/rsync",
         "--archive",
         "--quiet",
@@ -93,10 +98,11 @@ public class Host {
         SSH_OPTS,
         "${{='${{source}}'.includes('/./') ? '--relative' : ''}}",
         "${{host.username}}@${{host.hostname}}:${{source}}",
-        "${{destination}}"
-    );
-    public static final List<String> SSH_FILE_SIZE = Arrays.asList(
-        SSH_FILE_PASS,
+        "${{destination}}")).toList();
+
+    public static final List<String> SSH_FILE_SIZE = Stream.concat(
+        SSH_FILE_PASS.stream(),
+        Stream.of(
         "/usr/bin/rsync",
         "--archive",
         "--verbose",
@@ -114,8 +120,8 @@ public class Host {
         "cut",
         "-d",
         " ",
-        "-f4"
-    );
+        "-f4")).toList();
+
     public static final String HOST_PATTERN = "\\w+(?::.*?)@\\w[\\w\\-]*(?:\\.\\w[\\w\\-])*(?::\\d+)*.*";
     public static final String NO_PLATFORM = "";
     public static final String NO_PROMPT = null;
@@ -531,7 +537,7 @@ public class Host {
     }
     public String getPassphrase(){return passphrase;}
     public boolean hasPassphrase(){return RunConfigBuilder.DEFAULT_PASSPHRASE != passphrase;}
-    public boolean hasIdentity(){return !RunConfigBuilder.DEFAULT_IDENTITY.equals(identity);}
+    public boolean hasNonDefaultIdentity(){return !RunConfigBuilder.DEFAULT_IDENTITY.equals(identity);}
     public boolean isContainer(){return container!=null && !container.trim().isEmpty();}
     public boolean needStopContainer(){return needStopContainer;}
     public void setNeedStopContainer(boolean needStopContainer){
@@ -642,7 +648,7 @@ public class Host {
         if(hasPrompt()){
             rtrn.set("prompt",getPrompt());
         }
-        if(hasIdentity()){
+        if(hasNonDefaultIdentity()){
             rtrn.set("identity",getIdentity());
         }
         if(!isShell()){

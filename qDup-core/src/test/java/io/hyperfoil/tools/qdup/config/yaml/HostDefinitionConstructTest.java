@@ -105,7 +105,7 @@ public class HostDefinitionConstructTest {
         assertNotNull("should load from map",loaded);
         assertEquals("username","userName",loaded.getUserName());
         assertEquals("hostname","hostName.subdomain.domain.com",loaded.getHostName());
-        assertTrue("host has identity",loaded.hasIdentity());
+        assertTrue("host has identity",loaded.hasNonDefaultIdentity());
         assertEquals("identity","foo",loaded.getIdentity());
     }
     @Test
