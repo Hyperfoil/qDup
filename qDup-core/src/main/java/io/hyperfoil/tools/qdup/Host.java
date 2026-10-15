@@ -131,6 +131,8 @@ public class Host {
     public static final String NO_CONTAINER = "";
     public static final String LOCAL = "LOCAL";
     public static final String CONTAINER_SEPARATOR = "//";
+    public static final String DEFAULT_PS2 = "> ";
+    private static final String NO_PS2 = "";
 
     public static Host parse(String fullyQualified) {
         return parse(fullyQualified, "podman");
@@ -211,6 +213,7 @@ public class Host {
     private boolean isLocal = false;
     private String identity = RunConfigBuilder.DEFAULT_IDENTITY;
     private String passphrase = RunConfigBuilder.DEFAULT_PASSPHRASE;
+    private String ps2;
 
     //settings for containers
     private String platform;//currently only podman, eventually docker, oc, kubernetes
@@ -259,6 +262,7 @@ public class Host {
         this.isShell = isShell;
         this.prompt = prompt;
         this.isLocal = isLocal;
+        this.ps2 = isShell ? DEFAULT_PS2 : NO_PS2;
         if(isLocal){
             this.hostName=LOCAL;
         }
@@ -372,6 +376,12 @@ public class Host {
         }
         return rtrn;
     }
+
+    public boolean hasPS2(){return !NO_PS2.equals(ps2);}
+    public boolean hasNonDefaultPS2(){return hasPS2() && !DEFAULT_PS2.equals(ps2);}
+    public String getPS2(){return ps2;}
+    public void setPS2(String ps2){this.ps2 = ps2;}
+
     public boolean isValid(){
         return isValid(null);
     }
@@ -666,6 +676,9 @@ public class Host {
         }
         if(hasAlias()){
             rtrn.set("alias",getAlias());
+        }
+        if(hasNonDefaultPS2()){
+            rtrn.set("ps2",getPS2());
         }
         return rtrn;
     }

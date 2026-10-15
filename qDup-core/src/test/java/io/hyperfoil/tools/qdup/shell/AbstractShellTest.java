@@ -3,8 +3,11 @@ package io.hyperfoil.tools.qdup.shell;
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
 import io.hyperfoil.tools.qdup.SshTestBase;
+import io.hyperfoil.tools.qdup.stream.MultiStream;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static org.junit.Assert.*;
@@ -70,4 +73,18 @@ public class AbstractShellTest extends SshTestBase {
 
     }
 
+    @Test
+    public void sh_multiline_with_ps2(){
+        Host host = getHost();
+        AbstractShell shell = AbstractShell.getShell("sh_multiline_with_ps2",host,new ScheduledThreadPoolExecutor(2),new SecretFilter(),null);
+        List<String> seen = new ArrayList<>();
+        String command = """
+            if [ -z "${X:-}" ]; then
+              echo "GLOBAL_FATAL_ERROR: boom"
+            fi
+            """;
+        shell.addLineObserver("seen",seen::add);
+        shell.shSync(command);
+        assertEquals("unexpected number of lines:"+seen+ MultiStream.printByteCharacters(seen.get(0).getBytes(),0,seen.get(0).length()),1,seen.size());
+    }
 }

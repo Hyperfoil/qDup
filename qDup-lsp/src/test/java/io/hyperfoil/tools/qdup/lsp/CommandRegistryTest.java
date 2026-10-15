@@ -70,7 +70,7 @@ public class CommandRegistryTest {
         assertTrue("Should contain 'identity'", hostKeys.contains("identity"));
         assertTrue("Should contain 'local'", hostKeys.contains("local"));
         assertTrue("Should contain 'platform'", hostKeys.contains("platform"));
-        assertEquals("Should have 21 host keys", 21, hostKeys.size());
+        assertEquals("Should have 22 host keys", 22, hostKeys.size());
     }
 
     @Test

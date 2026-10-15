@@ -162,9 +162,36 @@ public class SessionStreamsTest {
          fail(e.getMessage());
       }
       assertEquals("expect 2 entries in array: "+emitted.toString(),2,emitted.size());
-
-
-
    }
+
+    @Test
+    public void line_emitting_multi_line_command_echo(){
+        SessionStreams sessionStreams = getStreams();
+
+        List<String> emitted = new ArrayList<>();
+        sessionStreams.getLineEmittingStream().addConsumer(emitted::add);
+
+        String command = """
+                if [ -z "${X:-}" ]; then
+                >   echo "GLOBAL_FATAL_ERROR: boom"
+                > fi
+                """;
+        sessionStreams.setCommand(command);
+        try{
+            //captured from a bash pty with bracketed paste
+            write(sessionStreams,"if [ -z \"${X:-}\" ]; then\r\n\u001B[?2004l\r\u001b[?2004h> ");
+            write(sessionStreams,"  echo \"GLOBAL_FATAL_ERROR: boom\"\r\n\u001b[?2004l\r");
+            write(sessionStreams,"\u001b[?2004l\r\u001b[?2004h> ");
+            write(sessionStreams,"fi\r\n\u001b[?2004l\r");
+            write(sessionStreams,"GLOBAL_FATAL_ERROR: boom\r\n\u001b[?2004h");
+            sessionStreams.flushBuffer();
+        }catch(IOException e){
+            fail(e.getMessage());
+        }
+        assertEquals("only 1 line should be emitted: "+emitted,1,emitted.size());
+        long matches = emitted.stream().filter(l->l.contains("GLOBAL_FATAL_ERROR")).count();
+        assertEquals("only the command output should be emitted: "+emitted,1,matches);
+    }
+
 
 }

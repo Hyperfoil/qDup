@@ -37,9 +37,10 @@ public class HostDefinition {
     public static final String DOWNLOAD = "download";
 
     public static final String IS_SHELL = "is-shell";
+    public static final String PS2 = "ps2";
 
     public static final List<String> KEYS = Arrays.asList(
-            USERNAME,HOSTNAME,PASSWORD,PORT,PROMPT,LOCAL,PLATFORM,CONTAINER,CHECK_CONTAINER_ID,CHECK_CONTAINER_NAME,
+            USERNAME,HOSTNAME,PASSWORD,PORT,PROMPT,PS2,LOCAL,PLATFORM,CONTAINER,CHECK_CONTAINER_ID,CHECK_CONTAINER_NAME,
             CREATE_CONTAINER,CREATE_CONNECTED_CONTAINER, RESTART_CONNECTED_CONTAINER,STOP_CONTAINER,CONNECT_SHELL,PLATFORM_LOGIN,EXEC,UPLOAD,DOWNLOAD, IS_SHELL,IDENTITY
     );
 
@@ -103,6 +104,9 @@ public class HostDefinition {
                     mapping.getString(PLATFORM,""),
                     mapping.getString(CONTAINER,"")
             );
+            if(mapping.has(PS2)){
+                rtrn.setPS2(mapping.get(PS2).toString());
+            }
             if(mapping.has(CHECK_CONTAINER_ID)){
                 rtrn.setCheckContainerId(toList(mapping.get(CHECK_CONTAINER_ID)));
             }

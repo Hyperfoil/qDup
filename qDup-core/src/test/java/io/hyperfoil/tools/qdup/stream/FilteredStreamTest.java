@@ -12,6 +12,20 @@ import static org.wildfly.common.Assert.assertFalse;
 public class FilteredStreamTest {
 
     @Test
+    public void prefixLength_line_terminators(){
+        FilteredStream fs = new FilteredStream();
+        String input;
+        input = "\n";
+        assertEquals(1,fs.prefixLength(input.getBytes(),"\r".getBytes(),0,input.getBytes().length).length());
+        input = "\r\n";
+        assertEquals(1,fs.prefixLength(input.getBytes(),"\r".getBytes(),0,input.getBytes().length).length());
+        input = "a\r\nb";
+        assertEquals(input.length(),fs.prefixLength(input.getBytes(),"a\nb".getBytes(),0,input.getBytes().length).length());
+        input = "a\r\n\r\rb";
+        assertEquals(input.length(),fs.prefixLength(input.getBytes(),"a\nb".getBytes(),0,input.getBytes().length).length());
+    }
+
+    @Test
     public void prefixLength(){
         FilteredStream fs = new FilteredStream();
 

@@ -211,7 +211,8 @@ public class FilteredStream extends MultiStream{
                             if(hasReplacement(matchedName) && replacements.get(matchedName).length > 0){
                                 superWrite(replacements.get(matchedName),0,replacements.get(matchedName).length);
                             }
-                            int nextIndex = currentIndex + filters.get(matchedName).length;
+                            //use dropLength instead of length of prefix because \r\n can replace \n in input
+                            int nextIndex = currentIndex + dropLength; //filters.get(matchedName).length;
                             //trap the potential \r\n if we filtered the entire write / line
                             //TODO BUG, this can increment currentIndex && flushIndex beyondWriteIndex
                             //TODO BUG, this only works if /r/n are on the same write, what about a subsequent call to write
@@ -293,6 +294,12 @@ public class FilteredStream extends MultiStream{
                 prefixIndex++;
                 matchLength++;
             }else if ( hasInjectable(targetByte) && matchLength > 0) {
+                bIndex++;
+            }else if ("\r\n".indexOf(prefix[prefixIndex]) > -1 && "\r\n".indexOf(targetByte) > -1) {
+                bIndex++;//
+                prefixIndex++;
+                matchLength++;
+            }else if (prefixIndex > 0 && "\r\n".indexOf(prefix[prefixIndex-1]) > -1 && "\r\n".indexOf(targetByte) > -1) {
                 bIndex++;
             }else{
                 matchLength=-1;

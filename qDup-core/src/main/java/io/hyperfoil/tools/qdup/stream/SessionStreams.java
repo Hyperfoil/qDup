@@ -89,6 +89,7 @@ public class SessionStreams extends MultiStream {
       filteredStream.addFilter("^T", new byte[]{0, 0, 0, 20});
       filteredStream.addFilter("^X", new byte[]{0, 0, 0, 24});
       filteredStream.addFilter("^@", new byte[]{0, 0, 0});
+      //filteredStream.addFilter("crnl", "\r\n","\n");
 
    }
 
@@ -105,7 +106,7 @@ public class SessionStreams extends MultiStream {
 
    @Override
    public void write(byte b[], int off, int len) throws IOException {
-      if(hasTrace()){
+       if(hasTrace()){
          trace("[>>qdup["+off+","+len+"]--]\n");
          trace(MultiStream.printByteCharacters(b,off,len));
          trace("\n[<<qdup["+off+","+len+"]--]\n");
@@ -216,7 +217,7 @@ public class SessionStreams extends MultiStream {
    }
 
    public void setCommand(String command){
-      filteredStream.addFilter("command",command,"");
+      filteredStream.addFilter("command", command, "");
    }
 
    public void trace(String output){

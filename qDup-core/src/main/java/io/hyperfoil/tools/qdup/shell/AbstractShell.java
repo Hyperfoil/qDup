@@ -2,6 +2,7 @@ package io.hyperfoil.tools.qdup.shell;
 
 import io.hyperfoil.tools.qdup.Host;
 import io.hyperfoil.tools.qdup.SecretFilter;
+import io.hyperfoil.tools.qdup.stream.MultiStream;
 import io.hyperfoil.tools.qdup.stream.SessionStreams;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import org.apache.sshd.common.session.Session;
@@ -460,7 +461,12 @@ public abstract class AbstractShell {
             if (!command.isEmpty()){
                 //is there a reace between sessionStreams updating command and the response filtering out the command for the previous command
                 //could test with a slow writing stream on sessionStreams that occurs after promptStream
-                sessionStreams.setCommand(command);
+                if(host.hasPS2()){
+                    String subCommand = command.replaceAll("[\r\n]+","\n"+host.getPS2());
+                    sessionStreams.setCommand(subCommand);
+                } else {
+                    sessionStreams.setCommand(command);
+                }
             }
             actionUpdater.set(this,newAction);
             commandStream.println(command);
