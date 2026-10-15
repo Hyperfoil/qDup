@@ -115,7 +115,7 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.2.2</version>
                 <configuration>
-                    <skipTests>false</skipTests>
+                    <skipTests>${skipTests}</skipTests>
                 </configuration>
                 <executions>
                     <execution>
