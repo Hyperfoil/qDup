@@ -80,6 +80,7 @@ public class AbstractShellTest extends SshTestBase {
         List<String> seen = new ArrayList<>();
         String command = """
             if [ -z "${X:-}" ]; then
+            
               echo "GLOBAL_FATAL_ERROR: boom"
             fi
             """;

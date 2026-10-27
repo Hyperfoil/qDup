@@ -462,7 +462,7 @@ public abstract class AbstractShell {
                 //is there a reace between sessionStreams updating command and the response filtering out the command for the previous command
                 //could test with a slow writing stream on sessionStreams that occurs after promptStream
                 if(host.hasPS2()){
-                    String subCommand = command.replaceAll("[\r\n]+","\n"+host.getPS2());
+                    String subCommand = command.replaceAll("\r?\n","\n"+host.getPS2());
                     sessionStreams.setCommand(subCommand);
                 } else {
                     sessionStreams.setCommand(command);
