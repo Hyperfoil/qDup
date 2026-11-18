@@ -26,13 +26,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Install Asciidoctor
         run: sudo gem install asciidoctor rouge
       - name: Build docs
         run: |
           mkdir -p _site
-          asciidoctor -r asciidoctor/... -D _site -R docs 'docs/**/*.adoc'
-          cp docs/qdup.html _site/index.html   # or write a small index.adoc
+          # -R . keeps the docs/ prefix in the output so the ../docs/... links in the adoc files still resolve
+          find docs -name '*.adoc' -print0 | xargs -0 asciidoctor -R . -D _site
+          # the adoc sources link to other .adoc files, point them at the generated html
+          find _site -name '*.html' -print0 | xargs -0 sed -i -E 's/(href="[^"#]*)\.adoc/\1.html/g'
+          echo '<!DOCTYPE html><meta http-equiv="refresh" content="0; url=docs/userguide.html">' > _site/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
